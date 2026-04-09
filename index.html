@@ -38,13 +38,13 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
 #app{display:flex;flex-direction:column;height:100dvh;max-width:500px;margin:0 auto;background:var(--off);}
 #topbar{background:var(--navy);padding:calc(var(--safe-top)+11px) 18px 13px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;border-bottom:1px solid rgba(255,255,255,.05);}
 .tb-brand{display:flex;align-items:center;gap:11px;}
-.tb-logo-img{height:28px;width:auto;}
+.tb-logo-img{height:24px;width:auto;filter:brightness(0) invert(1);}
 .tb-sep{width:1px;height:20px;background:rgba(255,255,255,.12);}
 .tb-module{font-size:12px;font-weight:500;color:var(--g3);letter-spacing:.4px;}
 .tb-badge{display:flex;align-items:center;gap:4px;background:rgba(16,185,129,.15);border:1px solid rgba(16,185,129,.2);color:#34D399;font-size:9px;font-weight:700;letter-spacing:.8px;padding:3px 8px;border-radius:20px;}
 .tb-dot{width:5px;height:5px;background:#10B981;border-radius:50%;}
 
-#subnav{background:var(--navy2);display:flex;justify-content:center;flex-shrink:0;border-bottom:1px solid rgba(255,255,255,.04);width:100%;}
+#subnav{background:var(--navy2);display:flex;flex-shrink:0;border-bottom:1px solid rgba(255,255,255,.04);}
 .snav{flex:1;padding:10px 8px;font-size:10px;font-weight:700;color:#3A5A7A;letter-spacing:.8px;text-transform:uppercase;border-bottom:2px solid transparent;cursor:pointer;text-align:left;transition:color .2s;white-space:nowrap;}
 .snav.active{color:var(--sky);border-bottom-color:var(--blue);}
 
@@ -213,14 +213,14 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
 .pdf-topbar{position:sticky;top:0;background:var(--navy);padding:calc(var(--safe-top)+10px) 16px 10px;display:flex;align-items:center;justify-content:space-between;z-index:10;}
 .pdf-body{padding:20px;max-width:680px;margin:0 auto;font-family:var(--font);}
 .pdf-divider{height:2px;background:var(--blue);margin:14px 0;border-radius:1px;}
-.pdf-section-ttl{font-size:9px;font-weight:700;color:var(--blue);letter-spacing:normal;text-transform:uppercase;margin:16px 0 8px;}
+.pdf-section-ttl{font-size:9px;font-weight:700;color:var(--blue);letter-spacing:2px;text-transform:uppercase;margin:16px 0 8px;}
 .pdf-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;}
 .pdf-field{background:var(--off);border-radius:7px;padding:9px 11px;}
-.pdf-field-l{font-size:9px;color:var(--tx2);font-weight:700;letter-spacing:normal;text-transform:uppercase;}
+.pdf-field-l{font-size:9px;color:var(--tx2);font-weight:700;letter-spacing:1px;text-transform:uppercase;}
 .pdf-field-v{font-size:13px;font-weight:600;color:var(--navy);margin-top:2px;}
 .pdf-etapa-block{background:var(--white);border-radius:10px;border:1px solid var(--g1);overflow:hidden;margin-bottom:10px;}
 .pdf-etapa-hdr{background:var(--navy);color:#fff;padding:9px 13px;display:flex;align-items:center;justify-content:space-between;}
-.pdf-etapa-name{font-size:12px;font-weight:700;letter-spacing:normal;}
+.pdf-etapa-name{font-size:12px;font-weight:700;letter-spacing:.3px;}
 .pdf-etapa-state{font-size:10px;color:var(--sky);font-weight:600;}
 .pdf-fotos-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;padding:10px;}
 .pdf-fotos-grid img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:6px;}
@@ -232,20 +232,14 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
 @media print{
   *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;box-sizing:border-box!important;}
   html,body{height:auto!important;overflow:visible!important;margin:0!important;padding:0!important;}
-  #app,#toast,.fab,#navbar,#subnav,#topbar,.nb,.snav{display:none!important;}
-  #pdf-preview{display:block!important;position:static!important;overflow:visible!important;background:#fff!important;height:auto!important;min-height:0!important;}
+  #app,#toast,.fab,#navbar,#subnav,#topbar{display:none!important;}
+  #pdf-preview{display:block!important;position:static!important;overflow:visible!important;background:#fff!important;height:auto!important;}
   .pdf-topbar{display:none!important;}
   .pdf-body{padding:12mm 14mm!important;max-width:100%!important;overflow:visible!important;height:auto!important;}
   .pdf-etapa-block{page-break-inside:avoid;break-inside:avoid;}
   .pdf-fotos-grid{page-break-inside:avoid;break-inside:avoid;}
-  .pdf-section-ttl{page-break-after:avoid;break-after:avoid;}
-  .pdf-grid{page-break-inside:avoid;break-inside:avoid;}
-  img{max-width:100%!important;page-break-inside:avoid;break-inside:avoid;}
+  img{max-width:100%!important;}
   @page{size:A4 portrait;margin:15mm 14mm;}
-  #modal-mat-report .moverlay-bg{display:none!important;}
-  #modal-mat-report{position:static!important;display:block!important;z-index:auto!important;}
-  #modal-mat-report > div{border-radius:0!important;position:static!important;max-height:none!important;overflow:visible!important;}
-  .modal-mat-topbar{display:none!important;}
 }
 
 /* ══════════════════════════════════════
@@ -379,18 +373,19 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
 
 <div id="app">
   <div id="topbar" style="flex-direction:column;padding:8px 16px 0;">
-    <div style="display:flex;justify-content:center;padding:4px 0 8px;">
-      <img id="tb-logo-img" alt="ROMSA" src="" style="height:22px;width:auto;filter:brightness(0) invert(1);">
+    <div style="display:flex;justify-content:center;padding:4px 0 6px;"><img id="tb-logo-img" alt="ROMSA" src="" src="">
+      <div class="tb-sep"></div>
+      <div class="tb-module">Seguimiento de Obra</div>
     </div>
-    <div style="display:flex;align-items:center;justify-content:flex-end;padding-bottom:6px;">
-      <div id="tb-live" style="display:none;"></div>
-      <div id="tb-tecnico-name" style="font-size:10px;color:rgba(255,255,255,.75);font-weight:500;background:rgba(255,255,255,.1);padding:2px 10px;border-radius:20px;"></div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <div style="font-size:11px;color:var(--g2);font-weight:500;" id="tb-tecnico-name"></div>
+      <div class="tb-badge"><div class="tb-dot"></div>En línea</div>
     </div>
   </div>
 
-  <div id="subnav" style="justify-content:center;display:flex;">
-    <div class="snav active" id="snav-dashboard" onclick="goScreen('dashboard')">Inicio</div>
-    <div class="snav" id="snav-obras" onclick="goScreen('obras')">Obras</div>
+  <div id="subnav" style="justify-content:center;">
+    <div class="snav" id="snav-dashboard" onclick="goScreen('dashboard')">Inicio</div>
+    <div class="snav active" id="snav-obras" onclick="goScreen('obras')">Obras</div>
     <div class="snav" id="snav-nueva" onclick="showNueva()">+ Nueva</div>
   </div>
 
@@ -412,15 +407,15 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
 
     <!-- OBRA DETALLE -->
     <div id="screen-dashboard" class="screen active">
-      <div style="background:#0B1F3A;padding:16px 18px 16px;">
-        <div style="font-size:9px;font-weight:700;color:#4A6A8A;letter-spacing:2px;text-transform:uppercase;margin-bottom:4px;">Resumen operativo · Hoy</div>
+      <div style="background:#0B1F3A;padding:14px 18px 16px;">
+        <div style="font-size:9px;font-weight:700;color:#4A6A8A;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;">Resumen operativo · Hoy</div>
         <div style="font-size:18px;font-weight:800;color:#fff;line-height:1.2;">Control total de tu <span style="color:#60A5FA;">obra en campo</span></div>
       </div>
-      <div style="background:#F0F3F8;padding:16px 18px;min-height:70vh;">
+      <div style="background:#F0F3F8;padding:16px 18px;">
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px;">
-          <div style="background:#fff;border-radius:12px;border:1px solid #E0E8F0;padding:12px 10px;"><div style="font-size:8px;font-weight:700;color:#7090B8;text-transform:uppercase;margin-bottom:5px;">Activas</div><div id="dash-activas" style="font-size:26px;font-weight:900;color:#0B1F3A;line-height:1;">-</div><div id="dash-total" style="font-size:9px;color:#10B981;font-weight:700;margin-top:2px;"></div></div>
-          <div style="background:#fff;border-radius:12px;border:1px solid #E0E8F0;padding:12px 10px;"><div style="font-size:8px;font-weight:700;color:#7090B8;text-transform:uppercase;margin-bottom:5px;">Updates hoy</div><div id="dash-updates" style="font-size:26px;font-weight:900;color:#0B1F3A;line-height:1;">-</div><div style="font-size:9px;color:#1E6FD9;font-weight:700;margin-top:2px;">publicados</div></div>
-          <div style="background:#fff;border-radius:12px;border:1px solid #E0E8F0;padding:12px 10px;"><div style="font-size:8px;font-weight:700;color:#7090B8;text-transform:uppercase;margin-bottom:5px;">Prox entrega</div><div id="dash-prox-fecha" style="font-size:14px;font-weight:900;color:#0B1F3A;line-height:1;">-</div><div id="dash-prox-dias" style="font-size:9px;font-weight:700;margin-top:2px;color:#F59E0B;"></div></div>
+          <div style="background:#fff;border-radius:12px;border:1px solid #E0E8F0;padding:12px 10px;"><div style="font-size:8px;font-weight:700;color:#7090B8;text-transform:uppercase;margin-bottom:5px;">Activas</div><div id="dash-activas" style="font-size:26px;font-weight:900;color:#0B1F3A;">-</div><div id="dash-total" style="font-size:9px;color:#10B981;font-weight:700;margin-top:2px;"></div></div>
+          <div style="background:#fff;border-radius:12px;border:1px solid #E0E8F0;padding:12px 10px;"><div style="font-size:8px;font-weight:700;color:#7090B8;text-transform:uppercase;margin-bottom:5px;">Updates hoy</div><div id="dash-updates" style="font-size:26px;font-weight:900;color:#0B1F3A;">-</div><div style="font-size:9px;color:#1E6FD9;font-weight:700;margin-top:2px;">publicados</div></div>
+          <div style="background:#fff;border-radius:12px;border:1px solid #E0E8F0;padding:12px 10px;"><div style="font-size:8px;font-weight:700;color:#7090B8;text-transform:uppercase;margin-bottom:5px;">Prox entrega</div><div id="dash-prox-fecha" style="font-size:14px;font-weight:900;color:#0B1F3A;">-</div><div id="dash-prox-dias" style="font-size:9px;font-weight:700;margin-top:2px;color:#F59E0B;"></div></div>
         </div>
         <div style="background:#fff;border-radius:12px;border:1px solid #E0E8F0;overflow:hidden;margin-bottom:12px;">
           <div style="padding:11px 14px;border-bottom:1px solid #F0F3F8;display:flex;align-items:center;justify-content:space-between;"><div style="font-size:11px;font-weight:700;color:#0B1F3A;">Proximas entregas</div><div onclick="goScreen('obras')" style="font-size:10px;font-weight:600;color:#1E6FD9;cursor:pointer;">Ver todas</div></div>
@@ -431,7 +426,7 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
           <button onclick="goScreen('obras')" style="background:#fff;border:1px solid #E0E8F0;border-radius:12px;padding:13px;display:flex;align-items:center;gap:9px;cursor:pointer;font-family:var(--font);"><div style="width:28px;height:28px;background:#F0F3F8;border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="2" y="2" width="4" height="4" rx="1" stroke="#0B1F3A" stroke-width="1.2"/><rect x="8" y="2" width="4" height="4" rx="1" stroke="#0B1F3A" stroke-width="1.2"/><rect x="2" y="8" width="4" height="4" rx="1" stroke="#0B1F3A" stroke-width="1.2"/><rect x="8" y="8" width="4" height="4" rx="1" stroke="#0B1F3A" stroke-width="1.2"/></svg></div><div style="text-align:left;"><div style="font-size:12px;font-weight:700;color:#0B1F3A;">Ver obras</div><div id="dash-ver-sub" style="font-size:9px;color:#7090B8;"></div></div></button>
         </div>
         <div style="background:#fff;border-radius:12px;border:1px solid #E0E8F0;overflow:hidden;margin-bottom:12px;">
-          <div style="padding:11px 14px;border-bottom:1px solid #F0F3F8;"><div style="font-size:11px;font-weight:700;color:#0B1F3A;">Último check-in registrado</div></div>
+          <div style="padding:11px 14px;border-bottom:1px solid #F0F3F8;"><div style="font-size:11px;font-weight:700;color:#0B1F3A;">Ultimo check-in</div></div>
           <div id="dash-last-ci" style="padding:12px 14px;font-size:12px;color:#9BB5CF;">Sin check-ins hoy</div>
         </div>
         <div style="background:#fff;border-radius:12px;border:1px solid #E0E8F0;overflow:hidden;margin-bottom:20px;">
@@ -448,7 +443,7 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
             <div class="det-name" id="det-nom">—</div>
             <div class="det-sub" id="det-sub">—</div>
           </div>
-          
+          <button onclick="borrarObra()" title="Borrar obra" style="background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.25);color:#EF4444;width:32px;height:32px;border-radius:8px;cursor:pointer;flex-shrink:0;font-size:14px;display:flex;align-items:center;justify-content:center;font-family:var(--font);">🗑</button>
         </div>
         <div class="det-chips" style="display:flex;align-items:center;justify-content:space-between;width:100%;">
           <div style="display:flex;gap:5px;flex-wrap:wrap;">
@@ -637,10 +632,7 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
         </div>
         <!-- Resumen totales -->
         <div class="card" style="margin-bottom:10px;">
-          <div class="card-hd" style="display:flex;align-items:center;justify-content:space-between;">
-            <div style="display:flex;align-items:center;gap:8px;"><span class="card-ttl">Resumen de consumo</span><span class="badge b-blue" id="mat-badge">0 registros</span></div>
-            <button onclick="showMatReport()" style="background:#1E6FD9;color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:var(--font);">📋 Reporte</button>
-          </div>
+          <div class="card-hd" style="display:flex;align-items:center;justify-content:space-between;"><div style="display:flex;align-items:center;gap:8px;"><span class="card-ttl">Resumen de consumo</span><span class="badge b-blue" id="mat-badge">0 registros</span></div><button onclick="showMatReport()" style="background:#1E6FD9;color:#fff;border:none;border-radius:8px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:var(--font);">📋 Reporte</button></div>
           <div id="mat-resumen" style="padding:10px 14px;font-size:12px;color:var(--g3);">Sin registros aún</div>
         </div>
         <!-- Historial -->
@@ -775,12 +767,12 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
 </div>
 
 <div class="moverlay" id="modal-mat-report" style="z-index:600;">
-  <div style="background:#fff;border-radius:16px 16px 0 0;position:fixed;bottom:0;left:0;right:0;max-height:92vh;overflow-y:auto;padding:0;">
+  <div style="background:#fff;border-radius:16px 16px 0 0;position:fixed;bottom:0;left:0;right:0;max-height:92vh;overflow-y:auto;">
     <div style="background:#0B1F3A;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;border-radius:16px 16px 0 0;">
       <span style="color:#fff;font-size:14px;font-weight:700;">Reporte de Materiales</span>
       <div style="display:flex;gap:8px;">
-        <button onclick="window.print()" style="background:#1E6FD9;color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font);">⬇ Guardar PDF</button>
-        <button onclick="closeModal('modal-mat-report')" style="background:rgba(255,255,255,.1);color:#fff;border:none;border-radius:8px;padding:7px 12px;font-size:12px;cursor:pointer;font-family:var(--font);">✕ Cerrar</button>
+        <button onclick="window.print()" style="background:#1E6FD9;color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font);">⬇ PDF</button>
+        <button onclick="closeModal('modal-mat-report')" style="background:rgba(255,255,255,.1);color:#fff;border:none;border-radius:8px;padding:7px 12px;font-size:12px;cursor:pointer;font-family:var(--font);">✕</button>
       </div>
     </div>
     <div id="mat-report-body" style="padding:24px;"></div>
@@ -928,14 +920,16 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
 <div id="pdf-preview">
   <div class="pdf-topbar">
     <button class="btn btn-secondary btn-sm" onclick="closePdf()">← Cerrar</button>
-    <span style="color:#fff;font-size:13px;font-weight:600;letter-spacing:1px;text-transform:uppercase;">Reporte Final de Obra</span>
+    <span style="color:#fff;font-size:13px;font-weight:600;">Reporte final de obra</span>
     <button class="btn btn-primary btn-sm" onclick="window.print()">⬇ Guardar PDF</button>
   </div>
   <div class="pdf-body" id="pdf-body"></div>
 </div>
 
 <script>
-(function(){var s="data:image/png;base64,"+_L0+_L1;["tb-logo-img","vc-logo-img"].forEach(function(id){var e=document.getElementById(id);if(e)e.src=s;});})();;
+var _L0="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";
+var _L1="03RL0Z0GHRs78OBb021oSPpEuS0OVXNcuDTSoGOFW6iZvgEz/Hu23z2dqtmGi5+oFG1Xp4KsFDSfa9MfP5yKrlIAvS8NSB5NdM5O/AwEMx0hPuRWslTI15nW3YnPBwcdR558vzDJfMJ6CxzGjruaOz4MKOf2ShprA+800+uTcuoVGJUU+2Aa8R2RtLDS7ixJSs9hvQrtnPXKpISfp/HkjDYtXAnrzTRu/HBlHFlC+jPG22e56664+6yPvg6g+kzz0Ki0rW+7CK0l52rXatYrqaMpaV0R+j8jdIPfsaA97itzG1IbYIhehiBrK/SuqPSj8yRtHgI/zyVH6XJuf9PvthfD5tbK66pEY1N1zpvwbkl4S723Z5i6OyTps24xX0r73+jw9hYnnVqx5/V1YIkruGiTE4aSg/f4r78eV8ITgFcruatdpSuvK4B7XA+MB64GngAOum3YBFzgluoyV6CZ3/KN3cBjwG8i4pikURHR5z8TXnD++rVzWpcr0JK7A7gDWAqcCdxg3moVefFfoh9wBzHBOFtdHTc70GOh8zKwOiK2SVoA7PXfpy3gLvPUGqRjaLlqfsNz/OWudz7yXzWmzam3VmUGAAAAAElFTkSuQmCC";
+(function(){var s="data:image/png;base64,"+_L0+_L1;["tb-logo-img","vc-logo-img"].forEach(function(id){var e=document.getElementById(id);if(e)e.src=s;});})();
 // Logo injected separately to avoid JS parse issues
 // logos set by dedicated script tag below
 
@@ -1031,6 +1025,7 @@ async function saveObra(o){
 
 function subscribeObras(){
   if(!obrasRef) return;
+  obrasRef.orderBy("ts","desc").get().then(snap=>{obras=snap.docs.map(d=>d.data());renderObras();renderDashboard();}).catch(()=>{});
   obrasRef.orderBy("ts","desc").onSnapshot(snap=>{
     if(_savingBA) return;
     obras = snap.docs.map(d=>d.data());
@@ -1061,12 +1056,11 @@ function subscribeObras(){
 function goScreen(n){
   document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
   document.querySelectorAll(".nb,.snav").forEach(b=>b.classList.remove("active"));
-  var sc=document.getElementById("screen-"+n);
-  if(sc) sc.classList.add("active");
+  var sc=document.getElementById("screen-"+n);if(sc)sc.classList.add("active");
   document.getElementById("nb-"+n)?.classList.add("active");
   document.getElementById("snav-"+n)?.classList.add("active");
-  document.getElementById("fab").style.display = n==="obras"?"flex":"none";
-  if(n==="dashboard") renderDashboard();
+  document.getElementById("fab").style.display=n==="obras"?"flex":"none";
+  if(n==="dashboard")renderDashboard();
   if(n==="obras"){
     obraActivaId=null;
     if(_baPairsUnsub){ _baPairsUnsub(); _baPairsUnsub=null; }
@@ -1800,7 +1794,7 @@ function mostrarVC(o){
   }
 
   // Antes/Después
-  const baPairs=(_baPairs.length?_baPairs:(o.baPairs||[])).filter(x=>(x.before&&x.before.length>100)||(x.after&&x.after.length>100));
+  const baPairs=(o.baPairs||[]).filter(x=>x.before||x.after);
   const baSec=document.getElementById("vc-ba-section");
   if(baPairs.length){
     baSec.style.display="block";
@@ -1829,12 +1823,13 @@ function showPdfPreview(){
   const rep=o.reporte||{};
   const updates=(o.updates||[]).sort((a,b)=>a.ts-b.ts);
   const etapas=o.etapas||[];
-  const baPairs=(_baPairs.length?_baPairs:(o.baPairs||[])).filter(x=>(x.before&&x.before.length>100)||(x.after&&x.after.length>100));
+  const baPairs=(o.baPairs||[]).filter(x=>x.before||x.after);
   const logoSrc=document.getElementById("tb-logo-img").src;
   const _LC0="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";
   const _LC1="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";
   const _LC2="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";
   const logoColor="data:image/png;base64,"+_LC0+_LC1+_LC2;
+
   const etapasHtml=etapas.map(e=>`
     <div class="pdf-etapa-block">
       <div class="pdf-etapa-hdr">
@@ -1860,35 +1855,35 @@ function showPdfPreview(){
 
   document.getElementById("pdf-body").innerHTML=`
     <div style="text-align:center;margin-bottom:8px;">
-      <img src="${logoColor}" style="height:32px;width:auto;margin-bottom:8px;image-rendering:auto;" alt="ROMSA">
+      <img src="${logoColor}" style="height:32px;width:auto;" alt="ROMSA">
     </div>
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-      <div style="font-size:10px;color:var(--g3);font-weight:500;">ROMSA Pisos Industriales · Mexicali, Baja California</div>
-      <div style="font-size:10px;color:var(--g3);font-weight:500;">${(()=>{const d=new Date();const m=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];return d.getDate()+' de '+m[d.getMonth()]+' de '+d.getFullYear();})()} </div>
+      <div style="font-size:10px;color:var(--g3);">ROMSA Pisos Industriales · Mexicali, Baja California</div>
+      <div style="font-size:10px;color:var(--g3);">${(()=>{const d=new Date();const m=["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];return d.getDate()+" de "+m[d.getMonth()]+" de "+d.getFullYear();})()} </div>
     </div>
-    <div style="border-top:2px solid #1E3A6E;margin-bottom:18px;"></div>
-    <div style="text-align:center;margin-bottom:20px;">
-      <div style="font-size:10px;font-weight:700;letter-spacing:normal;text-transform:uppercase;color:var(--tx2);margin-bottom:8px;">Reporte Final de Obra</div>
-      <div style="font-size:20px;font-weight:600;color:var(--navy);letter-spacing:normal;line-height:1.3;">${o.nombre}</div>
+    <div style="border-top:2px solid #1E3A6E;margin-bottom:16px;"></div>
+    <div style="text-align:center;margin-bottom:18px;">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--tx2);margin-bottom:6px;">Reporte Final de Obra</div>
+      <div style="font-size:19px;font-weight:700;color:var(--navy);">${o.nombre}</div>
     </div>
 
-    <div style="font-size:9px;font-weight:700;letter-spacing:normal;text-transform:uppercase;color:#1E3A6E;margin-bottom:10px;">Información del proyecto</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;margin-bottom:16px;">
-      <div style="padding:10px 14px;border:0.5px solid #D0D9E8;border-right:none;border-bottom:none;"><div style="font-size:8px;font-weight:700;letter-spacing:normal;text-transform:uppercase;color:var(--tx2);margin-bottom:3px;">Cliente</div><div style="font-size:13px;font-weight:600;color:var(--navy);">${o.cliente||"—"}</div></div>
-      <div style="padding:10px 14px;border:0.5px solid #D0D9E8;border-bottom:none;"><div style="font-size:8px;font-weight:700;letter-spacing:normal;text-transform:uppercase;color:var(--tx2);margin-bottom:3px;">Contacto</div><div style="font-size:13px;font-weight:600;color:var(--navy);">${o.contacto||"—"}</div></div>
-      <div style="padding:10px 14px;border:0.5px solid #D0D9E8;border-right:none;border-bottom:none;"><div style="font-size:8px;font-weight:700;letter-spacing:normal;text-transform:uppercase;color:var(--tx2);margin-bottom:3px;">Ubicación</div><div style="font-size:13px;font-weight:600;color:var(--navy);">${o.ubicacion||"—"}</div></div>
-      <div style="padding:10px 14px;border:0.5px solid #D0D9E8;border-bottom:none;"><div style="font-size:8px;font-weight:700;letter-spacing:normal;text-transform:uppercase;color:var(--tx2);margin-bottom:3px;">Servicio</div><div style="font-size:13px;font-weight:600;color:var(--navy);">${o.servicio||"—"}</div></div>
-      <div style="padding:10px 14px;border:0.5px solid #D0D9E8;border-right:none;border-bottom:none;"><div style="font-size:8px;font-weight:700;letter-spacing:normal;text-transform:uppercase;color:var(--tx2);margin-bottom:3px;">Superficie total</div><div style="font-size:13px;font-weight:600;color:var(--navy);">${rep.m2?(rep.m2.toFixed(2)+" "+(rep.unidad||"m²")):"—"}</div></div>
-      <div style="padding:10px 14px;border:0.5px solid #D0D9E8;border-bottom:none;"><div style="font-size:8px;font-weight:700;letter-spacing:normal;text-transform:uppercase;color:var(--tx2);margin-bottom:3px;">Técnico responsable</div><div style="font-size:13px;font-weight:600;color:var(--navy);">${rep.tecnico||"—"}</div></div>
-      <div style="padding:10px 14px;border:0.5px solid #D0D9E8;border-right:none;"><div style="font-size:8px;font-weight:700;letter-spacing:normal;text-transform:uppercase;color:var(--tx2);margin-bottom:3px;">Fecha inicio</div><div style="font-size:13px;font-weight:600;color:var(--navy);">${(()=>{const d=new Date(o.fechaInicio||o.fecha);if(!d||isNaN(d))return o.fechaInicio||o.fecha||"—";const m=["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];return d.getDate()+" de "+m[d.getMonth()]+" de "+d.getFullYear();})()} </div></div>
-      <div style="padding:10px 14px;border:0.5px solid #D0D9E8;"><div style="font-size:8px;font-weight:700;letter-spacing:normal;text-transform:uppercase;color:var(--tx2);margin-bottom:3px;">Fecha término</div><div style="font-size:13px;font-weight:600;color:var(--navy);">${(()=>{const d=new Date(o.fechaFin);if(!d||isNaN(d))return o.fechaFin||"—";const m=["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];return d.getDate()+" de "+m[d.getMonth()]+" de "+d.getFullYear();})()} </div></div>
+    <div style="font-size:9px;font-weight:700;text-transform:uppercase;color:#1E3A6E;margin-bottom:8px;">Información del proyecto</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;margin-bottom:14px;">
+      <div style="padding:9px 12px;border:0.5px solid #D0D9E8;border-right:none;border-bottom:none;"><div style="font-size:8px;font-weight:700;text-transform:uppercase;color:var(--tx2);margin-bottom:3px;">Cliente</div><div style="font-size:13px;font-weight:600;color:var(--navy);">${o.cliente||"—"}</div></div>
+      <div style="padding:9px 12px;border:0.5px solid #D0D9E8;border-bottom:none;"><div style="font-size:8px;font-weight:700;text-transform:uppercase;color:var(--tx2);margin-bottom:3px;">Contacto</div><div style="font-size:13px;font-weight:600;color:var(--navy);">${o.contacto||"—"}</div></div>
+      <div style="padding:9px 12px;border:0.5px solid #D0D9E8;border-right:none;border-bottom:none;"><div style="font-size:8px;font-weight:700;text-transform:uppercase;color:var(--tx2);margin-bottom:3px;">Ubicación</div><div style="font-size:13px;font-weight:600;color:var(--navy);">${o.ubicacion||"—"}</div></div>
+      <div style="padding:9px 12px;border:0.5px solid #D0D9E8;border-bottom:none;"><div style="font-size:8px;font-weight:700;text-transform:uppercase;color:var(--tx2);margin-bottom:3px;">Servicio</div><div style="font-size:13px;font-weight:600;color:var(--navy);">${o.servicio||"—"}</div></div>
+      <div style="padding:9px 12px;border:0.5px solid #D0D9E8;border-right:none;border-bottom:none;"><div style="font-size:8px;font-weight:700;text-transform:uppercase;color:var(--tx2);margin-bottom:3px;">Superficie total</div><div style="font-size:13px;font-weight:600;color:var(--navy);">${rep.m2?(rep.m2.toFixed(2)+" "+(rep.unidad||"m²")):"—"}</div></div>
+      <div style="padding:9px 12px;border:0.5px solid #D0D9E8;border-bottom:none;"><div style="font-size:8px;font-weight:700;text-transform:uppercase;color:var(--tx2);margin-bottom:3px;">Técnico responsable</div><div style="font-size:13px;font-weight:600;color:var(--navy);">${rep.tecnico||"—"}</div></div>
+      <div style="padding:9px 12px;border:0.5px solid #D0D9E8;border-right:none;"><div style="font-size:8px;font-weight:700;text-transform:uppercase;color:var(--tx2);margin-bottom:3px;">Fecha inicio</div><div style="font-size:13px;font-weight:600;color:var(--navy);">${(()=>{const d=new Date(o.fechaInicio||o.fecha);if(!d||isNaN(d))return o.fechaInicio||"—";const m=["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];return d.getDate()+" de "+m[d.getMonth()]+" de "+d.getFullYear();})()} </div></div>
+      <div style="padding:9px 12px;border:0.5px solid #D0D9E8;"><div style="font-size:8px;font-weight:700;text-transform:uppercase;color:var(--tx2);margin-bottom:3px;">Fecha término</div><div style="font-size:13px;font-weight:600;color:var(--navy);">${(()=>{const d=new Date(o.fechaFin);if(!d||isNaN(d))return o.fechaFin||"—";const m=["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];return d.getDate()+" de "+m[d.getMonth()]+" de "+d.getFullYear();})()} </div></div>
     </div>
 
     <div class="pdf-section-ttl">Progreso del proyecto</div>
     <div style="display:flex;align-items:center;gap:12px;background:var(--navy);border-radius:10px;padding:14px 16px;margin-bottom:12px;">
       <div style="font-size:32px;font-weight:800;color:#fff;">${o.pct||0}%</div>
       <div>
-        <div style="font-size:11px;color:var(--g2);text-transform:uppercase;letter-spacing:normal;">Avance total</div>
+        <div style="font-size:11px;color:var(--g2);text-transform:uppercase;letter-spacing:1px;">Avance total</div>
         <div style="font-size:12px;color:var(--sky);margin-top:3px;">${etapas.filter(e=>e.estado==='done').length} de ${etapas.length} etapas completadas</div>
       </div>
     </div>
@@ -1898,11 +1893,10 @@ function showPdfPreview(){
 
     ${baPairs.length?`<div class="pdf-section-ttl">Antes y después</div>${baHtml}`:''}
 
-    ${rep.obs?`<div class="pdf-section-ttl" style="font-size:14px;border-left:4px solid var(--blue);padding-left:10px;margin-top:18px;">Conclusiones y Observaciones Finales</div>
-    <div style="background:var(--navy);border-radius:10px;padding:16px 18px;font-size:13px;color:rgba(255,255,255,.85);line-height:1.8;margin-bottom:16px;border-left:4px solid var(--sky);">${rep.obs}</div>`:''}
+    ${rep.obs?`<div style="font-size:11px;font-weight:700;text-transform:uppercase;color:#1E3A6E;border-left:4px solid #1E6FD9;padding-left:10px;margin-top:16px;margin-bottom:8px;">Conclusiones y Observaciones Finales</div><div style="background:#0B1F3A;border-radius:10px;padding:14px 16px;font-size:13px;color:rgba(255,255,255,.85);line-height:1.8;margin-bottom:14px;">${rep.obs}</div>`:''}
 
     <div class="pdf-footer">
-      <img src="${logoColor}" style="height:22px;width:auto;display:block;margin:0 auto 6px;">
+      <img src="${logoSrc}" style="height:22px;width:auto;display:block;margin:0 auto 6px;">
       <div>ROMSA Pisos Industriales · Mexicali, Baja California</div>
       <div class="pdf-stamp">✓ Reporte técnico de obra finalizada</div>
     </div>`;
@@ -1935,15 +1929,13 @@ function checkUrlParams(){
     }
     const o=snap.data();
     obras=[o]; obraActivaId=obraId;
-    mostrarVC(o);
     // Load baPairs from subcollection
-    if(typeof getBaPairsRef==="function"&&getBaPairsRef(obraId)){
-      getBaPairsRef(obraId).orderBy("id","asc").onSnapshot(bpSnap=>{
-        _baPairs = bpSnap.docs.map(d=>d.data());
-        o.baPairs = _baPairs;
-        mostrarVC(o);
-      });
-    }
+    getBaPairsRef(obraId).orderBy("id","asc").onSnapshot(bpSnap=>{
+      _baPairs = bpSnap.docs.map(d=>d.data());
+      o.baPairs = _baPairs;
+      mostrarVC(o);
+    });
+    mostrarVC(o);
   }, err=>{ console.error(err); });
 }
 
@@ -2071,95 +2063,60 @@ function populateMatEtapa(o){
 }
 async 
 function showMatReport(){
-  const o=getO(); if(!o) return;
-  const mats=o.materiales||[];
-  const modal=document.getElementById("modal-mat-report");
-  const body=document.getElementById("mat-report-body");
-  if(!modal||!body) return;
-
-  // Group by material+unit
-  const totals={};
-  const byEtapa={};
+  var o=getO();if(!o)return;
+  var mats=o.materiales||[];
+  var modal=document.getElementById("modal-mat-report");
+  var body=document.getElementById("mat-report-body");
+  if(!modal||!body)return;
+  var totals={};
+  var byEtapa={};
   mats.forEach(function(m){
-    const key=m.nombre+"||"+m.unidad;
+    var key=m.nombre+"||"+m.unidad;
     totals[key]=(totals[key]||0)+m.cantidad;
-    const etapa=m.etapa||"Sin etapa";
-    if(!byEtapa[etapa]) byEtapa[etapa]=[];
+    var etapa=m.etapa||"Sin etapa";
+    if(!byEtapa[etapa])byEtapa[etapa]=[];
     byEtapa[etapa].push(m);
   });
-
-  const now=new Date();
-  const meses=["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
-  const fechaHoy=now.getDate()+" de "+meses[now.getMonth()]+" de "+now.getFullYear();
-
-  // Build HTML
-  var html='';
-
-  // Header
-  html+='<div style="text-align:center;margin-bottom:20px;">';
-  html+='<img src="'+document.getElementById("tb-logo-img").src+'" style="height:28px;width:auto;margin-bottom:8px;"><br>';
-  html+='<div style="font-size:10px;color:#7090B8;margin-bottom:2px;">ROMSA Pisos Industriales · Mexicali, Baja California</div>';
-  html+='</div>';
-
-  html+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">';
-  html+='<div style="font-size:10px;color:#7090B8;">Reporte Interno de Materiales</div>';
-  html+='<div style="font-size:10px;color:#7090B8;">'+fechaHoy+'</div>';
-  html+='</div>';
-  html+='<div style="border-top:2px solid #1E3A6E;margin-bottom:16px;"></div>';
-
-  // Project info
-  html+='<div style="margin-bottom:16px;">';
-  html+='<div style="font-size:16px;font-weight:700;color:#0B1F3A;margin-bottom:2px;">'+o.nombre+'</div>';
-  html+='<div style="font-size:12px;color:#7090B8;">'+(o.cliente||"")+(o.servicio?" · "+o.servicio:"")+'</div>';
-  html+='</div>';
-
-  // Totales
-  html+='<div style="font-size:9px;font-weight:700;color:#1E3A6E;text-transform:uppercase;margin-bottom:8px;">Resumen total de consumo</div>';
-  html+='<div style="border:1px solid #E0E8F0;border-radius:10px;overflow:hidden;margin-bottom:20px;">';
-  html+='<div style="display:grid;grid-template-columns:1fr auto auto;background:#0B1F3A;padding:8px 14px;gap:8px;">';
-  html+='<div style="font-size:9px;font-weight:700;color:rgba(255,255,255,.5);text-transform:uppercase;">Material</div>';
-  html+='<div style="font-size:9px;font-weight:700;color:rgba(255,255,255,.5);text-transform:uppercase;text-align:right;">Cantidad</div>';
-  html+='<div style="font-size:9px;font-weight:700;color:rgba(255,255,255,.5);text-transform:uppercase;text-align:right;min-width:40px;">Unidad</div>';
-  html+='</div>';
-  Object.entries(totals).forEach(function(entry,i){
-    var parts=entry[0].split("||");
-    var nom=parts[0], unit=parts[1];
-    var qty=entry[1];
+  var now=new Date();
+  var meses=["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+  var fechaHoy=now.getDate()+" de "+meses[now.getMonth()]+" de "+now.getFullYear();
+  var html="";
+  html+="<div style='text-align:center;margin-bottom:16px;'>";
+  html+="<img src='"+document.getElementById("tb-logo-img").src+"' style='height:26px;width:auto;margin-bottom:6px;filter:brightness(0) invert(0);'><br>";
+  html+="<div style='font-size:10px;color:#7090B8;'>ROMSA Pisos Industriales · Mexicali, Baja California</div>";
+  html+="</div>";
+  html+="<div style='display:flex;justify-content:space-between;margin-bottom:6px;'><div style='font-size:10px;color:#7090B8;'>Reporte Interno de Materiales</div><div style='font-size:10px;color:#7090B8;'>"+fechaHoy+"</div></div>";
+  html+="<div style='border-top:2px solid #1E3A6E;margin-bottom:14px;'></div>";
+  html+="<div style='margin-bottom:14px;'><div style='font-size:16px;font-weight:700;color:#0B1F3A;'>"+o.nombre+"</div><div style='font-size:12px;color:#7090B8;'>"+(o.cliente||"")+(o.servicio?" · "+o.servicio:"")+"</div></div>";
+  html+="<div style='font-size:9px;font-weight:700;text-transform:uppercase;color:#1E3A6E;margin-bottom:8px;'>Resumen total</div>";
+  html+="<div style='border:1px solid #E0E8F0;border-radius:10px;overflow:hidden;margin-bottom:16px;'>";
+  html+="<div style='display:grid;grid-template-columns:1fr 80px 60px;background:#0B1F3A;padding:8px 12px;'><div style='font-size:9px;color:rgba(255,255,255,.5);text-transform:uppercase;'>Material</div><div style='font-size:9px;color:rgba(255,255,255,.5);text-transform:uppercase;text-align:right;'>Cantidad</div><div style='font-size:9px;color:rgba(255,255,255,.5);text-transform:uppercase;text-align:right;'>Unidad</div></div>";
+  var entries=Object.entries(totals);
+  entries.forEach(function(entry,i){
+    var parts=entry[0].split("||");var qty=entry[1];
     var bg=i%2===0?"#fff":"#F8FAFC";
-    html+='<div style="display:grid;grid-template-columns:1fr auto auto;padding:10px 14px;gap:8px;background:'+bg+';border-top:1px solid #E0E8F0;">';
-    html+='<div style="font-size:13px;font-weight:600;color:#0B1F3A;">'+nom+'</div>';
-    html+='<div style="font-size:13px;font-weight:700;color:#1E6FD9;text-align:right;font-family:monospace;">'+qty.toFixed(2)+'</div>';
-    html+='<div style="font-size:12px;color:#7090B8;text-align:right;min-width:40px;">'+unit+'</div>';
-    html+='</div>';
+    html+="<div style='display:grid;grid-template-columns:1fr 80px 60px;padding:9px 12px;background:"+bg+";border-top:1px solid #E0E8F0;'>";
+    html+="<div style='font-size:13px;font-weight:600;color:#0B1F3A;'>"+parts[0]+"</div>";
+    html+="<div style='font-size:13px;font-weight:700;color:#1E6FD9;text-align:right;font-family:monospace;'>"+qty.toFixed(2)+"</div>";
+    html+="<div style='font-size:12px;color:#7090B8;text-align:right;'>"+parts[1]+"</div>";
+    html+="</div>";
   });
-  html+='</div>';
-
-  // Por etapa
-  html+='<div style="font-size:9px;font-weight:700;color:#1E3A6E;text-transform:uppercase;margin-bottom:8px;">Detalle por etapa</div>';
+  html+="</div>";
+  html+="<div style='font-size:9px;font-weight:700;text-transform:uppercase;color:#1E3A6E;margin-bottom:8px;'>Detalle por etapa</div>";
   Object.entries(byEtapa).forEach(function(entry){
-    var etapa=entry[0], items=entry[1];
-    html+='<div style="margin-bottom:12px;">';
-    html+='<div style="font-size:11px;font-weight:700;color:#0B1F3A;background:#F0F3F8;padding:7px 12px;border-radius:6px 6px 0 0;border:1px solid #E0E8F0;">'+etapa+'</div>';
+    var etapa=entry[0],items=entry[1];
+    html+="<div style='margin-bottom:10px;'>";
+    html+="<div style='font-size:11px;font-weight:700;color:#0B1F3A;background:#F0F3F8;padding:7px 12px;border-radius:6px 6px 0 0;border:1px solid #E0E8F0;'>"+etapa+"</div>";
     items.forEach(function(m){
-      html+='<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border:1px solid #E0E8F0;border-top:none;">';
-      html+='<div>';
-      html+='<div style="font-size:12px;font-weight:600;color:#0B1F3A;">'+m.nombre+'</div>';
-      html+='<div style="font-size:10px;color:#9BB5CF;">'+m.fecha+' · '+m.hora+(m.tecnico?' · '+m.tecnico:'')+'</div>';
-      if(m.nota) html+='<div style="font-size:10px;color:#7090B8;margin-top:1px;">'+m.nota+'</div>';
-      html+='</div>';
-      html+='<div style="text-align:right;flex-shrink:0;margin-left:12px;">';
-      html+='<div style="font-size:14px;font-weight:700;color:#1E6FD9;font-family:monospace;">'+m.cantidad.toFixed(2)+'</div>';
-      html+='<div style="font-size:10px;color:#9BB5CF;">'+m.unidad+'</div>';
-      html+='</div>';
-      html+='</div>';
+      html+="<div style='display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border:1px solid #E0E8F0;border-top:none;'>";
+      html+="<div><div style='font-size:12px;font-weight:600;color:#0B1F3A;'>"+m.nombre+"</div>";
+      html+="<div style='font-size:10px;color:#9BB5CF;'>"+m.fecha+" · "+m.hora+(m.tecnico?" · "+m.tecnico:"")+"</div>";
+      if(m.nota)html+="<div style='font-size:10px;color:#7090B8;'>"+m.nota+"</div>";
+      html+="</div><div style='text-align:right;margin-left:12px;flex-shrink:0;'><div style='font-size:14px;font-weight:700;color:#1E6FD9;font-family:monospace;'>"+m.cantidad.toFixed(2)+"</div><div style='font-size:10px;color:#9BB5CF;'>"+m.unidad+"</div></div></div>";
     });
-    html+='</div>';
+    html+="</div>";
   });
-
-  if(!mats.length){
-    html='<div style="text-align:center;padding:40px;color:#9BB5CF;font-size:14px;">Sin materiales registrados en esta obra</div>';
-  }
-
+  if(!mats.length)html="<div style='text-align:center;padding:40px;color:#9BB5CF;font-size:14px;'>Sin materiales registrados</div>";
   body.innerHTML=html;
   modal.classList.add("open");
 }
@@ -2283,15 +2240,15 @@ function renderDashboard(){
   var activas=obras.filter(function(o){return o.estado==="activa";}).length;
   var upd=obras.reduce(function(s,o){return s+(o.updates||[]).filter(function(u){return new Date(u.ts).toDateString()===today;}).length;},0);
   function el(id){return document.getElementById(id);}
-  if(el("dash-activas")) el("dash-activas").textContent=activas;
-  if(el("dash-total")) el("dash-total").textContent="de "+obras.length+" total";
-  if(el("dash-updates")) el("dash-updates").textContent=upd;
-  if(el("dash-ver-sub")) el("dash-ver-sub").textContent=activas+" activas";
+  if(el("dash-activas"))el("dash-activas").textContent=activas;
+  if(el("dash-total"))el("dash-total").textContent="de "+obras.length+" total";
+  if(el("dash-updates"))el("dash-updates").textContent=upd;
+  if(el("dash-ver-sub"))el("dash-ver-sub").textContent=activas+" activas";
   var cf=obras.filter(function(o){return o.fechaFin;}).sort(function(a,b){return new Date(a.fechaFin)-new Date(b.fechaFin);});
   if(cf.length){
     var dias=Math.ceil((new Date(cf[0].fechaFin)-new Date())/86400000);
     var d=new Date(cf[0].fechaFin);
-    if(el("dash-prox-fecha")) el("dash-prox-fecha").textContent=d.getDate()+" "+meses[d.getMonth()];
+    if(el("dash-prox-fecha"))el("dash-prox-fecha").textContent=d.getDate()+" "+meses[d.getMonth()];
     if(el("dash-prox-dias")){el("dash-prox-dias").textContent=dias>0?dias+" dias":"Hoy";el("dash-prox-dias").style.color=dias<=3?"#EF4444":dias<=7?"#F59E0B":"#10B981";}
   }
   var eEl=el("dash-entregas");
@@ -2325,9 +2282,7 @@ function renderDashboard(){
     obras.forEach(function(o){(o.checkins||[]).forEach(function(ci){if(!lastCI||new Date(ci.fechaISO)>new Date(lastCI.fechaISO))lastCI=ci;});});
     if(lastCI){
       var ini=(lastCI.nombre||"?").split(" ").map(function(w){return w[0];}).join("").slice(0,2).toUpperCase();
-      ciEl.innerHTML="<div style='display:flex;align-items:center;gap:12px;padding:0 2px;'><div style='width:38px;height:38px;border-radius:50%;background:#EEF6FF;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px;font-weight:700;color:#1E6FD9;'>"+ini+"</div><div style='flex:1;'><div style='font-size:13px;font-weight:600;color:#0B1F3A;'>"+lastCI.nombre+"</div><div style='font-size:10px;color:#7090B8;margin-top:2px;'>"+(lastCI.actividad||"Check-in")+" · "+lastCI.hora+"</div></div><div style='font-size:10px;color:#9BB5CF;'>"+lastCI.fecha+"</div></div>";
-    } else {
-      ciEl.textContent="Sin check-ins hoy";
+      ciEl.innerHTML="<div style='display:flex;align-items:center;gap:12px;'><div style='width:36px;height:36px;border-radius:50%;background:#EEF6FF;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#1E6FD9;flex-shrink:0;'>"+ini+"</div><div style='flex:1;'><div style='font-size:13px;font-weight:600;color:#0B1F3A;'>"+lastCI.nombre+"</div><div style='font-size:10px;color:#7090B8;margin-top:2px;'>"+(lastCI.actividad||"Check-in")+" - "+lastCI.hora+"</div></div><div style='font-size:10px;color:#9BB5CF;'>"+lastCI.fecha+"</div></div>";
     }
   }
   var eoEl=el("dash-estado-obras");
