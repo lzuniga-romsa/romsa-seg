@@ -955,7 +955,6 @@ const obrasRef=db?db.collection("obras_seguimiento_v2"):null;
 function getBaPairsRef(obraId){ return obrasRef.doc(obraId).collection("baPairs"); }
 function getUpdatesRef(obraId){ return obrasRef.doc(obraId).collection("updates"); }
 
-// fotos guardadas en subcolección updates
 
 // ─── STATE ────────────────────────────────────────
 let obras = [];
@@ -1055,16 +1054,18 @@ function subscribeObras(){
   });
   obrasRef.orderBy("ts","desc").onSnapshot(snap=>{
     if(_savingBA) return;
+    // Preservar updates cargados antes de reemplazar obras[]
+    const _prevUpdatesMap={};
+    obras.forEach(x=>{ if(x.updates) _prevUpdatesMap[x.id]=x.updates; });
     obras = snap.docs.map(d=>d.data());
+    // Restaurar updates (subcolección, no están en el doc principal)
+    obras.forEach(x=>{ if(_prevUpdatesMap[x.id]) x.updates=_prevUpdatesMap[x.id]; });
     const a = document.querySelector(".screen.active");
     if(a && a.id==="screen-obras") renderObras();
     renderDashboard();
     if(obraActivaId){
       const o=getO();
       if(o){
-        // Preservar updates ya cargados (están en subcolección)
-        const prevUpdates = obras.find(x=>x.id===obraActivaId)?.updates||[];
-        o.updates = prevUpdates;
         document.getElementById("det-pct").textContent=(o.pct||0)+"%";
   const _perfil=getPerfil();
   const _isOwner=_perfil&&o.creadoPor===_perfil.nombre;
@@ -1462,41 +1463,40 @@ async function publicarUpdate(){
   const m2hoy=parseFloat(document.getElementById("upd-m2").value)||0;
   const m2unit=document.getElementById("upd-m2-unit").value;
   try{
-  showToast("⏳ Subiendo fotos...");
-  // Comprimir primero
-  const notaFotosComp = await compressPhotos([...notaFotosBuffer]);
-  const fotosComp = await compressPhotos([...updFotos]);
-  // Subir a Storage → obtener URLs
-  const updId = Date.now();
-  const notaFotos = await uploadFotos(notaFotosComp, o.id, "nota_"+updId);
-  const fotosUrls = await uploadFotos(fotosComp, o.id, "upd_"+updId);
-  const upd={
-    id:updId, ts:updId,
-    etapaId, etapaNombre:etapa?.nombre||"General",
-    pct, nota, notaCliente, notaFotos, m2hoy, m2unit, fotos:fotosUrls,
-    fecha:now.toLocaleDateString("es-MX",{day:"numeric",month:"long",year:"numeric"}),
-    fechaCorta:now.toLocaleDateString("es-MX"),
-    hora:now.toLocaleTimeString("es-MX",{hour:"2-digit",minute:"2-digit"}),
-    tecnico:ci?.nombre||autoFillTecnico()||""
-  };
-  o.updates=o.updates||[];o.updates.unshift(upd);
-  o.pct=pct;
-  document.getElementById("det-pct").textContent=pct+"%";
-  if(etapa){
-    if(pct>=100){ etapa.estado="done"; etapa.fechaCompletada=now.toLocaleDateString("es-MX"); }
-    else if(etapa.estado==="pendiente"){ etapa.estado="active"; }
-  }
-  if(pct>=100){
-    const doneCnt=o.etapas.filter(x=>x.estado==="done").length;
-    o.pct=Math.round((doneCnt/o.etapas.length)*100);
-  }
-  try{
+    showToast("⏳ Procesando fotos...");
+    // Comprimir fotos a base64 compacto
+    const notaFotos = await compressPhotos([...notaFotosBuffer]);
+    const fotos = await compressPhotos([...updFotos]);
+    const updId = Date.now();
+    const upd={
+      id:updId, ts:updId,
+      etapaId, etapaNombre:etapa?.nombre||"General",
+      pct, nota, notaCliente, notaFotos, m2hoy, m2unit, fotos,
+      fecha:now.toLocaleDateString("es-MX",{day:"numeric",month:"long",year:"numeric"}),
+      fechaCorta:now.toLocaleDateString("es-MX"),
+      hora:now.toLocaleTimeString("es-MX",{hour:"2-digit",minute:"2-digit"}),
+      tecnico:ci?.nombre||autoFillTecnico()||""
+    };
+    // Actualizar estado etapa y pct
+    o.pct=pct;
+    if(etapa){
+      if(pct>=100){ etapa.estado="done"; etapa.fechaCompletada=now.toLocaleDateString("es-MX"); etapa.horaCompletada=now.toLocaleTimeString("es-MX",{hour:"2-digit",minute:"2-digit"})+" hrs"; }
+      else if(etapa.estado==="pendiente"){ etapa.estado="active"; }
+    }
+    if(pct>=100){
+      const doneCnt=o.etapas.filter(x=>x.estado==="done").length;
+      o.pct=Math.round((doneCnt/o.etapas.length)*100);
+    }
+    document.getElementById("det-pct").textContent=o.pct+"%";
     showToast("⏳ Guardando...");
-    // Guardar update en subcolección (sin límite de 1MB)
+    // 1. Guardar update en su propia subcolección (sin límite 1MB)
     await saveUpdate(o.id, upd);
-    // Guardar doc principal (sin updates ni fotos base64)
+    // 2. Guardar doc principal (sin updates ni baPairs)
     await saveObra(o);
-
+    // 3. Agregar al array local para que se vea sin recargar
+    o.updates = o.updates||[];
+    o.updates.unshift(upd);
+    // Limpiar form
     document.getElementById("upd-nota").value="";
     document.getElementById("upd-nota-cliente").value="";
     notaFotosBuffer=[];renderNotaFotoPreview();
@@ -1504,13 +1504,14 @@ async function publicarUpdate(){
     document.getElementById("upd-pct-range").value=0;
     document.getElementById("upd-pct-val").textContent="0%";
     updFotos=[];renderUpdFotoPreview();
-    // Recargar updates desde subcolección
-    await loadUpdates(o.id);
     renderUpdFeed(o);renderResumen(o);
     showToast("✅ Publicado — el cliente ya lo ve en tiempo real");
-  }catch(e){showToast("❌ Error: "+e.message);}
-  } catch(e){ showToast("❌ Error al subir: "+e.message); }
+  }catch(e){
+    console.error("publicarUpdate error:",e);
+    showToast("❌ Error: "+e.message);
+  }
 }
+
 function renderUpdFeed(o){
   const el=document.getElementById("updates-feed");
   const updates=(o.updates||[]).sort((a,b)=>b.ts-a.ts);
@@ -1627,20 +1628,18 @@ async function handleBaFile(e, pairId, slot){
   const f = e.target.files && e.target.files[0];
   if(!f) return;
   const capturedObraId = obraActivaId;
-  showToast("⏳ Subiendo foto...");
+  showToast("⏳ Procesando foto...");
   try{
     const dataUrl = await readFileAsDataURL(f);
-    const jpeg = await forceJpeg(dataUrl, 900, 0.75);
-    // Subir a Storage
-    const path = "obras/"+capturedObraId+"/ba_"+pairId+"_"+slot+"_"+Date.now()+".jpg";
-    const url = await uploadFotoToStorage(jpeg, path);
+    // Comprimir a 500px, 65% — baPairs tienen su propio doc, no hay límite 1MB
+    const jpeg = await forceJpeg(dataUrl, 500, 0.65);
     const pairIdx = _baPairs.findIndex(x=>x.id===pairId);
     if(pairIdx<0){ showToast("⚠️ Par no encontrado"); return; }
     const pair = _baPairs[pairIdx];
     const updateData = {};
-    updateData[slot] = url;
+    updateData[slot] = jpeg;
     await getBaPairsRef(capturedObraId).doc(String(pairId)).update(updateData);
-    pair[slot] = url;
+    pair[slot] = jpeg;
     renderBaPairsFromCache();
     showToast("✅ Foto guardada");
   }catch(err){
