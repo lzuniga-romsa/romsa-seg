@@ -953,6 +953,9 @@ if(typeof firebase!=="undefined"&&!firebase.apps.length) firebase.initializeApp(
 const db=(typeof firebase!=="undefined")?firebase.firestore():null;
 const obrasRef=db?db.collection("obras_seguimiento_v2"):null;
 function getBaPairsRef(obraId){ return obrasRef.doc(obraId).collection("baPairs"); }
+function getUpdatesRef(obraId){ return obrasRef.doc(obraId).collection("updates"); }
+
+// fotos guardadas en subcolección updates
 
 // ─── STATE ────────────────────────────────────────
 let obras = [];
@@ -1025,11 +1028,20 @@ async function compressPhotos(photos){
   return out;
 }
 
-async function saveObra(o){
+async function saveObra(o, skipUpdates=false){
   try{
-    await obrasRef.doc(o.id).set(JSON.parse(JSON.stringify(o)));
+    // Guardar doc principal SIN updates ni baPairs (van en subcolecciones)
+    const main = JSON.parse(JSON.stringify(o));
+    delete main.updates;
+    delete main.baPairs;
+    await obrasRef.doc(o.id).set(main);
   }
   catch(e){ console.error(e); showToast("⚠️ Error: "+e.message); }
+}
+
+async function saveUpdate(obraId, upd){
+  const data = JSON.parse(JSON.stringify(upd));
+  await getUpdatesRef(obraId).doc(String(upd.id)).set(data);
 }
 
 function subscribeObras(){
@@ -1050,6 +1062,9 @@ function subscribeObras(){
     if(obraActivaId){
       const o=getO();
       if(o){
+        // Preservar updates ya cargados (están en subcolección)
+        const prevUpdates = obras.find(x=>x.id===obraActivaId)?.updates||[];
+        o.updates = prevUpdates;
         document.getElementById("det-pct").textContent=(o.pct||0)+"%";
   const _perfil=getPerfil();
   const _isOwner=_perfil&&o.creadoPor===_perfil.nombre;
@@ -1189,7 +1204,8 @@ function abrirObra(id){
   renderResumen(o);
   updateClienteBtn();
   loadBaPairs(o.id);
-
+  // Cargar updates desde subcolección
+  loadUpdates(o.id).then(()=>{ renderUpdFeed(getO()); renderResumen(getO()); });
 }
 function getO(){return obras.find(o=>o.id===obraActivaId);}
 
@@ -1445,13 +1461,19 @@ async function publicarUpdate(){
   const notaCliente=document.getElementById("upd-nota-cliente").value.trim();
   const m2hoy=parseFloat(document.getElementById("upd-m2").value)||0;
   const m2unit=document.getElementById("upd-m2-unit").value;
-  showToast("⏳ Procesando fotos...");
-  const notaFotos=await compressPhotos([...notaFotosBuffer]);
-  const fotosComprimidas=await compressPhotos([...updFotos]);
+  try{
+  showToast("⏳ Subiendo fotos...");
+  // Comprimir primero
+  const notaFotosComp = await compressPhotos([...notaFotosBuffer]);
+  const fotosComp = await compressPhotos([...updFotos]);
+  // Subir a Storage → obtener URLs
+  const updId = Date.now();
+  const notaFotos = await uploadFotos(notaFotosComp, o.id, "nota_"+updId);
+  const fotosUrls = await uploadFotos(fotosComp, o.id, "upd_"+updId);
   const upd={
-    id:Date.now(),ts:Date.now(),
-    etapaId,etapaNombre:etapa?.nombre||"General",
-    pct,nota,notaCliente,notaFotos,m2hoy,m2unit,fotos:fotosComprimidas,
+    id:updId, ts:updId,
+    etapaId, etapaNombre:etapa?.nombre||"General",
+    pct, nota, notaCliente, notaFotos, m2hoy, m2unit, fotos:fotosUrls,
     fecha:now.toLocaleDateString("es-MX",{day:"numeric",month:"long",year:"numeric"}),
     fechaCorta:now.toLocaleDateString("es-MX"),
     hora:now.toLocaleTimeString("es-MX",{hour:"2-digit",minute:"2-digit"}),
@@ -1464,14 +1486,15 @@ async function publicarUpdate(){
     if(pct>=100){ etapa.estado="done"; etapa.fechaCompletada=now.toLocaleDateString("es-MX"); }
     else if(etapa.estado==="pendiente"){ etapa.estado="active"; }
   }
-  // Recalc pct from done etapas if 100%
   if(pct>=100){
     const doneCnt=o.etapas.filter(x=>x.estado==="done").length;
     o.pct=Math.round((doneCnt/o.etapas.length)*100);
   }
   try{
-    // Compress photos before saving
     showToast("⏳ Guardando...");
+    // Guardar update en subcolección (sin límite de 1MB)
+    await saveUpdate(o.id, upd);
+    // Guardar doc principal (sin updates ni fotos base64)
     await saveObra(o);
 
     document.getElementById("upd-nota").value="";
@@ -1481,9 +1504,12 @@ async function publicarUpdate(){
     document.getElementById("upd-pct-range").value=0;
     document.getElementById("upd-pct-val").textContent="0%";
     updFotos=[];renderUpdFotoPreview();
+    // Recargar updates desde subcolección
+    await loadUpdates(o.id);
     renderUpdFeed(o);renderResumen(o);
     showToast("✅ Publicado — el cliente ya lo ve en tiempo real");
   }catch(e){showToast("❌ Error: "+e.message);}
+  } catch(e){ showToast("❌ Error al subir: "+e.message); }
 }
 function renderUpdFeed(o){
   const el=document.getElementById("updates-feed");
@@ -1546,9 +1572,11 @@ async function delUpdate(id){
   const o=getO();if(!o)return;
   withEditPermission(o, async ()=>{
     if(!confirm("¿Borrar esta actualización?"))return;
-    o.updates=o.updates.filter(u=>u.id!==id);
-    await saveObra(o);
-    renderUpdFeed(o);renderResumen(o);showToast("🗑 Actualización eliminada");
+    try{
+      await deleteUpdate(o.id, id);
+      o.updates=(o.updates||[]).filter(u=>u.id!==id);
+      renderUpdFeed(o);renderResumen(o);showToast("🗑 Actualización eliminada");
+    }catch(e){showToast("❌ Error: "+e.message);}
   });
 }
 function delFotoUpdate(updId,fotoIdx){
@@ -1599,22 +1627,20 @@ async function handleBaFile(e, pairId, slot){
   const f = e.target.files && e.target.files[0];
   if(!f) return;
   const capturedObraId = obraActivaId;
-  showToast("⏳ Procesando foto...");
+  showToast("⏳ Subiendo foto...");
   try{
-    // Force convert to JPEG via canvas regardless of source format (HEIC, PNG, etc)
     const dataUrl = await readFileAsDataURL(f);
-    const jpeg = await forceJpeg(dataUrl, 500, 0.6);
-    // Only store the pure base64 data after the comma — avoids header issues
-    const b64 = jpeg.split(",")[1];
-    if(!b64 || b64.length < 100){ showToast("⚠️ Error procesando imagen"); return; }
+    const jpeg = await forceJpeg(dataUrl, 900, 0.75);
+    // Subir a Storage
+    const path = "obras/"+capturedObraId+"/ba_"+pairId+"_"+slot+"_"+Date.now()+".jpg";
+    const url = await uploadFotoToStorage(jpeg, path);
     const pairIdx = _baPairs.findIndex(x=>x.id===pairId);
     if(pairIdx<0){ showToast("⚠️ Par no encontrado"); return; }
     const pair = _baPairs[pairIdx];
-    // Use update() with only the changed field — avoids rewriting the whole doc
     const updateData = {};
-    updateData[slot] = b64;
+    updateData[slot] = url;
     await getBaPairsRef(capturedObraId).doc(String(pairId)).update(updateData);
-    pair[slot] = jpeg; // keep full data URL in local cache for display
+    pair[slot] = url;
     renderBaPairsFromCache();
     showToast("✅ Foto guardada");
   }catch(err){
@@ -1789,10 +1815,12 @@ function mostrarVC(o){
       </div>
     </div>`).join("");
 
-  // Updates — FULL TIMELINE all photos
-  const updates=(o.updates||[]).sort((a,b)=>b.ts-a.ts);
-  const vcFeed=document.getElementById("vc-updates-feed");
-  if(!updates.length){
+  // Updates — cargar desde subcolección si es vista cliente pública
+  const params=new URLSearchParams(window.location.search);
+  const isPublic=!!params.get("obra");
+  async function renderVCUpdates(updates){
+      const vcFeed=document.getElementById("vc-updates-feed");
+    if(!updates.length){
     vcFeed.innerHTML='<div style="text-align:center;padding:28px;color:rgba(255,255,255,.25);font-size:13px;">El equipo aún no ha publicado actualizaciones.</div>';
   } else {
     vcFeed.innerHTML=updates.map(u=>`
@@ -1818,6 +1846,14 @@ function mostrarVC(o){
           ${(u.notaFotos||[]).length?`<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:3px;margin-top:8px;">${(u.notaFotos||[]).map(src=>`<div onclick="verImg('${src}')" style="aspect-ratio:1;border-radius:5px;overflow:hidden;cursor:pointer;"><img src="${src}" style="width:100%;height:100%;object-fit:cover;"></div>`).join("")}</div>`:""}
         </div>`:''}
       </div>`).join("");
+    }
+  }
+  if(isPublic && o.id){
+    getUpdatesRef(o.id).orderBy("ts","desc").get()
+      .then(snap=>renderVCUpdates(snap.docs.map(d=>d.data())))
+      .catch(()=>renderVCUpdates(o.updates||[]));
+  } else {
+    renderVCUpdates((o.updates||[]).sort((a,b)=>b.ts-a.ts));
   }
 
   // Antes/Después — cargar desde subcolección Firestore para vista cliente
@@ -2240,6 +2276,17 @@ async function delMaterial(id){
 
 // ─── BA PAIRS SUBCOLLECTION ───────────────────────
 // _baPairs declared in state block above
+
+async function loadUpdates(obraId){
+  const o = obras.find(x=>x.id===obraId);
+  if(!o) return;
+  const snap = await getUpdatesRef(obraId).orderBy("ts","desc").get();
+  o.updates = snap.docs.map(d=>d.data());
+}
+
+async function deleteUpdate(obraId, updId){
+  await getUpdatesRef(obraId).doc(String(updId)).delete();
+}
 
 function subscribeBaPairs(obraId){
   if(_baPairsUnsub){ _baPairsUnsub(); _baPairsUnsub=null; }
