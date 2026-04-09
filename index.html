@@ -2120,7 +2120,7 @@ function showMatReport(){
   body.innerHTML=html;
   modal.classList.add("open");
 }
-function registrarMaterial(){
+async function registrarMaterial(){
   const o=getO();if(!o)return;
   const nom=document.getElementById("mat-nombre").value.trim();
   const cant=parseFloat(document.getElementById("mat-cantidad").value)||0;
@@ -2188,7 +2188,7 @@ function renderMateriales(o){
       </div>
     </div>`).join("");
 }
-async function delMaterial(id){
+async async function delMaterial(id){
   const o=getO();if(!o)return;
   withEditPermission(o,async()=>{
     o.materiales=o.materiales.filter(m=>m.id!==id);
