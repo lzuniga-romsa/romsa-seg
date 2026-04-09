@@ -1778,7 +1778,7 @@ function mostrarVC(o){
   }
 
   // Antes/Después
-  const baPairs=(o.baPairs||[]).filter(x=>x.before||x.after);
+  const baPairs=(_baPairs.length?_baPairs:(o.baPairs||[])).filter(x=>(x.before&&x.before.length>100)||(x.after&&x.after.length>100));
   const baSec=document.getElementById("vc-ba-section");
   if(baPairs.length){
     baSec.style.display="block";
@@ -1807,7 +1807,7 @@ function showPdfPreview(){
   const rep=o.reporte||{};
   const updates=(o.updates||[]).sort((a,b)=>a.ts-b.ts);
   const etapas=o.etapas||[];
-  const baPairs=(o.baPairs||[]).filter(x=>x.before||x.after);
+  const baPairs=(_baPairs.length?_baPairs:(o.baPairs||[])).filter(x=>(x.before&&x.before.length>100)||(x.after&&x.after.length>100));
   const logoSrc=document.getElementById("tb-logo-img").src;
 
   const etapasHtml=etapas.map(e=>`
@@ -1911,13 +1911,15 @@ function checkUrlParams(){
     }
     const o=snap.data();
     obras=[o]; obraActivaId=obraId;
-    // Load baPairs from subcollection
-    getBaPairsRef(obraId).orderBy("id","asc").onSnapshot(bpSnap=>{
-      _baPairs = bpSnap.docs.map(d=>d.data());
-      o.baPairs = _baPairs;
-      mostrarVC(o);
-    });
     mostrarVC(o);
+    // Load baPairs from subcollection
+    if(typeof getBaPairsRef==="function"&&getBaPairsRef(obraId)){
+      getBaPairsRef(obraId).orderBy("id","asc").onSnapshot(bpSnap=>{
+        _baPairs = bpSnap.docs.map(d=>d.data());
+        o.baPairs = _baPairs;
+        mostrarVC(o);
+      });
+    }
   }, err=>{ console.error(err); });
 }
 
