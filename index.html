@@ -946,7 +946,7 @@ const _fbCfg = {
 };
 if(typeof firebase!=="undefined"&&!firebase.apps.length) firebase.initializeApp(_fbCfg);
 const db=(typeof firebase!=="undefined")?firebase.firestore():null;
-const obrasRef=db?db.collection("obras_seguimiento"):null;
+const obrasRef=db?db.collection("obras_seguimiento_v2"):null;
 function getBaPairsRef(obraId){ return obrasRef.doc(obraId).collection("baPairs"); }
 
 // ─── STATE ────────────────────────────────────────
