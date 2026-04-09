@@ -2189,7 +2189,7 @@ function renderMateriales(o){
       </div>
     </div>`).join("");
 }
-async async function delMaterial(id){
+async function delMaterial(id){
   const o=getO();if(!o)return;
   withEditPermission(o,async()=>{
     o.materiales=o.materiales.filter(m=>m.id!==id);
