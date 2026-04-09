@@ -404,59 +404,23 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
 
     <!-- OBRA DETALLE -->
     <div id="screen-dashboard" class="screen">
-      <div style="background:#0B1F3A;padding:16px 18px 16px;">
-        <div style="font-size:9px;font-weight:700;color:#4A6A8A;letter-spacing:2px;text-transform:uppercase;margin-bottom:4px;">Resumen operativo · Hoy</div>
-        <div style="font-size:20px;font-weight:800;color:#fff;line-height:1.2;margin-bottom:2px;">Control total de tu <span style="color:#60A5FA;">obra en campo</span></div>
-        <div style="font-size:11px;color:#4A6A8A;margin-bottom:0;">Seguimiento · GPS · Evidencia en tiempo real</div>
+      <div style="background:#0B1F3A;padding:16px 18px;">
+        <div style="font-size:9px;font-weight:700;color:#4A6A8A;letter-spacing:2px;text-transform:uppercase;margin-bottom:4px;">Resumen operativo</div>
+        <div style="font-size:18px;font-weight:800;color:#fff;line-height:1.2;">Control total de tu <span style="color:#60A5FA;">obra en campo</span></div>
       </div>
       <div style="background:#F0F3F8;padding:16px 18px;min-height:70vh;">
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px;">
-          <div style="background:#fff;border-radius:12px;border:1px solid #E0E8F0;padding:12px 10px;">
-            <div style="font-size:8px;font-weight:700;color:#7090B8;letter-spacing:.8px;text-transform:uppercase;margin-bottom:5px;">Activas</div>
-            <div id="dash-activas" style="font-size:28px;font-weight:900;color:#0B1F3A;line-height:1;">—</div>
-            <div id="dash-total" style="font-size:9px;color:#10B981;font-weight:700;margin-top:3px;"></div>
-          </div>
-          <div style="background:#fff;border-radius:12px;border:1px solid #E0E8F0;padding:12px 10px;">
-            <div style="font-size:8px;font-weight:700;color:#7090B8;letter-spacing:.8px;text-transform:uppercase;margin-bottom:5px;">Updates hoy</div>
-            <div id="dash-updates" style="font-size:28px;font-weight:900;color:#0B1F3A;line-height:1;">—</div>
-            <div style="font-size:9px;color:#1E6FD9;font-weight:700;margin-top:3px;">publicados</div>
-          </div>
-          <div style="background:#fff;border-radius:12px;border:1px solid #E0E8F0;padding:12px 10px;">
-            <div style="font-size:8px;font-weight:700;color:#7090B8;letter-spacing:.8px;text-transform:uppercase;margin-bottom:5px;">Próx. entrega</div>
-            <div id="dash-prox-fecha" style="font-size:15px;font-weight:900;color:#0B1F3A;line-height:1;">—</div>
-            <div id="dash-prox-dias" style="font-size:9px;font-weight:700;margin-top:3px;color:#F59E0B;"></div>
-          </div>
+          <div style="background:#fff;border-radius:12px;border:1px solid #E0E8F0;padding:12px 10px;"><div style="font-size:8px;font-weight:700;color:#7090B8;text-transform:uppercase;margin-bottom:5px;">Activas</div><div id="dash-activas" style="font-size:26px;font-weight:900;color:#0B1F3A;">-</div><div id="dash-total" style="font-size:9px;color:#10B981;font-weight:700;margin-top:2px;"></div></div>
+          <div style="background:#fff;border-radius:12px;border:1px solid #E0E8F0;padding:12px 10px;"><div style="font-size:8px;font-weight:700;color:#7090B8;text-transform:uppercase;margin-bottom:5px;">Updates hoy</div><div id="dash-updates" style="font-size:26px;font-weight:900;color:#0B1F3A;">-</div><div style="font-size:9px;color:#1E6FD9;font-weight:700;margin-top:2px;">publicados</div></div>
+          <div style="background:#fff;border-radius:12px;border:1px solid #E0E8F0;padding:12px 10px;"><div style="font-size:8px;font-weight:700;color:#7090B8;text-transform:uppercase;margin-bottom:5px;">Prox entrega</div><div id="dash-prox-fecha" style="font-size:14px;font-weight:900;color:#0B1F3A;">-</div><div id="dash-prox-dias" style="font-size:9px;font-weight:700;margin-top:2px;color:#F59E0B;"></div></div>
         </div>
         <div style="background:#fff;border-radius:12px;border:1px solid #E0E8F0;overflow:hidden;margin-bottom:10px;">
-          <div style="padding:11px 14px;border-bottom:1px solid #F0F3F8;display:flex;align-items:center;justify-content:space-between;">
-            <div style="font-size:11px;font-weight:700;color:#0B1F3A;">Próximas entregas</div>
-            <div onclick="goScreen('obras')" style="font-size:10px;font-weight:600;color:#1E6FD9;cursor:pointer;">Ver todas →</div>
-          </div>
+          <div style="padding:11px 14px;border-bottom:1px solid #F0F3F8;display:flex;align-items:center;justify-content:space-between;"><div style="font-size:11px;font-weight:700;color:#0B1F3A;">Proximas entregas</div><div onclick="goScreen('obras')" style="font-size:10px;font-weight:600;color:#1E6FD9;cursor:pointer;">Ver todas</div></div>
           <div id="dash-entregas"><div style="padding:14px;font-size:12px;color:#9BB5CF;">Cargando...</div></div>
         </div>
-        <div id="dash-rec-wrap" style="display:none;background:#0B1F3A;border-radius:12px;padding:14px;margin-bottom:10px;">
-          <div style="font-size:9px;font-weight:700;color:#4A6A8A;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:4px;">Obra más reciente</div>
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
-            <div style="min-width:0;flex:1;">
-              <div id="dash-rec-nom" style="font-size:13px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
-              <div id="dash-rec-meta" style="font-size:10px;color:#4A6A8A;margin-top:2px;"></div>
-            </div>
-            <button id="dash-rec-btn" style="background:#1E6FD9;color:#fff;font-size:11px;font-weight:700;padding:8px 12px;border-radius:8px;border:none;cursor:pointer;font-family:var(--font);flex-shrink:0;">Abrir →</button>
-          </div>
-        </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-          <button onclick="showNueva()" style="background:#1E6FD9;border:none;border-radius:12px;padding:13px;display:flex;align-items:center;gap:9px;cursor:pointer;font-family:var(--font);">
-            <div style="width:28px;height:28px;background:rgba(255,255,255,.15);border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 2v10M2 7h10" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></svg>
-            </div>
-            <div style="text-align:left;"><div style="font-size:12px;font-weight:700;color:#fff;">Nueva obra</div><div style="font-size:9px;color:rgba(255,255,255,.6);">Registrar</div></div>
-          </button>
-          <button onclick="goScreen('obras')" style="background:#fff;border:1px solid #E0E8F0;border-radius:12px;padding:13px;display:flex;align-items:center;gap:9px;cursor:pointer;font-family:var(--font);">
-            <div style="width:28px;height:28px;background:#F0F3F8;border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="2" y="2" width="4" height="4" rx="1" stroke="#0B1F3A" stroke-width="1.2"/><rect x="8" y="2" width="4" height="4" rx="1" stroke="#0B1F3A" stroke-width="1.2"/><rect x="2" y="8" width="4" height="4" rx="1" stroke="#0B1F3A" stroke-width="1.2"/><rect x="8" y="8" width="4" height="4" rx="1" stroke="#0B1F3A" stroke-width="1.2"/></svg>
-            </div>
-            <div style="text-align:left;"><div style="font-size:12px;font-weight:700;color:#0B1F3A;">Ver obras</div><div id="dash-ver-sub" style="font-size:9px;color:#7090B8;"></div></div>
-          </button>
+          <button onclick="showNueva()" style="background:#1E6FD9;border:none;border-radius:12px;padding:13px;display:flex;align-items:center;gap:9px;cursor:pointer;font-family:var(--font);"><div style="width:28px;height:28px;background:rgba(255,255,255,.15);border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 2v10M2 7h10" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></svg></div><div style="text-align:left;"><div style="font-size:12px;font-weight:700;color:#fff;">Nueva obra</div><div style="font-size:9px;color:rgba(255,255,255,.6);">Registrar</div></div></button>
+          <button onclick="goScreen('obras')" style="background:#fff;border:1px solid #E0E8F0;border-radius:12px;padding:13px;display:flex;align-items:center;gap:9px;cursor:pointer;font-family:var(--font);"><div style="width:28px;height:28px;background:#F0F3F8;border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="2" y="2" width="4" height="4" rx="1" stroke="#0B1F3A" stroke-width="1.2"/><rect x="8" y="2" width="4" height="4" rx="1" stroke="#0B1F3A" stroke-width="1.2"/><rect x="2" y="8" width="4" height="4" rx="1" stroke="#0B1F3A" stroke-width="1.2"/><rect x="8" y="8" width="4" height="4" rx="1" stroke="#0B1F3A" stroke-width="1.2"/></svg></div><div style="text-align:left;"><div style="font-size:12px;font-weight:700;color:#0B1F3A;">Ver obras</div><div id="dash-ver-sub" style="font-size:9px;color:#7090B8;"></div></div></button>
         </div>
       </div>
     </div>
@@ -790,23 +754,6 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
     </div>
   </div>
 </div>
-<div class="moverlay" id="modal-ci-ob">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <div style="text-align:center;margin-bottom:14px;">
-      <div style="font-size:26px;margin-bottom:8px;">📍</div>
-      <div style="font-size:17px;font-weight:700;color:var(--navy);">Check-in del día</div>
-      <div style="font-size:12px;color:var(--tx2);margin-top:3px;">Registra tu presencia antes de comenzar</div>
-    </div>
-    <div class="fg"><label class="flabel">Tu nombre <span class="req">*</span></label><input class="finput" id="ci-ob3-nombre" placeholder="Nombre completo"></div>
-    <div class="fg"><label class="flabel">Ubicación</label><input class="finput" id="ci-ob3-ubic" placeholder="Planta, nave, ciudad..."></div>
-    <div style="background:var(--off);border-radius:8px;padding:10px 13px;display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
-      <span style="font-size:11px;color:var(--tx2);">Hora de entrada</span>
-      <span id="ci-ob3-hora" style="font-family:var(--mono);font-size:14px;font-weight:700;color:var(--navy);">—</span>
-    </div>
-    <button class="btn btn-primary btn-block" onclick="doCI()">✓ Registrar y continuar</button>
-  </div>
-</div>
 <!-- MODAL NUEVA OBRA -->
 <div class="moverlay" id="modal-nueva">
   <div class="modal">
@@ -956,7 +903,8 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
 </div>
 
 <script>
-// init
+// Logo injected separately to avoid JS parse issues
+// logos set by dedicated script tag below
 
 // ─── FIREBASE ─────────────────────────────────────
 const _fbCfg = {
@@ -968,8 +916,8 @@ const _fbCfg = {
   appId: "1:123562811640:web:88b8ebe51f5c326fcadb0d"
 };
 if(typeof firebase!=="undefined"&&!firebase.apps.length) firebase.initializeApp(_fbCfg);
-const db = (typeof firebase!=="undefined") ? firebase.firestore() : null;
-const obrasRef = db ? db.collection("obras_seguimiento") : null;
+const db=(typeof firebase!=="undefined")?firebase.firestore():null;
+const obrasRef=db?db.collection("obras_seguimiento"):null;
 function getBaPairsRef(obraId){ return obrasRef.doc(obraId).collection("baPairs"); }
 
 // ─── STATE ────────────────────────────────────────
@@ -1080,11 +1028,11 @@ function subscribeObras(){
 function goScreen(n){
   document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
   document.querySelectorAll(".nb,.snav").forEach(b=>b.classList.remove("active"));
-  const sc=document.getElementById("screen-"+n);
+  var sc=document.getElementById("screen-"+n);
   if(sc) sc.classList.add("active");
   document.getElementById("nb-"+n)?.classList.add("active");
   document.getElementById("snav-"+n)?.classList.add("active");
-  document.getElementById("fab").style.display=n==="obras"?"flex":"none";
+  document.getElementById("fab").style.display = n==="obras"?"flex":"none";
   if(n==="dashboard") renderDashboard();
   if(n==="obras"){
     obraActivaId=null;
@@ -2197,6 +2145,60 @@ function renderBaPairsFromCache(){
     </div>`).join("");
 }
 
+
+function renderDashboard(){
+  var meses=["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+  var today=new Date().toDateString();
+  var activas=obras.filter(function(o){return o.estado==="activa";}).length;
+  var upd=obras.reduce(function(s,o){return s+(o.updates||[]).filter(function(u){return new Date(u.ts).toDateString()===today;}).length;},0);
+  function el(id){return document.getElementById(id);}
+  if(el("dash-activas")) el("dash-activas").textContent=activas;
+  if(el("dash-total")) el("dash-total").textContent="de "+obras.length+" total";
+  if(el("dash-updates")) el("dash-updates").textContent=upd;
+  if(el("dash-ver-sub")) el("dash-ver-sub").textContent=activas+" activas";
+  var cf=obras.filter(function(o){return o.fechaFin;}).sort(function(a,b){return new Date(a.fechaFin)-new Date(b.fechaFin);});
+  if(cf.length){
+    var dias=Math.ceil((new Date(cf[0].fechaFin)-new Date())/86400000);
+    var d=new Date(cf[0].fechaFin);
+    if(el("dash-prox-fecha")) el("dash-prox-fecha").textContent=d.getDate()+" "+meses[d.getMonth()];
+    if(el("dash-prox-dias")){el("dash-prox-dias").textContent=dias>0?dias+" dias":"Hoy";el("dash-prox-dias").style.color=dias<=3?"#EF4444":dias<=7?"#F59E0B":"#10B981";}
+  }
+  var eEl=el("dash-entregas");
+  if(eEl){
+    eEl.innerHTML="";
+    if(cf.length){
+      cf.slice(0,3).forEach(function(obra,i){
+        var dias=Math.ceil((new Date(obra.fechaFin)-new Date())/86400000);
+        var col=dias<=3?"#EF4444":dias<=7?"#F59E0B":"#10B981";
+        var d=new Date(obra.fechaFin);
+        var row=document.createElement("div");
+        row.style.cssText="padding:10px 14px;"+(i<Math.min(cf.length,3)-1?"border-bottom:1px solid #F0F3F8;":"")+"display:flex;align-items:center;gap:10px;cursor:pointer;";
+        var bar=document.createElement("div");
+        bar.style.cssText="width:3px;height:36px;background:"+col+";border-radius:2px;flex-shrink:0;";
+        var info=document.createElement("div");
+        info.style.cssText="flex:1;min-width:0;";
+        var nom=document.createElement("div");
+        nom.style.cssText="font-size:12px;font-weight:600;color:#0B1F3A;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;";
+        nom.textContent=obra.nombre;
+        var cli=document.createElement("div");
+        cli.style.cssText="font-size:10px;color:#7090B8;";
+        cli.textContent=obra.cliente||"";
+        info.appendChild(nom);info.appendChild(cli);
+        var fecha=document.createElement("div");
+        fecha.style.cssText="text-align:right;flex-shrink:0;";
+        fecha.innerHTML="<div style=font-size:11px;font-weight:700;color:"+col+">"+d.getDate()+" "+meses[d.getMonth()]+"</div><div style=font-size:9px;color:#9BB5CF>"+(dias>0?dias+"d":"Hoy")+"</div>";
+        row.appendChild(bar);row.appendChild(info);row.appendChild(fecha);
+        (function(id){row.onclick=function(){goScreen("obras");setTimeout(function(){abrirObra(id);},200);};})(obra.id);
+        eEl.appendChild(row);
+      });
+    } else {
+      var msg=document.createElement("div");
+      msg.style.cssText="padding:14px;font-size:12px;color:#9BB5CF;";
+      msg.textContent="Sin fechas de entrega registradas";
+      eEl.appendChild(msg);
+    }
+  }
+}
 // ─── PERFIL TÉCNICO ───────────────────────────────
 function getPerfil(){ try{const d=localStorage.getItem("romsa_perfil");return d?JSON.parse(d):null;}catch(e){return null;} }
 function savePerfil(p){ try{localStorage.setItem("romsa_perfil",JSON.stringify(p));}catch(e){} }
@@ -2232,102 +2234,13 @@ function autoFillTecnico(){
   const p=getPerfil();
   return p?.nombre||"";
 }
-
-
-function checkCI(){
-  if(localStorage.getItem("romsa_ci_hoy")===new Date().toDateString()) return;
-  var p=getPerfil();
-  var inp=document.getElementById("ci-ob3-nombre");
-  if(inp&&p&&p.nombre) inp.value=p.nombre;
-  var tick=function(){
-    var e=document.getElementById("ci-ob3-hora");
-    if(e) e.textContent=new Date().toLocaleTimeString("es-MX",{hour:"2-digit",minute:"2-digit",second:"2-digit"});
-    setTimeout(tick,1000);
-  };
-  tick();
-  var m=document.getElementById("modal-ci-ob");
-  if(m) m.classList.add("open");
-}
-function doCI(){
-  var nom=(document.getElementById("ci-ob3-nombre").value||"").trim();
-  if(!nom){showToast("⚠️ Tu nombre es requerido");return;}
-  var ubic=(document.getElementById("ci-ob3-ubic").value||"").trim();
-  var now=new Date();
-  localStorage.setItem("romsa_ci_hoy",now.toDateString());
-  savePerfil({nombre:nom,puesto:"",tel:""});
-  obras.forEach(function(o){
-    if(o.estado==="activa"){
-      o.checkins=o.checkins||[];
-      o.checkins.unshift({id:Date.now(),nombre:nom,ubicacion:ubic,actividad:"Check-in inicio de jornada",fecha:now.toLocaleDateString("es-MX"),hora:now.toLocaleTimeString("es-MX",{hour:"2-digit",minute:"2-digit"}),fechaISO:now.toISOString()});
-      saveObra(o);
-    }
-  });
-  closeModal("modal-ci-ob");
-  var tb=document.getElementById("tb-tecnico-name");
-  if(tb) tb.textContent=nom;
-  showToast("✅ Check-in — "+now.toLocaleTimeString("es-MX",{hour:"2-digit",minute:"2-digit"}));
-}
-function renderDashboard(){
-  var meses=["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
-  var today=new Date().toDateString();
-  var activas=obras.filter(function(o){return o.estado==="activa";}).length;
-  var upd=obras.reduce(function(s,o){return s+(o.updates||[]).filter(function(u){return new Date(u.ts).toDateString()===today;}).length;},0);
-  function el(id){return document.getElementById(id);}
-  if(el("dash-activas")) el("dash-activas").textContent=activas;
-  if(el("dash-total")) el("dash-total").textContent="de "+obras.length+" total";
-  if(el("dash-updates")) el("dash-updates").textContent=upd;
-  if(el("dash-ver-sub")) el("dash-ver-sub").textContent=activas+" activas";
-  var cf=obras.filter(function(o){return o.fechaFin;}).sort(function(a,b){return new Date(a.fechaFin)-new Date(b.fechaFin);});
-  if(cf.length){
-    var dias=Math.ceil((new Date(cf[0].fechaFin)-new Date())/86400000);
-    var d=new Date(cf[0].fechaFin);
-    if(el("dash-prox-fecha")) el("dash-prox-fecha").textContent=d.getDate()+" "+meses[d.getMonth()];
-    if(el("dash-prox-dias")){
-      el("dash-prox-dias").textContent=dias>0?dias+" días":"Hoy";
-      el("dash-prox-dias").style.color=dias<=3?"#EF4444":dias<=7?"#F59E0B":"#10B981";
-    }
-  }
-  var eEl=el("dash-entregas");
-  if(eEl){
-    if(cf.length){
-      eEl.innerHTML=cf.slice(0,3).map(function(o,i){
-        var dias=Math.ceil((new Date(o.fechaFin)-new Date())/86400000);
-        var col=dias<=3?"#EF4444":dias<=7?"#F59E0B":"#10B981";
-        var d=new Date(o.fechaFin);
-        var border=i<Math.min(cf.length,3)-1?"border-bottom:1px solid #F0F3F8;":"";
-        return "<div onclick="goScreen('obras');setTimeout(function(){abrirObra('"+o.id+"')},200)" style="padding:10px 14px;"+border+"display:flex;align-items:center;gap:10px;cursor:pointer;">"+
-          "<div style="width:3px;height:36px;background:"+col+";border-radius:2px;flex-shrink:0;"></div>"+
-          "<div style="flex:1;min-width:0;"><div style="font-size:12px;font-weight:600;color:#0B1F3A;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">"+o.nombre+"</div>"+
-          "<div style="font-size:10px;color:#7090B8;">"+(o.cliente||"")+"</div></div>"+
-          "<div style="text-align:right;flex-shrink:0;"><div style="font-size:11px;font-weight:700;color:"+col+";">"+d.getDate()+" "+meses[d.getMonth()]+"</div>"+
-          "<div style="font-size:9px;color:#9BB5CF;">"+(dias>0?dias+"d":"Hoy")+"</div></div></div>";
-      }).join("");
-    } else {
-      eEl.innerHTML="<div style="padding:14px;font-size:12px;color:#9BB5CF;">Sin fechas de entrega registradas</div>";
-    }
-  }
-  if(obras.length){
-    var r=obras[0];
-    var w=el("dash-rec-wrap");
-    if(w){
-      w.style.display="block";
-      if(el("dash-rec-nom")) el("dash-rec-nom").textContent=r.nombre;
-      if(el("dash-rec-meta")) el("dash-rec-meta").textContent=(r.pct||0)+"% · "+(r.updates||[]).length+" updates";
-      var btn=el("dash-rec-btn");
-      if(btn) btn.onclick=function(){goScreen("obras");setTimeout(function(){abrirObra(r.id);},200);};
-    }
-  }
-}
 // ─── INIT ────────────────────────────────────────
 // logos already set in img src attributes
 subscribeObras();
 checkUrlParams();
 updateHoraCi();
 const _params=new URLSearchParams(window.location.search);
-if(!_params.get("obra")){
-  checkPerfil();
-  setTimeout(function(){checkCI();},1200);
-}
+if(!_params.get("obra")){ checkPerfil(); }
 </script>
 </body>
 </html>
