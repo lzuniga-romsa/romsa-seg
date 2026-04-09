@@ -767,6 +767,23 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
     </div>
   </div>
 </div>
+<div class="moverlay" id="modal-ci-ob">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div style="text-align:center;margin-bottom:14px;">
+      <div style="font-size:26px;margin-bottom:8px;">📍</div>
+      <div style="font-size:17px;font-weight:700;color:var(--navy);">Check-in del día</div>
+      <div style="font-size:12px;color:var(--tx2);margin-top:3px;">Registra tu presencia antes de comenzar</div>
+    </div>
+    <div class="fg"><label class="flabel">Tu nombre <span class="req">*</span></label><input class="finput" id="ci-ob3-nombre" placeholder="Nombre completo"></div>
+    <div class="fg"><label class="flabel">Ubicación</label><input class="finput" id="ci-ob3-ubic" placeholder="Planta, nave, ciudad..."></div>
+    <div style="background:var(--off);border-radius:8px;padding:10px 13px;display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+      <span style="font-size:11px;color:var(--tx2);">Hora de entrada</span>
+      <span id="ci-ob3-hora" style="font-family:var(--mono);font-size:14px;font-weight:700;color:var(--navy);">—</span>
+    </div>
+    <button class="btn btn-primary btn-block" onclick="doCI()">✓ Registrar y continuar</button>
+  </div>
+</div>
 <!-- MODAL NUEVA OBRA -->
 <div class="moverlay" id="modal-nueva">
   <div class="modal">
@@ -1230,7 +1247,43 @@ function updateHoraCi(){
 }
 setInterval(()=>{ if(document.getElementById("ci-hora-display")) updateHoraCi(); },1000);
 
-async function registrarCheckin(){
+async 
+function checkCI(){
+  if(localStorage.getItem("romsa_ci_hoy")===new Date().toDateString()) return;
+  var p=getPerfil();
+  var inp=document.getElementById("ci-ob3-nombre");
+  if(inp&&p&&p.nombre) inp.value=p.nombre;
+  var tick=function(){
+    var e=document.getElementById("ci-ob3-hora");
+    if(e) e.textContent=new Date().toLocaleTimeString("es-MX",{hour:"2-digit",minute:"2-digit",second:"2-digit"});
+    setTimeout(tick,1000);
+  };
+  tick();
+  var m=document.getElementById("modal-ci-ob");
+  if(m) m.classList.add("open");
+}
+
+function doCI(){
+  var nom=(document.getElementById("ci-ob3-nombre").value||"").trim();
+  if(!nom){showToast("⚠️ Tu nombre es requerido");return;}
+  var ubic=(document.getElementById("ci-ob3-ubic").value||"").trim();
+  var now=new Date();
+  localStorage.setItem("romsa_ci_hoy",now.toDateString());
+  savePerfil({nombre:nom,puesto:"",tel:""});
+  obras.forEach(function(o){
+    if(o.estado==="activa"){
+      o.checkins=o.checkins||[];
+      o.checkins.unshift({id:Date.now(),nombre:nom,ubicacion:ubic,actividad:"Check-in inicio de jornada",fecha:now.toLocaleDateString("es-MX"),hora:now.toLocaleTimeString("es-MX",{hour:"2-digit",minute:"2-digit"}),fechaISO:now.toISOString()});
+      saveObra(o);
+    }
+  });
+  closeModal("modal-ci-ob");
+  var tb=document.getElementById("tb-tecnico-name");
+  if(tb) tb.textContent=nom;
+  showToast("✅ Check-in — "+now.toLocaleTimeString("es-MX",{hour:"2-digit",minute:"2-digit"}));
+  setTimeout(function(){renderDashboard();},800);
+}
+function registrarCheckin(){
   const o=getO();if(!o)return;
   const nom=document.getElementById("ci-nombre").value.trim();
   const ubic=document.getElementById("ci-ubic").value.trim();
@@ -2260,6 +2313,7 @@ updateHoraCi();
 const _params=new URLSearchParams(window.location.search);
 if(!_params.get("obra")){
   checkPerfil();
+  setTimeout(function(){checkCI();},1200);
 }
 </script>
 </body>
