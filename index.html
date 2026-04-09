@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v15b -->
+<!-- v15c -->
 <html lang="es">
 <head>
 <meta charset="UTF-8">
@@ -860,11 +860,10 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
 <!-- VISTA CLIENTE -->
 <div id="vista-cliente">
   <div class="vc-hdr">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
-      <div style="width:70px;"></div>
-      <img id="vc-logo-img" alt="ROMSA" style="height:36px;width:auto;filter:brightness(0) invert(1);opacity:.95;" src="">
-      <div style="display:flex;align-items:center;gap:4px;background:rgba(16,185,129,.15);border:1px solid rgba(16,185,129,.25);color:#34D399;font-size:9px;font-weight:700;letter-spacing:1px;padding:4px 10px;border-radius:20px;width:70px;justify-content:center;flex-shrink:0;">
-        <div style="width:5px;height:5px;background:#10B981;border-radius:50%;flex-shrink:0;"></div>En vivo
+    <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:14px;flex-wrap:nowrap;">
+      <img id="vc-logo-img" alt="ROMSA" style="height:22px;width:auto;filter:brightness(0) invert(1);opacity:1;flex-shrink:0;" src="">
+      <div style="display:flex;align-items:center;gap:3px;background:rgba(16,185,129,.15);border:1px solid rgba(16,185,129,.25);color:#34D399;font-size:8px;font-weight:700;letter-spacing:.8px;padding:3px 7px;border-radius:20px;flex-shrink:0;white-space:nowrap;">
+        <div style="width:4px;height:4px;background:#10B981;border-radius:50%;flex-shrink:0;"></div>EN VIVO
       </div>
     </div>
     <div style="width:32px;height:1px;background:rgba(255,255,255,.1);margin:0 auto 13px;"></div>
@@ -1926,7 +1925,7 @@ function showPdfPreview(){
 
   document.getElementById("pdf-body").innerHTML=`
     <div style="text-align:center;margin-bottom:8px;">
-      <img src="${logoColor}" style="height:32px;width:auto;" alt="ROMSA">
+      <img src="${logoColor}" style="height:44px;width:auto;" alt="ROMSA">
     </div>
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
       <div style="font-size:10px;color:var(--g3);">ROMSA Pisos Industriales · Mexicali, Baja California</div>
@@ -1967,7 +1966,7 @@ function showPdfPreview(){
     ${rep.obs?`<div style="font-size:11px;font-weight:700;text-transform:uppercase;color:#1E3A6E;border-left:4px solid #1E6FD9;padding-left:10px;margin-top:16px;margin-bottom:8px;">Conclusiones y Observaciones Finales</div><div style="background:#0B1F3A;border-radius:10px;padding:14px 16px;font-size:13px;color:rgba(255,255,255,.85);line-height:1.8;margin-bottom:14px;">${rep.obs}</div>`:''}
 
     <div class="pdf-footer">
-      <img src="${logoSrc}" style="height:22px;width:auto;display:block;margin:0 auto 6px;">
+      <img src="${logoColor}" style="height:30px;width:auto;display:block;margin:0 auto 6px;">
       <div>ROMSA Pisos Industriales · Mexicali, Baja California</div>
       <div class="pdf-stamp">✓ Reporte técnico de obra finalizada</div>
     </div>`;
