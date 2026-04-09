@@ -951,6 +951,7 @@ function getBaPairsRef(obraId){ return obrasRef.doc(obraId).collection("baPairs"
 
 // ─── STATE ────────────────────────────────────────
 let obras = [];
+let _baPairs = [];
 let _baPairsUnsub = null;
 let obraActivaId = null;
 let updFotos = [];
@@ -2218,7 +2219,7 @@ async function delMaterial(id){
 }
 
 // ─── BA PAIRS SUBCOLLECTION ───────────────────────
-let _baPairs = []; // local cache for current obra's baPairs
+// _baPairs declared in state block above
 
 function subscribeBaPairs(obraId){
   if(_baPairsUnsub){ _baPairsUnsub(); _baPairsUnsub=null; }
