@@ -1124,7 +1124,7 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
   <div class="pdf-topbar">
     <button class="btn btn-secondary btn-sm" onclick="closePdf()">← Cerrar</button>
     <span style="color:#fff;font-size:13px;font-weight:600;">Reporte final de obra</span>
-    <button class="btn btn-primary btn-sm" onclick="window.print()">⬇ Guardar PDF</button>
+    <button class="btn btn-primary btn-sm" onclick="window.print()">⬇ Descargar Reporte Final de Obra</button>
   </div>
   <div class="pdf-body" id="pdf-body"></div>
 </div>
@@ -2175,92 +2175,173 @@ function contactarROMSA(){
 }
 
 // ─── PDF REPORTE FINAL ────────────────────────────
-function showPdfPreview(){
+async function showPdfPreview(){
   const o=getO();if(!o)return;
   const rep=o.reporte||{};
-  const updates=(o.updates||[]).sort((a,b)=>a.ts-b.ts);
   const etapas=o.etapas||[];
-  const baPairs=(o.baPairs||[]).filter(x=>x.before||x.after);
-  const logoSrc=document.getElementById("tb-logo-img").src;
-  const _LC0="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";
-  const _LC1="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";
-  const _LC2="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";
-  const logoColor="data:image/png;base64,"+_LC0+_LC1+_LC2;
+  const meses=["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+  const now=new Date();
+  const fechaHoy=now.getDate()+" de "+meses[now.getMonth()]+" de "+now.getFullYear();
 
-  const etapasHtml=etapas.map(e=>`
-    <div class="pdf-etapa-block">
-      <div class="pdf-etapa-hdr">
-        <div class="pdf-etapa-name">${e.nombre}</div>
-        <div class="pdf-etapa-state">${e.estado==='done'?'✓ Completada':e.estado==='active'?'▶ En proceso':'○ Pendiente'}</div>
-      </div>
-      ${updates.filter(u=>u.etapaId==e.id).map(u=>`
-        <div style="padding:8px 13px;border-bottom:1px solid var(--off);">
-          <div style="font-size:11px;font-weight:700;color:var(--blue);margin-bottom:4px;">${u.fecha} · ${u.hora||""}</div>
-          ${(u.fotos||[]).length?`<div class="pdf-fotos-grid">${(u.fotos||[]).map(src=>`<img src="${src}">`).join("")}</div>`:''}
-          ${u.nota?`<div class="pdf-nota">${u.nota}</div>`:''}
-        </div>`).join("")}
-    </div>`).join("");
+  function fmtF(f){
+    if(!f||f==="—")return"Por definir";
+    if(/^\d{4}-\d{2}-\d{2}$/.test(f)){const[y,m,d]=f.split("-");return d+" de "+meses[parseInt(m)-1]+" de "+y;}
+    return f;
+  }
 
-  const baHtml=baPairs.map(pair=>`
-    <div style="margin-bottom:12px;">
-      <div style="font-size:11px;font-weight:700;color:var(--navy);margin-bottom:6px;">${pair.nombre}</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
-        ${pair.before&&pair.before.length>100?`<div style="position:relative;"><img src="${pair.before.startsWith('data:')?pair.before:'data:image/jpeg;base64,'+pair.before}" style="width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:6px;"><div style="position:absolute;top:5px;left:5px;background:rgba(239,68,68,.9);color:#fff;font-size:9px;font-weight:700;padding:2px 7px;border-radius:4px;">ANTES</div></div>`:''}
-        ${pair.after&&pair.after.length>100?`<div style="position:relative;"><img src="${pair.after.startsWith('data:')?pair.after:'data:image/jpeg;base64,'+pair.after}" style="width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:6px;"><div style="position:absolute;top:5px;left:5px;background:rgba(16,185,129,.9);color:#fff;font-size:9px;font-weight:700;padding:2px 7px;border-radius:4px;">DESPUÉS</div></div>`:''}
+  showToast("⏳ Preparando reporte...");
+
+  // Cargar updates desde subcolección
+  if(!o.updates||!o.updates.length) await loadUpdates(o.id);
+  const updates=(o.updates||[]).sort((a,b)=>a.ts-b.ts);
+
+  // Cargar baPairs
+  let baPairs=[];
+  try{
+    const bp=await getBaPairsRef(o.id).orderBy("id","asc").get();
+    baPairs=bp.docs.map(d=>d.data()).filter(x=>x.before||x.after);
+  }catch(e){}
+
+  // Logo SVG vectorial — alta calidad, sin pixelado
+  const logoSVG=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 60" style="height:48px;width:auto;">
+    <rect width="240" height="60" fill="none"/>
+    <g fill="#0B1F3A">
+      <rect x="0" y="8" width="36" height="6" rx="1"/>
+      <rect x="0" y="18" width="28" height="6" rx="1"/>
+      <rect x="0" y="28" width="36" height="6" rx="1"/>
+    </g>
+    <text x="46" y="36" font-family="'Helvetica Neue',Arial,sans-serif" font-size="32" font-weight="800" fill="#0B1F3A" letter-spacing="-1">ROMSA</text>
+  </svg>`;
+
+  // Info del proyecto
+  const infoRows=[
+    ["Cliente",o.cliente||"—","Contacto",o.contacto||"—"],
+    ["Ubicación",o.ubicacion||"Mexicali, Baja California","Servicio",o.servicio||"—"],
+    rep.m2?["Superficie total",(rep.m2||0).toFixed(2)+" "+(rep.unidad||"m²"),"Técnico responsable",rep.tecnico||o.creadoPor||"—"]:["Fecha inicio",fmtF(o.fechaInicio||o.fecha),"Fecha término",fmtF(o.fechaFin)],
+    rep.m2?["Fecha inicio",fmtF(o.fechaInicio||o.fecha),"Fecha término",fmtF(o.fechaFin)]:null,
+  ].filter(Boolean);
+  if(rep.tecnico&&rep.m2) infoRows.push(["Fecha inicio",fmtF(o.fechaInicio||o.fecha),"Fecha término",fmtF(o.fechaFin)]);
+
+  const infoHtml=`<table style="width:100%;border-collapse:collapse;margin-bottom:16px;">
+    ${[
+      ["Cliente",o.cliente||"—","Contacto",o.contacto||"—"],
+      ["Ubicación",(o.ubicacion||"Mexicali, Baja California"),"Servicio",o.servicio||"—"],
+      ...(rep.m2?[["Superficie total",(rep.m2).toFixed(2)+" "+(rep.unidad||"m²"),"Técnico responsable",rep.tecnico||o.creadoPor||"—"]]:[]),
+      ["Fecha inicio",fmtF(o.fechaInicio||o.fecha||"—"),"Fecha término",fmtF(o.fechaFin||"—")],
+    ].map(r=>`<tr>
+      <td style="background:#F0F4F9;font-size:9px;font-weight:700;color:#4A6A8A;text-transform:uppercase;letter-spacing:.8px;padding:7px 10px;border:1px solid #DDE5F0;width:18%;">${r[0]}</td>
+      <td style="font-size:13px;font-weight:600;color:#0B1F3A;padding:7px 10px;border:1px solid #DDE5F0;width:32%;">${r[1]}</td>
+      <td style="background:#F0F4F9;font-size:9px;font-weight:700;color:#4A6A8A;text-transform:uppercase;letter-spacing:.8px;padding:7px 10px;border:1px solid #DDE5F0;width:18%;">${r[2]}</td>
+      <td style="font-size:13px;font-weight:600;color:#0B1F3A;padding:7px 10px;border:1px solid #DDE5F0;width:32%;">${r[3]}</td>
+    </tr>`).join("")}
+  </table>`;
+
+  // Progreso
+  const pct=o.pct||0;
+  const doneCnt=etapas.filter(e=>e.estado==="done").length;
+  const progresoHtml=`
+    <div style="background:#0B1F3A;border-radius:10px;padding:16px 20px;margin-bottom:20px;display:flex;align-items:center;gap:20px;">
+      <div style="font-size:44px;font-weight:900;color:#fff;letter-spacing:-2px;line-height:1;">${pct}%</div>
+      <div>
+        <div style="font-size:10px;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:1.5px;">Avance total</div>
+        <div style="font-size:14px;color:#60A5FA;font-weight:600;margin-top:4px;">${doneCnt} de ${etapas.length} etapas completadas</div>
       </div>
-    </div>`).join("");
+    </div>`;
+
+  // Etapas con updates y fotos
+  const etapasHtml=etapas.map(e=>{
+    const eUpds=updates.filter(u=>u.etapaId==e.id);
+    const estadoColor=e.estado==="done"?"#10B981":e.estado==="active"?"#1E6FD9":"#9BB5CF";
+    const estadoTxt=e.estado==="done"?"✓ Completada":e.estado==="active"?"▶ En proceso":"○ Pendiente";
+    return `
+    <div style="margin-bottom:16px;border:1px solid #DDE5F0;border-radius:10px;overflow:hidden;page-break-inside:avoid;">
+      <div style="background:#0B1F3A;padding:11px 16px;display:flex;align-items:center;justify-content:space-between;">
+        <div style="font-size:13px;font-weight:700;color:#fff;letter-spacing:.3px;text-transform:uppercase;">${e.nombre}</div>
+        <div style="font-size:11px;font-weight:700;color:${estadoColor};">${estadoTxt}</div>
+      </div>
+      ${e.fechaCompletada?`<div style="padding:6px 16px;background:#F8FAFD;border-bottom:1px solid #EEF2F7;font-size:10px;color:#7090B8;">Completada: ${e.fechaCompletada} ${e.horaCompletada||""}</div>`:""}
+      ${eUpds.length?eUpds.map(u=>`
+        <div style="padding:12px 16px;border-bottom:1px solid #F0F3F8;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+            <div style="font-size:11px;font-weight:700;color:#1E6FD9;">${u.fecha} · ${u.hora||""}</div>
+            <div style="font-size:11px;font-weight:700;color:#10B981;">▲ ${u.pct}%</div>
+          </div>
+          ${(u.fotos||[]).length?`
+            <div style="display:grid;grid-template-columns:repeat(${Math.min(u.fotos.length,3)},1fr);gap:6px;margin-bottom:8px;">
+              ${u.fotos.map(src=>`<img src="${src}" style="width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:6px;display:block;">`).join("")}
+            </div>`:""}
+          ${u.nota?`<div style="font-size:12px;color:#4A6A8A;line-height:1.6;background:#F8FAFD;padding:8px 10px;border-radius:6px;">${u.nota}</div>`:""}
+          ${u.notaCliente?`<div style="font-size:11px;color:#1E6FD9;background:#EEF6FF;padding:7px 10px;border-radius:6px;margin-top:6px;"><strong>Nota al cliente:</strong> ${u.notaCliente}</div>`:""}
+          ${u.m2hoy?`<div style="font-size:10px;color:#7090B8;margin-top:5px;">📐 Área trabajada: <strong>${u.m2hoy} ${u.m2unit||"m²"}</strong></div>`:""}
+          ${u.tecnico?`<div style="font-size:10px;color:#9BB5CF;margin-top:3px;">👷 ${u.tecnico}</div>`:""}
+        </div>`).join("")
+      :`<div style="padding:10px 16px;font-size:12px;color:#9BB5CF;">Sin actualizaciones registradas</div>`}
+    </div>`;
+  }).join("");
+
+  // Antes/Después
+  const baHtml=baPairs.length?`
+    <div style="margin-bottom:6px;font-size:10px;font-weight:700;color:#1E6FD9;text-transform:uppercase;letter-spacing:1.5px;border-bottom:2px solid #1E6FD9;padding-bottom:6px;margin-bottom:12px;">Antes y Después</div>
+    ${baPairs.map(pair=>`
+      <div style="margin-bottom:14px;">
+        <div style="font-size:11px;font-weight:700;color:#0B1F3A;margin-bottom:6px;">${pair.nombre}</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          ${pair.before&&pair.before.length>100?`<div style="position:relative;"><img src="${pair.before.startsWith("data:")?pair.before:"data:image/jpeg;base64,"+pair.before}" style="width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:7px;display:block;"><div style="position:absolute;top:6px;left:6px;background:rgba(239,68,68,.9);color:#fff;font-size:9px;font-weight:700;padding:2px 8px;border-radius:4px;">ANTES</div></div>`:"<div style='aspect-ratio:4/3;background:#F0F3F8;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#9BB5CF;'>Sin foto</div>"}
+          ${pair.after&&pair.after.length>100?`<div style="position:relative;"><img src="${pair.after.startsWith("data:")?pair.after:"data:image/jpeg;base64,"+pair.after}" style="width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:7px;display:block;"><div style="position:absolute;top:6px;left:6px;background:rgba(16,185,129,.9);color:#fff;font-size:9px;font-weight:700;padding:2px 8px;border-radius:4px;">DESPUÉS</div></div>`:"<div style='aspect-ratio:4/3;background:#F0F3F8;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#9BB5CF;'>Sin foto</div>"}
+        </div>
+      </div>`).join("")}`:"";
 
   document.getElementById("pdf-body").innerHTML=`
-    <div style="text-align:center;margin-bottom:8px;">
-      <img src="${logoColor}" style="height:44px;width:auto;" alt="ROMSA">
-    </div>
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-      <div style="font-size:10px;color:var(--g3);">ROMSA Pisos Industriales · Mexicali, Baja California</div>
-      <div style="font-size:10px;color:var(--g3);">${(()=>{const d=new Date();const m=["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];return d.getDate()+" de "+m[d.getMonth()]+" de "+d.getFullYear();})()} </div>
-    </div>
-    <div style="border-top:2px solid #1E3A6E;margin-bottom:16px;"></div>
-    <div style="text-align:center;margin-bottom:18px;">
-      <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--tx2);margin-bottom:6px;">Reporte Final de Obra</div>
-      <div style="font-size:19px;font-weight:700;color:var(--navy);">${o.nombre}</div>
-    </div>
-
-    <div style="font-size:9px;font-weight:700;text-transform:uppercase;color:#1E3A6E;margin-bottom:8px;">Información del proyecto</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;margin-bottom:14px;">
-      <div style="padding:9px 12px;border:0.5px solid #D0D9E8;border-right:none;border-bottom:none;"><div style="font-size:8px;font-weight:700;text-transform:uppercase;color:var(--tx2);margin-bottom:3px;">Cliente</div><div style="font-size:13px;font-weight:600;color:var(--navy);">${o.cliente||"—"}</div></div>
-      <div style="padding:9px 12px;border:0.5px solid #D0D9E8;border-bottom:none;"><div style="font-size:8px;font-weight:700;text-transform:uppercase;color:var(--tx2);margin-bottom:3px;">Contacto</div><div style="font-size:13px;font-weight:600;color:var(--navy);">${o.contacto||"—"}</div></div>
-      <div style="padding:9px 12px;border:0.5px solid #D0D9E8;border-right:none;border-bottom:none;"><div style="font-size:8px;font-weight:700;text-transform:uppercase;color:var(--tx2);margin-bottom:3px;">Ubicación</div><div style="font-size:13px;font-weight:600;color:var(--navy);">${o.ubicacion||"—"}</div></div>
-      <div style="padding:9px 12px;border:0.5px solid #D0D9E8;border-bottom:none;"><div style="font-size:8px;font-weight:700;text-transform:uppercase;color:var(--tx2);margin-bottom:3px;">Servicio</div><div style="font-size:13px;font-weight:600;color:var(--navy);">${o.servicio||"—"}</div></div>
-      <div style="padding:9px 12px;border:0.5px solid #D0D9E8;border-right:none;border-bottom:none;"><div style="font-size:8px;font-weight:700;text-transform:uppercase;color:var(--tx2);margin-bottom:3px;">Superficie total</div><div style="font-size:13px;font-weight:600;color:var(--navy);">${rep.m2?(rep.m2.toFixed(2)+" "+(rep.unidad||"m²")):"—"}</div></div>
-      <div style="padding:9px 12px;border:0.5px solid #D0D9E8;border-bottom:none;"><div style="font-size:8px;font-weight:700;text-transform:uppercase;color:var(--tx2);margin-bottom:3px;">Técnico responsable</div><div style="font-size:13px;font-weight:600;color:var(--navy);">${rep.tecnico||"—"}</div></div>
-      <div style="padding:9px 12px;border:0.5px solid #D0D9E8;border-right:none;"><div style="font-size:8px;font-weight:700;text-transform:uppercase;color:var(--tx2);margin-bottom:3px;">Fecha inicio</div><div style="font-size:13px;font-weight:600;color:var(--navy);">${(()=>{const d=new Date(o.fechaInicio||o.fecha);if(!d||isNaN(d))return o.fechaInicio||"—";const m=["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];return d.getDate()+" de "+m[d.getMonth()]+" de "+d.getFullYear();})()} </div></div>
-      <div style="padding:9px 12px;border:0.5px solid #D0D9E8;"><div style="font-size:8px;font-weight:700;text-transform:uppercase;color:var(--tx2);margin-bottom:3px;">Fecha término</div><div style="font-size:13px;font-weight:600;color:var(--navy);">${(()=>{const d=new Date(o.fechaFin);if(!d||isNaN(d))return o.fechaFin||"—";const m=["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];return d.getDate()+" de "+m[d.getMonth()]+" de "+d.getFullYear();})()} </div></div>
-    </div>
-
-    <div class="pdf-section-ttl">Progreso del proyecto</div>
-    <div style="display:flex;align-items:center;gap:12px;background:var(--navy);border-radius:10px;padding:14px 16px;margin-bottom:12px;">
-      <div style="font-size:32px;font-weight:800;color:#fff;">${o.pct||0}%</div>
-      <div>
-        <div style="font-size:11px;color:var(--g2);text-transform:uppercase;letter-spacing:1px;">Avance total</div>
-        <div style="font-size:12px;color:var(--sky);margin-top:3px;">${etapas.filter(e=>e.estado==='done').length} de ${etapas.length} etapas completadas</div>
+    <!-- HEADER -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+      ${logoSVG}
+      <div style="text-align:right;">
+        <div style="font-size:10px;color:#7090B8;">ROMSA Pisos Industriales · Mexicali, Baja California</div>
+        <div style="font-size:10px;color:#7090B8;margin-top:2px;">${fechaHoy}</div>
       </div>
     </div>
+    <div style="height:2px;background:linear-gradient(90deg,#0B1F3A,#1E6FD9);margin-bottom:16px;border-radius:1px;"></div>
 
-    <div class="pdf-section-ttl">Proceso y evidencia por etapa</div>
+    <!-- TÍTULO -->
+    <div style="text-align:center;margin-bottom:20px;">
+      <div style="font-size:10px;font-weight:700;color:#1E6FD9;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;">Reporte Final de Obra</div>
+      <div style="font-size:22px;font-weight:800;color:#0B1F3A;letter-spacing:-.5px;">${o.nombre}</div>
+    </div>
+
+    <!-- INFO PROYECTO -->
+    <div style="font-size:10px;font-weight:700;color:#1E6FD9;text-transform:uppercase;letter-spacing:1.5px;border-bottom:2px solid #1E6FD9;padding-bottom:6px;margin-bottom:12px;">Información del Proyecto</div>
+    ${infoHtml}
+
+    <!-- PROGRESO -->
+    <div style="font-size:10px;font-weight:700;color:#1E6FD9;text-transform:uppercase;letter-spacing:1.5px;border-bottom:2px solid #1E6FD9;padding-bottom:6px;margin-bottom:12px;">Progreso del Proyecto</div>
+    ${progresoHtml}
+
+    <!-- ETAPAS -->
+    <div style="font-size:10px;font-weight:700;color:#1E6FD9;text-transform:uppercase;letter-spacing:1.5px;border-bottom:2px solid #1E6FD9;padding-bottom:6px;margin-bottom:12px;">Proceso y Evidencia por Etapa</div>
     ${etapasHtml}
 
-    ${baPairs.length?`<div class="pdf-section-ttl">Antes y después</div>${baHtml}`:''}
+    <!-- ANTES/DESPUÉS -->
+    ${baHtml}
 
-    ${rep.obs?`<div style="font-size:11px;font-weight:700;text-transform:uppercase;color:#1E3A6E;border-left:4px solid #1E6FD9;padding-left:10px;margin-top:16px;margin-bottom:8px;">Conclusiones y Observaciones Finales</div><div style="background:#0B1F3A;border-radius:10px;padding:14px 16px;font-size:13px;color:rgba(255,255,255,.85);line-height:1.8;margin-bottom:14px;">${rep.obs}</div>`:''}
+    <!-- OBSERVACIONES -->
+    ${rep.obs?`
+    <div style="font-size:10px;font-weight:700;color:#1E6FD9;text-transform:uppercase;letter-spacing:1.5px;border-bottom:2px solid #1E6FD9;padding-bottom:6px;margin-bottom:12px;">Conclusiones y Observaciones Finales</div>
+    <div style="background:#0B1F3A;border-radius:10px;padding:16px 18px;font-size:13px;color:rgba(255,255,255,.85);line-height:1.8;margin-bottom:20px;">${rep.obs}</div>`:""}
 
-    <div class="pdf-footer">
-      <img src="${logoColor}" style="height:30px;width:auto;display:block;margin:0 auto 6px;">
-      <div>ROMSA Pisos Industriales · Mexicali, Baja California</div>
-      <div class="pdf-stamp">✓ Reporte técnico de obra finalizada</div>
+    <!-- FOOTER -->
+    <div style="margin-top:24px;padding-top:14px;border-top:1px solid #DDE5F0;display:flex;align-items:center;justify-content:space-between;">
+      ${logoSVG}
+      <div style="text-align:right;">
+        <div style="font-size:10px;color:#9BB5CF;">ROMSA Pisos Industriales · Mexicali, Baja California</div>
+        <div style="display:inline-flex;align-items:center;gap:5px;margin-top:6px;padding:5px 12px;border:1.5px solid #1E6FD9;border-radius:6px;color:#1E6FD9;font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;">✓ Reporte técnico de obra finalizada</div>
+      </div>
     </div>`;
 
   document.getElementById("pdf-preview").style.display="block";
   document.getElementById("pdf-preview").scrollTo(0,0);
+  showToast("✅ Reporte listo");
 }
+
 function closePdf(){ document.getElementById("pdf-preview").style.display="none"; }
 
 // ─── URL PARAMS (cliente público) ────────────────
