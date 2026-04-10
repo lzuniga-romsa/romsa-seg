@@ -2211,16 +2211,17 @@ async function showPdfPreview(){
     baPairs=bp.docs.map(d=>d.data()).filter(x=>x.before||x.after);
   }catch(e){}
 
-  // Logo SVG vectorial — alta calidad, sin pixelado
-  const logoSVG=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 60" style="height:48px;width:auto;">
-    <rect width="240" height="60" fill="none"/>
-    <g fill="#0B1F3A">
-      <rect x="0" y="8" width="36" height="6" rx="1"/>
-      <rect x="0" y="18" width="28" height="6" rx="1"/>
-      <rect x="0" y="28" width="36" height="6" rx="1"/>
-    </g>
-    <text x="46" y="36" font-family="'Helvetica Neue',Arial,sans-serif" font-size="32" font-weight="800" fill="#0B1F3A" letter-spacing="-1">ROMSA</text>
-  </svg>`;
+  // Logo real a color desde el elemento de la página
+  const _tbLogo = document.getElementById("tb-logo-img");
+  // Obtener src del logo a color (vc-logo-img tiene el mismo src)
+  const _vcLogo = document.getElementById("vc-logo-img");
+  // Usar el logo base64 que ya está cargado en la página
+  const logoReal = _tbLogo && _tbLogo.src && _tbLogo.src.length > 100
+    ? _tbLogo.src
+    : (_vcLogo && _vcLogo.src ? _vcLogo.src : "");
+  // Logo a color — leer del elemento oculto si existe
+  const logoColorEl = document.querySelector("img[src*='data:image/png']");
+  const logoSrc = logoReal || (logoColorEl ? logoColorEl.src : "");
 
   // Info del proyecto
   const infoRows=[
@@ -2275,10 +2276,15 @@ async function showPdfPreview(){
             <div style="font-size:11px;font-weight:700;color:#1E6FD9;">${u.fecha} · ${u.hora||""}</div>
             <div style="font-size:11px;font-weight:700;color:#10B981;">▲ ${u.pct}%</div>
           </div>
-          ${(u.fotos||[]).length?`
-            <div style="display:grid;grid-template-columns:repeat(${Math.min(u.fotos.length,3)},1fr);gap:6px;margin-bottom:8px;">
-              ${u.fotos.map(src=>`<img src="${src}" style="width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:6px;display:block;">`).join("")}
-            </div>`:""}
+          ${(u.fotos||[]).length?(()=>{
+            const fs=u.fotos||[];
+            // 1 foto: ancho completo con altura máxima controlada
+            if(fs.length===1) return `<div style="margin-bottom:8px;border-radius:6px;overflow:hidden;"><img src="${fs[0]}" style="width:100%;max-height:220px;object-fit:cover;display:block;border-radius:6px;"></div>`;
+            // 2 fotos: mitad cada una
+            if(fs.length===2) return `<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;">${fs.map(src=>`<img src="${src}" style="width:100%;height:140px;object-fit:cover;border-radius:6px;display:block;">`).join("")}</div>`;
+            // 3+ fotos: grid 3 col altura fija
+            return `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:8px;">${fs.map(src=>`<img src="${src}" style="width:100%;height:120px;object-fit:cover;border-radius:6px;display:block;">`).join("")}</div>`;
+          })():""}
           ${u.nota?`<div style="font-size:12px;color:#4A6A8A;line-height:1.6;background:#F8FAFD;padding:8px 10px;border-radius:6px;">${u.nota}</div>`:""}
           ${u.notaCliente?`<div style="font-size:11px;color:#1E6FD9;background:#EEF6FF;padding:7px 10px;border-radius:6px;margin-top:6px;"><strong>Nota al cliente:</strong> ${u.notaCliente}</div>`:""}
           ${u.m2hoy?`<div style="font-size:10px;color:#7090B8;margin-top:5px;">📐 Área trabajada: <strong>${u.m2hoy} ${u.m2unit||"m²"}</strong></div>`:""}
@@ -2303,7 +2309,7 @@ async function showPdfPreview(){
   document.getElementById("pdf-body").innerHTML=`
     <!-- HEADER CON LOGO REAL CENTRADO -->
     <div style="text-align:center;padding-bottom:16px;border-bottom:3px solid #0B1F3A;margin-bottom:0;">
-      <img src="data:image/png;base64,${_LC0+_LC1+_LC2}" style="height:52px;width:auto;display:block;margin:0 auto 6px;" alt="ROMSA">
+      <img src="${logoSrc}" style="height:52px;width:auto;display:block;margin:0 auto 6px;" alt="ROMSA">
       <div style="font-size:10px;color:#7090B8;letter-spacing:.3px;">ROMSA Pisos Industriales · Mexicali, Baja California</div>
     </div>
 
@@ -2344,7 +2350,7 @@ async function showPdfPreview(){
 
     <!-- FOOTER -->
     <div style="margin-top:28px;padding-top:16px;border-top:2px solid #0B1F3A;text-align:center;">
-      <img src="data:image/png;base64,${_LC0+_LC1+_LC2}" style="height:28px;width:auto;display:block;margin:0 auto 8px;" alt="ROMSA">
+      <img src="${logoSrc}" style="height:28px;width:auto;display:block;margin:0 auto 8px;" alt="ROMSA">
       <div style="font-size:10px;color:#9BB5CF;margin-bottom:8px;">ROMSA Pisos Industriales · Mexicali, Baja California</div>
       <div style="display:inline-flex;align-items:center;gap:6px;padding:6px 16px;border:1.5px solid #1E6FD9;border-radius:8px;color:#1E6FD9;font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;">✓ Reporte técnico de obra finalizada</div>
     </div>`;
