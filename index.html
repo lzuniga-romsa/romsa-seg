@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v15d -->
+<!-- v15e -->
 <html lang="es">
 <head>
 <meta charset="UTF-8">
@@ -877,9 +877,9 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
 
     <!-- REPORTE RESUMEN -->
     <div id="vc-identity-block"></div>
-    <div id="vc-report-section" style="display:none;">
+    <div id="vc-report-section">
       <div class="vc-sec-ttl">Resumen del proyecto</div>
-      <div style="background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);border-radius:12px;padding:12px 14px;margin-bottom:10px;display:flex;align-items:center;gap:10px;">
+      <div id="vc-finalizado-banner" style="display:none;background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);border-radius:12px;padding:12px 14px;margin-bottom:10px;display:none;align-items:center;gap:10px;">
         <div style="width:28px;height:28px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;">✓</div>
         <div style="font-size:12px;color:rgba(255,255,255,.7);line-height:1.5;">Proyecto <strong style="color:#fff;">finalizado</strong> — todas las etapas completadas exitosamente.</div>
       </div>
@@ -1772,25 +1772,38 @@ function mostrarVC(o){
       </div>
     </div>`;
 
-  // Reporte resumen
+  // Reporte resumen — siempre visible
   const repSection=document.getElementById("vc-report-section");
   const allDone=(o.etapas||[]).length>0 && (o.etapas||[]).every(e=>e.estado==="done");
-  if(rep.m2 && allDone){
-    repSection.style.display="block";
-    const grid=document.getElementById("vc-report-grid");
-    const items=[
-      {l:"Superficie total",v:rep.m2.toFixed(2)+" "+(rep.unidad||"m²")},
-      {l:"Servicio",v:o.servicio},
-      {l:"Inicio",v:o.fechaInicio||o.fecha||"—"},
-      {l:"Fin estimado",v:o.fechaFin||"Por definir"},
-    ];
-    if(rep.tecnico) items.push({l:"Técnico responsable",v:rep.tecnico+'<br><small style="font-weight:400;opacity:.55;">Responsable técnico certificado ROMSA</small>'});
-    grid.innerHTML=items.map(i=>`
-      <div class="vc-report-field">
-        <div class="vc-rf-l">${i.l}</div>
-        <div class="vc-rf-v">${i.v}</div>
-      </div>`).join("");
-  } else { repSection.style.display="none"; }
+  repSection.style.display="block";
+  // Banner finalizado solo al 100%
+  const bannerEl=document.getElementById("vc-finalizado-banner");
+  if(bannerEl){ bannerEl.style.display=allDone?"flex":"none"; }
+  // Formatear fechas ISO a legible
+  function fmtFecha(f){
+    if(!f||f==="—") return "Por definir";
+    // Si es ISO (2026-04-10), convertir a "10 de Abril de 2026"
+    if(/^\d{4}-\d{2}-\d{2}$/.test(f)){
+      const meses=["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+      const [y,m,d]=f.split("-");
+      return d+" de "+meses[parseInt(m)-1]+" de "+y;
+    }
+    return f;
+  }
+  const grid=document.getElementById("vc-report-grid");
+  const items=[
+    {l:"Servicio",v:o.servicio||"—"},
+    {l:"Ubicación",v:o.ubicacion?o.ubicacion+", Baja California":"Mexicali, Baja California"},
+    {l:"Fecha inicio",v:fmtFecha(o.fechaInicio||o.fecha||"—")},
+    {l:"Fecha término",v:fmtFecha(o.fechaFin||"—")},
+  ];
+  if(rep.m2) items.unshift({l:"Superficie total",v:rep.m2.toFixed(2)+" "+(rep.unidad||"m²")});
+  if(rep.tecnico) items.push({l:"Técnico responsable",v:'<strong>'+rep.tecnico+'</strong><br><small style="font-weight:400;opacity:.55;">Responsable técnico certificado ROMSA</small>'});
+  grid.innerHTML=items.map(i=>`
+    <div class="vc-report-field">
+      <div class="vc-rf-l">${i.l}</div>
+      <div class="vc-rf-v">${i.v}</div>
+    </div>`).join("");
 
   // Progreso
   const pct=o.pct||0;
@@ -1833,9 +1846,13 @@ function mostrarVC(o){
         </div>
         ${(u.fotos||[]).length?(()=>{
           const fotos=u.fotos||[];
-          if(fotos.length===1) return `<div onclick="verImg('${fotos[0]}')" style="cursor:zoom-in;margin:0 0 3px;position:relative;"><img src="${fotos[0]}" style="width:100%;max-height:260px;object-fit:cover;display:block;" loading="lazy"><div style="position:absolute;bottom:8px;right:8px;background:rgba(0,0,0,.5);color:#fff;font-size:9px;padding:3px 8px;border-radius:5px;font-weight:700;">🔍 Ver</div></div>`;
-          if(fotos.length===2) return `<div style="display:grid;grid-template-columns:1fr 1fr;gap:2px;margin-bottom:3px;">${fotos.map(src=>`<div onclick="verImg('${src}')" style="cursor:zoom-in;aspect-ratio:4/3;overflow:hidden;"><img src="${src}" style="width:100%;height:100%;object-fit:cover;" loading="lazy"></div>`).join("")}</div>`;
-          return `<div style="display:grid;grid-template-columns:2fr 1fr;gap:2px;margin-bottom:3px;"><div onclick="verImg('${fotos[0]}')" style="cursor:zoom-in;aspect-ratio:4/3;overflow:hidden;grid-row:span 2 / span 2;"><img src="${fotos[0]}" style="width:100%;height:100%;object-fit:cover;" loading="lazy"></div>${fotos.slice(1,3).map((src,i)=>`<div onclick="verImg('${src}')" style="cursor:zoom-in;overflow:hidden;"><img src="${src}" style="width:100%;height:100%;object-fit:cover;" loading="lazy"></div>`).join("")}${fotos.length>3?`<div onclick="verImg('${fotos[3]}')" style="cursor:zoom-in;overflow:hidden;position:relative;"><img src="${fotos[3]}" style="width:100%;height:100%;object-fit:cover;filter:brightness(.4);" loading="lazy"><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;font-weight:800;">+${fotos.length-3}</div></div>`:""}</div>`;
+          const cols=fotos.length===1?1:fotos.length===2?2:3;
+          return `<div style="display:grid;grid-template-columns:repeat(${cols},1fr);gap:2px;margin-bottom:3px;">
+            ${fotos.map((src,i)=>`
+              <div onclick="verImg('${src}')" style="cursor:zoom-in;aspect-ratio:1/1;overflow:hidden;position:relative;">
+                <img src="${src}" style="width:100%;height:100%;object-fit:cover;display:block;" loading="lazy">
+              </div>`).join("")}
+          </div>`;
         })():''}
         ${u.nota?`<div class="vc-nota">${u.nota}</div>`:''}
         ${u.m2hoy?`<div style="margin:0 14px 8px;display:flex;align-items:center;gap:8px;"><span style="font-size:10px;font-weight:700;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.8px;">📐 Área trabajada:</span><span style="font-family:var(--mono);font-size:13px;font-weight:700;color:#fff;">${u.m2hoy} ${u.m2unit||'m²'}</span></div>`:''}
