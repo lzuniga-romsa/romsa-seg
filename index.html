@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v16-auth -->
+<!-- v16b -->
 <html lang="es">
 <head>
 <meta charset="UTF-8">
@@ -400,7 +400,7 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
 .login-forgot{font-size:11px;color:rgba(255,255,255,.3);text-align:center;margin-top:16px;cursor:pointer;text-decoration:underline;}
 
 /* ── ADMIN PANEL ── */
-#screen-admin{padding:16px;}
+#screen-admin{padding:16px;overflow-y:auto;}
 .admin-section{margin-bottom:24px;}
 .admin-sec-title{font-size:10px;font-weight:700;color:var(--tx2);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--g1);}
 .user-row{background:var(--white);border-radius:var(--r-sm);border:1px solid var(--g1);padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:12px;}
@@ -983,7 +983,7 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
     <div class="vc-powered">Seguimiento de obra en tiempo real · ROMSA Industrial · Baja California</div>
 
     <!-- ADMIN PANEL -->
-    <div id="screen-admin" class="screen" style="display:none;">
+    <div id="screen-admin" class="screen">
       <div class="admin-section">
         <div class="admin-sec-title">👥 Usuarios del sistema</div>
         <div id="admin-users-list"><div style="font-size:12px;color:var(--g3);padding:8px 0;">Cargando...</div></div>
@@ -1196,7 +1196,10 @@ function goScreen(n){
     renderObras();
     updateClienteBtn();
   }
-  if(n==="admin" && isAdmin) loadAdminUsers();
+  if(n==="admin"){
+    if(isAdmin){ loadAdminUsers(); }
+    else { goScreen("obras"); }
+  }
 }
 function showDTab(n,btn){
   document.querySelectorAll(".dtab-content").forEach(t=>t.style.display="none");
