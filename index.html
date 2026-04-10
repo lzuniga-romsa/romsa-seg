@@ -572,10 +572,7 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
           <button onclick="showNueva()" style="background:#1E6FD9;border:none;border-radius:12px;padding:13px;display:flex;align-items:center;gap:9px;cursor:pointer;font-family:var(--font);"><div style="width:28px;height:28px;background:rgba(255,255,255,.15);border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 2v10M2 7h10" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></svg></div><div style="text-align:left;"><div style="font-size:12px;font-weight:700;color:#fff;">Nueva obra</div><div style="font-size:9px;color:rgba(255,255,255,.6);">Registrar</div></div></button>
           <button onclick="goScreen('obras')" style="background:#fff;border:1px solid #E0E8F0;border-radius:12px;padding:13px;display:flex;align-items:center;gap:9px;cursor:pointer;font-family:var(--font);"><div style="width:28px;height:28px;background:#F0F3F8;border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="2" y="2" width="4" height="4" rx="1" stroke="#0B1F3A" stroke-width="1.2"/><rect x="8" y="2" width="4" height="4" rx="1" stroke="#0B1F3A" stroke-width="1.2"/><rect x="2" y="8" width="4" height="4" rx="1" stroke="#0B1F3A" stroke-width="1.2"/><rect x="8" y="8" width="4" height="4" rx="1" stroke="#0B1F3A" stroke-width="1.2"/></svg></div><div style="text-align:left;"><div style="font-size:12px;font-weight:700;color:#0B1F3A;">Ver obras</div><div id="dash-ver-sub" style="font-size:9px;color:#7090B8;"></div></div></button>
         </div>
-        <div style="background:#fff;border-radius:12px;border:1px solid #E0E8F0;overflow:hidden;margin-bottom:12px;">
-          <div style="padding:11px 14px;border-bottom:1px solid #F0F3F8;"><div style="font-size:11px;font-weight:700;color:#0B1F3A;">Ultimo check-in</div></div>
-          <div id="dash-last-ci" style="padding:12px 14px;font-size:12px;color:#9BB5CF;">Sin check-ins hoy</div>
-        </div>
+
         <div style="background:#fff;border-radius:12px;border:1px solid #E0E8F0;overflow:hidden;margin-bottom:20px;">
           <div style="padding:11px 14px;border-bottom:1px solid #F0F3F8;"><div style="font-size:11px;font-weight:700;color:#0B1F3A;">Estado de obras</div></div>
           <div id="dash-estado-obras" style="padding:8px 0;"><div style="padding:8px 14px;font-size:12px;color:#9BB5CF;">Sin obras activas</div></div>
@@ -604,7 +601,6 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
       </div>
       <div class="det-tabs">
         <button class="dtab active"  onclick="showDTab('resumen',this)">📊 Resumen</button>
-        <button class="dtab"         onclick="showDTab('checkin',this)">📍 Check-in</button>
         <button class="dtab"         onclick="showDTab('etapas',this)">📋 Etapas</button>
         <button class="dtab"         onclick="showDTab('updates',this)">📸 Updates</button>
         <button class="dtab"         onclick="showDTab('ba',this)">🔄 Antes/Después</button>
@@ -615,10 +611,7 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
 
       <!-- RESUMEN -->
       <div id="dtab-resumen" class="dtab-content" style="padding:16px;">
-        <div style="background:var(--blue-dim);border:1px solid rgba(30,111,217,.2);border-radius:var(--r-sm);padding:10px 14px;display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-          <div style="font-size:12px;font-weight:600;color:var(--blue);">📍 Registra tu check-in del día</div>
-          <button class="btn btn-primary btn-sm" onclick="showDTab('checkin',document.querySelectorAll('.dtab')[1])">Ir a check-in</button>
-        </div>
+
         <div class="card" style="margin-bottom:10px;">
           <div class="card-hd"><span class="card-ttl">Progreso general</span><span class="badge b-blue" id="r-pct-badge">0%</span></div>
           <div class="card-body">
@@ -857,7 +850,10 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
       <div class="admin-section">
         <div class="admin-sec-title" style="display:flex;align-items:center;justify-content:space-between;">
           <span>🕐 Accesos recientes</span>
-          <button onclick="loadCheckinLog()" style="font-size:9px;font-weight:700;padding:4px 10px;border-radius:8px;background:var(--blue-dim);border:1px solid rgba(30,111,217,.3);color:var(--blue);cursor:pointer;">↻ Actualizar</button>
+          <div style="display:flex;gap:6px;">
+            <button onclick="loadCheckinLog()" style="font-size:9px;font-weight:700;padding:4px 10px;border-radius:8px;background:var(--blue-dim);border:1px solid rgba(30,111,217,.3);color:var(--blue);cursor:pointer;">↻ Ver</button>
+            <button onclick="borrarCheckins()" style="font-size:9px;font-weight:700;padding:4px 10px;border-radius:8px;background:var(--red-dim);border:1px solid rgba(239,68,68,.2);color:var(--red);cursor:pointer;">🗑 Borrar</button>
+          </div>
         </div>
         <div id="admin-checkin-log"><div style="font-size:12px;color:var(--g3);">Cargando accesos...</div></div>
       </div>
@@ -987,6 +983,7 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
     <div class="modal-ttl">Nueva obra</div>
     <div class="fdivider">Proyecto</div>
     <div class="fg"><label class="flabel">Nombre de la obra <span class="req">*</span></label><input class="finput" id="no-nombre" placeholder="Ej: Nave Industrial ABC"></div>
+    <div class="fg"><label class="flabel">Técnico responsable <span class="req">*</span></label><input class="finput" id="no-tecnico" placeholder="Nombre completo del técnico"></div>
     <div class="fg"><label class="flabel">Cliente / Empresa <span class="req">*</span></label><input class="finput" id="no-cliente" placeholder="Nombre del cliente"></div>
     <div class="frow">
       <div class="fg"><label class="flabel">Contacto</label><input class="finput" id="no-contacto" placeholder="Nombre del contacto"></div>
@@ -1342,10 +1339,13 @@ function showDTab(n,btn){
 function showNueva(){
   etapasInputCount=0;
   document.getElementById("etapas-input-list").innerHTML="";
-  ["no-nombre","no-cliente","no-contacto","no-tel","no-ubic","no-fecha-ini","no-fecha-fin"].forEach(id=>{
+  ["no-nombre","no-tecnico","no-cliente","no-contacto","no-tel","no-ubic","no-fecha-ini","no-fecha-fin"].forEach(id=>{
     const el=document.getElementById(id);if(el)el.value="";
   });
   addEtapaInput();addEtapaInput();addEtapaInput();
+  // Auto-rellenar técnico con el usuario actual
+  const tecInput = document.getElementById("no-tecnico");
+  if(tecInput && currentUserProfile?.nombre) tecInput.value = currentUserProfile.nombre;
   document.getElementById("modal-nueva").classList.add("open");
   setTimeout(()=>document.getElementById("no-nombre").focus(),300);
 }
@@ -1370,8 +1370,10 @@ function addEtapaInput(){
 // ─── CREAR OBRA ───────────────────────────────────
 async function crearObra(){
   const nom=document.getElementById("no-nombre").value.trim();
+  const tec=document.getElementById("no-tecnico")?.value.trim()||"";
   const cli=document.getElementById("no-cliente").value.trim();
   if(!nom){showToast("⚠️ Ingresa el nombre de la obra");return;}
+  if(!tec){showToast("⚠️ Ingresa el técnico responsable");return;}
   if(!cli){showToast("⚠️ Ingresa el cliente");return;}
   const inputs=document.getElementById("etapas-input-list").querySelectorAll("input[id^='ei-']");
   const etapas=[];
@@ -1379,7 +1381,7 @@ async function crearObra(){
   const now=new Date();
   const id="obra"+Date.now();
   const o={
-    id,ts:Date.now(),nombre:nom,cliente:cli,creadoPorUid:currentUser?.uid||"",
+    id,ts:Date.now(),nombre:nom,cliente:cli,creadoPorUid:currentUser?.uid||"",tecnicoResponsable:tec,creadoPor:tec,
     contacto:document.getElementById("no-contacto").value.trim(),
     tel:document.getElementById("no-tel").value.trim(),
     ubicacion:document.getElementById("no-ubic").value.trim(),
@@ -2082,13 +2084,13 @@ function mostrarVC(o){
     db.collection("encuestas").where("obraId","==",o.id).limit(1).get()
       .then(snap=>{
         if(snap.empty){
-          setTimeout(()=>mostrarEncuesta(o.id, o.nombre, o.cliente), 2500);
+          setTimeout(()=>mostrarEncuesta(o.id, o.nombre, o.cliente), 3000);
         }
       }).catch(()=>{
         // Si falla la consulta, mostrar de todas formas
         const encKey = "enc_"+o.id;
         if(!localStorage.getItem(encKey)){
-          setTimeout(()=>mostrarEncuesta(o.id, o.nombre, o.cliente), 2500);
+          setTimeout(()=>mostrarEncuesta(o.id, o.nombre, o.cliente), 3000);
         }
       });
   }
@@ -2879,6 +2881,7 @@ function mostrarEncuesta(obraId, obraNombre, obraCliente){
   _encOpciones = [];
   _encRecomendaria = null;
   document.getElementById("enc-comentario").value = "";
+  ["enc-nombre","enc-cargo","enc-email"].forEach(id=>{const el=document.getElementById(id);if(el)el.value="";});
   document.querySelectorAll(".enc-star").forEach(s=>s.classList.remove("active"));
   document.querySelectorAll(".enc-option").forEach(o=>o.classList.remove("selected"));
   document.getElementById("encuesta-overlay").classList.add("open");
@@ -2909,14 +2912,24 @@ function toggleEncOpcion(el, valor, esUnica=false){
 }
 
 async function enviarEncuesta(){
+  const encNombre = document.getElementById("enc-nombre")?.value.trim();
+  const encCargo = document.getElementById("enc-cargo")?.value.trim();
+  if(!encNombre){ showToast("⚠️ Ingresa tu nombre"); return; }
+  if(!encCargo){ showToast("⚠️ Ingresa tu cargo"); return; }
   if(!_encEstrellas){ showToast("⭐ Selecciona una calificación"); return; }
   const btn = document.getElementById("btn-enviar-enc");
   btn.disabled = true; btn.textContent = "Enviando...";
   try{
     const now = new Date();
     localStorage.setItem("enc_"+_encObraId, "1");
+    const encNombreVal = document.getElementById("enc-nombre")?.value.trim()||"";
+    const encCargoVal = document.getElementById("enc-cargo")?.value.trim()||"";
+    const encEmailVal = document.getElementById("enc-email")?.value.trim()||"";
     await db.collection("encuestas").add({
       obraId: _encObraId,
+      clienteNombre: encNombreVal,
+      clienteCargo: encCargoVal,
+      clienteEmail: encEmailVal,
       estrellas: _encEstrellas,
       destacados: _encOpciones,
       recomendaria: _encRecomendaria,
@@ -2974,6 +2987,8 @@ async function loadEncuestas(){
           <div style="font-size:10px;color:var(--g3);">${d.fecha}</div>
         </div>
         ${d.obraId&&obrasMap[d.obraId]?`<div style="font-size:10px;font-weight:700;color:var(--blue);background:var(--blue-pale);padding:3px 9px;border-radius:8px;margin-bottom:7px;display:inline-block;">📋 ${obrasMap[d.obraId]}</div><br>`:""}
+        ${d.clienteNombre?`<div style="font-size:12px;font-weight:600;color:var(--tx);margin-bottom:2px;">${d.clienteNombre}${d.clienteCargo?" · "+d.clienteCargo:""}</div>`:""}
+        ${d.clienteEmail?`<div style="font-size:10px;color:var(--tx2);margin-bottom:6px;">✉️ ${d.clienteEmail}</div>`:""}
         ${d.destacados?.length?`<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px;">${d.destacados.map(t=>`<span style="background:var(--blue-pale);color:#185FA5;font-size:9px;font-weight:700;padding:2px 8px;border-radius:10px;">${t}</span>`).join("")}</div>`:""}
         ${d.recomendaria?`<div style="font-size:11px;color:var(--tx2);margin-bottom:4px;">${d.recomendaria==='Sí recomendaría'?'👍':'👎'} ${d.recomendaria}</div>`:""}
         ${d.comentario?`<div style="font-size:12px;color:var(--tx2);font-style:italic;">"${d.comentario}"</div>`:""}
@@ -3032,6 +3047,20 @@ function contactarWhatsApp(){
   const msg = encodeURIComponent("Hola ROMSA Industrial, te contacto respecto al proyecto: *" + nombre + "*. Mi consulta es: ");
   const url = "https://wa.me/" + tel + "?text=" + msg;
   window.open(url, "_blank");
+}
+
+
+// ── Admin: borrar checkins de acceso ────────────────────────────
+async function borrarCheckins(){
+  const el = document.getElementById("admin-checkin-log");
+  const snap = await db.collection("checkins_login").get();
+  if(!snap.docs.length){ showToast("ℹ️ Sin accesos que borrar"); return; }
+  if(!confirm("¿Borrar los "+snap.docs.length+" registros de acceso? Esta acción no se puede deshacer.")) return;
+  const batch = db.batch();
+  snap.docs.forEach(d=>batch.delete(d.ref));
+  await batch.commit();
+  if(el) el.innerHTML='<div style="font-size:12px;color:var(--g3);padding:8px 0;">Sin accesos registrados</div>';
+  showToast("🗑 Registros de acceso eliminados");
 }
 
 // ─── INIT ────────────────────────────────────────
@@ -3374,6 +3403,14 @@ function autoFillTecnico(){
       <div style="font-size:19px;font-weight:800;color:var(--navy);margin-bottom:6px;">¡Obra completada!</div>
       <div id="enc-obra-titulo" style="display:none;font-size:11px;font-weight:700;color:var(--blue);background:var(--blue-pale);padding:5px 12px;border-radius:20px;margin:0 auto 10px;max-width:fit-content;"></div>
       <div style="font-size:13px;color:var(--tx2);line-height:1.5;">Tu opinión nos ayuda a mejorar.<br>Solo toma 30 segundos.</div>
+    </div>
+
+    <!-- Datos del cliente -->
+    <div style="margin-bottom:20px;">
+      <div style="font-size:12px;font-weight:700;color:var(--tx2);letter-spacing:.5px;margin-bottom:10px;">Tus datos</div>
+      <div class="fg" style="margin-bottom:8px;"><label class="flabel">Nombre completo <span class="req">*</span></label><input class="finput" id="enc-nombre" placeholder="Tu nombre"></div>
+      <div class="fg" style="margin-bottom:8px;"><label class="flabel">Cargo / Puesto <span class="req">*</span></label><input class="finput" id="enc-cargo" placeholder="Gerente de Planta, Compras..."></div>
+      <div class="fg" style="margin-bottom:0;"><label class="flabel">Correo electrónico <span style="color:var(--g3);font-weight:400;">(opcional)</span></label><input class="finput" id="enc-email" type="email" placeholder="tu@correo.com"></div>
     </div>
 
     <!-- Pregunta 1: Estrellas -->
