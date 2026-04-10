@@ -473,6 +473,22 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
 .obs-alert{background:linear-gradient(135deg,var(--blue),#1A5FBF);border-radius:12px;padding:14px 16px;margin-bottom:16px;color:#fff;}
 .obs-alert-title{font-size:14px;font-weight:700;margin-bottom:4px;}
 .obs-alert-sub{font-size:11px;opacity:.8;line-height:1.5;}
+
+/* ── INSTRUCCIONES PDF MÓVIL ── */
+#pdf-instrucciones{
+  position:fixed;bottom:0;left:0;right:0;
+  background:#fff;border-radius:20px 20px 0 0;
+  padding:20px 20px calc(20px + var(--safe-bot));
+  box-shadow:0 -8px 32px rgba(11,31,58,.15);
+  z-index:600;transform:translateY(100%);
+  transition:transform .3s cubic-bezier(.34,1.56,.64,1);
+}
+#pdf-instrucciones.show{transform:translateY(0);}
+.pdf-paso{display:flex;align-items:flex-start;gap:12px;padding:10px 0;border-bottom:1px solid var(--off2);}
+.pdf-paso:last-child{border-bottom:none;}
+.pdf-paso-num{width:24px;height:24px;border-radius:50%;background:var(--blue);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;}
+.pdf-paso-txt{font-size:13px;color:var(--tx);line-height:1.5;}
+.pdf-paso-sub{font-size:11px;color:var(--tx2);margin-top:2px;}
 </style>
 </head>
 <body>
@@ -1127,7 +1143,7 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
   <div class="pdf-topbar">
     <button class="btn btn-secondary btn-sm" onclick="closePdf()">← Cerrar</button>
     <span style="color:#fff;font-size:13px;font-weight:600;">Reporte final de obra</span>
-    <button class="btn btn-primary btn-sm" onclick="window.print()">⬇ Descargar Reporte Final de Obra</button>
+    <button class="btn btn-primary btn-sm" id="btn-descargar-pdf" onclick="descargarReportePDF()">⬇ Descargar Reporte Final de Obra</button>
   </div>
   <div class="pdf-body" id="pdf-body"></div>
 </div>
@@ -3063,6 +3079,39 @@ async function borrarCheckins(){
   showToast("🗑 Registros de acceso eliminados");
 }
 
+
+// ── Descarga de reporte PDF con instrucciones por dispositivo ────
+function descargarReportePDF(){
+  const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const isAndroid = /android/i.test(navigator.userAgent);
+  const isMobile = isIos || isAndroid;
+
+  if(!isMobile){
+    // Desktop: imprimir directamente
+    window.print();
+    return;
+  }
+
+  // Móvil: mostrar instrucciones específicas
+  const panelIos = document.getElementById("pdf-instrucciones-ios");
+  const panelAndroid = document.getElementById("pdf-instrucciones-android");
+  if(panelIos) panelIos.style.display = isIos ? "block" : "none";
+  if(panelAndroid) panelAndroid.style.display = isAndroid ? "block" : "none";
+
+  document.getElementById("pdf-instrucciones").classList.add("show");
+  document.getElementById("pdf-instrucciones-overlay").style.display = "block";
+}
+
+function imprimirAhora(){
+  cerrarInstruccionesPDF();
+  setTimeout(()=>window.print(), 300);
+}
+
+function cerrarInstruccionesPDF(){
+  document.getElementById("pdf-instrucciones").classList.remove("show");
+  document.getElementById("pdf-instrucciones-overlay").style.display = "none";
+}
+
 // ─── INIT ────────────────────────────────────────
 // Auth maneja el inicio — ver auth.onAuthStateChanged arriba
 // La vista cliente pública no requiere auth
@@ -3488,5 +3537,59 @@ function autoFillTecnico(){
     </div>
   </div>
 </div>
+
+<!-- INSTRUCCIONES DESCARGA PDF MÓVIL -->
+<div id="pdf-instrucciones">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+    <div style="font-size:16px;font-weight:700;color:var(--navy);">Guardar como PDF</div>
+    <button onclick="cerrarInstruccionesPDF()" style="background:var(--off);border:none;width:30px;height:30px;border-radius:50%;font-size:16px;cursor:pointer;color:var(--g3);">×</button>
+  </div>
+  <div id="pdf-instrucciones-ios" style="display:none;">
+    <div style="background:#F0F7FF;border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:var(--blue);">
+      📱 En tu iPhone/iPad sigue estos pasos:
+    </div>
+    <div class="pdf-paso">
+      <div class="pdf-paso-num">1</div>
+      <div><div class="pdf-paso-txt">Toca el botón <strong>Compartir</strong> en Safari</div><div class="pdf-paso-sub">El ícono de cuadro con flecha hacia arriba (↑) en la barra inferior</div></div>
+    </div>
+    <div class="pdf-paso">
+      <div class="pdf-paso-num">2</div>
+      <div><div class="pdf-paso-txt">Selecciona <strong>"Imprimir"</strong></div><div class="pdf-paso-sub">Desplázate en el menú hasta encontrar la opción</div></div>
+    </div>
+    <div class="pdf-paso">
+      <div class="pdf-paso-num">3</div>
+      <div><div class="pdf-paso-txt">Abre la vista previa y <strong>pellizca para ampliar</strong></div><div class="pdf-paso-sub">Haz zoom con dos dedos sobre la vista previa de la impresión</div></div>
+    </div>
+    <div class="pdf-paso">
+      <div class="pdf-paso-num">4</div>
+      <div><div class="pdf-paso-txt">Toca el ícono <strong>Compartir</strong> de nuevo</div><div class="pdf-paso-sub">Elige "Guardar en Archivos" o "Guardar en Fotos"</div></div>
+    </div>
+  </div>
+  <div id="pdf-instrucciones-android" style="display:none;">
+    <div style="background:#F0F7FF;border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:var(--blue);">
+      📱 En tu Android sigue estos pasos:
+    </div>
+    <div class="pdf-paso">
+      <div class="pdf-paso-num">1</div>
+      <div><div class="pdf-paso-txt">Toca el menú <strong>⋮</strong> de Chrome</div><div class="pdf-paso-sub">Los tres puntos verticales en la esquina superior derecha</div></div>
+    </div>
+    <div class="pdf-paso">
+      <div class="pdf-paso-num">2</div>
+      <div><div class="pdf-paso-txt">Selecciona <strong>"Compartir"</strong> → <strong>"Imprimir"</strong></div><div class="pdf-paso-sub">O directamente "Imprimir" si aparece en el menú</div></div>
+    </div>
+    <div class="pdf-paso">
+      <div class="pdf-paso-num">3</div>
+      <div><div class="pdf-paso-txt">En la impresora selecciona <strong>"Guardar como PDF"</strong></div><div class="pdf-paso-sub">Toca el ícono de PDF o el selector de impresora</div></div>
+    </div>
+    <div class="pdf-paso">
+      <div class="pdf-paso-num">4</div>
+      <div><div class="pdf-paso-txt">Elige dónde guardar y toca <strong>Guardar</strong></div></div>
+    </div>
+  </div>
+  <button class="btn btn-primary btn-block" id="btn-imprimir-ahora" onclick="imprimirAhora()" style="margin-top:14px;">
+    🖨️ Abrir diálogo de impresión/PDF
+  </button>
+</div>
+<div id="pdf-instrucciones-overlay" onclick="cerrarInstruccionesPDF()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:599;"></div>
 </body>
 </html>
