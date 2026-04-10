@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v16c -->
+<!-- v16e -->
 <html lang="es">
 <head>
 <meta charset="UTF-8">
@@ -751,7 +751,10 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
     <!-- ADMIN PANEL -->
     <div id="screen-admin" class="screen">
       <div class="admin-section">
-        <div class="admin-sec-title">👥 Usuarios del sistema</div>
+        <div class="admin-sec-title" style="display:flex;align-items:center;justify-content:space-between;">
+          <span>👥 Usuarios del sistema</span>
+          <button onclick="seedUsuariosIniciales()" style="font-size:9px;font-weight:700;padding:4px 10px;border-radius:8px;background:var(--blue-dim);border:1px solid rgba(30,111,217,.3);color:var(--blue);cursor:pointer;">⚡ Setup inicial</button>
+        </div>
         <div id="admin-users-list"><div style="font-size:12px;color:var(--g3);padding:8px 0;">Cargando...</div></div>
       </div>
       <div class="admin-section">
@@ -2678,6 +2681,25 @@ async function doForgotPassword(){
   }catch(e){ showLoginError("Error: " + e.message); }
 }
 
+// ── Admin: seed inicial de usuarios conocidos ───────────────────
+async function seedUsuariosIniciales(){
+  const conocidos = [
+    {uid:"OVsuuX8DsSdhLqXmK01gW2K8Rrh1", nombre:"Luis Fernando Zúñiga", email:"lzuniga@romsaindustrial.mx", rol:"admin", activo:true, creadoEn:Date.now()},
+    {uid:"PnJ6hy75AvM25vsav8govI0i3Jq1", nombre:"S. Roman", email:"sroman@romsaindustrial.com", rol:"tecnico", activo:true, creadoEn:Date.now()},
+    {uid:"s8nSd0IJxzfijQ5EnRzGa6eLUUi2", nombre:"Gael Rubio", email:"gael.rubio@uabc.edu.mx", rol:"tecnico", activo:true, creadoEn:Date.now()},
+  ];
+  let creados = 0;
+  for(const u of conocidos){
+    const doc = await usersRef.doc(u.uid).get();
+    if(!doc.exists){
+      await usersRef.doc(u.uid).set(u);
+      creados++;
+    }
+  }
+  showToast(creados > 0 ? "✅ "+creados+" perfiles creados" : "ℹ️ Perfiles ya existían");
+  loadAdminUsers();
+}
+
 // ── Admin: cargar lista de usuarios ─────────────────────────────
 async function loadAdminUsers(){
   const el = document.getElementById("admin-users-list");
@@ -2692,7 +2714,7 @@ async function loadAdminUsers(){
       const u = doc.data();
       const ini = (u.nombre||"?").split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase();
       const isMe = u.uid === currentUser?.uid;
-      return `<div class="user-row">
+      return `<div class="user-row" style="flex-wrap:wrap;gap:8px;">
         <div class="user-avatar ${u.rol==='admin'?'admin':'tecnico'}">${ini}</div>
         <div class="user-info">
           <div class="user-name">${u.nombre}${isMe?' <span style="font-size:9px;color:var(--g3);">(tú)</span>':''}</div>
@@ -2700,6 +2722,7 @@ async function loadAdminUsers(){
         </div>
         <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px;">
           <span class="user-role-badge ${u.rol==='admin'?'role-admin':'role-tecnico'}">${u.rol==='admin'?'Admin':'Técnico'}</span>
+          <button onclick="editarUsuario('${u.uid}','${u.nombre}','${u.email}')" style="font-size:9px;font-weight:700;padding:2px 8px;border-radius:8px;border:none;cursor:pointer;background:var(--blue-dim);color:var(--blue);">✎ Editar</button>
           ${!isMe?`<button onclick="toggleUserActivo('${u.uid}',${u.activo})" style="font-size:9px;font-weight:700;padding:2px 8px;border-radius:8px;border:none;cursor:pointer;background:${u.activo?'var(--red-dim)':'var(--green-dim)'};color:${u.activo?'var(--red)':'#0B7A5A'};">${u.activo?'Desactivar':'Activar'}</button>`:''}
         </div>
       </div>`;
@@ -2734,6 +2757,15 @@ async function crearTecnico(){
     showToast("❌ "+(msgs[e.code]||e.message));
   }
   btn.disabled = false; btn.textContent = "Crear técnico →";
+}
+
+// ── Admin: editar nombre de usuario ─────────────────────────────
+async function editarUsuario(uid, nombreActual, email){
+  const nuevoNombre = prompt("Nombre del usuario:", nombreActual);
+  if(!nuevoNombre || nuevoNombre.trim() === nombreActual) return;
+  await usersRef.doc(uid).update({nombre: nuevoNombre.trim()});
+  showToast("✅ Nombre actualizado");
+  loadAdminUsers();
 }
 
 // ── Admin: activar/desactivar usuario ────────────────────────────
