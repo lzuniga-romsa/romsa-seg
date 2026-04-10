@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v15f -->
+<!-- v16-auth -->
 <html lang="es">
 <head>
 <meta charset="UTF-8">
@@ -11,6 +11,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
 :root{
@@ -374,11 +375,70 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
 .vc-footer-btn.primary{background:var(--blue);border-color:var(--blue);box-shadow:0 2px 10px rgba(30,111,217,.35);}
 .vc-powered{text-align:center;font-size:10px;color:rgba(255,255,255,.15);padding:12px 0 calc(16px + var(--safe-bot));}
 @keyframes pulse-dot{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.5;transform:scale(.7);}}
+
+/* ── LOGIN SCREEN ── */
+#login-screen{
+  position:fixed;inset:0;background:#0B1829;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  z-index:1000;padding:32px 28px;
+}
+#login-screen.hidden{display:none;}
+.login-logo{height:32px;width:auto;filter:brightness(0) invert(1);margin-bottom:10px;}
+.login-sub{font-size:11px;color:rgba(255,255,255,.3);letter-spacing:.5px;margin-bottom:40px;}
+.login-card{width:100%;max-width:360px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:20px;padding:28px 24px;}
+.login-title{font-size:18px;font-weight:700;color:#fff;margin-bottom:4px;}
+.login-desc{font-size:12px;color:rgba(255,255,255,.4);margin-bottom:24px;}
+.login-field{margin-bottom:16px;}
+.login-label{font-size:10px;font-weight:700;color:rgba(255,255,255,.4);letter-spacing:1.2px;text-transform:uppercase;display:block;margin-bottom:6px;}
+.login-input{width:100%;background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.1);border-radius:10px;color:#fff;font-family:var(--font);font-size:15px;padding:12px 14px;-webkit-appearance:none;transition:border-color .2s;}
+.login-input:focus{outline:none;border-color:var(--blue);}
+.login-input::placeholder{color:rgba(255,255,255,.2);}
+.login-btn{width:100%;background:var(--blue);color:#fff;border:none;border-radius:10px;font-family:var(--font);font-size:14px;font-weight:700;padding:14px;cursor:pointer;margin-top:8px;transition:all .15s;box-shadow:0 4px 16px rgba(30,111,217,.35);}
+.login-btn:active{transform:scale(.97);}
+.login-btn:disabled{opacity:.5;cursor:not-allowed;}
+.login-error{font-size:12px;color:#F87171;margin-top:12px;text-align:center;min-height:18px;}
+.login-forgot{font-size:11px;color:rgba(255,255,255,.3);text-align:center;margin-top:16px;cursor:pointer;text-decoration:underline;}
+
+/* ── ADMIN PANEL ── */
+#screen-admin{padding:16px;}
+.admin-section{margin-bottom:24px;}
+.admin-sec-title{font-size:10px;font-weight:700;color:var(--tx2);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--g1);}
+.user-row{background:var(--white);border-radius:var(--r-sm);border:1px solid var(--g1);padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:12px;}
+.user-avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;}
+.user-avatar.admin{background:rgba(30,111,217,.15);color:var(--blue);}
+.user-avatar.tecnico{background:rgba(16,185,129,.12);color:#0B7A5A;}
+.user-info{flex:1;min-width:0;}
+.user-name{font-size:13px;font-weight:600;color:var(--tx);}
+.user-email{font-size:11px;color:var(--tx2);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.user-role-badge{font-size:9px;font-weight:700;padding:2px 8px;border-radius:10px;}
+.role-admin{background:rgba(30,111,217,.1);color:var(--blue);}
+.role-tecnico{background:rgba(16,185,129,.1);color:#0B7A5A;}
 </style>
 </head>
 <body>
 
-<div id="app">
+<!-- LOGIN SCREEN -->
+<div id="login-screen">
+  <img class="login-logo" id="login-logo-img" alt="ROMSA" src="">
+  <div class="login-sub">SISTEMA DE SEGUIMIENTO DE OBRA</div>
+  <div class="login-card">
+    <div class="login-title">Iniciar sesión</div>
+    <div class="login-desc">Acceso exclusivo para personal autorizado</div>
+    <div class="login-field">
+      <label class="login-label">Correo electrónico</label>
+      <input class="login-input" id="login-email" type="email" placeholder="tu@correo.com" autocomplete="email">
+    </div>
+    <div class="login-field">
+      <label class="login-label">Contraseña</label>
+      <input class="login-input" id="login-password" type="password" placeholder="••••••••" autocomplete="current-password">
+    </div>
+    <button class="login-btn" id="login-btn" onclick="doLogin()">Entrar →</button>
+    <div class="login-error" id="login-error"></div>
+    <div class="login-forgot" onclick="doForgotPassword()">¿Olvidaste tu contraseña?</div>
+  </div>
+</div>
+
+<div id="app" style="display:none;">
   <div id="topbar" style="flex-direction:column;padding:10px 16px 0;align-items:center;">
     <div style="display:flex;justify-content:center;width:100%;padding:4px 0 8px;">
       <img id="tb-logo-img" alt="ROMSA" src="" style="height:30px;width:auto;filter:brightness(0) invert(1);">
@@ -394,6 +454,7 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
     <div class="snav" id="snav-nueva" onclick="showNueva()" style="position:relative;">+ Nueva
       <span id="tb-user-badge" style="position:absolute;top:-6px;right:-4px;background:#1E6FD9;color:#fff;font-size:8px;font-weight:700;padding:2px 6px;border-radius:10px;white-space:nowrap;display:none;max-width:80px;overflow:hidden;text-overflow:ellipsis;"></span>
     </div>
+    <div class="snav" id="snav-admin" onclick="goScreen('admin')" style="display:none;">Admin</div>
   </div>
 
   <div id="main">
@@ -920,6 +981,35 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
       <div class="vc-footer-btn primary" onclick="cerrarVC()">← Cerrar vista</div>
     </div>
     <div class="vc-powered">Seguimiento de obra en tiempo real · ROMSA Industrial · Baja California</div>
+
+    <!-- ADMIN PANEL -->
+    <div id="screen-admin" class="screen" style="display:none;">
+      <div class="admin-section">
+        <div class="admin-sec-title">👥 Usuarios del sistema</div>
+        <div id="admin-users-list"><div style="font-size:12px;color:var(--g3);padding:8px 0;">Cargando...</div></div>
+      </div>
+      <div class="admin-section">
+        <div class="admin-sec-title">➕ Crear nuevo técnico</div>
+        <div class="card">
+          <div class="card-body">
+            <div class="fg"><label class="flabel">Nombre completo <span class="req">*</span></label><input class="finput" id="new-user-nombre" placeholder="Nombre Apellido"></div>
+            <div class="fg"><label class="flabel">Correo electrónico <span class="req">*</span></label><input class="finput" id="new-user-email" type="email" placeholder="tecnico@romsa.mx"></div>
+            <div class="fg"><label class="flabel">Contraseña temporal <span class="req">*</span></label><input class="finput" id="new-user-pass" type="password" placeholder="Mínimo 6 caracteres"></div>
+            <div class="fg"><label class="flabel">Teléfono</label><input class="finput" id="new-user-tel" type="tel" placeholder="664 000 0000"></div>
+            <button class="btn btn-primary btn-block" id="btn-crear-usuario" onclick="crearTecnico()">Crear técnico →</button>
+          </div>
+        </div>
+      </div>
+      <div class="admin-section">
+        <div class="admin-sec-title">⚙️ Mi cuenta</div>
+        <div class="card">
+          <div class="card-body">
+            <div id="admin-mi-cuenta" style="font-size:13px;color:var(--tx2);margin-bottom:12px;"></div>
+            <button class="btn btn-danger btn-block" onclick="doLogout()">Cerrar sesión</button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -1106,6 +1196,7 @@ function goScreen(n){
     renderObras();
     updateClienteBtn();
   }
+  if(n==="admin" && isAdmin) loadAdminUsers();
 }
 function showDTab(n,btn){
   document.querySelectorAll(".dtab-content").forEach(t=>t.style.display="none");
@@ -2405,18 +2496,10 @@ function renderDashboard(){
   }
 }
 // ─── PERFIL TÉCNICO ───────────────────────────────
-function getPerfil(){ try{const d=localStorage.getItem("romsa_perfil");return d?JSON.parse(d):null;}catch(e){return null;} }
-function savePerfil(p){ try{localStorage.setItem("romsa_perfil",JSON.stringify(p));}catch(e){} }
+// getPerfil y savePerfil reemplazados por Firebase Auth
+function savePerfil(p){ /* reemplazado por Auth */ }
 function checkPerfil(){
-  const p=getPerfil();
-  if(!p||!p.nombre){
-    document.getElementById("modal-perfil").classList.add("open");
-    return false;
-  }
-  // Show name in topbar
-  document.getElementById("tb-tecnico-name").textContent=p.nombre;
-  var badge=document.getElementById("tb-user-badge");
-  if(badge){badge.textContent=p.nombre.split(" ")[0];badge.style.display="inline";}
+  // Auth maneja el perfil — esta función queda como stub
   return true;
 }
 function guardarPerfil(){
@@ -2442,12 +2525,229 @@ function autoFillTecnico(){
   return p?.nombre||"";
 }
 // ─── INIT ────────────────────────────────────────
-// logos already set in img src attributes
-subscribeObras();
-checkUrlParams();
-updateHoraCi();
+// Auth maneja el inicio — ver auth.onAuthStateChanged arriba
+// La vista cliente pública no requiere auth
 const _params=new URLSearchParams(window.location.search);
-if(!_params.get("obra")){ checkPerfil(); }
+if(_params.get("obra")){
+  // Vista pública del cliente — sin login
+  document.getElementById("login-screen").classList.add("hidden");
+  document.getElementById("app").style.display = "none";
+  // Inicializar Firebase sin auth para vista cliente
+  if(typeof obrasRef !== "undefined") checkUrlParams();
+}
+updateHoraCi();
+// ═══════════════════════════════════════════════════════════════
+// ─── AUTH & ROLES ──────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+const ADMIN_UID = "OVsuuX8DsSdhLqXmK01gW2K8Rrh1";
+const auth = firebase.auth();
+const usersRef = db.collection("usuarios");
+
+let currentUser = null;
+let currentUserProfile = null;
+let isAdmin = false;
+
+// ── Inicializar Auth state ──────────────────────────────────────
+auth.onAuthStateChanged(async user => {
+  if(user){
+    currentUser = user;
+    isAdmin = (user.uid === ADMIN_UID);
+    // Cargar perfil desde Firestore
+    try{
+      const doc = await usersRef.doc(user.uid).get();
+      if(doc.exists){
+        currentUserProfile = doc.data();
+      } else {
+        // Primera vez: crear perfil automáticamente para admin
+        if(isAdmin){
+          currentUserProfile = {uid:user.uid, nombre:"Administrador", email:user.email, rol:"admin", activo:true};
+          await usersRef.doc(user.uid).set(currentUserProfile);
+        } else {
+          // Usuario sin perfil — cerrar sesión
+          await auth.signOut();
+          showLoginError("Tu cuenta no tiene perfil asignado. Contacta al administrador.");
+          return;
+        }
+      }
+      // Verificar que esté activo
+      if(!currentUserProfile.activo && !isAdmin){
+        await auth.signOut();
+        showLoginError("Tu cuenta ha sido desactivada. Contacta al administrador.");
+        return;
+      }
+    }catch(e){ console.error("Error cargando perfil:", e); }
+
+    // Ocultar login, mostrar app
+    document.getElementById("login-screen").classList.add("hidden");
+    document.getElementById("app").style.display = "";
+
+    // Mostrar nombre en topbar
+    const nombre = currentUserProfile?.nombre || user.email;
+    document.getElementById("tb-tecnico-name").textContent = nombre;
+    const badge = document.getElementById("tb-user-badge");
+    if(badge){ badge.textContent = nombre.split(" ")[0]; badge.style.display = "inline"; }
+
+    // Mostrar tab Admin solo para admin
+    const adminTab = document.getElementById("snav-admin");
+    if(adminTab) adminTab.style.display = isAdmin ? "" : "none";
+
+    // Logo en login
+    const ll = document.getElementById("login-logo-img");
+    const ml = document.getElementById("tb-logo-img");
+    if(ll && ml) ll.src = ml.src;
+
+    // Inicializar app
+    subscribeObras();
+    checkUrlParams();
+    updateHoraCi();
+
+  } else {
+    // No hay sesión — mostrar login
+    currentUser = null;
+    currentUserProfile = null;
+    isAdmin = false;
+    document.getElementById("login-screen").classList.remove("hidden");
+    document.getElementById("app").style.display = "none";
+    // Copiar logo al login
+    setTimeout(()=>{
+      const ml = document.getElementById("tb-logo-img");
+      const ll = document.getElementById("login-logo-img");
+      if(ll && ml && ml.src) ll.src = ml.src;
+    }, 500);
+  }
+});
+
+// ── Login ───────────────────────────────────────────────────────
+async function doLogin(){
+  const email = document.getElementById("login-email").value.trim();
+  const pass = document.getElementById("login-password").value;
+  const btn = document.getElementById("login-btn");
+  const errEl = document.getElementById("login-error");
+  if(!email || !pass){ showLoginError("Ingresa correo y contraseña"); return; }
+  btn.disabled = true;
+  btn.textContent = "Entrando...";
+  errEl.textContent = "";
+  try{
+    await auth.signInWithEmailAndPassword(email, pass);
+    // onAuthStateChanged se encarga del resto
+  }catch(e){
+    btn.disabled = false;
+    btn.textContent = "Entrar →";
+    const msgs = {
+      "auth/user-not-found": "Usuario no encontrado",
+      "auth/wrong-password": "Contraseña incorrecta",
+      "auth/invalid-email": "Correo inválido",
+      "auth/too-many-requests": "Demasiados intentos. Espera un momento.",
+      "auth/invalid-credential": "Correo o contraseña incorrectos"
+    };
+    showLoginError(msgs[e.code] || "Error: " + e.message);
+  }
+}
+
+function showLoginError(msg){
+  document.getElementById("login-error").textContent = msg;
+  const btn = document.getElementById("login-btn");
+  btn.disabled = false;
+  btn.textContent = "Entrar →";
+}
+
+// Enter en campos de login
+document.getElementById("login-password")?.addEventListener("keydown", e=>{ if(e.key==="Enter") doLogin(); });
+document.getElementById("login-email")?.addEventListener("keydown", e=>{ if(e.key==="Enter") document.getElementById("login-password")?.focus(); });
+
+// ── Logout ──────────────────────────────────────────────────────
+async function doLogout(){
+  if(!confirm("¿Cerrar sesión?")) return;
+  await auth.signOut();
+  obras = [];
+  showToast("👋 Sesión cerrada");
+}
+
+// ── Recuperar contraseña ─────────────────────────────────────────
+async function doForgotPassword(){
+  const email = document.getElementById("login-email").value.trim();
+  if(!email){ showLoginError("Ingresa tu correo primero"); return; }
+  try{
+    await auth.sendPasswordResetEmail(email);
+    showLoginError("✅ Correo de recuperación enviado");
+  }catch(e){ showLoginError("Error: " + e.message); }
+}
+
+// ── Admin: cargar lista de usuarios ─────────────────────────────
+async function loadAdminUsers(){
+  const el = document.getElementById("admin-users-list");
+  const miCuenta = document.getElementById("admin-mi-cuenta");
+  if(miCuenta && currentUser){
+    miCuenta.innerHTML = `<strong>${currentUserProfile?.nombre||"Admin"}</strong><br><span style="font-size:11px;color:var(--tx3);">${currentUser.email}</span>`;
+  }
+  try{
+    const snap = await usersRef.orderBy("nombre").get();
+    if(!snap.docs.length){ el.innerHTML='<div style="font-size:12px;color:var(--g3);">Sin usuarios registrados</div>'; return; }
+    el.innerHTML = snap.docs.map(doc=>{
+      const u = doc.data();
+      const ini = (u.nombre||"?").split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase();
+      const isMe = u.uid === currentUser?.uid;
+      return `<div class="user-row">
+        <div class="user-avatar ${u.rol==='admin'?'admin':'tecnico'}">${ini}</div>
+        <div class="user-info">
+          <div class="user-name">${u.nombre}${isMe?' <span style="font-size:9px;color:var(--g3);">(tú)</span>':''}</div>
+          <div class="user-email">${u.email}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px;">
+          <span class="user-role-badge ${u.rol==='admin'?'role-admin':'role-tecnico'}">${u.rol==='admin'?'Admin':'Técnico'}</span>
+          ${!isMe?`<button onclick="toggleUserActivo('${u.uid}',${u.activo})" style="font-size:9px;font-weight:700;padding:2px 8px;border-radius:8px;border:none;cursor:pointer;background:${u.activo?'var(--red-dim)':'var(--green-dim)'};color:${u.activo?'var(--red)':'#0B7A5A'};">${u.activo?'Desactivar':'Activar'}</button>`:''}
+        </div>
+      </div>`;
+    }).join("");
+  }catch(e){ el.innerHTML='<div style="font-size:12px;color:var(--red);">Error: '+e.message+'</div>'; }
+}
+
+// ── Admin: crear técnico ─────────────────────────────────────────
+async function crearTecnico(){
+  if(!isAdmin){ showToast("⚠️ Solo el administrador puede crear usuarios"); return; }
+  const nombre = document.getElementById("new-user-nombre").value.trim();
+  const email = document.getElementById("new-user-email").value.trim();
+  const pass = document.getElementById("new-user-pass").value;
+  const tel = document.getElementById("new-user-tel").value.trim();
+  if(!nombre||!email||!pass){ showToast("⚠️ Nombre, correo y contraseña son requeridos"); return; }
+  if(pass.length < 6){ showToast("⚠️ La contraseña debe tener mínimo 6 caracteres"); return; }
+  const btn = document.getElementById("btn-crear-usuario");
+  btn.disabled = true; btn.textContent = "Creando...";
+  try{
+    // Crear usuario en Firebase Auth
+    const cred = await auth.createUserWithEmailAndPassword(email, pass);
+    const uid = cred.user.uid;
+    // Guardar perfil en Firestore
+    await usersRef.doc(uid).set({uid, nombre, email, tel, rol:"tecnico", activo:true, creadoEn:Date.now()});
+    // Volver a iniciar sesión como admin (createUser cambia la sesión activa)
+    // No es necesario — Firebase Web no cambia la sesión al crear usuarios con compat SDK
+    ["new-user-nombre","new-user-email","new-user-pass","new-user-tel"].forEach(id=>document.getElementById(id).value="");
+    showToast("✅ Técnico "+nombre+" creado");
+    loadAdminUsers();
+  }catch(e){
+    const msgs = {"auth/email-already-in-use":"Este correo ya está registrado","auth/invalid-email":"Correo inválido"};
+    showToast("❌ "+(msgs[e.code]||e.message));
+  }
+  btn.disabled = false; btn.textContent = "Crear técnico →";
+}
+
+// ── Admin: activar/desactivar usuario ────────────────────────────
+async function toggleUserActivo(uid, activo){
+  if(!isAdmin) return;
+  await usersRef.doc(uid).update({activo: !activo});
+  showToast(activo ? "🔒 Usuario desactivado" : "✅ Usuario activado");
+  loadAdminUsers();
+}
+
+// ── getPerfil: usar currentUserProfile en lugar de localStorage ──
+function getPerfil(){
+  if(currentUserProfile) return {nombre:currentUserProfile.nombre, puesto:currentUserProfile.rol, tel:currentUserProfile.tel||""};
+  return null;
+}
+function autoFillTecnico(){
+  return currentUserProfile?.nombre || "";
+}
+
 </script>
 </body>
 </html>
