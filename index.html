@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v16b -->
+<!-- v16c -->
 <html lang="es">
 <head>
 <meta charset="UTF-8">
@@ -747,6 +747,36 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
       </div>
     </div>
 
+
+    <!-- ADMIN PANEL -->
+    <div id="screen-admin" class="screen">
+      <div class="admin-section">
+        <div class="admin-sec-title">👥 Usuarios del sistema</div>
+        <div id="admin-users-list"><div style="font-size:12px;color:var(--g3);padding:8px 0;">Cargando...</div></div>
+      </div>
+      <div class="admin-section">
+        <div class="admin-sec-title">➕ Crear nuevo técnico</div>
+        <div class="card">
+          <div class="card-body">
+            <div class="fg"><label class="flabel">Nombre completo <span class="req">*</span></label><input class="finput" id="new-user-nombre" placeholder="Nombre Apellido"></div>
+            <div class="fg"><label class="flabel">Correo electrónico <span class="req">*</span></label><input class="finput" id="new-user-email" type="email" placeholder="tecnico@romsa.mx"></div>
+            <div class="fg"><label class="flabel">Contraseña temporal <span class="req">*</span></label><input class="finput" id="new-user-pass" type="password" placeholder="Mínimo 6 caracteres"></div>
+            <div class="fg"><label class="flabel">Teléfono</label><input class="finput" id="new-user-tel" type="tel" placeholder="664 000 0000"></div>
+            <button class="btn btn-primary btn-block" id="btn-crear-usuario" onclick="crearTecnico()">Crear técnico →</button>
+          </div>
+        </div>
+      </div>
+      <div class="admin-section">
+        <div class="admin-sec-title">⚙️ Mi cuenta</div>
+        <div class="card">
+          <div class="card-body">
+            <div id="admin-mi-cuenta" style="font-size:13px;color:var(--tx2);margin-bottom:12px;"></div>
+            <button class="btn btn-danger btn-block" onclick="doLogout()">Cerrar sesión</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div><!-- /main -->
 
   <nav id="navbar">
@@ -982,34 +1012,6 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
     </div>
     <div class="vc-powered">Seguimiento de obra en tiempo real · ROMSA Industrial · Baja California</div>
 
-    <!-- ADMIN PANEL -->
-    <div id="screen-admin" class="screen">
-      <div class="admin-section">
-        <div class="admin-sec-title">👥 Usuarios del sistema</div>
-        <div id="admin-users-list"><div style="font-size:12px;color:var(--g3);padding:8px 0;">Cargando...</div></div>
-      </div>
-      <div class="admin-section">
-        <div class="admin-sec-title">➕ Crear nuevo técnico</div>
-        <div class="card">
-          <div class="card-body">
-            <div class="fg"><label class="flabel">Nombre completo <span class="req">*</span></label><input class="finput" id="new-user-nombre" placeholder="Nombre Apellido"></div>
-            <div class="fg"><label class="flabel">Correo electrónico <span class="req">*</span></label><input class="finput" id="new-user-email" type="email" placeholder="tecnico@romsa.mx"></div>
-            <div class="fg"><label class="flabel">Contraseña temporal <span class="req">*</span></label><input class="finput" id="new-user-pass" type="password" placeholder="Mínimo 6 caracteres"></div>
-            <div class="fg"><label class="flabel">Teléfono</label><input class="finput" id="new-user-tel" type="tel" placeholder="664 000 0000"></div>
-            <button class="btn btn-primary btn-block" id="btn-crear-usuario" onclick="crearTecnico()">Crear técnico →</button>
-          </div>
-        </div>
-      </div>
-      <div class="admin-section">
-        <div class="admin-sec-title">⚙️ Mi cuenta</div>
-        <div class="card">
-          <div class="card-body">
-            <div id="admin-mi-cuenta" style="font-size:13px;color:var(--tx2);margin-bottom:12px;"></div>
-            <button class="btn btn-danger btn-block" onclick="doLogout()">Cerrar sesión</button>
-          </div>
-        </div>
-      </div>
-    </div>
   </div>
 </div>
 
