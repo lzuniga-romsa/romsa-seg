@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v15e -->
+<!-- v15f -->
 <html lang="es">
 <head>
 <meta charset="UTF-8">
@@ -373,6 +373,7 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
 .vc-footer-btn:active{background:rgba(255,255,255,.1);}
 .vc-footer-btn.primary{background:var(--blue);border-color:var(--blue);box-shadow:0 2px 10px rgba(30,111,217,.35);}
 .vc-powered{text-align:center;font-size:10px;color:rgba(255,255,255,.15);padding:12px 0 calc(16px + var(--safe-bot));}
+@keyframes pulse-dot{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.5;transform:scale(.7);}}
 </style>
 </head>
 <body>
@@ -860,13 +861,13 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
 <!-- VISTA CLIENTE -->
 <div id="vista-cliente">
   <div class="vc-hdr">
-    <div style="display:flex;justify-content:flex-end;margin-bottom:8px;">
-      <div style="display:flex;align-items:center;gap:3px;background:rgba(16,185,129,.15);border:1px solid rgba(16,185,129,.25);color:#34D399;font-size:8px;font-weight:700;letter-spacing:.8px;padding:3px 7px;border-radius:20px;white-space:nowrap;">
-        <div style="width:4px;height:4px;background:#10B981;border-radius:50%;flex-shrink:0;"></div>EN VIVO
+    <div style="position:relative;margin-bottom:16px;">
+      <div style="position:absolute;top:0;right:0;display:flex;align-items:center;gap:3px;background:rgba(16,185,129,.15);border:1px solid rgba(16,185,129,.25);color:#34D399;font-size:8px;font-weight:700;letter-spacing:.8px;padding:3px 8px;border-radius:20px;white-space:nowrap;">
+        <div style="width:4px;height:4px;background:#10B981;border-radius:50%;animation:pulse-dot 1.5s ease-in-out infinite;"></div>EN VIVO
       </div>
-    </div>
-    <div style="display:flex;justify-content:center;margin-bottom:14px;">
-      <img id="vc-logo-img" alt="ROMSA" style="height:22px;width:auto;filter:brightness(0) invert(1);opacity:1;" src="">
+      <div style="display:flex;justify-content:center;padding-top:4px;">
+        <img id="vc-logo-img" alt="ROMSA" style="height:22px;width:auto;filter:brightness(0) invert(1);opacity:1;" src="">
+      </div>
     </div>
     <div style="width:32px;height:1px;background:rgba(255,255,255,.1);margin:0 auto 13px;"></div>
     <div style="font-size:10px;color:rgba(255,255,255,.35);line-height:1.65;max-width:280px;margin:0 auto;">
@@ -1793,12 +1794,14 @@ function mostrarVC(o){
   const grid=document.getElementById("vc-report-grid");
   const items=[
     {l:"Servicio",v:o.servicio||"—"},
-    {l:"Ubicación",v:o.ubicacion?o.ubicacion+", Baja California":"Mexicali, Baja California"},
+    {l:"Ubicación",v:o.ubicacion||"Mexicali, Baja California"},
     {l:"Fecha inicio",v:fmtFecha(o.fechaInicio||o.fecha||"—")},
     {l:"Fecha término",v:fmtFecha(o.fechaFin||"—")},
   ];
   if(rep.m2) items.unshift({l:"Superficie total",v:rep.m2.toFixed(2)+" "+(rep.unidad||"m²")});
-  if(rep.tecnico) items.push({l:"Técnico responsable",v:'<strong>'+rep.tecnico+'</strong><br><small style="font-weight:400;opacity:.55;">Responsable técnico certificado ROMSA</small>'});
+  // Técnico: usar rep.tecnico si existe, sino el perfil del técnico que creó la obra
+  const tecnicoNombre = rep.tecnico || o.creadoPor || "";
+  if(tecnicoNombre) items.push({l:"Técnico responsable",v:'<strong>'+tecnicoNombre+'</strong><br><small style="font-weight:400;opacity:.55;">Responsable técnico certificado ROMSA</small>'});
   grid.innerHTML=items.map(i=>`
     <div class="vc-report-field">
       <div class="vc-rf-l">${i.l}</div>
