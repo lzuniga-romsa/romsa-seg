@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v16g -->
+<!-- v17-pwa -->
 <html lang="es">
 <head>
 <meta charset="UTF-8">
@@ -8,6 +8,13 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#0B1F3A">
 <title>ROMSA — Seguimiento de Obra</title>
+<link rel="manifest" href="manifest.json">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ROMSA">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
@@ -413,9 +420,67 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
 .user-role-badge{font-size:9px;font-weight:700;padding:2px 8px;border-radius:10px;}
 .role-admin{background:rgba(30,111,217,.1);color:var(--blue);}
 .role-tecnico{background:rgba(16,185,129,.1);color:#0B7A5A;}
+
+/* ── PWA INSTALL BANNER ── */
+#pwa-banner{
+  position:fixed;bottom:calc(80px + var(--safe-bot));left:16px;right:16px;
+  background:var(--navy);border:1px solid rgba(255,255,255,.1);
+  border-radius:14px;padding:14px 16px;
+  display:flex;align-items:center;gap:12px;
+  box-shadow:0 8px 32px rgba(0,0,0,.3);
+  z-index:500;transform:translateY(20px);opacity:0;
+  transition:all .35s cubic-bezier(.34,1.56,.64,1);
+  pointer-events:none;
+}
+#pwa-banner.show{transform:translateY(0);opacity:1;pointer-events:all;}
+.pwa-icon{width:40px;height:40px;border-radius:10px;background:var(--blue);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:20px;}
+.pwa-text{flex:1;min-width:0;}
+.pwa-title{font-size:13px;font-weight:700;color:#fff;}
+.pwa-sub{font-size:11px;color:rgba(255,255,255,.5);margin-top:2px;}
+.pwa-btn{background:var(--blue);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;padding:8px 14px;cursor:pointer;font-family:var(--font);flex-shrink:0;}
+.pwa-close{background:none;border:none;color:rgba(255,255,255,.3);font-size:18px;cursor:pointer;padding:4px;flex-shrink:0;}
+
+/* ── ENCUESTA SATISFACCIÓN ── */
+#encuesta-overlay{
+  position:fixed;inset:0;background:rgba(11,31,58,.85);
+  backdrop-filter:blur(6px);z-index:600;
+  display:flex;align-items:flex-end;justify-content:center;
+  opacity:0;pointer-events:none;transition:opacity .3s;
+}
+#encuesta-overlay.open{opacity:1;pointer-events:all;}
+.encuesta-card{
+  background:#fff;border-radius:24px 24px 0 0;
+  width:100%;max-width:500px;
+  padding:24px 22px calc(24px + var(--safe-bot));
+  max-height:90vh;overflow-y:auto;
+  transform:translateY(40px);transition:transform .3s cubic-bezier(.34,1.56,.64,1);
+}
+#encuesta-overlay.open .encuesta-card{transform:translateY(0);}
+.enc-stars{display:flex;gap:8px;justify-content:center;margin:16px 0;}
+.enc-star{font-size:36px;cursor:pointer;transition:transform .15s;opacity:.3;}
+.enc-star.active{opacity:1;transform:scale(1.15);}
+.enc-option{
+  border:2px solid var(--g1);border-radius:10px;
+  padding:11px 14px;margin-bottom:8px;cursor:pointer;
+  font-size:13px;font-weight:500;color:var(--tx);
+  transition:all .15s;
+}
+.enc-option.selected{border-color:var(--blue);background:var(--blue-pale);color:var(--blue);}
+.enc-option:active{transform:scale(.98);}
 </style>
 </head>
 <body>
+
+<!-- PWA INSTALL BANNER -->
+<div id="pwa-banner">
+  <div class="pwa-icon">📲</div>
+  <div class="pwa-text">
+    <div class="pwa-title">Instalar ROMSA</div>
+    <div class="pwa-sub">Accede sin navegador desde tu pantalla</div>
+  </div>
+  <button class="pwa-btn" id="pwa-install-btn">Instalar</button>
+  <button class="pwa-close" onclick="dismissPwaBanner()">×</button>
+</div>
 
 <!-- LOGIN SCREEN -->
 <div id="login-screen">
@@ -783,6 +848,14 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
           <button onclick="loadCheckinLog()" style="font-size:9px;font-weight:700;padding:4px 10px;border-radius:8px;background:var(--blue-dim);border:1px solid rgba(30,111,217,.3);color:var(--blue);cursor:pointer;">↻ Actualizar</button>
         </div>
         <div id="admin-checkin-log"><div style="font-size:12px;color:var(--g3);">Cargando accesos...</div></div>
+      </div>
+
+      <div class="admin-section">
+        <div class="admin-sec-title" style="display:flex;align-items:center;justify-content:space-between;">
+          <span>⭐ Encuestas de satisfacción</span>
+          <button onclick="loadEncuestas()" style="font-size:9px;font-weight:700;padding:4px 10px;border-radius:8px;background:var(--blue-dim);border:1px solid rgba(30,111,217,.3);color:var(--blue);cursor:pointer;">↻ Ver</button>
+        </div>
+        <div id="admin-encuestas-list"><div style="font-size:12px;color:var(--g3);">Presiona Ver para cargar</div></div>
       </div>
 
       <div class="admin-section">
@@ -1928,6 +2001,14 @@ function mostrarVC(o){
   document.getElementById("vc-pct").textContent=pct+"%";
   document.getElementById("vc-prog-fill").style.width=pct+"%";
   document.getElementById("vc-estado-chip").textContent=pct>=100?"✓ Completado":pct>0?"En proceso":"Por iniciar";
+  // Mostrar encuesta si obra completada y no se ha respondido
+  if(pct>=100 && o.id){
+    const encKey = "enc_enviada_"+o.id;
+    if(!localStorage.getItem(encKey)){
+      setTimeout(()=>mostrarEncuesta(o.id), 2000);
+      localStorage.setItem(encKey, "1");
+    }
+  }
   const etapas=o.etapas||[];
   document.getElementById("vc-etapas").innerHTML=etapas.map(e=>`
     <div style="display:flex;align-items:center;gap:10px;padding:3px 0;">
@@ -2551,6 +2632,169 @@ function autoFillTecnico(){
   const p=getPerfil();
   return p?.nombre||"";
 }
+
+// ═══════════════════════════════════════════════════════════════
+// ─── PWA / SERVICE WORKER ──────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+let _pwaPrompt = null;
+
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  _pwaPrompt = e;
+  // Mostrar banner después de 3 segundos si no está instalada
+  setTimeout(() => {
+    if(!window.matchMedia('(display-mode: standalone)').matches){
+      document.getElementById('pwa-banner')?.classList.add('show');
+    }
+  }, 3000);
+});
+
+document.getElementById('pwa-install-btn')?.addEventListener('click', async () => {
+  if(!_pwaPrompt) return;
+  _pwaPrompt.prompt();
+  const { outcome } = await _pwaPrompt.userChoice;
+  if(outcome === 'accepted'){
+    showToast('✅ App instalada correctamente');
+  }
+  dismissPwaBanner();
+  _pwaPrompt = null;
+});
+
+function dismissPwaBanner(){
+  document.getElementById('pwa-banner')?.classList.remove('show');
+  localStorage.setItem('pwa_dismissed', '1');
+}
+
+// En iOS mostrar instrucciones manuales
+window.addEventListener('load', () => {
+  const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+  const dismissed = localStorage.getItem('pwa_dismissed');
+  if(isIos && !isStandalone && !dismissed){
+    setTimeout(() => {
+      const banner = document.getElementById('pwa-banner');
+      if(banner){
+        banner.querySelector('.pwa-sub').textContent = 'Toca Compartir → "Agregar a inicio"';
+        banner.querySelector('#pwa-install-btn').style.display = 'none';
+        banner.classList.add('show');
+      }
+    }, 3000);
+  }
+  // Registrar Service Worker
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.register('sw.js').catch(()=>{});
+  }
+});
+
+window.addEventListener('appinstalled', () => {
+  showToast('🎉 ROMSA instalada como app');
+  dismissPwaBanner();
+});
+
+
+// ═══════════════════════════════════════════════════════════════
+// ─── ENCUESTA DE SATISFACCIÓN ──────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+let _encObraId = null;
+let _encEstrellas = 0;
+let _encOpciones = [];
+let _encRecomendaria = null;
+
+function mostrarEncuesta(obraId){
+  _encObraId = obraId;
+  _encEstrellas = 0;
+  _encOpciones = [];
+  _encRecomendaria = null;
+  document.getElementById("enc-comentario").value = "";
+  document.querySelectorAll(".enc-star").forEach(s=>s.classList.remove("active"));
+  document.querySelectorAll(".enc-option").forEach(o=>o.classList.remove("selected"));
+  document.getElementById("encuesta-overlay").classList.add("open");
+}
+
+function cerrarEncuesta(){
+  document.getElementById("encuesta-overlay").classList.remove("open");
+}
+
+function setEstrella(val){
+  _encEstrellas = val;
+  document.querySelectorAll(".enc-star").forEach(s=>{
+    s.classList.toggle("active", parseInt(s.dataset.val) <= val);
+  });
+}
+
+function toggleEncOpcion(el, valor, esUnica=false){
+  if(esUnica){
+    // Desmarcar otras del mismo grupo
+    el.parentElement.querySelectorAll(".enc-option").forEach(o=>o.classList.remove("selected"));
+    _encRecomendaria = valor;
+    el.classList.add("selected");
+    return;
+  }
+  const idx = _encOpciones.indexOf(valor);
+  if(idx>=0){ _encOpciones.splice(idx,1); el.classList.remove("selected"); }
+  else { _encOpciones.push(valor); el.classList.add("selected"); }
+}
+
+async function enviarEncuesta(){
+  if(!_encEstrellas){ showToast("⭐ Selecciona una calificación"); return; }
+  const btn = document.getElementById("btn-enviar-enc");
+  btn.disabled = true; btn.textContent = "Enviando...";
+  try{
+    const now = new Date();
+    await db.collection("encuestas").add({
+      obraId: _encObraId,
+      estrellas: _encEstrellas,
+      destacados: _encOpciones,
+      recomendaria: _encRecomendaria,
+      comentario: document.getElementById("enc-comentario").value.trim(),
+      fecha: now.toLocaleDateString("es-MX",{day:"numeric",month:"long",year:"numeric"}),
+      fechaISO: now.toISOString(),
+      ts: Date.now()
+    });
+    cerrarEncuesta();
+    // Mostrar agradecimiento
+    setTimeout(()=>{
+      showToast("🙏 ¡Gracias por tu opinión!");
+    }, 300);
+  }catch(e){ showToast("❌ Error: "+e.message); }
+  btn.disabled = false; btn.textContent = "Enviar opinión →";
+}
+
+
+// ── Admin: cargar encuestas ──────────────────────────────────────
+async function loadEncuestas(){
+  const el = document.getElementById("admin-encuestas-list");
+  if(!el) return;
+  el.innerHTML = '<div style="font-size:12px;color:var(--g3);">Cargando...</div>';
+  try{
+    const snap = await db.collection("encuestas").orderBy("ts","desc").limit(20).get();
+    if(!snap.docs.length){
+      el.innerHTML = '<div style="font-size:12px;color:var(--g3);padding:8px 0;">Sin encuestas aún</div>';
+      return;
+    }
+    // Calcular promedio
+    const docs = snap.docs.map(d=>d.data());
+    const prom = (docs.reduce((s,d)=>s+d.estrellas,0)/docs.length).toFixed(1);
+    el.innerHTML = `<div style="background:var(--blue-dim);border-radius:10px;padding:12px 14px;margin-bottom:12px;display:flex;align-items:center;gap:10px;">
+      <div style="font-size:28px;font-weight:800;color:var(--blue);">${prom}</div>
+      <div>
+        <div style="font-size:11px;font-weight:700;color:var(--tx);">Promedio general</div>
+        <div style="font-size:10px;color:var(--tx2);">${docs.length} encuesta${docs.length!==1?'s':''} recibida${docs.length!==1?'s':''}</div>
+        <div style="color:#F59E0B;font-size:14px;">${'★'.repeat(Math.round(prom))}${'☆'.repeat(5-Math.round(prom))}</div>
+      </div>
+    </div>` + docs.map(d=>`
+      <div style="background:var(--white);border-radius:var(--r-sm);border:1px solid var(--g1);padding:12px 14px;margin-bottom:8px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+          <div style="color:#F59E0B;font-size:16px;">${'★'.repeat(d.estrellas)}${'☆'.repeat(5-d.estrellas)}</div>
+          <div style="font-size:10px;color:var(--g3);">${d.fecha}</div>
+        </div>
+        ${d.destacados?.length?`<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px;">${d.destacados.map(t=>`<span style="background:var(--blue-pale);color:#185FA5;font-size:9px;font-weight:700;padding:2px 8px;border-radius:10px;">${t}</span>`).join("")}</div>`:""}
+        ${d.recomendaria?`<div style="font-size:11px;color:var(--tx2);margin-bottom:4px;">${d.recomendaria==='Sí recomendaría'?'👍':'👎'} ${d.recomendaria}</div>`:""}
+        ${d.comentario?`<div style="font-size:12px;color:var(--tx2);font-style:italic;">"${d.comentario}"</div>`:""}
+      </div>`).join("");
+  }catch(e){ el.innerHTML='<div style="font-size:12px;color:var(--red);">Error: '+e.message+'</div>'; }
+}
+
 // ─── INIT ────────────────────────────────────────
 // Auth maneja el inicio — ver auth.onAuthStateChanged arriba
 // La vista cliente pública no requiere auth
@@ -2879,5 +3123,60 @@ function autoFillTecnico(){
 }
 
 </script>
+
+<!-- ENCUESTA DE SATISFACCIÓN -->
+<div id="encuesta-overlay">
+  <div class="encuesta-card">
+    <div style="text-align:center;margin-bottom:20px;">
+      <div style="font-size:32px;margin-bottom:8px;">🎉</div>
+      <div style="font-size:19px;font-weight:800;color:var(--navy);margin-bottom:6px;">¡Obra completada!</div>
+      <div style="font-size:13px;color:var(--tx2);line-height:1.5;">Tu opinión nos ayuda a mejorar.<br>Solo toma 30 segundos.</div>
+    </div>
+
+    <!-- Pregunta 1: Estrellas -->
+    <div style="margin-bottom:20px;">
+      <div style="font-size:12px;font-weight:700;color:var(--tx2);letter-spacing:.5px;text-align:center;margin-bottom:4px;">¿Cómo calificarías el trabajo realizado?</div>
+      <div class="enc-stars" id="enc-stars">
+        <span class="enc-star" data-val="1" onclick="setEstrella(1)">★</span>
+        <span class="enc-star" data-val="2" onclick="setEstrella(2)">★</span>
+        <span class="enc-star" data-val="3" onclick="setEstrella(3)">★</span>
+        <span class="enc-star" data-val="4" onclick="setEstrella(4)">★</span>
+        <span class="enc-star" data-val="5" onclick="setEstrella(5)">★</span>
+      </div>
+    </div>
+
+    <!-- Pregunta 2: Opciones -->
+    <div style="margin-bottom:20px;">
+      <div style="font-size:12px;font-weight:700;color:var(--tx2);letter-spacing:.5px;margin-bottom:10px;">¿Qué destacarías del servicio?</div>
+      <div class="enc-option" onclick="toggleEncOpcion(this,'Puntualidad')">⏱ Puntualidad</div>
+      <div class="enc-option" onclick="toggleEncOpcion(this,'Calidad del trabajo')">✅ Calidad del trabajo</div>
+      <div class="enc-option" onclick="toggleEncOpcion(this,'Comunicación y seguimiento')">💬 Comunicación y seguimiento</div>
+      <div class="enc-option" onclick="toggleEncOpcion(this,'Limpieza y orden')">🧹 Limpieza y orden</div>
+      <div class="enc-option" onclick="toggleEncOpcion(this,'Profesionalismo del equipo')">👷 Profesionalismo del equipo</div>
+    </div>
+
+    <!-- Pregunta 3: Comentario -->
+    <div style="margin-bottom:20px;">
+      <div style="font-size:12px;font-weight:700;color:var(--tx2);letter-spacing:.5px;margin-bottom:8px;">¿Algo que podamos mejorar? (opcional)</div>
+      <textarea id="enc-comentario" class="ftextarea" placeholder="Tu comentario..." style="min-height:70px;font-size:13px;"></textarea>
+    </div>
+
+    <!-- Pregunta 4: Recomendaría -->
+    <div style="margin-bottom:24px;">
+      <div style="font-size:12px;font-weight:700;color:var(--tx2);letter-spacing:.5px;margin-bottom:10px;">¿Recomendarías ROMSA Industrial?</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <div class="enc-option" style="text-align:center;" onclick="toggleEncOpcion(this,'Sí recomendaría',true)">👍 Sí, claro</div>
+        <div class="enc-option" style="text-align:center;" onclick="toggleEncOpcion(this,'No recomendaría',true)">👎 No por ahora</div>
+      </div>
+    </div>
+
+    <button class="btn btn-primary btn-block" onclick="enviarEncuesta()" id="btn-enviar-enc" style="margin-bottom:10px;">
+      Enviar opinión →
+    </button>
+    <button class="btn btn-ghost btn-block" onclick="cerrarEncuesta()" style="font-size:12px;">
+      Omitir por ahora
+    </button>
+  </div>
+</div>
 </body>
 </html>
