@@ -2301,20 +2301,25 @@ async function showPdfPreview(){
       </div>`).join("")}`:"";
 
   document.getElementById("pdf-body").innerHTML=`
-    <!-- HEADER -->
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
-      ${logoSVG}
-      <div style="text-align:right;">
-        <div style="font-size:10px;color:#7090B8;">ROMSA Pisos Industriales · Mexicali, Baja California</div>
-        <div style="font-size:10px;color:#7090B8;margin-top:2px;">${fechaHoy}</div>
-      </div>
+    <!-- HEADER CON LOGO REAL CENTRADO -->
+    <div style="text-align:center;padding-bottom:16px;border-bottom:3px solid #0B1F3A;margin-bottom:0;">
+      <img src="data:image/png;base64,${_LC0+_LC1+_LC2}" style="height:52px;width:auto;display:block;margin:0 auto 6px;" alt="ROMSA">
+      <div style="font-size:10px;color:#7090B8;letter-spacing:.3px;">ROMSA Pisos Industriales · Mexicali, Baja California</div>
     </div>
-    <div style="height:2px;background:linear-gradient(90deg,#0B1F3A,#1E6FD9);margin-bottom:16px;border-radius:1px;"></div>
 
-    <!-- TÍTULO -->
-    <div style="text-align:center;margin-bottom:20px;">
-      <div style="font-size:10px;font-weight:700;color:#1E6FD9;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;">Reporte Final de Obra</div>
-      <div style="font-size:22px;font-weight:800;color:#0B1F3A;letter-spacing:-.5px;">${o.nombre}</div>
+    <!-- BLOQUE TÍTULO PROFESIONAL -->
+    <div style="background:linear-gradient(135deg,#0B1F3A 0%,#1A3A60 100%);padding:28px 32px;margin-bottom:20px;text-align:center;">
+      <div style="display:inline-flex;align-items:center;gap:6px;background:rgba(30,111,217,.25);border:1px solid rgba(96,165,250,.3);padding:4px 14px;border-radius:20px;margin-bottom:12px;">
+        <div style="width:5px;height:5px;background:#60A5FA;border-radius:50%;"></div>
+        <div style="font-size:9px;font-weight:700;color:#60A5FA;letter-spacing:2.5px;text-transform:uppercase;">Reporte Final de Obra</div>
+      </div>
+      <div style="font-size:26px;font-weight:900;color:#fff;letter-spacing:-.5px;line-height:1.2;margin-bottom:8px;">${o.nombre}</div>
+      <div style="font-size:14px;color:rgba(255,255,255,.6);font-weight:500;">${o.cliente||""}</div>
+      <div style="display:flex;align-items:center;justify-content:center;gap:16px;margin-top:14px;flex-wrap:wrap;">
+        <div style="font-size:10px;color:rgba(255,255,255,.4);">📅 ${fechaHoy}</div>
+        ${o.ubicacion?`<div style="font-size:10px;color:rgba(255,255,255,.4);">📍 ${o.ubicacion}</div>`:""}
+        ${o.servicio?`<div style="background:rgba(30,111,217,.3);border:1px solid rgba(30,111,217,.4);color:#60A5FA;font-size:10px;font-weight:600;padding:2px 10px;border-radius:10px;">${o.servicio}</div>`:""}
+      </div>
     </div>
 
     <!-- INFO PROYECTO -->
@@ -2338,12 +2343,10 @@ async function showPdfPreview(){
     <div style="background:#0B1F3A;border-radius:10px;padding:16px 18px;font-size:13px;color:rgba(255,255,255,.85);line-height:1.8;margin-bottom:20px;">${rep.obs}</div>`:""}
 
     <!-- FOOTER -->
-    <div style="margin-top:24px;padding-top:14px;border-top:1px solid #DDE5F0;display:flex;align-items:center;justify-content:space-between;">
-      ${logoSVG}
-      <div style="text-align:right;">
-        <div style="font-size:10px;color:#9BB5CF;">ROMSA Pisos Industriales · Mexicali, Baja California</div>
-        <div style="display:inline-flex;align-items:center;gap:5px;margin-top:6px;padding:5px 12px;border:1.5px solid #1E6FD9;border-radius:6px;color:#1E6FD9;font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;">✓ Reporte técnico de obra finalizada</div>
-      </div>
+    <div style="margin-top:28px;padding-top:16px;border-top:2px solid #0B1F3A;text-align:center;">
+      <img src="data:image/png;base64,${_LC0+_LC1+_LC2}" style="height:28px;width:auto;display:block;margin:0 auto 8px;" alt="ROMSA">
+      <div style="font-size:10px;color:#9BB5CF;margin-bottom:8px;">ROMSA Pisos Industriales · Mexicali, Baja California</div>
+      <div style="display:inline-flex;align-items:center;gap:6px;padding:6px 16px;border:1.5px solid #1E6FD9;border-radius:8px;color:#1E6FD9;font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;">✓ Reporte técnico de obra finalizada</div>
     </div>`;
 
   document.getElementById("pdf-preview").style.display="block";
