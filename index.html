@@ -1111,6 +1111,12 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
       <div id="vc-ba-content"></div>
     </div>
 
+    <div id="vc-whatsapp-btn" style="padding:0 16px 12px;display:none;">
+      <button onclick="contactarWhatsApp()" style="width:100%;background:#25D366;border:none;border-radius:12px;padding:14px;font-family:var(--font);font-size:13px;font-weight:700;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+        Contactar a ROMSA por WhatsApp
+      </button>
+    </div>
     <div class="vc-footer" id="vc-footer-btns" style="grid-template-columns:1fr;">
       <div class="vc-footer-btn primary" onclick="cerrarVC()">← Cerrar vista</div>
     </div>
@@ -2023,7 +2029,7 @@ function mostrarVC(o){
   if(footerEl && allDone){
     footerEl.style.gridTemplateColumns = "1fr 1fr";
     footerEl.innerHTML = `
-      <div class="vc-footer-btn" onclick="descargarPdfCliente('${o.id||""}')">⬇ Descargar PDF</div>
+      <div class="vc-footer-btn" onclick="descargarPdfCliente('${o.id||""}')">⬇ Descargar Reporte de Obra</div>
       <div class="vc-footer-btn primary" onclick="cerrarVC()">← Cerrar</div>`;
   } else if(footerEl){
     footerEl.style.gridTemplateColumns = "1fr";
@@ -2165,6 +2171,9 @@ function mostrarVC(o){
     renderBaVC(o.baPairs||[]);
   }
 
+  // Mostrar botón WhatsApp
+  const waBtn = document.getElementById("vc-whatsapp-btn");
+  if(waBtn) waBtn.style.display = "block";
   document.getElementById("vista-cliente").style.display="block";
   document.getElementById("vista-cliente").scrollTo(0,0);
 }
@@ -2934,9 +2943,20 @@ async function loadEncuestas(){
       el.innerHTML = '<div style="font-size:12px;color:var(--g3);padding:8px 0;">Sin encuestas aún</div>';
       return;
     }
-    // Calcular promedio
     const docs = snap.docs.map(d=>d.data());
     const prom = (docs.reduce((s,d)=>s+d.estrellas,0)/docs.length).toFixed(1);
+    // Cargar nombres de obras
+    const obraIds=[...new Set(docs.map(d=>d.obraId).filter(Boolean))];
+    const obrasMap={};
+    for(const oid of obraIds){
+      // Buscar en obras ya cargadas primero
+      const local = obras.find(o=>o.id===oid);
+      if(local){ obrasMap[oid]=local.cliente?local.cliente+" — "+local.nombre:local.nombre; continue; }
+      try{
+        const s=await obrasRef.doc(oid).get();
+        if(s.exists){const od=s.data();obrasMap[oid]=od.cliente?od.cliente+" — "+od.nombre:od.nombre;}
+      }catch(e){}
+    }
     el.innerHTML = `<div style="background:var(--blue-dim);border-radius:10px;padding:12px 14px;margin-bottom:12px;display:flex;align-items:center;gap:10px;">
       <div style="font-size:28px;font-weight:800;color:var(--blue);">${prom}</div>
       <div>
@@ -2950,6 +2970,7 @@ async function loadEncuestas(){
           <div style="color:#F59E0B;font-size:16px;">${'★'.repeat(d.estrellas)}${'☆'.repeat(5-d.estrellas)}</div>
           <div style="font-size:10px;color:var(--g3);">${d.fecha}</div>
         </div>
+        ${d.obraId&&obrasMap[d.obraId]?`<div style="font-size:10px;font-weight:700;color:var(--blue);background:var(--blue-pale);padding:3px 9px;border-radius:8px;margin-bottom:7px;display:inline-block;">📋 ${obrasMap[d.obraId]}</div><br>`:""}
         ${d.destacados?.length?`<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px;">${d.destacados.map(t=>`<span style="background:var(--blue-pale);color:#185FA5;font-size:9px;font-weight:700;padding:2px 8px;border-radius:10px;">${t}</span>`).join("")}</div>`:""}
         ${d.recomendaria?`<div style="font-size:11px;color:var(--tx2);margin-bottom:4px;">${d.recomendaria==='Sí recomendaría'?'👍':'👎'} ${d.recomendaria}</div>`:""}
         ${d.comentario?`<div style="font-size:12px;color:var(--tx2);font-style:italic;">"${d.comentario}"</div>`:""}
@@ -2980,21 +3001,34 @@ async function guardarObsFinales(){
 
 
 // ── Descargar PDF desde vista cliente ────────────────────────────
-function descargarPdfCliente(obraId){
-  const o = obras.find(x=>x.id===obraId)||getO();
-  if(!o){ showToast("⚠️ No se pudo cargar el reporte"); return; }
-  // Reutilizar showPdfPreview si estamos en modo interno
-  // En modo público, abrir en nueva ventana
-  const params = new URLSearchParams(window.location.search);
-  if(params.get("obra")){
-    // Vista pública — generar PDF directo
-    cerrarVC();
-    setTimeout(()=>{
-      if(typeof showPdfPreview === "function") showPdfPreview();
-    }, 300);
-  } else {
-    showPdfPreview();
+async function descargarPdfCliente(obraId){
+  // En vista pública obraActivaId puede ser null — buscar en obras[]
+  let o = obras.find(x=>x.id===obraId) || getO();
+  if(!o && obraId){
+    // Cargar directamente desde Firestore
+    try{
+      const snap = await obrasRef.doc(obraId).get();
+      if(snap.exists){ o = snap.data(); obras = [o]; obraActivaId = obraId; }
+    }catch(e){}
   }
+  if(!o){ showToast("⚠️ No se pudo cargar el reporte"); return; }
+  obraActivaId = o.id;
+  // Asegurar que los updates estén cargados
+  if(!o.updates || !o.updates.length) await loadUpdates(o.id);
+  // Ocultar vista cliente y mostrar PDF
+  document.getElementById("vista-cliente").style.display="none";
+  await showPdfPreview();
+}
+
+
+// ── WhatsApp contacto desde vista cliente ────────────────────────
+function contactarWhatsApp(){
+  const o = obras[0] || getO();
+  const nombre = o ? (o.cliente?o.cliente+" — "+o.nombre:o.nombre) : "mi proyecto";
+  const tel = "526863513988";
+  const msg = encodeURIComponent("Hola ROMSA Industrial, te contacto respecto al proyecto: *" + nombre + "*. Mi consulta es: ");
+  const url = "https://wa.me/" + tel + "?text=" + msg;
+  window.open(url, "_blank");
 }
 
 // ─── INIT ────────────────────────────────────────
