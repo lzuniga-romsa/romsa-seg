@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v17b -->
+<!-- v18 -->
 <html lang="es">
 <head>
 <meta charset="UTF-8">
@@ -467,6 +467,12 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
 }
 .enc-option.selected{border-color:var(--blue);background:var(--blue-pale);color:var(--blue);}
 .enc-option:active{transform:scale(.98);}
+
+/* ── MODAL OBSERVACIONES FINALES ── */
+#modal-obs-finales .modal{background:var(--white);}
+.obs-alert{background:linear-gradient(135deg,var(--blue),#1A5FBF);border-radius:12px;padding:14px 16px;margin-bottom:16px;color:#fff;}
+.obs-alert-title{font-size:14px;font-weight:700;margin-bottom:4px;}
+.obs-alert-sub{font-size:11px;opacity:.8;line-height:1.5;}
 </style>
 </head>
 <body>
@@ -787,8 +793,14 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
       <!-- COMPARTIR -->
       <div id="dtab-compartir" class="dtab-content" style="display:none;padding:16px;">
         <div class="card" style="margin-bottom:10px;">
-          <div class="card-hd"><span class="card-ttl">Link del cliente</span></div>
-          <div class="qr-box">
+          <div class="card-hd" style="display:flex;align-items:center;justify-content:space-between;">
+            <span class="card-ttl">Link del cliente</span>
+            <button id="btn-revocar-link" onclick="toggleLinkCliente()" style="font-size:10px;font-weight:700;padding:4px 10px;border-radius:8px;border:none;cursor:pointer;background:var(--red-dim);color:var(--red);">🔒 Revocar acceso</button>
+          </div>
+          <div id="link-revocado-banner" style="display:none;background:var(--red-dim);border-radius:8px;padding:10px 12px;margin:10px 16px 0;font-size:12px;color:var(--red);font-weight:600;text-align:center;">
+            🔒 Link desactivado — el cliente no puede acceder
+          </div>
+          <div class="qr-box" id="qr-box-content">
             <div id="qrcode"></div>
             <div class="qr-link-box" id="qr-link-text">—</div>
             <div style="display:flex;gap:8px;width:100%;">
@@ -1099,7 +1111,7 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
       <div id="vc-ba-content"></div>
     </div>
 
-    <div class="vc-footer" style="grid-template-columns:1fr;">
+    <div class="vc-footer" id="vc-footer-btns" style="grid-template-columns:1fr;">
       <div class="vc-footer-btn primary" onclick="cerrarVC()">← Cerrar vista</div>
     </div>
     <div class="vc-powered">Seguimiento de obra en tiempo real · ROMSA Industrial · Baja California</div>
@@ -1537,7 +1549,20 @@ function ciclarEtapa(id){
   const _cn=new Date();
   const _ct=_cn.toLocaleTimeString("es-MX",{hour:"2-digit",minute:"2-digit"});
   const _cd=_cn.toLocaleDateString("es-MX",{day:"numeric",month:"short",year:"numeric"});
-  if(e.estado==="done"){e.fechaCompletada=_cd;e.horaCompletada=_ct+" hrs";}
+  if(e.estado==="done"){
+    e.fechaCompletada=_cd;e.horaCompletada=_ct+" hrs";
+    // Si es la última etapa, abrir modal de observaciones finales
+    const todasDone = o.etapas.every(x=>x.estado==="done");
+    if(todasDone){
+      setTimeout(()=>{
+        document.getElementById("obs-tecnico").value = currentUserProfile?.nombre||"";
+        document.getElementById("obs-m2").value = o.reporte?.m2||"";
+        document.getElementById("obs-unidad").value = o.reporte?.unidad||"m²";
+        document.getElementById("obs-texto").value = o.reporte?.obs||"";
+        document.getElementById("modal-obs-finales").classList.add("open");
+      }, 600);
+    }
+  }
   else if(e.estado==="active"){e.fechaActivo=_cd;e.horaActivo=_ct+" hrs";delete e.fechaCompletada;delete e.horaCompletada;}
   else{delete e.fechaCompletada;delete e.horaCompletada;delete e.fechaActivo;delete e.horaActivo;}
   const done=o.etapas.filter(x=>x.estado==="done").length;
@@ -1910,12 +1935,37 @@ async function saveReporte(){
 
 // ─── COMPARTIR ────────────────────────────────────
 function renderCompartir(o){
-  const link=window.location.origin+window.location.pathname+"?obra="+o.id;
-  document.getElementById("qr-link-text").textContent=link;
+  const link = window.location.origin+window.location.pathname+"?obra="+o.id;
+  const revocado = o.linkRevocado === true;
+  // Banner y botón
+  const banner = document.getElementById("link-revocado-banner");
+  const btnRev = document.getElementById("btn-revocar-link");
+  const qrBox = document.getElementById("qr-box-content");
+  if(banner){ banner.style.display = revocado?"block":"none"; }
+  if(btnRev){
+    btnRev.textContent = revocado ? "✅ Activar acceso" : "🔒 Revocar acceso";
+    btnRev.style.background = revocado ? "var(--green-dim)" : "var(--red-dim)";
+    btnRev.style.color = revocado ? "#0B7A5A" : "var(--red)";
+  }
+  if(qrBox){ qrBox.style.opacity = revocado?"0.35":"1"; qrBox.style.pointerEvents = revocado?"none":"all"; }
+  document.getElementById("qr-link-text").textContent = revocado ? "Link desactivado" : link;
   const qrEl=document.getElementById("qrcode");
   qrEl.innerHTML="";
-  try{new QRCode(qrEl,{text:link,width:180,height:180,colorDark:"#0B1F3A",colorLight:"#ffffff",correctLevel:QRCode.CorrectLevel.H});}
-  catch(e){qrEl.textContent=link;}
+  if(!revocado){
+    try{new QRCode(qrEl,{text:link,width:180,height:180,colorDark:"#0B1F3A",colorLight:"#ffffff",correctLevel:QRCode.CorrectLevel.H});}
+    catch(e){qrEl.textContent=link;}
+  }
+}
+
+async function toggleLinkCliente(){
+  const o = getO(); if(!o) return;
+  const revocado = o.linkRevocado === true;
+  const accion = revocado ? "activar" : "revocar";
+  if(!confirm(`¿${accion.charAt(0).toUpperCase()+accion.slice(1)} el acceso del cliente a esta obra?`)) return;
+  o.linkRevocado = !revocado;
+  await saveObra(o);
+  renderCompartir(o);
+  showToast(revocado ? "✅ Link activado — el cliente puede acceder" : "🔒 Link revocado — el cliente ya no puede acceder");
 }
 function copiarLink(){
   const o=getO();if(!o)return;
@@ -1968,6 +2018,17 @@ function mostrarVC(o){
   // Banner finalizado solo al 100%
   const bannerEl=document.getElementById("vc-finalizado-banner");
   if(bannerEl){ bannerEl.style.display=allDone?"flex":"none"; }
+  // Mostrar botón descargar PDF si obra completada
+  const footerEl = document.getElementById("vc-footer-btns");
+  if(footerEl && allDone){
+    footerEl.style.gridTemplateColumns = "1fr 1fr";
+    footerEl.innerHTML = `
+      <div class="vc-footer-btn" onclick="descargarPdfCliente('${o.id||""}')">⬇ Descargar PDF</div>
+      <div class="vc-footer-btn primary" onclick="cerrarVC()">← Cerrar</div>`;
+  } else if(footerEl){
+    footerEl.style.gridTemplateColumns = "1fr";
+    footerEl.innerHTML = '<div class="vc-footer-btn primary" onclick="cerrarVC()">← Cerrar vista</div>';
+  }
   // Formatear fechas ISO a legible
   function fmtFecha(f){
     if(!f||f==="—") return "Por definir";
@@ -2003,11 +2064,19 @@ function mostrarVC(o){
   document.getElementById("vc-estado-chip").textContent=pct>=100?"✓ Completado":pct>0?"En proceso":"Por iniciar";
   // Mostrar encuesta si obra completada y no se ha respondido
   if(pct>=100 && o.id){
-    const encKey = "enc_enviada_"+o.id;
-    if(!localStorage.getItem(encKey)){
-      setTimeout(()=>mostrarEncuesta(o.id), 2000);
-      localStorage.setItem(encKey, "1");
-    }
+    // Verificar en Firestore si ya hay encuesta para esta obra
+    db.collection("encuestas").where("obraId","==",o.id).limit(1).get()
+      .then(snap=>{
+        if(snap.empty){
+          setTimeout(()=>mostrarEncuesta(o.id, o.nombre, o.cliente), 2500);
+        }
+      }).catch(()=>{
+        // Si falla la consulta, mostrar de todas formas
+        const encKey = "enc_"+o.id;
+        if(!localStorage.getItem(encKey)){
+          setTimeout(()=>mostrarEncuesta(o.id, o.nombre, o.cliente), 2500);
+        }
+      });
   }
   const etapas=o.etapas||[];
   document.getElementById("vc-etapas").innerHTML=etapas.map(e=>`
@@ -2216,6 +2285,11 @@ function checkUrlParams(){
       return;
     }
     const o=snap.data();
+    // Verificar si el link fue revocado por el admin
+    if(o.linkRevocado === true){
+      document.getElementById("vista-cliente").innerHTML='<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;color:#fff;text-align:center;padding:24px;background:#0B1829;"><div style="font-size:40px;margin-bottom:16px;">🔒</div><div style="font-size:18px;font-weight:700;margin-bottom:8px;">Acceso no disponible</div><div style="font-size:13px;opacity:.5;">El acceso a este proyecto ha sido desactivado.<br>Contacta a ROMSA Industrial para más información.</div></div>';
+      return;
+    }
     obras=[o]; obraActivaId=obraId;
     // Load baPairs from subcollection
     getBaPairsRef(obraId).orderBy("id","asc").onSnapshot(bpSnap=>{
@@ -2700,8 +2774,14 @@ let _encEstrellas = 0;
 let _encOpciones = [];
 let _encRecomendaria = null;
 
-function mostrarEncuesta(obraId){
+function mostrarEncuesta(obraId, obraNombre, obraCliente){
   _encObraId = obraId;
+  // Mostrar nombre del proyecto en la encuesta
+  const tituloEl = document.getElementById("enc-obra-titulo");
+  if(tituloEl){
+    tituloEl.textContent = obraCliente ? obraCliente+" · "+obraNombre : obraNombre||"";
+    tituloEl.style.display = obraCliente||obraNombre ? "block" : "none";
+  }
   _encEstrellas = 0;
   _encOpciones = [];
   _encRecomendaria = null;
@@ -2741,6 +2821,7 @@ async function enviarEncuesta(){
   btn.disabled = true; btn.textContent = "Enviando...";
   try{
     const now = new Date();
+    localStorage.setItem("enc_"+_encObraId, "1");
     await db.collection("encuestas").add({
       obraId: _encObraId,
       estrellas: _encEstrellas,
@@ -2793,6 +2874,46 @@ async function loadEncuestas(){
         ${d.comentario?`<div style="font-size:12px;color:var(--tx2);font-style:italic;">"${d.comentario}"</div>`:""}
       </div>`).join("");
   }catch(e){ el.innerHTML='<div style="font-size:12px;color:var(--red);">Error: '+e.message+'</div>'; }
+}
+
+
+// ── Guardar observaciones finales ────────────────────────────────
+async function guardarObsFinales(){
+  const o = getO(); if(!o) return;
+  const m2 = parseFloat(document.getElementById("obs-m2").value)||0;
+  const obs = document.getElementById("obs-texto").value.trim();
+  const tec = document.getElementById("obs-tecnico").value.trim();
+  if(!obs){ showToast("⚠️ Las observaciones son requeridas"); return; }
+  o.reporte = o.reporte||{};
+  o.reporte.m2 = m2;
+  o.reporte.unidad = document.getElementById("obs-unidad").value;
+  o.reporte.obs = obs;
+  o.reporte.tecnico = tec||currentUserProfile?.nombre||"";
+  o.estado = "completada";
+  await saveObra(o);
+  closeModal("modal-obs-finales");
+  // Recargar form de reporte
+  if(document.getElementById("rep-m2")) loadReporteForm(o);
+  showToast("✅ Observaciones guardadas — obra marcada como completada");
+}
+
+
+// ── Descargar PDF desde vista cliente ────────────────────────────
+function descargarPdfCliente(obraId){
+  const o = obras.find(x=>x.id===obraId)||getO();
+  if(!o){ showToast("⚠️ No se pudo cargar el reporte"); return; }
+  // Reutilizar showPdfPreview si estamos en modo interno
+  // En modo público, abrir en nueva ventana
+  const params = new URLSearchParams(window.location.search);
+  if(params.get("obra")){
+    // Vista pública — generar PDF directo
+    cerrarVC();
+    setTimeout(()=>{
+      if(typeof showPdfPreview === "function") showPdfPreview();
+    }, 300);
+  } else {
+    showPdfPreview();
+  }
 }
 
 // ─── INIT ────────────────────────────────────────
@@ -3133,6 +3254,7 @@ function autoFillTecnico(){
     <div style="text-align:center;margin-bottom:20px;">
       <div style="font-size:32px;margin-bottom:8px;">🎉</div>
       <div style="font-size:19px;font-weight:800;color:var(--navy);margin-bottom:6px;">¡Obra completada!</div>
+      <div id="enc-obra-titulo" style="display:none;font-size:11px;font-weight:700;color:var(--blue);background:var(--blue-pale);padding:5px 12px;border-radius:20px;margin:0 auto 10px;max-width:fit-content;"></div>
       <div style="font-size:13px;color:var(--tx2);line-height:1.5;">Tu opinión nos ayuda a mejorar.<br>Solo toma 30 segundos.</div>
     </div>
 
@@ -3179,6 +3301,36 @@ function autoFillTecnico(){
     <button class="btn btn-ghost btn-block" onclick="cerrarEncuesta()" style="font-size:12px;">
       Omitir por ahora
     </button>
+  </div>
+</div>
+
+<!-- MODAL OBSERVACIONES FINALES -->
+<div class="moverlay" id="modal-obs-finales" style="z-index:350;">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="obs-alert">
+      <div class="obs-alert-title">🏁 ¡Última etapa completada!</div>
+      <div class="obs-alert-sub">Antes de generar el reporte final, registra tus observaciones y los datos del proyecto.</div>
+    </div>
+    <div class="fg">
+      <label class="flabel">Superficie total <span class="req">*</span></label>
+      <div style="display:flex;gap:8px;">
+        <input class="finput" type="number" id="obs-m2" placeholder="0.00" step="0.1" style="flex:1;">
+        <select class="fselect" id="obs-unidad" style="width:80px;"><option>m²</option><option>ft²</option></select>
+      </div>
+    </div>
+    <div class="fg">
+      <label class="flabel">Observaciones finales <span class="req">*</span></label>
+      <textarea class="ftextarea" id="obs-texto" placeholder="Condiciones finales del proyecto, recomendaciones de mantenimiento, observaciones importantes..."></textarea>
+    </div>
+    <div class="fg">
+      <label class="flabel">Técnico responsable</label>
+      <input class="finput" id="obs-tecnico" placeholder="Tu nombre completo">
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button class="btn btn-secondary" style="flex:1;" onclick="closeModal('modal-obs-finales')">Después</button>
+      <button class="btn btn-primary" style="flex:1;" onclick="guardarObsFinales()">💾 Guardar →</button>
+    </div>
   </div>
 </div>
 </body>
