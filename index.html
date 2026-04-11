@@ -3117,10 +3117,10 @@ function cerrarInstruccionesPDF(){
 // La vista cliente pública no requiere auth
 const _params=new URLSearchParams(window.location.search);
 if(_params.get("obra")){
-  // Vista pública del cliente — sin login
+  // Vista pública: ocultar login, ocultar app, mostrar vista cliente
   document.getElementById("login-screen").classList.add("hidden");
   document.getElementById("app").style.display = "none";
-  // Inicializar Firebase sin auth para vista cliente
+  document.getElementById("vista-cliente").style.display = "block";
   if(typeof obrasRef !== "undefined") checkUrlParams();
 }
 updateHoraCi();
@@ -3231,10 +3231,19 @@ auth.onAuthStateChanged(async user => {
     updateHoraCi();
 
   } else {
-    // No hay sesión — mostrar login
+    // No hay sesión
     currentUser = null;
     currentUserProfile = null;
     isAdmin = false;
+    // ⚠️ Si es vista pública del cliente (?obra=...) NO mostrar login
+    const _isPublicView = new URLSearchParams(window.location.search).get("obra");
+    if(_isPublicView){
+      // Vista cliente pública — mantener login oculto y cargar obra
+      document.getElementById("login-screen").classList.add("hidden");
+      document.getElementById("app").style.display = "none";
+      checkUrlParams();
+      return;
+    }
     document.getElementById("login-screen").classList.remove("hidden");
     document.getElementById("app").style.display = "none";
     // Copiar logo al login
