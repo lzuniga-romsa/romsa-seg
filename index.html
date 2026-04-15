@@ -587,24 +587,60 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
         <div style="font-size:18px;font-weight:800;color:#fff;line-height:1.2;">Control total de tu <span style="color:#60A5FA;">obra en campo</span></div>
       </div>
       <div style="background:#F0F3F8;padding:16px 18px;">
+        <!-- KPIs -->
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px;">
-          <div style="background:#fff;border-radius:12px;border:1px solid #E0E8F0;padding:12px 10px;"><div style="font-size:8px;font-weight:700;color:#7090B8;text-transform:uppercase;margin-bottom:5px;">Activas</div><div id="dash-activas" style="font-size:26px;font-weight:900;color:#0B1F3A;">-</div><div id="dash-total" style="font-size:9px;color:#10B981;font-weight:700;margin-top:2px;"></div></div>
-          <div style="background:#fff;border-radius:12px;border:1px solid #E0E8F0;padding:12px 10px;"><div style="font-size:8px;font-weight:700;color:#7090B8;text-transform:uppercase;margin-bottom:5px;">Updates hoy</div><div id="dash-updates" style="font-size:26px;font-weight:900;color:#0B1F3A;">-</div><div style="font-size:9px;color:#1E6FD9;font-weight:700;margin-top:2px;">publicados</div></div>
-          <div style="background:#fff;border-radius:12px;border:1px solid #E0E8F0;padding:12px 10px;"><div style="font-size:8px;font-weight:700;color:#7090B8;text-transform:uppercase;margin-bottom:5px;">Prox entrega</div><div id="dash-prox-fecha" style="font-size:14px;font-weight:900;color:#0B1F3A;">-</div><div id="dash-prox-dias" style="font-size:9px;font-weight:700;margin-top:2px;color:#F59E0B;"></div></div>
-        </div>
-        <div style="background:#fff;border-radius:12px;border:1px solid #E0E8F0;overflow:hidden;margin-bottom:12px;">
-          <div style="padding:11px 14px;border-bottom:1px solid #F0F3F8;display:flex;align-items:center;justify-content:space-between;"><div style="font-size:11px;font-weight:700;color:#0B1F3A;">Proximas entregas</div><div onclick="goScreen('obras')" style="font-size:10px;font-weight:600;color:#1E6FD9;cursor:pointer;">Ver todas</div></div>
-          <div id="dash-entregas"><div style="padding:14px;font-size:12px;color:#9BB5CF;">Cargando...</div></div>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
-          <button onclick="showNueva()" style="background:#1E6FD9;border:none;border-radius:12px;padding:13px;display:flex;align-items:center;gap:9px;cursor:pointer;font-family:var(--font);"><div style="width:28px;height:28px;background:rgba(255,255,255,.15);border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 2v10M2 7h10" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></svg></div><div style="text-align:left;"><div style="font-size:12px;font-weight:700;color:#fff;">Nueva obra</div><div style="font-size:9px;color:rgba(255,255,255,.6);">Registrar</div></div></button>
-          <button onclick="goScreen('obras')" style="background:#fff;border:1px solid #E0E8F0;border-radius:12px;padding:13px;display:flex;align-items:center;gap:9px;cursor:pointer;font-family:var(--font);"><div style="width:28px;height:28px;background:#F0F3F8;border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="2" y="2" width="4" height="4" rx="1" stroke="#0B1F3A" stroke-width="1.2"/><rect x="8" y="2" width="4" height="4" rx="1" stroke="#0B1F3A" stroke-width="1.2"/><rect x="2" y="8" width="4" height="4" rx="1" stroke="#0B1F3A" stroke-width="1.2"/><rect x="8" y="8" width="4" height="4" rx="1" stroke="#0B1F3A" stroke-width="1.2"/></svg></div><div style="text-align:left;"><div style="font-size:12px;font-weight:700;color:#0B1F3A;">Ver obras</div><div id="dash-ver-sub" style="font-size:9px;color:#7090B8;"></div></div></button>
+          <div style="background:#fff;border-radius:12px;border:1px solid #E0E8F0;padding:12px 10px;">
+            <div style="font-size:8px;font-weight:700;color:#7090B8;text-transform:uppercase;margin-bottom:5px;">Activas</div>
+            <div id="dash-activas" style="font-size:26px;font-weight:900;color:#0B1F3A;">-</div>
+            <div id="dash-total" style="font-size:9px;color:#10B981;font-weight:700;margin-top:2px;"></div>
+          </div>
+          <div style="background:#fff;border-radius:12px;border:1px solid #E0E8F0;padding:12px 10px;">
+            <div style="font-size:8px;font-weight:700;color:#7090B8;text-transform:uppercase;margin-bottom:5px;">Updates hoy</div>
+            <div id="dash-updates" style="font-size:26px;font-weight:900;color:#0B1F3A;">-</div>
+            <div style="font-size:9px;color:#1E6FD9;font-weight:700;margin-top:2px;">publicados</div>
+          </div>
+          <div style="background:#fff;border-radius:12px;border:1px solid #E0E8F0;padding:12px 10px;">
+            <div style="font-size:8px;font-weight:700;color:#7090B8;text-transform:uppercase;margin-bottom:5px;">Completadas</div>
+            <div id="dash-completadas" style="font-size:26px;font-weight:900;color:#10B981;">-</div>
+            <div style="font-size:9px;color:#10B981;font-weight:700;margin-top:2px;">este año</div>
+          </div>
         </div>
 
-        <div style="background:#fff;border-radius:12px;border:1px solid #E0E8F0;overflow:hidden;margin-bottom:20px;">
-          <div style="padding:11px 14px;border-bottom:1px solid #F0F3F8;"><div style="font-size:11px;font-weight:700;color:#0B1F3A;">Estado de obras</div></div>
-          <div id="dash-estado-obras" style="padding:8px 0;"><div style="padding:8px 14px;font-size:12px;color:#9BB5CF;">Sin obras activas</div></div>
+        <!-- GRÁFICA DE AVANCE POR OBRA -->
+        <div style="background:#fff;border-radius:12px;border:1px solid #E0E8F0;overflow:hidden;margin-bottom:12px;">
+          <div style="padding:11px 14px;border-bottom:1px solid #F0F3F8;display:flex;align-items:center;justify-content:space-between;">
+            <div style="font-size:11px;font-weight:700;color:#0B1F3A;">📊 Avance de obras activas</div>
+            <div onclick="goScreen('obras')" style="font-size:10px;font-weight:600;color:#1E6FD9;cursor:pointer;">Ver todas →</div>
+          </div>
+          <div id="dash-grafica-obras" style="padding:12px 14px;">
+            <div style="font-size:12px;color:#9BB5CF;text-align:center;padding:12px 0;">Sin obras activas</div>
+          </div>
         </div>
+
+        <!-- Acciones rápidas -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
+          <button onclick="showNueva()" style="background:#1E6FD9;border:none;border-radius:12px;padding:13px;display:flex;align-items:center;gap:9px;cursor:pointer;font-family:var(--font);">
+            <div style="width:28px;height:28px;background:rgba(255,255,255,.15);border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 2v10M2 7h10" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></svg>
+            </div>
+            <div style="text-align:left;"><div style="font-size:12px;font-weight:700;color:#fff;">Nueva obra</div><div style="font-size:9px;color:rgba(255,255,255,.6);">Registrar</div></div>
+          </button>
+          <button onclick="goScreen('obras')" style="background:#fff;border:1px solid #E0E8F0;border-radius:12px;padding:13px;display:flex;align-items:center;gap:9px;cursor:pointer;font-family:var(--font);">
+            <div style="width:28px;height:28px;background:#F0F3F8;border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="2" y="2" width="4" height="4" rx="1" stroke="#0B1F3A" stroke-width="1.2"/><rect x="8" y="2" width="4" height="4" rx="1" stroke="#0B1F3A" stroke-width="1.2"/><rect x="2" y="8" width="4" height="4" rx="1" stroke="#0B1F3A" stroke-width="1.2"/><rect x="8" y="8" width="4" height="4" rx="1" stroke="#0B1F3A" stroke-width="1.2"/></svg>
+            </div>
+            <div style="text-align:left;"><div style="font-size:12px;font-weight:700;color:#0B1F3A;">Ver obras</div><div id="dash-ver-sub" style="font-size:9px;color:#7090B8;"></div></div>
+          </button>
+        </div>
+
+        <!-- Obras completadas recientes (solo si no hay activas) -->
+        <div id="dash-recientes-wrap" style="display:none;background:#fff;border-radius:12px;border:1px solid #E0E8F0;overflow:hidden;margin-bottom:12px;">
+          <div style="padding:11px 14px;border-bottom:1px solid #F0F3F8;">
+            <div style="font-size:11px;font-weight:700;color:#0B1F3A;">✅ Obras completadas recientemente</div>
+          </div>
+          <div id="dash-recientes"></div>
+        </div>
+
       </div>
     </div>
     <div id="screen-obra" class="screen">
@@ -2829,68 +2865,94 @@ function renderBaPairsFromCache(){
 
 
 function renderDashboard(){
-  var meses=["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
   var today=new Date().toDateString();
-  var activas=obras.filter(function(o){return o.estado==="activa";}).length;
-  var upd=obras.reduce(function(s,o){return s+(o.updates||[]).filter(function(u){return new Date(u.ts).toDateString()===today;}).length;},0);
   function el(id){return document.getElementById(id);}
+  var activas=obras.filter(function(o){return o.estado==="activa"||(o.pct>0&&o.pct<100);}).length;
+  var completadas=obras.filter(function(o){return o.pct>=100||o.estado==="completada";}).length;
+  var upd=obras.reduce(function(s,o){return s+(o.updates||[]).filter(function(u){return new Date(u.ts).toDateString()===today;}).length;},0);
   if(el("dash-activas"))el("dash-activas").textContent=activas;
+  if(el("dash-completadas"))el("dash-completadas").textContent=completadas;
   if(el("dash-total"))el("dash-total").textContent="de "+obras.length+" total";
   if(el("dash-updates"))el("dash-updates").textContent=upd;
   if(el("dash-ver-sub"))el("dash-ver-sub").textContent=activas+" activas";
-  var cf=obras.filter(function(o){return o.fechaFin;}).sort(function(a,b){return new Date(a.fechaFin)-new Date(b.fechaFin);});
-  if(cf.length){
-    var dias=Math.ceil((new Date(cf[0].fechaFin)-new Date())/86400000);
-    var d=new Date(cf[0].fechaFin);
-    if(el("dash-prox-fecha"))el("dash-prox-fecha").textContent=d.getDate()+" "+meses[d.getMonth()];
-    if(el("dash-prox-dias")){el("dash-prox-dias").textContent=dias>0?dias+" dias":"Hoy";el("dash-prox-dias").style.color=dias<=3?"#EF4444":dias<=7?"#F59E0B":"#10B981";}
-  }
-  var eEl=el("dash-entregas");
-  if(eEl){
-    eEl.innerHTML="";
-    if(cf.length){
-      cf.slice(0,3).forEach(function(obra,i){
-        var dias=Math.ceil((new Date(obra.fechaFin)-new Date())/86400000);
-        var col=dias<=3?"#EF4444":dias<=7?"#F59E0B":"#10B981";
-        var d=new Date(obra.fechaFin);
+
+  // Gráfica de barras por obra activa
+  var grafEl=el("dash-grafica-obras");
+  if(grafEl){
+    var meses=["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+    var obrasActivas=obras.filter(function(o){return (o.estado==="activa"||(o.pct>0&&o.pct<100))&&o.pct<100;});
+    if(!obrasActivas.length){
+      grafEl.innerHTML="<div style='text-align:center;padding:14px;'><div style='font-size:28px;margin-bottom:6px;'>🎉</div><div style='font-size:12px;font-weight:600;color:#0B1F3A;'>Sin obras activas en este momento</div><div style='font-size:11px;color:#9BB5CF;margin-top:4px;'>"+completadas+" obra"+(completadas!==1?"s":"")+" completada"+(completadas!==1?"s":"")+"</div></div>";
+    } else {
+      grafEl.innerHTML="";
+      obrasActivas.forEach(function(o){
+        var pct=o.pct||0;
+        var col=pct>=75?"#10B981":pct>=40?"#1E6FD9":"#F59E0B";
+        var fechaFin="";
+        if(o.fechaFin&&/^\d{4}-\d{2}-\d{2}$/.test(o.fechaFin)){
+          var p=o.fechaFin.split("-");fechaFin=p[2]+" "+meses[parseInt(p[1])-1];
+        }
+        var etapas=o.etapas||[];
+        var done=etapas.filter(function(e){return e.estado==="done";}).length;
+        var etapaActiva=etapas.find(function(e){return e.estado==="active";});
+        var etapaLabel=etapaActiva?etapaActiva.nombre:(done+"/"+etapas.length+" etapas");
+        var marcadores=etapas.length>1?etapas.slice(0,-1).map(function(e,i){
+          var pos=Math.round((i+1)/etapas.length*100);
+          return "<div style='position:absolute;left:"+pos+"%;top:0;width:2px;height:100%;background:#fff;opacity:.5;'></div>";
+        }).join(""):"";
+        var chips=etapas.length?"<div style='display:flex;gap:3px;margin-top:5px;flex-wrap:wrap;'>"+etapas.map(function(e){
+          var bg=e.estado==="done"?"#D1FAE5":e.estado==="active"?"#DBEAFE":"#F3F4F6";
+          var tc=e.estado==="done"?"#065F46":e.estado==="active"?"#1E40AF":"#9CA3AF";
+          var border=e.estado==="active"?"border:1px solid #93C5FD;":"";
+          return "<span style='font-size:8px;font-weight:600;padding:1px 6px;border-radius:10px;background:"+bg+";color:"+tc+";"+border+"'>"+e.nombre+"</span>";
+        }).join("")+"</div>":"";
         var row=document.createElement("div");
-        row.style.cssText="padding:10px 14px;"+(i<Math.min(cf.length,3)-1?"border-bottom:1px solid #F0F3F8;":"")+"display:flex;align-items:center;gap:10px;cursor:pointer;";
-        var bar=document.createElement("div");bar.style.cssText="width:3px;height:36px;background:"+col+";border-radius:2px;flex-shrink:0;";
-        var info=document.createElement("div");info.style.cssText="flex:1;min-width:0;";
-        var nom=document.createElement("div");nom.style.cssText="font-size:12px;font-weight:600;color:#0B1F3A;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;";nom.textContent=obra.nombre;
-        var cli=document.createElement("div");cli.style.cssText="font-size:10px;color:#7090B8;";cli.textContent=obra.cliente||"";
-        info.appendChild(nom);info.appendChild(cli);
-        var fecha=document.createElement("div");fecha.style.cssText="text-align:right;flex-shrink:0;";
-        fecha.innerHTML="<div style='font-size:11px;font-weight:700;color:"+col+"'>"+d.getDate()+" "+meses[d.getMonth()]+"</div><div style='font-size:9px;color:#9BB5CF'>"+(dias>0?dias+"d":"Hoy")+"</div>";
-        row.appendChild(bar);row.appendChild(info);row.appendChild(fecha);
-        (function(id){row.onclick=function(){goScreen("obras");setTimeout(function(){abrirObra(id);},200);};})(obra.id);
-        eEl.appendChild(row);
+        row.style.cssText="padding:12px 14px;border-bottom:1px solid #F5F7FB;cursor:pointer;";
+        row.innerHTML="<div style='display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;'>"
+          +"<div style='flex:1;min-width:0;'>"
+            +"<div style='font-size:12px;font-weight:700;color:#0B1F3A;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;'>"+o.nombre+"</div>"
+            +"<div style='font-size:10px;color:#7090B8;margin-top:1px;'>"+(o.cliente||"")+(etapaLabel?" · <span style=color:"+col+">"+etapaLabel+"</span>":"")+"</div>"
+          +"</div>"
+          +"<div style='text-align:right;flex-shrink:0;margin-left:10px;'>"
+            +"<div style='font-size:18px;font-weight:900;color:"+col+";line-height:1;'>"+pct+"%</div>"
+            +(fechaFin?"<div style='font-size:9px;color:#9BB5CF;'>"+fechaFin+"</div>":"")
+          +"</div>"
+          +"</div>"
+          +"<div style='position:relative;height:8px;background:#F0F3F8;border-radius:10px;overflow:hidden;'>"
+            +"<div style='position:absolute;left:0;top:0;height:100%;width:"+pct+"%;background:linear-gradient(90deg,"+col+"99,"+col+");border-radius:10px;'></div>"
+            +marcadores
+          +"</div>"
+          +chips;
+        (function(id){row.onclick=function(){goScreen("obras");setTimeout(function(){abrirObra(id);},200);};})(o.id);
+        grafEl.appendChild(row);
+      });
+    }
+  }
+
+  // Recientes si no hay activas
+  var recWrap=el("dash-recientes-wrap");
+  var recEl=el("dash-recientes");
+  if(recWrap&&recEl){
+    var completadasObras=obras.filter(function(o){return o.pct>=100||o.estado==="completada";}).slice(0,3);
+    if(completadasObras.length&&activas===0){
+      recWrap.style.display="block";
+      recEl.innerHTML="";
+      completadasObras.forEach(function(o,i){
+        var row=document.createElement("div");
+        row.style.cssText="padding:10px 14px;"+(i<completadasObras.length-1?"border-bottom:1px solid #F0F3F8;":"")+"display:flex;align-items:center;gap:10px;cursor:pointer;";
+        row.innerHTML="<div style='width:28px;height:28px;background:#D1FAE5;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;'>✓</div>"
+          +"<div style='flex:1;min-width:0;'><div style='font-size:12px;font-weight:600;color:#0B1F3A;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;'>"+o.nombre+"</div>"
+          +"<div style='font-size:10px;color:#7090B8;'>"+(o.cliente||"")+"</div></div>"
+          +"<div style='font-size:10px;font-weight:700;color:#10B981;'>100%</div>";
+        (function(id){row.onclick=function(){goScreen("obras");setTimeout(function(){abrirObra(id);},200);};})(o.id);
+        recEl.appendChild(row);
       });
     } else {
-      var msg=document.createElement("div");msg.style.cssText="padding:14px;font-size:12px;color:#9BB5CF;";msg.textContent="Sin fechas de entrega registradas";eEl.appendChild(msg);
+      recWrap.style.display="none";
     }
-  }
-  var ciEl=el("dash-last-ci");
-  if(ciEl){
-    var lastCI=null;
-    obras.forEach(function(o){(o.checkins||[]).forEach(function(ci){if(!lastCI||new Date(ci.fechaISO)>new Date(lastCI.fechaISO))lastCI=ci;});});
-    if(lastCI){
-      var ini=(lastCI.nombre||"?").split(" ").map(function(w){return w[0];}).join("").slice(0,2).toUpperCase();
-      ciEl.innerHTML="<div style='display:flex;align-items:center;gap:12px;'><div style='width:36px;height:36px;border-radius:50%;background:#EEF6FF;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#1E6FD9;flex-shrink:0;'>"+ini+"</div><div style='flex:1;'><div style='font-size:13px;font-weight:600;color:#0B1F3A;'>"+lastCI.nombre+"</div><div style='font-size:10px;color:#7090B8;margin-top:2px;'>"+(lastCI.actividad||"Check-in")+" - "+lastCI.hora+"</div></div><div style='font-size:10px;color:#9BB5CF;'>"+lastCI.fecha+"</div></div>";
-    }
-  }
-  var eoEl=el("dash-estado-obras");
-  if(eoEl&&obras.length){
-    eoEl.innerHTML="";
-    obras.slice(0,4).forEach(function(o,i){
-      var pct=o.pct||0;var col=pct>=100?"#10B981":pct>=50?"#1E6FD9":"#F59E0B";
-      var row=document.createElement("div");
-      row.style.cssText="padding:10px 14px;"+(i<Math.min(obras.length,4)-1?"border-bottom:1px solid #F0F3F8;":"");
-      row.innerHTML="<div style='display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;'><div style='font-size:12px;font-weight:600;color:#0B1F3A;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:70%;'>"+o.nombre+"</div><div style='font-size:11px;font-weight:700;color:"+col+";'>"+pct+"%</div></div><div style='height:5px;background:#F0F3F8;border-radius:10px;overflow:hidden;'><div style='height:100%;width:"+pct+"%;background:"+col+";border-radius:10px;'></div></div>";
-      eoEl.appendChild(row);
-    });
   }
 }
+
 // ─── PERFIL TÉCNICO ───────────────────────────────
 // getPerfil y savePerfil reemplazados por Firebase Auth
 function savePerfil(p){ /* reemplazado por Auth */ }
@@ -2970,7 +3032,9 @@ window.addEventListener('load', () => {
   }
   // Registrar Service Worker
   if('serviceWorker' in navigator){
-    navigator.serviceWorker.register('sw.js').catch(()=>{});
+    navigator.serviceWorker.register('sw.js')
+      .then(reg => console.log('SW registrado'))
+      .catch(()=>{});
   }
 });
 
