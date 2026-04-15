@@ -489,6 +489,18 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
 .pdf-paso-num{width:24px;height:24px;border-radius:50%;background:var(--blue);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;}
 .pdf-paso-txt{font-size:13px;color:var(--tx);line-height:1.5;}
 .pdf-paso-sub{font-size:11px;color:var(--tx2);margin-top:2px;}
+
+/* ── FIRMA DIGITAL ── */
+#modal-firma{position:fixed;inset:0;background:rgba(11,31,58,.85);backdrop-filter:blur(6px);z-index:700;display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .3s;}
+#modal-firma.open{opacity:1;pointer-events:all;}
+.firma-card{background:#fff;border-radius:24px 24px 0 0;width:100%;max-width:500px;padding:24px 20px calc(24px + var(--safe-bot));transform:translateY(40px);transition:transform .3s cubic-bezier(.34,1.56,.64,1);}
+#modal-firma.open .firma-card{transform:translateY(0);}
+#firma-canvas{border:2px dashed #DDE5F0;border-radius:12px;background:#F8FAFD;cursor:crosshair;touch-action:none;display:block;width:100%;}
+.firma-resumen{background:#F0F4F9;border-radius:10px;padding:12px 14px;margin-bottom:16px;}
+.firma-resumen-row{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #E4EAF2;}
+.firma-resumen-row:last-child{border-bottom:none;}
+.firma-resumen-label{font-size:10px;font-weight:700;color:#7090B8;text-transform:uppercase;letter-spacing:.5px;}
+.firma-resumen-val{font-size:12px;font-weight:600;color:#0B1F3A;}
 </style>
 </head>
 <body>
@@ -599,11 +611,11 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
       <div class="det-hdr">
              <div class="det-back-row">
           <div class="back-btn" onclick="goScreen('obras')">←</div>
-          <div style="flex:1;min-width:0;">
-            <div class="det-name" id="det-nom">—</div>
+          <div style="flex:1;min-width:0;" onclick="editarNombreObra()" title="Toca para editar">
+            <div class="det-name" id="det-nom" style="cursor:pointer;">—</div>
             <div class="det-sub" id="det-sub">—</div>
           </div>
-          <button onclick="borrarObra()" title="Borrar obra" style="background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.25);color:#EF4444;width:32px;height:32px;border-radius:8px;cursor:pointer;flex-shrink:0;font-size:14px;display:flex;align-items:center;justify-content:center;font-family:var(--font);">🗑</button>
+          <button onclick="editarNombreObra()" title="Editar nombre" style="background:rgba(30,111,217,.15);border:1px solid rgba(30,111,217,.3);color:#60A5FA;width:32px;height:32px;border-radius:8px;cursor:pointer;flex-shrink:0;font-size:14px;display:flex;align-items:center;justify-content:center;font-family:var(--font);">✎</button>
         </div>
         <div class="det-chips" style="display:flex;align-items:center;justify-content:space-between;width:100%;">
           <div style="display:flex;gap:5px;flex-wrap:wrap;">
@@ -629,7 +641,13 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
       <div id="dtab-resumen" class="dtab-content" style="padding:16px;">
 
         <div class="card" style="margin-bottom:10px;">
-          <div class="card-hd"><span class="card-ttl">Progreso general</span><span class="badge b-blue" id="r-pct-badge">0%</span></div>
+          <div class="card-hd" style="display:flex;align-items:center;justify-content:space-between;">
+            <span class="card-ttl">Progreso general</span>
+            <div style="display:flex;align-items:center;gap:6px;">
+              <span class="badge b-blue" id="r-pct-badge">0%</span>
+              <button onclick="recalcularPct()" style="font-size:9px;font-weight:700;padding:3px 8px;border-radius:7px;background:var(--blue-dim);border:1px solid rgba(30,111,217,.3);color:var(--blue);cursor:pointer;" title="Recalcular porcentaje desde etapas">↻ Recalcular</button>
+            </div>
+          </div>
           <div class="card-body">
             <div class="prog-track" style="margin-bottom:14px;"><div class="prog-fill" id="r-prog-fill" style="width:0%"></div></div>
             <div id="r-etapas"></div>
@@ -883,6 +901,14 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
       </div>
 
       <div class="admin-section">
+        <div class="admin-sec-title" style="display:flex;align-items:center;justify-content:space-between;">
+          <span>✍️ Cartas de conformidad</span>
+          <button onclick="loadFirmas()" style="font-size:9px;font-weight:700;padding:4px 10px;border-radius:8px;background:var(--blue-dim);border:1px solid rgba(30,111,217,.3);color:var(--blue);cursor:pointer;">↻ Ver</button>
+        </div>
+        <div id="admin-firmas-list"><div style="font-size:12px;color:var(--g3);">Presiona Ver para cargar</div></div>
+      </div>
+
+      <div class="admin-section">
         <div class="admin-sec-title">⚙️ Mi cuenta</div>
         <div class="card">
           <div class="card-body">
@@ -1130,6 +1156,9 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
         <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
         Contactar a ROMSA por WhatsApp
       </button>
+      <button id="btn-firmar-conformidad" onclick="abrirFirma()" style="display:none;width:100%;background:var(--navy);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:14px;font-family:var(--font);font-size:13px;font-weight:700;color:#fff;cursor:pointer;margin-top:8px;">
+        ✍️ Firmar carta de conformidad
+      </button>
     </div>
     <div class="vc-footer" id="vc-footer-btns" style="grid-template-columns:1fr;">
       <div class="vc-footer-btn primary" onclick="cerrarVC()">← Cerrar vista</div>
@@ -1331,7 +1360,7 @@ function goScreen(n){
     updateClienteBtn();
   }
   if(n==="admin"){
-    if(isAdmin){ loadAdminUsers(); loadCheckinLog(); }
+    if(isAdmin){ loadAdminUsers(); loadCheckinLog(); loadFirmas(); }
     else { goScreen("obras"); }
   }
 }
@@ -2226,9 +2255,16 @@ function mostrarVC(o){
     renderBaVC(o.baPairs||[]);
   }
 
-  // Mostrar botón WhatsApp
+  // Mostrar botones de acción
   const waBtn = document.getElementById("vc-whatsapp-btn");
   if(waBtn) waBtn.style.display = "block";
+  // Mostrar botón firma solo cuando obra completada y no firmada aún
+  const firmaBtn = document.getElementById("btn-firmar-conformidad");
+  if(firmaBtn){
+    const yaFirmada = localStorage.getItem("firma_"+o.id);
+    firmaBtn.style.display = (allDone && !yaFirmada) ? "block" : "none";
+    if(yaFirmada) firmaBtn.textContent = "✅ Conformidad firmada";
+  }
   document.getElementById("vista-cliente").style.display="block";
   document.getElementById("vista-cliente").scrollTo(0,0);
 }
@@ -3161,6 +3197,213 @@ function cerrarInstruccionesPDF(){
   document.getElementById("pdf-instrucciones-overlay").style.display = "none";
 }
 
+
+// ═══════════════════════════════════════════════════
+// ─── FIRMA DIGITAL ─────────────────────────────────
+// ═══════════════════════════════════════════════════
+let _firmaObraId = null;
+let _firmaObraNombre = null;
+let _firmaCanvas = null;
+let _firmaCtx = null;
+let _firmaDibujando = false;
+let _firmaUltX = 0, _firmaUltY = 0;
+let _firmaTieneTrazo = false;
+
+function abrirFirma(){
+  const o = obras[0] || getO();
+  if(!o) return;
+  _firmaObraId = o.id;
+  _firmaObraNombre = o.nombre;
+
+  // Llenar resumen
+  const rep = o.reporte||{};
+  const meses=["Enero","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+  function ff(f){ if(!f||f==="—") return "—"; if(/^\d{4}-\d{2}-\d{2}$/.test(f)){const[y,m,d]=f.split("-");return d+" "+meses[parseInt(m)-1]+" "+y;} return f; }
+  const rows = [
+    ["Cliente", o.cliente||"—"],
+    ["Proyecto", o.nombre||"—"],
+    ["Servicio", o.servicio||"—"],
+    ["Ubicación", o.ubicacion||"—"],
+    ...(rep.m2?[["Superficie", rep.m2.toFixed(2)+" "+(rep.unidad||"m²")]]:[]),
+    ["Fecha inicio", ff(o.fechaInicio||o.fecha||"—")],
+    ["Fecha término", ff(o.fechaFin||"—")],
+    ["Técnico", rep.tecnico||o.creadoPor||"—"],
+  ];
+  document.getElementById("firma-resumen-data").innerHTML = rows.map(r=>
+    `<div class="firma-resumen-row"><span class="firma-resumen-label">${r[0]}</span><span class="firma-resumen-val">${r[1]}</span></div>`
+  ).join("");
+
+  // Limpiar campos
+  document.getElementById("firma-nombre").value = "";
+  document.getElementById("firma-cargo").value = "";
+
+  // Inicializar canvas
+  document.getElementById("modal-firma").classList.add("open");
+  setTimeout(()=>{
+    _firmaCanvas = document.getElementById("firma-canvas");
+    _firmaCanvas.width = _firmaCanvas.offsetWidth;
+    _firmaCtx = _firmaCanvas.getContext("2d");
+    _firmaCtx.strokeStyle = "#0B1F3A";
+    _firmaCtx.lineWidth = 2.5;
+    _firmaCtx.lineCap = "round";
+    _firmaCtx.lineJoin = "round";
+    _firmaTieneTrazo = false;
+    initFirmaEvents();
+  }, 350);
+}
+
+function cerrarFirma(){
+  document.getElementById("modal-firma").classList.remove("open");
+}
+
+function limpiarFirma(){
+  if(_firmaCtx && _firmaCanvas){
+    _firmaCtx.clearRect(0,0,_firmaCanvas.width,_firmaCanvas.height);
+    _firmaTieneTrazo = false;
+  }
+}
+
+function initFirmaEvents(){
+  const c = _firmaCanvas;
+  function pos(e){
+    const r = c.getBoundingClientRect();
+    const src = e.touches ? e.touches[0] : e;
+    return { x:(src.clientX-r.left)*(c.width/r.width), y:(src.clientY-r.top)*(c.height/r.height) };
+  }
+  c.onmousedown = c.ontouchstart = (e)=>{
+    e.preventDefault();
+    _firmaDibujando=true;
+    const p=pos(e);
+    _firmaUltX=p.x; _firmaUltY=p.y;
+    _firmaCtx.beginPath();
+    _firmaCtx.moveTo(p.x,p.y);
+  };
+  c.onmousemove = c.ontouchmove = (e)=>{
+    e.preventDefault();
+    if(!_firmaDibujando)return;
+    const p=pos(e);
+    _firmaCtx.lineTo(p.x,p.y);
+    _firmaCtx.stroke();
+    _firmaCtx.beginPath();
+    _firmaCtx.moveTo(p.x,p.y);
+    _firmaUltX=p.x; _firmaUltY=p.y;
+    _firmaTieneTrazo=true;
+  };
+  c.onmouseup = c.ontouchend = ()=>{ _firmaDibujando=false; };
+}
+
+async function guardarFirma(){
+  if(!_firmaTieneTrazo){ showToast("✍️ Por favor dibuja tu firma"); return; }
+  const nombre = document.getElementById("firma-nombre").value.trim();
+  const cargo = document.getElementById("firma-cargo").value.trim();
+  if(!nombre){ showToast("⚠️ Ingresa el nombre del firmante"); return; }
+  if(!cargo){ showToast("⚠️ Ingresa el cargo"); return; }
+
+  const btn = document.getElementById("btn-guardar-firma");
+  btn.disabled=true; btn.textContent="Guardando...";
+
+  try{
+    const firmaImg = _firmaCanvas.toDataURL("image/png");
+    const now = new Date();
+    const meses=["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+    const fechaFirma = now.getDate()+" de "+meses[now.getMonth()]+" de "+now.getFullYear();
+    const horaFirma = now.toLocaleTimeString("es-MX",{hour:"2-digit",minute:"2-digit"});
+
+    // Guardar en Firestore
+    await db.collection("firmas").doc(_firmaObraId).set({
+      obraId: _firmaObraId,
+      obraNombre: _firmaObraNombre,
+      firmante: nombre,
+      cargo: cargo,
+      fecha: fechaFirma,
+      hora: horaFirma,
+      fechaISO: now.toISOString(),
+      firmaImg: firmaImg,
+      ts: Date.now()
+    });
+
+    // Marcar como firmada en localStorage
+    localStorage.setItem("firma_"+_firmaObraId, "1");
+
+    cerrarFirma();
+    showToast("✅ Carta de conformidad firmada correctamente");
+
+    // Actualizar botón en vista cliente
+    const firmaBtn = document.getElementById("btn-firmar-conformidad");
+    if(firmaBtn){ firmaBtn.textContent="✅ Conformidad firmada"; firmaBtn.style.background="var(--green)"; }
+
+  }catch(e){
+    showToast("❌ Error: "+e.message);
+  }
+  btn.disabled=false; btn.textContent="✅ Firmar y confirmar conformidad";
+}
+
+
+// ── Admin: ver cartas de conformidad ─────────────────────────────
+async function loadFirmas(){
+  const el = document.getElementById("admin-firmas-list");
+  if(!el) return;
+  el.innerHTML = '<div style="font-size:12px;color:var(--g3);">Cargando...</div>';
+  try{
+    const snap = await db.collection("firmas").orderBy("ts","desc").limit(30).get();
+    if(!snap.docs.length){
+      el.innerHTML = '<div style="font-size:12px;color:var(--g3);padding:8px 0;">Sin firmas registradas aún</div>';
+      return;
+    }
+    el.innerHTML = snap.docs.map(doc=>{
+      const f = doc.data();
+      return `<div style="background:var(--white);border-radius:var(--r-sm);border:1px solid var(--g1);padding:12px 14px;margin-bottom:8px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <div>
+            <div style="font-size:13px;font-weight:700;color:var(--tx);">${f.firmante}</div>
+            <div style="font-size:11px;color:var(--tx2);">${f.cargo}</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:10px;font-weight:700;color:var(--blue);">${f.fecha}</div>
+            <div style="font-size:10px;color:var(--g3);">${f.hora}</div>
+          </div>
+        </div>
+        <div style="font-size:11px;color:var(--tx2);margin-bottom:8px;">📋 ${f.obraNombre||"—"}</div>
+        ${f.firmaImg?`<img src="${f.firmaImg}" style="width:100%;max-height:80px;object-fit:contain;border:1px solid var(--g1);border-radius:8px;background:#F8FAFD;">`:""}
+      </div>`;
+    }).join("");
+  }catch(e){ el.innerHTML='<div style="font-size:12px;color:var(--red);">Error: '+e.message+'</div>'; }
+}
+
+
+// ── Editar nombre de obra ─────────────────────────────────────────
+function editarNombreObra(){
+  const o = getO(); if(!o) return;
+  withEditPermission(o, ()=>{
+    const nuevoNombre = prompt("Editar nombre de la obra:", o.nombre);
+    if(!nuevoNombre || !nuevoNombre.trim()) return;
+    if(nuevoNombre.trim() === o.nombre) return;
+    o.nombre = nuevoNombre.trim();
+    saveObra(o);
+    document.getElementById("det-nom").textContent = o.nombre;
+    showToast("✅ Nombre actualizado");
+  });
+}
+
+// ── Recalcular % desde etapas ──────────────────────────────────────
+async function recalcularPct(){
+  const o = getO(); if(!o) return;
+  withEditPermission(o, async ()=>{
+    const etapas = o.etapas||[];
+    if(!etapas.length){ showToast("⚠️ Sin etapas definidas"); return; }
+    const done = etapas.filter(e=>e.estado==="done").length;
+    const nuevoPct = Math.round((done/etapas.length)*100);
+    o.pct = nuevoPct;
+    await saveObra(o);
+    // Actualizar UI
+    document.getElementById("r-pct-badge").textContent = nuevoPct+"%";
+    document.getElementById("det-pct").textContent = nuevoPct+"%";
+    const fill = document.getElementById("r-prog-fill");
+    if(fill) fill.style.width = nuevoPct+"%";
+    showToast("✅ Avance recalculado: "+nuevoPct+"% ("+done+" de "+etapas.length+" etapas completadas)");
+  });
+}
+
 // ─── INIT ────────────────────────────────────────
 // Auth maneja el inicio — ver auth.onAuthStateChanged arriba
 // La vista cliente pública no requiere auth
@@ -3649,5 +3892,34 @@ function autoFillTecnico(){
   </button>
 </div>
 <div id="pdf-instrucciones-overlay" onclick="cerrarInstruccionesPDF()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:599;"></div>
+
+<!-- MODAL FIRMA DIGITAL -->
+<div id="modal-firma">
+  <div class="firma-card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+      <div>
+        <div style="font-size:17px;font-weight:800;color:var(--navy);">Carta de conformidad</div>
+        <div style="font-size:11px;color:var(--tx2);margin-top:2px;">Firma para confirmar la recepción del trabajo</div>
+      </div>
+      <button onclick="cerrarFirma()" style="background:var(--off);border:none;width:30px;height:30px;border-radius:50%;font-size:16px;cursor:pointer;color:var(--g3);">×</button>
+    </div>
+    <div class="firma-resumen" id="firma-resumen-data"></div>
+    <div style="font-size:10px;font-weight:700;color:var(--tx2);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">Firma del cliente</div>
+    <canvas id="firma-canvas" height="140"></canvas>
+    <div style="display:flex;justify-content:flex-end;margin-top:6px;margin-bottom:14px;">
+      <button onclick="limpiarFirma()" style="font-size:11px;color:var(--tx2);background:none;border:none;cursor:pointer;text-decoration:underline;">Limpiar firma</button>
+    </div>
+    <div class="fg" style="margin-bottom:14px;">
+      <label class="flabel">Nombre del firmante <span class="req">*</span></label>
+      <input class="finput" id="firma-nombre" placeholder="Nombre completo">
+    </div>
+    <div class="fg" style="margin-bottom:16px;">
+      <label class="flabel">Cargo / Puesto <span class="req">*</span></label>
+      <input class="finput" id="firma-cargo" placeholder="Gerente de Planta, Director...">
+    </div>
+    <button class="btn btn-primary btn-block" onclick="guardarFirma()" id="btn-guardar-firma">✅ Firmar y confirmar conformidad</button>
+    <div style="font-size:10px;color:var(--g3);text-align:center;margin-top:10px;line-height:1.5;">Al firmar confirmas haber recibido el trabajo a conformidad.<br>ROMSA Industrial guardará este documento.</div>
+  </div>
+</div>
 </body>
 </html>
