@@ -3203,6 +3203,7 @@ function cerrarInstruccionesPDF(){
 // ═══════════════════════════════════════════════════
 let _firmaObraId = null;
 let _firmaObraNombre = null;
+let _firmaObraData = {};
 let _firmaCanvas = null;
 let _firmaCtx = null;
 let _firmaDibujando = false;
@@ -3210,34 +3211,45 @@ let _firmaUltX = 0, _firmaUltY = 0;
 let _firmaTieneTrazo = false;
 
 function abrirFirma(){
-  const o = obras[0] || getO();
-  if(!o) return;
+  // En vista pública usar obraActivaId para encontrar la obra correcta
+  const obraId = obraActivaId || (obras[0]&&obras[0].id);
+  const o = obras.find(x=>x.id===obraId) || obras[0] || getO();
+  if(!o){ showToast("⚠️ No se pudo cargar la obra"); return; }
+
   _firmaObraId = o.id;
   _firmaObraNombre = o.nombre;
+  // Guardar datos completos de la obra para el documento
+  _firmaObraData = {
+    cliente: o.cliente||"—",
+    nombre: o.nombre||"—",
+    servicio: o.servicio||"—",
+    ubicacion: o.ubicacion||"—",
+    m2: o.reporte?.m2 ? o.reporte.m2.toFixed(2)+" "+(o.reporte.unidad||"m²") : "—",
+    fechaInicio: o.fechaInicio||o.fecha||"—",
+    fechaFin: o.fechaFin||"—",
+    tecnico: o.reporte?.tecnico||o.creadoPor||o.tecnicoResponsable||"—",
+  };
 
-  // Llenar resumen
-  const rep = o.reporte||{};
   const meses=["Enero","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
   function ff(f){ if(!f||f==="—") return "—"; if(/^\d{4}-\d{2}-\d{2}$/.test(f)){const[y,m,d]=f.split("-");return d+" "+meses[parseInt(m)-1]+" "+y;} return f; }
+
   const rows = [
-    ["Cliente", o.cliente||"—"],
-    ["Proyecto", o.nombre||"—"],
-    ["Servicio", o.servicio||"—"],
-    ["Ubicación", o.ubicacion||"—"],
-    ...(rep.m2?[["Superficie", rep.m2.toFixed(2)+" "+(rep.unidad||"m²")]]:[]),
-    ["Fecha inicio", ff(o.fechaInicio||o.fecha||"—")],
-    ["Fecha término", ff(o.fechaFin||"—")],
-    ["Técnico", rep.tecnico||o.creadoPor||"—"],
+    ["Cliente", _firmaObraData.cliente],
+    ["Proyecto", _firmaObraData.nombre],
+    ["Servicio", _firmaObraData.servicio],
+    ["Ubicación", _firmaObraData.ubicacion],
+    ...(_firmaObraData.m2!=="—"?[["Superficie", _firmaObraData.m2]]:[]),
+    ["Fecha inicio", ff(_firmaObraData.fechaInicio)],
+    ["Fecha término", ff(_firmaObraData.fechaFin)],
+    ["Técnico", _firmaObraData.tecnico],
   ];
   document.getElementById("firma-resumen-data").innerHTML = rows.map(r=>
     `<div class="firma-resumen-row"><span class="firma-resumen-label">${r[0]}</span><span class="firma-resumen-val">${r[1]}</span></div>`
   ).join("");
 
-  // Limpiar campos
   document.getElementById("firma-nombre").value = "";
   document.getElementById("firma-cargo").value = "";
 
-  // Inicializar canvas
   document.getElementById("modal-firma").classList.add("open");
   setTimeout(()=>{
     _firmaCanvas = document.getElementById("firma-canvas");
@@ -3329,8 +3341,18 @@ async function guardarFirma(){
       ts: Date.now()
     };
 
-    // Guardar en Firestore — funciona sin auth gracias a las reglas públicas
-    await db.collection("firmas").doc(_firmaObraId).set(firmaData);
+    // Guardar como nuevo documento (add) para permitir múltiples firmas por obra
+    await db.collection("firmas").add({
+      ...firmaData,
+      // Datos completos de la obra para el documento descargable
+      obraCliente: _firmaObraData.cliente||"—",
+      obraServicio: _firmaObraData.servicio||"—",
+      obraUbicacion: _firmaObraData.ubicacion||"—",
+      obraM2: _firmaObraData.m2||"—",
+      obraFechaInicio: _firmaObraData.fechaInicio||"—",
+      obraFechaFin: _firmaObraData.fechaFin||"—",
+      obraTecnico: _firmaObraData.tecnico||"—",
+    });
 
     // Marcar como firmada en localStorage
     localStorage.setItem("firma_"+_firmaObraId, "1");
@@ -3368,8 +3390,18 @@ async function loadFirmas(){
     }
     el.innerHTML = snap.docs.map(doc=>{
       const f = doc.data();
+      const docId = doc.id;
       return `<div style="background:var(--white);border-radius:var(--r-sm);border:1px solid var(--g1);padding:12px 14px;margin-bottom:8px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+        <!-- Título del documento -->
+        <div style="background:var(--blue-dim);border-radius:8px;padding:7px 10px;margin-bottom:10px;display:flex;align-items:center;gap:8px;">
+          <span style="font-size:16px;">📄</span>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:11px;font-weight:700;color:var(--blue);">Carta de Conformidad</div>
+            <div style="font-size:10px;color:var(--tx2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${f.obraNombre||f.obraCliente||"—"}</div>
+          </div>
+          <button onclick="descargarCartaConformidad('${docId}')" style="background:var(--blue);color:#fff;border:none;border-radius:8px;padding:5px 10px;font-size:10px;font-weight:700;cursor:pointer;flex-shrink:0;font-family:var(--font);">⬇ Descargar</button>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
           <div>
             <div style="font-size:13px;font-weight:700;color:var(--tx);">${f.firmante}</div>
             <div style="font-size:11px;color:var(--tx2);">${f.cargo}</div>
@@ -3379,11 +3411,110 @@ async function loadFirmas(){
             <div style="font-size:10px;color:var(--g3);">${f.hora}</div>
           </div>
         </div>
-        <div style="font-size:11px;color:var(--tx2);margin-bottom:8px;">📋 ${f.obraNombre||"—"}</div>
-        ${f.firmaImg?`<img src="${f.firmaImg}" style="width:100%;max-height:80px;object-fit:contain;border:1px solid var(--g1);border-radius:8px;background:#F8FAFD;">`:""}
+        ${f.firmaImg?`<img src="${f.firmaImg}" style="width:100%;max-height:70px;object-fit:contain;border:1px solid var(--g1);border-radius:8px;background:#F8FAFD;">`:""}
       </div>`;
     }).join("");
+    // Guardar firmas en memoria para descargar
+    window._firmasCache = {};
+    snap.docs.forEach(doc=>{ window._firmasCache[doc.id] = doc.data(); });
   }catch(e){ el.innerHTML='<div style="font-size:12px;color:var(--red);">Error: '+e.message+'</div>'; }
+}
+
+// ── Descargar carta de conformidad como PDF ───────────────────────
+function descargarCartaConformidad(docId){
+  const f = window._firmasCache?.[docId];
+  if(!f){ showToast("⚠️ Recarga la lista primero"); return; }
+
+  const meses=["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+  function ff(fecha){
+    if(!fecha||fecha==="—") return "—";
+    if(/^\d{4}-\d{2}-\d{2}$/.test(fecha)){const[y,m,d]=fecha.split("-");return d+" de "+meses[parseInt(m)-1]+" de "+y;}
+    return fecha;
+  }
+
+  // Generar HTML del documento
+  const logoSrc = window._romsaLogoAzul || "";
+  const html = `<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Carta de Conformidad — ${f.obraNombre||"Obra"}</title>
+<style>
+  body{font-family:-apple-system,"SF Pro Display","Helvetica Neue",Arial,sans-serif;margin:0;padding:0;background:#fff;color:#0B1F3A;}
+  .page{max-width:680px;margin:0 auto;padding:40px 40px 60px;}
+  .header{text-align:center;padding-bottom:20px;border-bottom:3px solid #0B1F3A;margin-bottom:24px;}
+  .header img{height:48px;width:auto;margin-bottom:10px;}
+  .header-sub{font-size:11px;color:#7090B8;letter-spacing:.5px;}
+  .titulo-bloque{background:linear-gradient(160deg,#0B1F3A,#0F2D5A);padding:24px 32px;text-align:center;border-radius:10px;margin-bottom:24px;}
+  .titulo-label{font-size:9px;color:rgba(255,255,255,.4);letter-spacing:3px;text-transform:uppercase;margin-bottom:10px;}
+  .titulo-nombre{font-size:22px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;}
+  .titulo-cliente{font-size:12px;color:rgba(255,255,255,.6);letter-spacing:1px;text-transform:uppercase;}
+  .seccion{font-size:10px;font-weight:700;color:#1E6FD9;text-transform:uppercase;letter-spacing:1.5px;border-bottom:2px solid #1E6FD9;padding-bottom:5px;margin-bottom:12px;margin-top:20px;}
+  table{width:100%;border-collapse:collapse;margin-bottom:16px;}
+  td{padding:8px 10px;border:1px solid #DDE5F0;font-size:12px;}
+  td:first-child{background:#F0F4F9;font-size:9px;font-weight:700;color:#4A6A8A;text-transform:uppercase;letter-spacing:.5px;width:35%;}
+  .declaracion{background:#F8FAFD;border:1px solid #DDE5F0;border-radius:8px;padding:16px;font-size:12px;line-height:1.8;color:#3A5A7A;margin-bottom:20px;}
+  .firma-bloque{border:1px solid #DDE5F0;border-radius:10px;padding:16px;text-align:center;}
+  .firma-img{max-width:280px;max-height:100px;display:block;margin:0 auto 10px;border-bottom:2px solid #0B1F3A;padding-bottom:8px;}
+  .firma-nombre{font-size:14px;font-weight:700;color:#0B1F3A;margin-bottom:3px;}
+  .firma-cargo{font-size:11px;color:#7090B8;margin-bottom:6px;}
+  .firma-fecha{font-size:10px;color:#9BB5CF;}
+  .footer{margin-top:32px;padding-top:14px;border-top:1px solid #DDE5F0;text-align:center;font-size:9px;color:#9BB5CF;}
+  @media print{body{margin:0;}@page{margin:15mm;}}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="header">
+    ${logoSrc?`<img src="${logoSrc}" alt="ROMSA">`:"<div style='font-size:24px;font-weight:900;color:#0B1F3A;'>≡ ROMSA</div>"}
+    <div class="header-sub">ROMSA Pisos Industriales · Mexicali, Baja California</div>
+  </div>
+
+  <div class="titulo-bloque">
+    <div class="titulo-label">Documento oficial</div>
+    <div class="titulo-nombre">${f.obraNombre||"—"}</div>
+    <div class="titulo-cliente">${f.obraCliente||"—"}</div>
+  </div>
+
+  <div class="seccion">Información del Proyecto</div>
+  <table>
+    <tr><td>Cliente</td><td>${f.obraCliente||"—"}</td></tr>
+    <tr><td>Proyecto</td><td>${f.obraNombre||"—"}</td></tr>
+    <tr><td>Servicio</td><td>${f.obraServicio||"—"}</td></tr>
+    <tr><td>Ubicación</td><td>${f.obraUbicacion||"—"}</td></tr>
+    ${f.obraM2&&f.obraM2!=="—"?`<tr><td>Superficie</td><td>${f.obraM2}</td></tr>`:""}
+    <tr><td>Fecha inicio</td><td>${ff(f.obraFechaInicio)}</td></tr>
+    <tr><td>Fecha término</td><td>${ff(f.obraFechaFin)}</td></tr>
+    <tr><td>Técnico responsable</td><td>${f.obraTecnico||"—"}</td></tr>
+  </table>
+
+  <div class="seccion">Declaración de Conformidad</div>
+  <div class="declaracion">
+    El suscrito, en su calidad de <strong>${f.cargo}</strong> de <strong>${f.obraCliente||"la empresa"}</strong>, declara haber recibido a entera satisfacción los trabajos de <strong>${f.obraServicio||"construcción y acabados"}</strong> realizados por <strong>ROMSA Pisos Industriales</strong> en las instalaciones ubicadas en <strong>${f.obraUbicacion||"las instalaciones"}</strong>, correspondientes al proyecto <strong>${f.obraNombre||"indicado"}</strong>, concluyendo el día <strong>${ff(f.obraFechaFin)}</strong>.<br><br>
+    Los trabajos fueron realizados conforme a las especificaciones acordadas, en tiempo y forma, por lo que se otorga la presente carta de conformidad.
+  </div>
+
+  <div class="seccion">Firma de Conformidad</div>
+  <div class="firma-bloque">
+    ${f.firmaImg?`<img src="${f.firmaImg}" class="firma-img" alt="Firma">`:"<div style='height:80px;border-bottom:2px solid #0B1F3A;margin-bottom:10px;'></div>"}
+    <div class="firma-nombre">${f.firmante}</div>
+    <div class="firma-cargo">${f.cargo}</div>
+    <div class="firma-fecha">Firmado el ${f.fecha} a las ${f.hora}</div>
+  </div>
+
+  <div class="footer">
+    ROMSA Pisos Industriales · Mexicali, Baja California, México<br>
+    Documento generado digitalmente · ${new Date().toLocaleDateString("es-MX",{day:"numeric",month:"long",year:"numeric"})}
+  </div>
+</div>
+<script>window.onload=()=>window.print();</script>
+</body>
+</html>`;
+
+  // Abrir en nueva ventana para imprimir/guardar como PDF
+  const win = window.open("","_blank");
+  win.document.write(html);
+  win.document.close();
 }
 
 
