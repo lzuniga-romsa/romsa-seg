@@ -2260,10 +2260,35 @@ function mostrarVC(o){
   if(waBtn) waBtn.style.display = "block";
   // Mostrar botón firma solo cuando obra completada y no firmada aún
   const firmaBtn = document.getElementById("btn-firmar-conformidad");
-  if(firmaBtn){
-    const yaFirmada = localStorage.getItem("firma_"+o.id);
-    firmaBtn.style.display = (allDone && !yaFirmada) ? "block" : "none";
-    if(yaFirmada) firmaBtn.textContent = "✅ Conformidad firmada";
+  if(firmaBtn && allDone){
+    // Verificar en Firestore si ya existe firma (más confiable que localStorage)
+    db.collection("firmas").where("obraId","==",o.id).limit(1).get()
+      .then(snap=>{
+        if(snap.empty){
+          // Sin firma — mostrar botón
+          localStorage.removeItem("firma_"+o.id); // limpiar cache
+          firmaBtn.style.display = "block";
+          firmaBtn.textContent = "✍️ Firmar carta de conformidad";
+          firmaBtn.style.background = "var(--navy)";
+          firmaBtn.onclick = abrirFirma;
+        } else {
+          // Ya firmada
+          localStorage.setItem("firma_"+o.id,"1");
+          firmaBtn.style.display = "block";
+          firmaBtn.textContent = "✅ Conformidad firmada";
+          firmaBtn.style.background = "#10B981";
+          firmaBtn.style.cursor = "default";
+          firmaBtn.onclick = null;
+        }
+      }).catch(()=>{
+        // Si falla consulta, usar localStorage como fallback
+        const yaFirmada = localStorage.getItem("firma_"+o.id);
+        firmaBtn.style.display = "block";
+        firmaBtn.textContent = yaFirmada ? "✅ Conformidad firmada" : "✍️ Firmar carta de conformidad";
+        if(!yaFirmada) firmaBtn.onclick = abrirFirma;
+      });
+  } else if(firmaBtn){
+    firmaBtn.style.display = "none";
   }
   document.getElementById("vista-cliente").style.display="block";
   document.getElementById("vista-cliente").scrollTo(0,0);
@@ -3399,7 +3424,10 @@ async function loadFirmas(){
             <div style="font-size:11px;font-weight:700;color:var(--blue);">Carta de Conformidad</div>
             <div style="font-size:10px;color:var(--tx2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${f.obraNombre||f.obraCliente||"—"}</div>
           </div>
-          <button onclick="descargarCartaConformidad('${docId}')" style="background:var(--blue);color:#fff;border:none;border-radius:8px;padding:5px 10px;font-size:10px;font-weight:700;cursor:pointer;flex-shrink:0;font-family:var(--font);">⬇ Descargar</button>
+          <div style="display:flex;gap:5px;flex-shrink:0;">
+            <button onclick="descargarCartaConformidad('${docId}')" style="background:var(--blue);color:#fff;border:none;border-radius:8px;padding:5px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:var(--font);">⬇</button>
+            <button onclick="borrarFirma('${docId}','${f.obraId||""}')" style="background:var(--red-dim);color:var(--red);border:1px solid rgba(239,68,68,.2);border-radius:8px;padding:5px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:var(--font);">🗑</button>
+          </div>
         </div>
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
           <div>
@@ -3549,6 +3577,22 @@ async function recalcularPct(){
     if(fill) fill.style.width = nuevoPct+"%";
     showToast("✅ Avance recalculado: "+nuevoPct+"% ("+done+" de "+etapas.length+" etapas completadas)");
   });
+}
+
+
+// ── Borrar firma y resetear en cliente ───────────────────────────
+async function borrarFirma(docId, obraId){
+  if(!confirm("¿Borrar esta firma? El cliente podrá firmar de nuevo.")) return;
+  try{
+    await db.collection("firmas").doc(docId).delete();
+    // Recargar lista en Admin
+    await loadFirmas();
+    showToast("🗑 Firma eliminada — el cliente puede volver a firmar");
+    // Nota: el localStorage del cliente se limpia automáticamente al recargar
+    // porque verificamos en Firestore si existe firma para esa obra
+  }catch(e){
+    showToast("❌ Error: "+e.message);
+  }
 }
 
 // ─── INIT ────────────────────────────────────────
