@@ -3303,14 +3303,21 @@ async function guardarFirma(){
   btn.disabled=true; btn.textContent="Guardando...";
 
   try{
-    const firmaImg = _firmaCanvas.toDataURL("image/png");
+    // Comprimir firma: reducir canvas a 400x140 JPEG para no superar 1MB de Firestore
+    const tmpCanvas = document.createElement("canvas");
+    tmpCanvas.width = 400; tmpCanvas.height = 140;
+    const tmpCtx = tmpCanvas.getContext("2d");
+    tmpCtx.fillStyle = "#fff";
+    tmpCtx.fillRect(0,0,400,140);
+    tmpCtx.drawImage(_firmaCanvas, 0, 0, 400, 140);
+    const firmaImg = tmpCanvas.toDataURL("image/jpeg", 0.7);
+
     const now = new Date();
     const meses=["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
     const fechaFirma = now.getDate()+" de "+meses[now.getMonth()]+" de "+now.getFullYear();
     const horaFirma = now.toLocaleTimeString("es-MX",{hour:"2-digit",minute:"2-digit"});
 
-    // Guardar en Firestore
-    await db.collection("firmas").doc(_firmaObraId).set({
+    const firmaData = {
       obraId: _firmaObraId,
       obraNombre: _firmaObraNombre,
       firmante: nombre,
@@ -3320,7 +3327,10 @@ async function guardarFirma(){
       fechaISO: now.toISOString(),
       firmaImg: firmaImg,
       ts: Date.now()
-    });
+    };
+
+    // Guardar en Firestore — funciona sin auth gracias a las reglas públicas
+    await db.collection("firmas").doc(_firmaObraId).set(firmaData);
 
     // Marcar como firmada en localStorage
     localStorage.setItem("firma_"+_firmaObraId, "1");
@@ -3330,10 +3340,16 @@ async function guardarFirma(){
 
     // Actualizar botón en vista cliente
     const firmaBtn = document.getElementById("btn-firmar-conformidad");
-    if(firmaBtn){ firmaBtn.textContent="✅ Conformidad firmada"; firmaBtn.style.background="var(--green)"; }
+    if(firmaBtn){
+      firmaBtn.textContent="✅ Conformidad firmada";
+      firmaBtn.style.background="#10B981";
+      firmaBtn.style.cursor="default";
+      firmaBtn.onclick = null;
+    }
 
   }catch(e){
-    showToast("❌ Error: "+e.message);
+    console.error("Error guardando firma:", e);
+    showToast("❌ Error al guardar: "+e.message);
   }
   btn.disabled=false; btn.textContent="✅ Firmar y confirmar conformidad";
 }
