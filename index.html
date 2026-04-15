@@ -473,6 +473,22 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
 .obs-alert{background:linear-gradient(135deg,var(--blue),#1A5FBF);border-radius:12px;padding:14px 16px;margin-bottom:16px;color:#fff;}
 .obs-alert-title{font-size:14px;font-weight:700;margin-bottom:4px;}
 .obs-alert-sub{font-size:11px;opacity:.8;line-height:1.5;}
+
+/* ── INSTRUCCIONES PDF MÓVIL ── */
+#pdf-instrucciones{
+  position:fixed;bottom:0;left:0;right:0;
+  background:#fff;border-radius:20px 20px 0 0;
+  padding:20px 20px calc(20px + var(--safe-bot));
+  box-shadow:0 -8px 32px rgba(11,31,58,.15);
+  z-index:600;transform:translateY(100%);
+  transition:transform .3s cubic-bezier(.34,1.56,.64,1);
+}
+#pdf-instrucciones.show{transform:translateY(0);}
+.pdf-paso{display:flex;align-items:flex-start;gap:12px;padding:10px 0;border-bottom:1px solid var(--off2);}
+.pdf-paso:last-child{border-bottom:none;}
+.pdf-paso-num{width:24px;height:24px;border-radius:50%;background:var(--blue);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;}
+.pdf-paso-txt{font-size:13px;color:var(--tx);line-height:1.5;}
+.pdf-paso-sub{font-size:11px;color:var(--tx2);margin-top:2px;}
 </style>
 </head>
 <body>
@@ -572,10 +588,7 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
           <button onclick="showNueva()" style="background:#1E6FD9;border:none;border-radius:12px;padding:13px;display:flex;align-items:center;gap:9px;cursor:pointer;font-family:var(--font);"><div style="width:28px;height:28px;background:rgba(255,255,255,.15);border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 2v10M2 7h10" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></svg></div><div style="text-align:left;"><div style="font-size:12px;font-weight:700;color:#fff;">Nueva obra</div><div style="font-size:9px;color:rgba(255,255,255,.6);">Registrar</div></div></button>
           <button onclick="goScreen('obras')" style="background:#fff;border:1px solid #E0E8F0;border-radius:12px;padding:13px;display:flex;align-items:center;gap:9px;cursor:pointer;font-family:var(--font);"><div style="width:28px;height:28px;background:#F0F3F8;border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="2" y="2" width="4" height="4" rx="1" stroke="#0B1F3A" stroke-width="1.2"/><rect x="8" y="2" width="4" height="4" rx="1" stroke="#0B1F3A" stroke-width="1.2"/><rect x="2" y="8" width="4" height="4" rx="1" stroke="#0B1F3A" stroke-width="1.2"/><rect x="8" y="8" width="4" height="4" rx="1" stroke="#0B1F3A" stroke-width="1.2"/></svg></div><div style="text-align:left;"><div style="font-size:12px;font-weight:700;color:#0B1F3A;">Ver obras</div><div id="dash-ver-sub" style="font-size:9px;color:#7090B8;"></div></div></button>
         </div>
-        <div style="background:#fff;border-radius:12px;border:1px solid #E0E8F0;overflow:hidden;margin-bottom:12px;">
-          <div style="padding:11px 14px;border-bottom:1px solid #F0F3F8;"><div style="font-size:11px;font-weight:700;color:#0B1F3A;">Ultimo check-in</div></div>
-          <div id="dash-last-ci" style="padding:12px 14px;font-size:12px;color:#9BB5CF;">Sin check-ins hoy</div>
-        </div>
+
         <div style="background:#fff;border-radius:12px;border:1px solid #E0E8F0;overflow:hidden;margin-bottom:20px;">
           <div style="padding:11px 14px;border-bottom:1px solid #F0F3F8;"><div style="font-size:11px;font-weight:700;color:#0B1F3A;">Estado de obras</div></div>
           <div id="dash-estado-obras" style="padding:8px 0;"><div style="padding:8px 14px;font-size:12px;color:#9BB5CF;">Sin obras activas</div></div>
@@ -604,7 +617,6 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
       </div>
       <div class="det-tabs">
         <button class="dtab active"  onclick="showDTab('resumen',this)">📊 Resumen</button>
-        <button class="dtab"         onclick="showDTab('checkin',this)">📍 Check-in</button>
         <button class="dtab"         onclick="showDTab('etapas',this)">📋 Etapas</button>
         <button class="dtab"         onclick="showDTab('updates',this)">📸 Updates</button>
         <button class="dtab"         onclick="showDTab('ba',this)">🔄 Antes/Después</button>
@@ -615,10 +627,7 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
 
       <!-- RESUMEN -->
       <div id="dtab-resumen" class="dtab-content" style="padding:16px;">
-        <div style="background:var(--blue-dim);border:1px solid rgba(30,111,217,.2);border-radius:var(--r-sm);padding:10px 14px;display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-          <div style="font-size:12px;font-weight:600;color:var(--blue);">📍 Registra tu check-in del día</div>
-          <button class="btn btn-primary btn-sm" onclick="showDTab('checkin',document.querySelectorAll('.dtab')[1])">Ir a check-in</button>
-        </div>
+
         <div class="card" style="margin-bottom:10px;">
           <div class="card-hd"><span class="card-ttl">Progreso general</span><span class="badge b-blue" id="r-pct-badge">0%</span></div>
           <div class="card-body">
@@ -857,7 +866,10 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
       <div class="admin-section">
         <div class="admin-sec-title" style="display:flex;align-items:center;justify-content:space-between;">
           <span>🕐 Accesos recientes</span>
-          <button onclick="loadCheckinLog()" style="font-size:9px;font-weight:700;padding:4px 10px;border-radius:8px;background:var(--blue-dim);border:1px solid rgba(30,111,217,.3);color:var(--blue);cursor:pointer;">↻ Actualizar</button>
+          <div style="display:flex;gap:6px;">
+            <button onclick="loadCheckinLog()" style="font-size:9px;font-weight:700;padding:4px 10px;border-radius:8px;background:var(--blue-dim);border:1px solid rgba(30,111,217,.3);color:var(--blue);cursor:pointer;">↻ Ver</button>
+            <button onclick="borrarCheckins()" style="font-size:9px;font-weight:700;padding:4px 10px;border-radius:8px;background:var(--red-dim);border:1px solid rgba(239,68,68,.2);color:var(--red);cursor:pointer;">🗑 Borrar</button>
+          </div>
         </div>
         <div id="admin-checkin-log"><div style="font-size:12px;color:var(--g3);">Cargando accesos...</div></div>
       </div>
@@ -987,6 +999,8 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
     <div class="modal-ttl">Nueva obra</div>
     <div class="fdivider">Proyecto</div>
     <div class="fg"><label class="flabel">Nombre de la obra <span class="req">*</span></label><input class="finput" id="no-nombre" placeholder="Ej: Nave Industrial ABC"></div>
+    <div class="fg"><label class="flabel">Técnico responsable <span class="req">*</span></label><input class="finput" id="no-tecnico" placeholder="Nombre completo del técnico"></div>
+    <div class="fg"><label class="flabel">Teléfono del técnico <span class="req">*</span></label><input class="finput" id="no-tel-tecnico" type="tel" placeholder="+52 686..."></div>
     <div class="fg"><label class="flabel">Cliente / Empresa <span class="req">*</span></label><input class="finput" id="no-cliente" placeholder="Nombre del cliente"></div>
     <div class="frow">
       <div class="fg"><label class="flabel">Contacto</label><input class="finput" id="no-contacto" placeholder="Nombre del contacto"></div>
@@ -1130,7 +1144,7 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
   <div class="pdf-topbar">
     <button class="btn btn-secondary btn-sm" onclick="closePdf()">← Cerrar</button>
     <span style="color:#fff;font-size:13px;font-weight:600;">Reporte final de obra</span>
-    <button class="btn btn-primary btn-sm" onclick="window.print()">⬇ Descargar Reporte Final de Obra</button>
+    <button class="btn btn-primary btn-sm" id="btn-descargar-pdf" onclick="descargarReportePDF()">⬇ Descargar Reporte Final de Obra</button>
   </div>
   <div class="pdf-body" id="pdf-body"></div>
 </div>
@@ -1342,10 +1356,15 @@ function showDTab(n,btn){
 function showNueva(){
   etapasInputCount=0;
   document.getElementById("etapas-input-list").innerHTML="";
-  ["no-nombre","no-cliente","no-contacto","no-tel","no-ubic","no-fecha-ini","no-fecha-fin"].forEach(id=>{
+  ["no-nombre","no-tecnico","no-tel-tecnico","no-cliente","no-contacto","no-tel","no-ubic","no-fecha-ini","no-fecha-fin"].forEach(id=>{
     const el=document.getElementById(id);if(el)el.value="";
   });
   addEtapaInput();addEtapaInput();addEtapaInput();
+  // Auto-rellenar técnico con el usuario actual
+  const tecInput = document.getElementById("no-tecnico");
+  if(tecInput && currentUserProfile?.nombre) tecInput.value = currentUserProfile.nombre;
+  const telTecInput = document.getElementById("no-tel-tecnico");
+  if(telTecInput && currentUserProfile?.tel) telTecInput.value = currentUserProfile.tel;
   document.getElementById("modal-nueva").classList.add("open");
   setTimeout(()=>document.getElementById("no-nombre").focus(),300);
 }
@@ -1370,8 +1389,12 @@ function addEtapaInput(){
 // ─── CREAR OBRA ───────────────────────────────────
 async function crearObra(){
   const nom=document.getElementById("no-nombre").value.trim();
+  const tec=document.getElementById("no-tecnico")?.value.trim()||"";
+  const telTec=document.getElementById("no-tel-tecnico")?.value.trim()||"";
   const cli=document.getElementById("no-cliente").value.trim();
   if(!nom){showToast("⚠️ Ingresa el nombre de la obra");return;}
+  if(!tec){showToast("⚠️ Ingresa el técnico responsable");return;}
+  if(!telTec){showToast("⚠️ Ingresa el teléfono del técnico");return;}
   if(!cli){showToast("⚠️ Ingresa el cliente");return;}
   const inputs=document.getElementById("etapas-input-list").querySelectorAll("input[id^='ei-']");
   const etapas=[];
@@ -1379,7 +1402,7 @@ async function crearObra(){
   const now=new Date();
   const id="obra"+Date.now();
   const o={
-    id,ts:Date.now(),nombre:nom,cliente:cli,creadoPorUid:currentUser?.uid||"",
+    id,ts:Date.now(),nombre:nom,cliente:cli,creadoPorUid:currentUser?.uid||"",tecnicoResponsable:tec,creadoPor:tec,telTecnico:telTec,
     contacto:document.getElementById("no-contacto").value.trim(),
     tel:document.getElementById("no-tel").value.trim(),
     ubicacion:document.getElementById("no-ubic").value.trim(),
@@ -1537,22 +1560,46 @@ function renderEtapasEditor(o){
   const el=document.getElementById("etapas-editor");
   const etapas=o.etapas||[];
   if(!etapas.length){el.innerHTML='<div style="font-size:12px;color:var(--g3);padding:6px 0;">Sin etapas — agrega los pasos del proceso</div>';return;}
-  el.innerHTML=etapas.map(e=>`
-    <div class="ee-row">
+  el.innerHTML=etapas.map((e,i)=>`
+    <div class="ee-row" style="align-items:center;">
+      <!-- Botones de orden -->
+      <div style="display:flex;flex-direction:column;gap:2px;margin-right:2px;flex-shrink:0;">
+        <button onclick="moverEtapa('${e.id}',-1)" ${i===0?'disabled':''} style="width:20px;height:20px;border-radius:4px;background:${i===0?'var(--off)':'var(--blue-dim)'};border:none;color:${i===0?'var(--g2)':'var(--blue)'};cursor:${i===0?'default':'pointer'};font-size:10px;display:flex;align-items:center;justify-content:center;padding:0;">▲</button>
+        <button onclick="moverEtapa('${e.id}',1)" ${i===etapas.length-1?'disabled':''} style="width:20px;height:20px;border-radius:4px;background:${i===etapas.length-1?'var(--off)':'var(--blue-dim)'};border:none;color:${i===etapas.length-1?'var(--g2)':'var(--blue)'};cursor:${i===etapas.length-1?'default':'pointer'};font-size:10px;display:flex;align-items:center;justify-content:center;padding:0;">▼</button>
+      </div>
       <div class="ee-num">${e.num}</div>
       <div style="flex:1;min-width:0;">
         <div style="font-size:13px;font-weight:600;">${e.nombre}</div>
         ${e.fechaCompletada?`<div style="font-size:10px;color:var(--g3);">Completada: ${e.fechaCompletada}</div>`:''}
       </div>
-      <div style="display:flex;gap:5px;align-items:center;">
+      <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;justify-content:flex-end;">
         <button class="ee-status" style="background:${e.estado==='done'?'var(--green-dim)':e.estado==='active'?'var(--blue-dim)':'var(--off)'};color:${e.estado==='done'?'#0B7A5A':e.estado==='active'?'var(--blue)':'var(--g3)'};"
           onclick="ciclarEtapa('${e.id}')">
-          ${e.estado==='done'?'✓ Listo':e.estado==='active'?'▶ Activa':'○ Pendiente'}
+          ${e.estado==='done'?'✓ Listo':e.estado==='active'?'▶ Activa':'○ Pend.'}
         </button>
-        <button onclick="showEditEtapa('${e.id}')" style="width:26px;height:26px;border-radius:6px;background:var(--blue-dim);border:none;color:var(--blue);cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">✎</button>
-        <button class="del-btn" onclick="delEtapa('${e.id}')">×</button>
+        <button onclick="showEditEtapa('${e.id}')" style="width:26px;height:26px;border-radius:6px;background:var(--blue-dim);border:none;color:var(--blue);cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0;" title="Editar nombre">✎</button>
+        <button class="del-btn" onclick="delEtapa('${e.id}')" title="Eliminar">×</button>
       </div>
     </div>`).join("");
+}
+
+function moverEtapa(id, dir){
+  const o=getO();if(!o)return;
+  withEditPermission(o,()=>{
+    const idx=o.etapas.findIndex(x=>x.id==id);
+    if(idx<0)return;
+    const newIdx=idx+dir;
+    if(newIdx<0||newIdx>=o.etapas.length)return;
+    // Intercambiar posiciones
+    const tmp=o.etapas[idx];
+    o.etapas[idx]=o.etapas[newIdx];
+    o.etapas[newIdx]=tmp;
+    // Renumerar
+    o.etapas.forEach((e,i)=>e.num=i+1);
+    saveObra(o);
+    renderEtapasEditor(o);
+    showToast("✅ Orden actualizado");
+  });
 }
 function ciclarEtapa(id){
   const o=getO();if(!o)return;
@@ -2082,13 +2129,13 @@ function mostrarVC(o){
     db.collection("encuestas").where("obraId","==",o.id).limit(1).get()
       .then(snap=>{
         if(snap.empty){
-          setTimeout(()=>mostrarEncuesta(o.id, o.nombre, o.cliente), 2500);
+          setTimeout(()=>mostrarEncuesta(o.id, o.nombre, o.cliente), 3000);
         }
       }).catch(()=>{
         // Si falla la consulta, mostrar de todas formas
         const encKey = "enc_"+o.id;
         if(!localStorage.getItem(encKey)){
-          setTimeout(()=>mostrarEncuesta(o.id, o.nombre, o.cliente), 2500);
+          setTimeout(()=>mostrarEncuesta(o.id, o.nombre, o.cliente), 3000);
         }
       });
   }
@@ -2372,32 +2419,45 @@ function checkUrlParams(){
   let lastTs = 0;
 
   // Load obra
-  obrasRef.doc(obraId).onSnapshot(snap=>{
-    if(!snap.exists){
-      document.getElementById("vista-cliente").innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100vh;color:#fff;font-size:16px;text-align:center;padding:24px;">Obra no encontrada.</div>';
-      return;
-    }
-    const o=snap.data();
-    // Verificar si el link fue revocado por el admin
-    if(o.linkRevocado === true){
-      document.getElementById("vista-cliente").innerHTML='<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;color:#fff;text-align:center;padding:24px;background:#0B1829;"><div style="font-size:40px;margin-bottom:16px;">🔒</div><div style="font-size:18px;font-weight:700;margin-bottom:8px;">Acceso no disponible</div><div style="font-size:13px;opacity:.5;">El acceso a este proyecto ha sido desactivado.<br>Contacta a ROMSA Industrial para más información.</div></div>';
-      return;
-    }
-    obras=[o]; obraActivaId=obraId;
-    // Load baPairs from subcollection
-    getBaPairsRef(obraId).orderBy("id","asc").onSnapshot(bpSnap=>{
-      _baPairs = bpSnap.docs.map(d=>d.data());
-      o.baPairs = _baPairs;
+  // Cargar obra con .get() en lugar de onSnapshot (funciona sin auth)
+  async function cargarObraPublica(){
+    try{
+      const snap = await obrasRef.doc(obraId).get();
+      if(!snap.exists){
+        document.getElementById("vista-cliente").innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100vh;color:#fff;font-size:16px;text-align:center;padding:24px;background:#0B1829;">Obra no encontrada.</div>';
+        return;
+      }
+      const o = snap.data();
+      if(o.linkRevocado === true){
+        document.getElementById("vista-cliente").innerHTML='<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;color:#fff;text-align:center;padding:24px;background:#0B1829;"><div style="font-size:40px;margin-bottom:16px;">🔒</div><div style="font-size:18px;font-weight:700;margin-bottom:8px;">Acceso no disponible</div><div style="font-size:13px;opacity:.5;">El acceso a este proyecto ha sido desactivado.</div></div>';
+        return;
+      }
+      obras=[o]; obraActivaId=obraId;
+      // Cargar baPairs
+      try{
+        const bpSnap = await getBaPairsRef(obraId).orderBy("id","asc").get();
+        _baPairs = bpSnap.docs.map(d=>d.data());
+        o.baPairs = _baPairs;
+      }catch(e){ o.baPairs=[]; }
+      // Cargar updates desde subcolección
+      try{
+        const updSnap = await getUpdatesRef(obraId).orderBy("ts","desc").get();
+        o.updates = updSnap.docs.map(d=>d.data());
+      }catch(e){ o.updates=[]; }
       mostrarVC(o);
-    });
-    mostrarVC(o);
-  }, err=>{
-    console.error("onSnapshot error:",err);
-    const el=document.getElementById("lista-obras");
-    if(el && err.code==="permission-denied"){
-      el.innerHTML="<div class='empty'><div class='empty-ico'>🔒</div><div class='empty-ttl'>Acceso denegado</div><div class='empty-sub'>Las reglas de Firestore no permiten leer. Renueva las reglas en Firebase Console.<br><br><button onclick='subscribeObras()' style='background:#1E6FD9;color:#fff;border:none;padding:8px 18px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;'>&#8635; Reintentar</button></div></div>";
+    }catch(err){
+      console.error("Error cargando obra pública:", err);
+      // Si es error de permisos, las reglas de Firestore necesitan actualización
+      document.getElementById("vista-cliente").innerHTML=`
+        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;color:#fff;text-align:center;padding:32px;background:#0B1829;">
+          <div style="font-size:36px;margin-bottom:16px;">⚠️</div>
+          <div style="font-size:16px;font-weight:700;margin-bottom:8px;">Error al cargar el proyecto</div>
+          <div style="font-size:12px;opacity:.5;margin-bottom:20px;">${err.message}</div>
+          <button onclick="cargarObraPublica()" style="background:#1E6FD9;color:#fff;border:none;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">↻ Reintentar</button>
+        </div>`;
     }
-  });
+  }
+  cargarObraPublica();
 }
 
 // ─── UTILS ───────────────────────────────────────
@@ -2879,6 +2939,7 @@ function mostrarEncuesta(obraId, obraNombre, obraCliente){
   _encOpciones = [];
   _encRecomendaria = null;
   document.getElementById("enc-comentario").value = "";
+  ["enc-nombre","enc-cargo","enc-email"].forEach(id=>{const el=document.getElementById(id);if(el)el.value="";});
   document.querySelectorAll(".enc-star").forEach(s=>s.classList.remove("active"));
   document.querySelectorAll(".enc-option").forEach(o=>o.classList.remove("selected"));
   document.getElementById("encuesta-overlay").classList.add("open");
@@ -2909,14 +2970,24 @@ function toggleEncOpcion(el, valor, esUnica=false){
 }
 
 async function enviarEncuesta(){
+  const encNombre = document.getElementById("enc-nombre")?.value.trim();
+  const encCargo = document.getElementById("enc-cargo")?.value.trim();
+  if(!encNombre){ showToast("⚠️ Ingresa tu nombre"); return; }
+  if(!encCargo){ showToast("⚠️ Ingresa tu cargo"); return; }
   if(!_encEstrellas){ showToast("⭐ Selecciona una calificación"); return; }
   const btn = document.getElementById("btn-enviar-enc");
   btn.disabled = true; btn.textContent = "Enviando...";
   try{
     const now = new Date();
     localStorage.setItem("enc_"+_encObraId, "1");
+    const encNombreVal = document.getElementById("enc-nombre")?.value.trim()||"";
+    const encCargoVal = document.getElementById("enc-cargo")?.value.trim()||"";
+    const encEmailVal = document.getElementById("enc-email")?.value.trim()||"";
     await db.collection("encuestas").add({
       obraId: _encObraId,
+      clienteNombre: encNombreVal,
+      clienteCargo: encCargoVal,
+      clienteEmail: encEmailVal,
       estrellas: _encEstrellas,
       destacados: _encOpciones,
       recomendaria: _encRecomendaria,
@@ -2974,6 +3045,8 @@ async function loadEncuestas(){
           <div style="font-size:10px;color:var(--g3);">${d.fecha}</div>
         </div>
         ${d.obraId&&obrasMap[d.obraId]?`<div style="font-size:10px;font-weight:700;color:var(--blue);background:var(--blue-pale);padding:3px 9px;border-radius:8px;margin-bottom:7px;display:inline-block;">📋 ${obrasMap[d.obraId]}</div><br>`:""}
+        ${d.clienteNombre?`<div style="font-size:12px;font-weight:600;color:var(--tx);margin-bottom:2px;">${d.clienteNombre}${d.clienteCargo?" · "+d.clienteCargo:""}</div>`:""}
+        ${d.clienteEmail?`<div style="font-size:10px;color:var(--tx2);margin-bottom:6px;">✉️ ${d.clienteEmail}</div>`:""}
         ${d.destacados?.length?`<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px;">${d.destacados.map(t=>`<span style="background:var(--blue-pale);color:#185FA5;font-size:9px;font-weight:700;padding:2px 8px;border-radius:10px;">${t}</span>`).join("")}</div>`:""}
         ${d.recomendaria?`<div style="font-size:11px;color:var(--tx2);margin-bottom:4px;">${d.recomendaria==='Sí recomendaría'?'👍':'👎'} ${d.recomendaria}</div>`:""}
         ${d.comentario?`<div style="font-size:12px;color:var(--tx2);font-style:italic;">"${d.comentario}"</div>`:""}
@@ -3028,10 +3101,64 @@ async function descargarPdfCliente(obraId){
 function contactarWhatsApp(){
   const o = obras[0] || getO();
   const nombre = o ? (o.cliente?o.cliente+" — "+o.nombre:o.nombre) : "mi proyecto";
-  const tel = "526863513988";
+  // Usar el teléfono del técnico de la obra, o el general de ROMSA como fallback
+  let tel = "526863513988"; // ROMSA general
+  if(o && o.telTecnico){
+    // Limpiar el número: solo dígitos
+    const rawTel = o.telTecnico.replace(/\D/g,"");
+    // Agregar código de país México si no tiene
+    tel = rawTel.length === 10 ? "52" + rawTel : rawTel;
+  }
   const msg = encodeURIComponent("Hola ROMSA Industrial, te contacto respecto al proyecto: *" + nombre + "*. Mi consulta es: ");
   const url = "https://wa.me/" + tel + "?text=" + msg;
   window.open(url, "_blank");
+}
+
+
+// ── Admin: borrar checkins de acceso ────────────────────────────
+async function borrarCheckins(){
+  const el = document.getElementById("admin-checkin-log");
+  const snap = await db.collection("checkins_login").get();
+  if(!snap.docs.length){ showToast("ℹ️ Sin accesos que borrar"); return; }
+  if(!confirm("¿Borrar los "+snap.docs.length+" registros de acceso? Esta acción no se puede deshacer.")) return;
+  const batch = db.batch();
+  snap.docs.forEach(d=>batch.delete(d.ref));
+  await batch.commit();
+  if(el) el.innerHTML='<div style="font-size:12px;color:var(--g3);padding:8px 0;">Sin accesos registrados</div>';
+  showToast("🗑 Registros de acceso eliminados");
+}
+
+
+// ── Descarga de reporte PDF con instrucciones por dispositivo ────
+function descargarReportePDF(){
+  const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const isAndroid = /android/i.test(navigator.userAgent);
+  const isMobile = isIos || isAndroid;
+
+  if(!isMobile){
+    // Desktop: imprimir directamente
+    window.print();
+    return;
+  }
+
+  // Móvil: mostrar instrucciones específicas
+  const panelIos = document.getElementById("pdf-instrucciones-ios");
+  const panelAndroid = document.getElementById("pdf-instrucciones-android");
+  if(panelIos) panelIos.style.display = isIos ? "block" : "none";
+  if(panelAndroid) panelAndroid.style.display = isAndroid ? "block" : "none";
+
+  document.getElementById("pdf-instrucciones").classList.add("show");
+  document.getElementById("pdf-instrucciones-overlay").style.display = "block";
+}
+
+function imprimirAhora(){
+  cerrarInstruccionesPDF();
+  setTimeout(()=>window.print(), 300);
+}
+
+function cerrarInstruccionesPDF(){
+  document.getElementById("pdf-instrucciones").classList.remove("show");
+  document.getElementById("pdf-instrucciones-overlay").style.display = "none";
 }
 
 // ─── INIT ────────────────────────────────────────
@@ -3039,10 +3166,10 @@ function contactarWhatsApp(){
 // La vista cliente pública no requiere auth
 const _params=new URLSearchParams(window.location.search);
 if(_params.get("obra")){
-  // Vista pública del cliente — sin login
+  // Vista pública: ocultar login, ocultar app, mostrar vista cliente
   document.getElementById("login-screen").classList.add("hidden");
   document.getElementById("app").style.display = "none";
-  // Inicializar Firebase sin auth para vista cliente
+  document.getElementById("vista-cliente").style.display = "block";
   if(typeof obrasRef !== "undefined") checkUrlParams();
 }
 updateHoraCi();
@@ -3153,10 +3280,19 @@ auth.onAuthStateChanged(async user => {
     updateHoraCi();
 
   } else {
-    // No hay sesión — mostrar login
+    // No hay sesión
     currentUser = null;
     currentUserProfile = null;
     isAdmin = false;
+    // ⚠️ Si es vista pública del cliente (?obra=...) NO mostrar login
+    const _isPublicView = new URLSearchParams(window.location.search).get("obra");
+    if(_isPublicView){
+      // Vista cliente pública — mantener login oculto y cargar obra
+      document.getElementById("login-screen").classList.add("hidden");
+      document.getElementById("app").style.display = "none";
+      checkUrlParams();
+      return;
+    }
     document.getElementById("login-screen").classList.remove("hidden");
     document.getElementById("app").style.display = "none";
     // Copiar logo al login
@@ -3376,6 +3512,14 @@ function autoFillTecnico(){
       <div style="font-size:13px;color:var(--tx2);line-height:1.5;">Tu opinión nos ayuda a mejorar.<br>Solo toma 30 segundos.</div>
     </div>
 
+    <!-- Datos del cliente -->
+    <div style="margin-bottom:20px;">
+      <div style="font-size:12px;font-weight:700;color:var(--tx2);letter-spacing:.5px;margin-bottom:10px;">Tus datos</div>
+      <div class="fg" style="margin-bottom:8px;"><label class="flabel">Nombre completo <span class="req">*</span></label><input class="finput" id="enc-nombre" placeholder="Tu nombre"></div>
+      <div class="fg" style="margin-bottom:8px;"><label class="flabel">Cargo / Puesto <span class="req">*</span></label><input class="finput" id="enc-cargo" placeholder="Gerente de Planta, Compras..."></div>
+      <div class="fg" style="margin-bottom:0;"><label class="flabel">Correo electrónico <span style="color:var(--g3);font-weight:400;">(opcional)</span></label><input class="finput" id="enc-email" type="email" placeholder="tu@correo.com"></div>
+    </div>
+
     <!-- Pregunta 1: Estrellas -->
     <div style="margin-bottom:20px;">
       <div style="font-size:12px;font-weight:700;color:var(--tx2);letter-spacing:.5px;text-align:center;margin-bottom:4px;">¿Cómo calificarías el trabajo realizado?</div>
@@ -3451,5 +3595,59 @@ function autoFillTecnico(){
     </div>
   </div>
 </div>
+
+<!-- INSTRUCCIONES DESCARGA PDF MÓVIL -->
+<div id="pdf-instrucciones">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+    <div style="font-size:16px;font-weight:700;color:var(--navy);">Guardar como PDF</div>
+    <button onclick="cerrarInstruccionesPDF()" style="background:var(--off);border:none;width:30px;height:30px;border-radius:50%;font-size:16px;cursor:pointer;color:var(--g3);">×</button>
+  </div>
+  <div id="pdf-instrucciones-ios" style="display:none;">
+    <div style="background:#F0F7FF;border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:var(--blue);">
+      📱 En tu iPhone/iPad sigue estos pasos:
+    </div>
+    <div class="pdf-paso">
+      <div class="pdf-paso-num">1</div>
+      <div><div class="pdf-paso-txt">Toca el botón <strong>Compartir</strong> en Safari</div><div class="pdf-paso-sub">El ícono de cuadro con flecha hacia arriba (↑) en la barra inferior</div></div>
+    </div>
+    <div class="pdf-paso">
+      <div class="pdf-paso-num">2</div>
+      <div><div class="pdf-paso-txt">Selecciona <strong>"Imprimir"</strong></div><div class="pdf-paso-sub">Desplázate en el menú hasta encontrar la opción</div></div>
+    </div>
+    <div class="pdf-paso">
+      <div class="pdf-paso-num">3</div>
+      <div><div class="pdf-paso-txt">Abre la vista previa y <strong>pellizca para ampliar</strong></div><div class="pdf-paso-sub">Haz zoom con dos dedos sobre la vista previa de la impresión</div></div>
+    </div>
+    <div class="pdf-paso">
+      <div class="pdf-paso-num">4</div>
+      <div><div class="pdf-paso-txt">Toca el ícono <strong>Compartir</strong> de nuevo</div><div class="pdf-paso-sub">Elige "Guardar en Archivos" o "Guardar en Fotos"</div></div>
+    </div>
+  </div>
+  <div id="pdf-instrucciones-android" style="display:none;">
+    <div style="background:#F0F7FF;border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:var(--blue);">
+      📱 En tu Android sigue estos pasos:
+    </div>
+    <div class="pdf-paso">
+      <div class="pdf-paso-num">1</div>
+      <div><div class="pdf-paso-txt">Toca el menú <strong>⋮</strong> de Chrome</div><div class="pdf-paso-sub">Los tres puntos verticales en la esquina superior derecha</div></div>
+    </div>
+    <div class="pdf-paso">
+      <div class="pdf-paso-num">2</div>
+      <div><div class="pdf-paso-txt">Selecciona <strong>"Compartir"</strong> → <strong>"Imprimir"</strong></div><div class="pdf-paso-sub">O directamente "Imprimir" si aparece en el menú</div></div>
+    </div>
+    <div class="pdf-paso">
+      <div class="pdf-paso-num">3</div>
+      <div><div class="pdf-paso-txt">En la impresora selecciona <strong>"Guardar como PDF"</strong></div><div class="pdf-paso-sub">Toca el ícono de PDF o el selector de impresora</div></div>
+    </div>
+    <div class="pdf-paso">
+      <div class="pdf-paso-num">4</div>
+      <div><div class="pdf-paso-txt">Elige dónde guardar y toca <strong>Guardar</strong></div></div>
+    </div>
+  </div>
+  <button class="btn btn-primary btn-block" id="btn-imprimir-ahora" onclick="imprimirAhora()" style="margin-top:14px;">
+    🖨️ Abrir diálogo de impresión/PDF
+  </button>
+</div>
+<div id="pdf-instrucciones-overlay" onclick="cerrarInstruccionesPDF()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:599;"></div>
 </body>
 </html>
