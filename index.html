@@ -4162,6 +4162,13 @@ async function borrarFirma(docId, obraId){
 // ─── INIT ────────────────────────────────────────
 
 
+// ── Escuchar mensajes del iframe de levantamientos ──────────────
+window.addEventListener('message', function(e){
+  if(e.data && e.data.action === 'closeLevantemientos'){
+    goScreen('dashboard');
+  }
+});
+
 // ── Selector de módulo ────────────────────────────────────────────
 let _selectedModule = localStorage.getItem('romsa_module') || null;
 
