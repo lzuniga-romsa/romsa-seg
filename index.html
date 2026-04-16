@@ -824,9 +824,25 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
   display:block !important;
 }
 
+/* ── CARRUSEL FONDO LOGIN ── */
+#login-carousel{
+  position:fixed;inset:0;z-index:0;overflow:hidden;
+}
+.carousel-slide{
+  position:absolute;inset:0;
+  background-size:cover;background-position:center;
+  opacity:0;transition:opacity 1.5s ease-in-out;
+}
+.carousel-slide.active{opacity:1;}
+.carousel-overlay{
+  position:absolute;inset:0;
+  background:linear-gradient(160deg,rgba(11,24,41,.92) 0%,rgba(11,24,41,.75) 50%,rgba(11,24,41,.90) 100%);
+}
+#login-screen{z-index:10;background:transparent;}
+
 /* ── LOGIN SCREEN ── */
 #login-screen{
-  position:fixed;inset:0;background:#0B1829;
+  position:fixed;inset:0;background:transparent;
   display:flex;flex-direction:column;align-items:center;justify-content:center;
   z-index:1000;padding:32px 28px;
 }
@@ -945,6 +961,16 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
 </style>
 </head>
 <body>
+
+<!-- CARRUSEL FONDO -->
+<div id="login-carousel">
+  <div class="carousel-slide active" style="background-image:url('https://images.unsplash.com/photo-1504328345606-18bbc8c9d7d1?w=1600&q=85&auto=format&fit=crop');"></div>
+  <div class="carousel-slide" style="background-image:url('https://images.unsplash.com/photo-1565793979819-7f1b55ce2c2b?w=1600&q=85&auto=format&fit=crop');"></div>
+  <div class="carousel-slide" style="background-image:url('https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1600&q=85&auto=format&fit=crop');"></div>
+  <div class="carousel-slide" style="background-image:url('https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=1600&q=85&auto=format&fit=crop');"></div>
+  <div class="carousel-slide" style="background-image:url('https://images.unsplash.com/photo-1513828583688-c52646db42da?w=1600&q=85&auto=format&fit=crop');"></div>
+  <div class="carousel-overlay"></div>
+</div>
 
 <!-- PWA INSTALL BANNER -->
 <div id="pwa-banner">
@@ -1967,7 +1993,7 @@ async function crearObra(){
   const now=new Date();
   const id="obra"+Date.now();
   const o={
-    id,ts:Date.now(),nombre:nom,cliente:cli,creadoPorUid:currentUser?.uid||"",tecnicoResponsable:tec,creadoPor:tec,telTecnico:telTec,
+    id,ts:Date.now(),nombre:nom,cliente:cli,creadoPorUid:currentUser?.uid||"",editoresUid:[],tecnicoResponsable:tec,creadoPor:tec,telTecnico:telTec,
     contacto:document.getElementById("no-contacto").value.trim(),
     tel:document.getElementById("no-tel").value.trim(),
     ubicacion:document.getElementById("no-ubic").value.trim(),
@@ -2016,11 +2042,19 @@ function getO(){return obras.find(o=>o.id===obraActivaId);}
 // ─── RENDER OBRAS ─────────────────────────────────
 function renderObras(){
   const el=document.getElementById("lista-obras");
-  if(!obras.length){
-    el.innerHTML='<div class="empty"><div class="empty-ico">🏗️</div><div class="empty-ttl">Sin obras activas</div><div class="empty-sub">Crea tu primera obra para comenzar</div></div>';
+  // Filtrar obras según rol: técnico solo ve las suyas, admin ve todas
+  const obrasFiltradas = isAdmin
+    ? obras
+    : obras.filter(o=>
+        o.creadoPorUid === currentUser?.uid ||
+        o.creadoPor === currentUserProfile?.nombre ||
+        (o.editoresUid||[]).includes(currentUser?.uid||"")
+      );
+  if(!obrasFiltradas.length){
+    el.innerHTML='<div class="empty"><div class="empty-ico">🏗️</div><div class="empty-ttl">'+(isAdmin?"Sin obras activas":"Sin obras asignadas")+'</div><div class="empty-sub">'+(isAdmin?"Crea tu primera obra para comenzar":"Contacta al administrador para que te asigne obras")+'</div></div>';
     return;
   }
-  el.innerHTML=obras.map(o=>`
+  el.innerHTML=obrasFiltradas.map(o=>`
     <div class="prow" onclick="abrirObra('${o.id}')">
       <div class="prow-bar" style="background:${o.estado==='completada'?'#10B981':'#1E6FD9'};"></div>
       <div class="prow-body">
@@ -3367,7 +3401,12 @@ function renderBaPairsFromCache(){
 function renderDashboard(){
   var today=new Date().toDateString();
   function el(id){return document.getElementById(id);}
-  var activas=obras.filter(function(o){return o.estado==="activa"||(o.pct>0&&o.pct<100);}).length;
+  var obrasVis=isAdmin?obras:obras.filter(function(o){
+    return (currentUser&&o.creadoPorUid===currentUser.uid)||
+           (currentUserProfile&&o.creadoPor===currentUserProfile.nombre)||
+           (o.editoresUid||[]).indexOf((currentUser&&currentUser.uid)||"")>-1;
+  });
+  var activas=obrasVis.filter(function(o){return o.estado==="activa"||(o.pct>0&&o.pct<100);}).length;
   var completadas=obras.filter(function(o){return o.pct>=100||o.estado==="completada";}).length;
   var upd=obras.reduce(function(s,o){return s+(o.updates||[]).filter(function(u){return new Date(u.ts).toDateString()===today;}).length;},0);
   if(el("dash-activas"))el("dash-activas").textContent=activas;
@@ -4203,6 +4242,18 @@ function volverSelector(){
   showModuleSelector();
 }
 
+// ── Carrusel de fondo en login ─────────────────────────────────
+(function(){
+  var slides = document.querySelectorAll('.carousel-slide');
+  var current = 0;
+  if(slides.length < 2) return;
+  setInterval(function(){
+    slides[current].classList.remove('active');
+    current = (current + 1) % slides.length;
+    slides[current].classList.add('active');
+  }, 5000);
+})();
+
 // Auth maneja el inicio — ver auth.onAuthStateChanged arriba
 // La vista cliente pública no requiere auth
 const _params=new URLSearchParams(window.location.search);
@@ -4535,6 +4586,25 @@ async function toggleUserActivo(uid, activo){
   await usersRef.doc(uid).update({activo: !activo});
   showToast(activo ? "🔒 Usuario desactivado" : "✅ Usuario activado");
   loadAdminUsers();
+}
+
+// ── Asignar técnico editor a una obra (solo admin) ───────────────
+async function asignarEditorObra(obraId, uid, nombre){
+  if(!isAdmin){showToast("🔒 Solo admin");return;}
+  const obra = obras.find(o=>o.id===obraId);
+  if(!obra){showToast("Obra no encontrada");return;}
+  const editores = obra.editoresUid||[];
+  if(editores.includes(uid)){
+    // Ya es editor — quitar
+    obra.editoresUid = editores.filter(e=>e!==uid);
+    await obrasRef.doc(obraId).update({editoresUid: obra.editoresUid});
+    showToast("✅ "+nombre+" removido de la obra");
+  } else {
+    // Agregar como editor
+    obra.editoresUid = [...editores, uid];
+    await obrasRef.doc(obraId).update({editoresUid: obra.editoresUid});
+    showToast("✅ "+nombre+" puede editar esta obra");
+  }
 }
 
 // ── getPerfil: usar currentUserProfile en lugar de localStorage ──
