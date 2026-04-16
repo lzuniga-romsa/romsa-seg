@@ -1054,6 +1054,7 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
     <div class="snav" id="snav-nueva" onclick="showNueva()" style="position:relative;">+ Nueva
       <span id="tb-user-badge" style="position:absolute;top:-6px;right:-4px;background:#1E6FD9;color:#fff;font-size:8px;font-weight:700;padding:2px 6px;border-radius:10px;white-space:nowrap;display:none;max-width:80px;overflow:hidden;text-overflow:ellipsis;"></span>
     </div>
+    <div class="snav" id="snav-cotizaciones" onclick="goScreen('cotizaciones')" style="display:none;">Cotizaciones</div>
     <div class="snav" id="snav-admin" onclick="goScreen('admin')" style="display:none;">Admin</div>
   </div>
 
@@ -1469,6 +1470,95 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
       </div>
     </div>
 
+  <!-- ══ PANTALLA COTIZACIONES ══ -->
+  <div id="screen-cotizaciones" class="screen" style="display:none;padding:0;">
+    <div style="background:#0B1F3A;padding:14px 18px 16px;flex-shrink:0;">
+      <div style="font-size:9px;font-weight:700;color:#4A6A8A;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;">ROMSA Industrial</div>
+      <div style="font-size:18px;font-weight:800;color:#fff;line-height:1.2;">📋 <span style="color:#60A5FA;">Cotizaciones</span></div>
+    </div>
+    <div style="flex:1;overflow-y:auto;background:var(--off);padding:16px;">
+
+      <!-- Lista de cotizaciones -->
+      <div id="cot-lista-wrap">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+          <div style="font-size:11px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.5px;">Mis cotizaciones</div>
+          <button onclick="showNuevaCot()" style="background:#1E6FD9;border:none;color:#fff;font-size:11px;font-weight:700;padding:7px 14px;border-radius:8px;cursor:pointer;font-family:var(--font);">+ Nueva</button>
+        </div>
+        <div class="card" id="lista-cotizaciones">
+          <div class="empty"><div class="empty-ico">📋</div><div class="empty-ttl">Sin cotizaciones</div><div class="empty-sub">Crea tu primera cotización</div></div>
+        </div>
+      </div>
+
+      <!-- Formulario nueva cotización -->
+      <div id="cot-form-wrap" style="display:none;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+          <button onclick="cerrarFormCot()" style="background:rgba(11,31,58,.08);border:none;width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:16px;font-family:var(--font);">←</button>
+          <div style="font-size:16px;font-weight:800;color:var(--navy);" id="cot-form-titulo">Nueva cotización</div>
+        </div>
+
+        <!-- DATOS DEL CLIENTE -->
+        <div style="background:#fff;border:1px solid var(--g1);border-radius:12px;padding:14px;margin-bottom:12px;">
+          <div style="font-size:10px;font-weight:700;color:var(--tx2);letter-spacing:1px;text-transform:uppercase;margin-bottom:10px;">👤 Datos del cliente</div>
+          <div class="fg"><label class="flabel">Atención (nombre) <span class="req">*</span></label>
+            <input class="finput" id="cot-atencion" placeholder="Ing. Juan Pérez"></div>
+          <div class="fg"><label class="flabel">Empresa <span class="req">*</span></label>
+            <input class="finput" id="cot-empresa" placeholder="Nombre de la empresa"></div>
+          <div class="fg"><label class="flabel">Fecha <span class="req">*</span></label>
+            <input class="finput" id="cot-fecha" type="date"></div>
+          <div class="fg"><label class="flabel">Ciudad / Lugar</label>
+            <input class="finput" id="cot-ciudad" placeholder="Mexicali, B.C."></div>
+          <div class="fg"><label class="flabel">Correo electrónico</label>
+            <input class="finput" id="cot-email" type="email" placeholder="correo@empresa.com"></div>
+          <div class="fg"><label class="flabel">Teléfono</label>
+            <input class="finput" id="cot-tel" type="tel" placeholder="+52 686 000 0000"></div>
+          <div class="fg"><label class="flabel">RFC</label>
+            <input class="finput" id="cot-rfc" placeholder="RFC del cliente" style="text-transform:uppercase;"></div>
+        </div>
+
+        <!-- PARTIDAS -->
+        <div style="background:#fff;border:1px solid var(--g1);border-radius:12px;padding:14px;margin-bottom:12px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+            <div style="font-size:10px;font-weight:700;color:var(--tx2);letter-spacing:1px;text-transform:uppercase;">🔧 Partidas / Servicios</div>
+            <button onclick="addPartidaCot()" style="background:var(--blue-dim);border:1px solid rgba(30,111,217,.2);color:var(--blue);font-size:10px;font-weight:700;padding:5px 10px;border-radius:6px;cursor:pointer;font-family:var(--font);">+ Agregar</button>
+          </div>
+          <div id="cot-partidas-wrap"></div>
+          <!-- Totales -->
+          <div style="border-top:1px solid var(--g1);padding-top:10px;margin-top:4px;">
+            <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--tx2);margin-bottom:4px;">
+              <span>Subtotal</span><span id="cot-subtotal">$0.00</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--tx2);margin-bottom:4px;">
+              <span>IVA 8%</span><span id="cot-iva">$0.00</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:15px;font-weight:800;color:var(--navy);margin-top:6px;">
+              <span>Gran Total</span><span id="cot-total">$0.00</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- CONDICIONES GENERALES -->
+        <div style="background:#fff;border:1px solid var(--g1);border-radius:12px;padding:14px;margin-bottom:12px;">
+          <div style="font-size:10px;font-weight:700;color:var(--tx2);letter-spacing:1px;text-transform:uppercase;margin-bottom:10px;">📄 Condiciones generales</div>
+          <div class="fg"><label class="flabel">Forma de pago</label>
+            <textarea class="ftextarea" id="cot-pago" style="min-height:60px;">60% anticipo y 40% contra entrega de área finalizada y recepción de factura final.</textarea></div>
+          <div class="fg"><label class="flabel">Tiempo de ejecución</label>
+            <textarea class="ftextarea" id="cot-tiempo" style="min-height:60px;">El tiempo de ejecución está considerado para 2 días por cada 100 m². El área mínima por evento es de 100 m², en área libre y continua. Favor de considerar 2 semanas de entrega de materiales en planta una vez recibido el anticipo, orden de compra y firma de contrato.</textarea></div>
+          <div class="fg"><label class="flabel">Alcances y exclusiones</label>
+            <textarea class="ftextarea" id="cot-alcances" style="min-height:80px;">La propuesta se formula con base en la información proporcionada por el cliente y en las condiciones visibles del área al momento de la visita técnica. Cualquier condición no prevista, defecto oculto en la losa o requerimiento adicional no está contemplado y será cotizado como trabajo adicional. El cliente deberá asegurar que las áreas estén libres de obstrucciones, humedad excesiva, filtraciones, aceites, grasas u otros contaminantes antes de la aplicación.</textarea></div>
+          <div class="fg"><label class="flabel">Nota adicional (opcional)</label>
+            <textarea class="ftextarea" id="cot-nota" placeholder="Cualquier condición especial de esta cotización..." style="min-height:50px;"></textarea></div>
+        </div>
+
+        <!-- BOTONES -->
+        <div style="display:flex;flex-direction:column;gap:8px;padding-bottom:24px;">
+          <button onclick="guardarYVerCot()" style="background:#1E6FD9;border:none;color:#fff;font-size:14px;font-weight:700;padding:14px;border-radius:10px;cursor:pointer;font-family:var(--font);">💾 Guardar y ver cotización</button>
+          <button onclick="exportarCotExcel()" style="background:#217346;border:none;color:#fff;font-size:13px;font-weight:700;padding:13px;border-radius:10px;cursor:pointer;font-family:var(--font);">📊 Exportar a Excel</button>
+        </div>
+      </div><!-- /cot-form-wrap -->
+
+    </div><!-- /padding -->
+  </div><!-- /screen-cotizaciones -->
+
   </div><!-- /main -->
 
   <nav id="navbar">
@@ -1485,8 +1575,12 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
         <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M11 4v14M4 11h14" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>
       </button>
     </div>
-    <button class="nb" id="nb-cliente" onclick="clickClienteBtn()" style="opacity:.35;">
-      <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.5"/><path d="M6 10s1.5-3 4-3 4 3 4 3-1.5 3-4 3-4-3-4-3z" stroke="currentColor" stroke-width="1.3"/><circle cx="10" cy="10" r="1.5" fill="currentColor"/></svg>
+    <button class="nb" id="nb-cotizaciones" onclick="goScreen('cotizaciones')" style="display:none;">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="4" y="2" width="12" height="16" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M7 7h6M7 10h6M7 13h4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+      Cotizar
+    </button>
+    <button class="nb" id="nb-cliente" onclick="clickClienteBtn()" style="opacity:.35;display:none;">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.5"/></svg>
       Cliente
     </button>
   </nav>
@@ -1925,6 +2019,7 @@ function goScreen(n){
     if(isAdmin){ loadAdminUsers(); loadCheckinLog(); loadFirmas(); }
     else { goScreen("obras"); }
   }
+  if(n==="cotizaciones"){ renderListaCot(); }
 }
 function showDTab(n,btn){
   document.querySelectorAll(".dtab-content").forEach(t=>t.style.display="none");
@@ -4254,12 +4349,463 @@ function volverSelector(){
   }, 5000);
 })();
 
+
+// ═══════════════════════════════════════════════════════════════
+// MÓDULO COTIZACIONES
+// ═══════════════════════════════════════════════════════════════
+const cotRef = db ? db.collection("cotizaciones") : null;
+let cotizaciones = [];
+let cotActivaId = null;
+
+// Catálogo de servicios con descripción y procedimiento pre-llenado
+const CAT_SERVICIOS = {
+  "Epóxico 100% Sólidos": {
+    desc: "Suministro y aplicación de recubrimiento epóxico 100% sólidos sobre superficie de concreto.",
+    proc: "1.- Preparación mecánica de la superficie (desbaste/escarificado).\n2.- Limpieza y eliminación de polvo.\n3.- Aplicación de imprimante epóxico de penetración.\n4.- Aplicación de recubrimiento epóxico 100% sólidos a [X mils].\n5.- Sellado con poliuretano resistente a UV (opcional).\n6.- Limpieza total de área."
+  },
+  "Epóxico 100% Sólidos con Sello de Poliuretano": {
+    desc: "Suministro y aplicación de sistema epóxico 100% sólidos con capa de acabado en poliuretano alifático resistente a UV.",
+    proc: "1.- Preparación mecánica de la superficie.\n2.- Aplicación de imprimante epóxico.\n3.- Aplicación de cuerpo epóxico 100% sólidos a [X mils].\n4.- Sellado final con poliuretano alifático [X mils].\n5.- Limpieza total de área."
+  },
+  "Uretano Cementicio": {
+    desc: "Suministro y aplicación de mortero uretano cementicio Flowfresh RT sobre superficie de concreto.",
+    proc: "1.- Remoción total de recubrimiento existente.\n2.- Escarificado de superficie.\n3.- Secado de humedad en concreto excesiva con antorcha.\n4.- Aplicación de mortero uretano cementicio a un espesor de [X mm].\n5.- Corte de junta fría y sello.\n6.- Limpieza total de área."
+  },
+  "Pulido de Concreto": {
+    desc: "Servicio de pulido de piso de concreto con equipos industriales de diamante y densificador de litio.",
+    proc: "1.- Evaluación y preparación del sustrato.\n2.- Desbaste inicial con cabezas diamantadas.\n3.- Proceso de pulido progresivo (grit 30 → 400 → 800).\n4.- Aplicación de densificador de litio.\n5.- Acabado final con guardapolvos industrial.\n6.- Limpieza total de área."
+  },
+  "Reparaciones de Concreto": {
+    desc: "Reparación de grietas, juntas y daños superficiales en losa de concreto mediante mortero epóxico de alta resistencia.",
+    proc: "1.- Marcado y delimitación de zonas a reparar.\n2.- Demolición y limpieza de zona dañada.\n3.- Aplicación de imprimante epóxico.\n4.- Relleno con mortero epóxico de alta resistencia.\n5.- Nivelación y acabado.\n6.- Limpieza total de área."
+  },
+  "Sello de Juntas y Grietas": {
+    desc: "Sello de juntas de contracción, juntas frías y grietas con sellador epóxico/poliuretano de alta flexibilidad.",
+    proc: "1.- Limpieza y preparación de juntas.\n2.- Corte de junta con sierra de disco (si aplica).\n3.- Instalación de respaldo de polietileno expandido.\n4.- Aplicación de sellador epóxico/poliuretano bicomponente.\n5.- Acabado y limpieza."
+  },
+  "Cajones de Juntas": {
+    desc: "Reparación de cajones de juntas deteriorados con mortero de alta resistencia y sellador flexible.",
+    proc: "1.- Demolición de material dañado en cajón de junta.\n2.- Limpieza y preparación de la zona.\n3.- Aplicación de imprimante epóxico.\n4.- Relleno con mortero de alta resistencia.\n5.- Sello final con poliuretano flexible.\n6.- Limpieza de área."
+  }
+};
+
+// Folio automático: COT-[3 iniciales empresa]-[AAAAMMDD]-[random 3]
+function generarFolioCot(empresa){
+  var ini=(empresa||"ROM").replace(/[^a-zA-Z]/g,"").toUpperCase().substring(0,3).padEnd(3,"X");
+  var d=new Date();
+  var fecha=d.getFullYear()+String(d.getMonth()+1).padStart(2,"0")+String(d.getDate()).padStart(2,"0");
+  var rand=Math.floor(Math.random()*900+100);
+  return "COT-"+ini+"-"+fecha+"-"+rand;
+}
+
+// Formatear número con coma
+function fmtPeso(n){
+  return parseFloat(n||0).toLocaleString("es-MX",{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+
+// ── Cargar cotizaciones del usuario actual ────────────────────────
+function subscribeCotizaciones(){
+  if(!cotRef||!currentUser) return;
+  var q = isAdmin
+    ? cotRef.orderBy("ts","desc")
+    : cotRef.where("creadoPorUid","==",currentUser.uid).orderBy("ts","desc");
+  q.onSnapshot(function(snap){
+    cotizaciones=snap.docs.map(function(d){return d.data();});
+    if(document.getElementById("screen-cotizaciones")?.classList.contains("active"))
+      renderListaCot();
+  });
+}
+
+function renderListaCot(){
+  var el=document.getElementById("lista-cotizaciones");
+  if(!el)return;
+  if(!cotizaciones.length){
+    el.innerHTML='<div class="empty"><div class="empty-ico">📋</div><div class="empty-ttl">Sin cotizaciones</div><div class="empty-sub">Crea tu primera cotización</div></div>';
+    return;
+  }
+  el.innerHTML=cotizaciones.map(function(c){
+    var total=parseFloat(c.granTotal||0);
+    return '<div class="prow" onclick="abrirCot(\''+c.id+'\')">'+
+      '<div class="prow-bar" style="background:#7C3AED;"></div>'+
+      '<div class="prow-body">'+
+        '<div class="prow-name">'+c.empresa+'</div>'+
+        '<div class="prow-meta">'+c.atencion+' · '+c.fecha+'</div>'+
+        '<div style="display:flex;gap:5px;margin-top:5px;">'+
+          '<span class="badge b-navy">'+c.folio+'</span>'+
+          '<span class="badge b-green">$'+fmtPeso(total)+'</span>'+
+        '</div>'+
+      '</div>'+
+      '<div class="prow-arr">›</div>'+
+    '</div>';
+  }).join("");
+}
+
+// ── Abrir / nueva cotización ──────────────────────────────────────
+function showNuevaCot(){
+  cotActivaId=null;
+  document.getElementById("cot-form-titulo").textContent="Nueva cotización";
+  document.getElementById("cot-atencion").value="";
+  document.getElementById("cot-empresa").value="";
+  document.getElementById("cot-fecha").value=new Date().toISOString().slice(0,10);
+  document.getElementById("cot-ciudad").value="Mexicali, B.C.";
+  document.getElementById("cot-email").value="";
+  document.getElementById("cot-tel").value="";
+  document.getElementById("cot-rfc").value="";
+  document.getElementById("cot-nota").value="";
+  // Partidas iniciales
+  _cotPartidas=[{
+    id:1,
+    servicio:"Epóxico 100% Sólidos",
+    desc:CAT_SERVICIOS["Epóxico 100% Sólidos"].desc,
+    proc:CAT_SERVICIOS["Epóxico 100% Sólidos"].proc,
+    qty:100,unit:"m²",precio:0
+  }];
+  renderPartidasCot();
+  calcTotalesCot();
+  document.getElementById("cot-lista-wrap").style.display="none";
+  document.getElementById("cot-form-wrap").style.display="block";
+}
+
+function cerrarFormCot(){
+  document.getElementById("cot-form-wrap").style.display="none";
+  document.getElementById("cot-lista-wrap").style.display="block";
+}
+
+function abrirCot(id){
+  var c=cotizaciones.find(function(x){return x.id===id;});
+  if(!c)return;
+  cotActivaId=id;
+  document.getElementById("cot-form-titulo").textContent="Editar — "+c.folio;
+  document.getElementById("cot-atencion").value=c.atencion||"";
+  document.getElementById("cot-empresa").value=c.empresa||"";
+  document.getElementById("cot-fecha").value=c.fecha||"";
+  document.getElementById("cot-ciudad").value=c.ciudad||"";
+  document.getElementById("cot-email").value=c.email||"";
+  document.getElementById("cot-tel").value=c.tel||"";
+  document.getElementById("cot-rfc").value=c.rfc||"";
+  document.getElementById("cot-pago").value=c.condPago||document.getElementById("cot-pago").value;
+  document.getElementById("cot-tiempo").value=c.condTiempo||document.getElementById("cot-tiempo").value;
+  document.getElementById("cot-alcances").value=c.condAlcances||document.getElementById("cot-alcances").value;
+  document.getElementById("cot-nota").value=c.nota||"";
+  _cotPartidas=(c.partidas||[]).map(function(p,i){return Object.assign({id:i+1},p);});
+  if(!_cotPartidas.length) _cotPartidas=[{id:1,servicio:"",desc:"",proc:"",qty:0,unit:"m²",precio:0}];
+  renderPartidasCot();
+  calcTotalesCot();
+  document.getElementById("cot-lista-wrap").style.display="none";
+  document.getElementById("cot-form-wrap").style.display="block";
+}
+
+// ── Partidas ──────────────────────────────────────────────────────
+var _cotPartidas=[];
+var _cotPartidaNextId=1;
+
+function addPartidaCot(){
+  _cotPartidaNextId=(_cotPartidas[_cotPartidas.length-1]?.id||0)+1;
+  _cotPartidas.push({id:_cotPartidaNextId,servicio:"Epóxico 100% Sólidos",
+    desc:CAT_SERVICIOS["Epóxico 100% Sólidos"].desc,
+    proc:CAT_SERVICIOS["Epóxico 100% Sólidos"].proc,
+    qty:100,unit:"m²",precio:0});
+  renderPartidasCot();
+}
+
+function removePartidaCot(id){
+  _cotPartidas=_cotPartidas.filter(function(p){return p.id!==id;});
+  renderPartidasCot();
+  calcTotalesCot();
+}
+
+function onServicioChange(id, val){
+  var p=_cotPartidas.find(function(x){return x.id===id;});
+  if(!p)return;
+  p.servicio=val;
+  var cat=CAT_SERVICIOS[val];
+  if(cat){p.desc=cat.desc;p.proc=cat.proc;}
+  var el=document.getElementById("cot-p-desc-"+id);
+  var el2=document.getElementById("cot-p-proc-"+id);
+  if(el)el.value=p.desc;
+  if(el2)el2.value=p.proc;
+}
+
+function onPartidaField(id,field,val){
+  var p=_cotPartidas.find(function(x){return x.id===id;});
+  if(!p)return;
+  if(field==="qty"||field==="precio") p[field]=parseFloat(val)||0;
+  else p[field]=val;
+  calcTotalesCot();
+}
+
+function calcTotalesCot(){
+  var sub=_cotPartidas.reduce(function(s,p){return s+(p.qty||0)*(p.precio||0);},0);
+  var iva=sub*0.08;
+  var total=sub+iva;
+  var elS=document.getElementById("cot-subtotal");
+  var elI=document.getElementById("cot-iva");
+  var elT=document.getElementById("cot-total");
+  if(elS)elS.textContent="$"+fmtPeso(sub);
+  if(elI)elI.textContent="$"+fmtPeso(iva);
+  if(elT)elT.textContent="$"+fmtPeso(total);
+  return {sub,iva,total};
+}
+
+function renderPartidasCot(){
+  var wrap=document.getElementById("cot-partidas-wrap");
+  if(!wrap)return;
+  var optsHtml=Object.keys(CAT_SERVICIOS).map(function(k){
+    return '<option value="'+k+'">'+k+'</option>';
+  }).join("");
+  wrap.innerHTML=_cotPartidas.map(function(p){
+    var subtP=(p.qty||0)*(p.precio||0);
+    return '<div style="border:1px solid var(--g1);border-radius:10px;padding:12px;margin-bottom:10px;background:var(--off2);">'+
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">'+
+        '<div style="font-size:11px;font-weight:700;color:var(--navy);">Partida #'+p.id+'</div>'+
+        '<button onclick="removePartidaCot('+p.id+')" style="background:var(--red-dim);border:none;color:var(--red);font-size:10px;font-weight:700;padding:4px 8px;border-radius:6px;cursor:pointer;font-family:var(--font);">✕ Quitar</button>'+
+      '</div>'+
+      '<div class="fg"><label class="flabel">Servicio</label>'+
+        '<select class="fselect" onchange="onServicioChange('+p.id+',this.value)">'+
+          Object.keys(CAT_SERVICIOS).map(function(k){
+            return '<option value="'+k+'"'+(k===p.servicio?' selected':'')+'>'+k+'</option>';
+          }).join("")+
+          '<option value="Otro"'+(p.servicio==="Otro"?' selected':'')+'>Otro (especificar)</option>'+
+        '</select></div>'+
+      '<div class="fg"><label class="flabel">Descripción</label>'+
+        '<textarea class="ftextarea" id="cot-p-desc-'+p.id+'" style="min-height:60px;" oninput="onPartidaField('+p.id+',&apos;desc&apos;,this.value)">'+p.desc+'</textarea></div>'+
+      '<div class="fg"><label class="flabel">Procedimiento</label>'+
+        '<textarea class="ftextarea" id="cot-p-proc-'+p.id+'" style="min-height:100px;" oninput="onPartidaField('+p.id+',&apos;proc&apos;,this.value)">'+p.proc+'</textarea></div>'+
+      '<div style="display:grid;grid-template-columns:1fr 80px 1fr;gap:8px;">'+
+        '<div class="fg"><label class="flabel">Cantidad</label>'+
+          '<input class="finput" type="number" value="'+(p.qty||100)+'" oninput="onPartidaField('+p.id+',&apos;qty&apos;,this.value)"></div>'+
+        '<div class="fg"><label class="flabel">Unidad</label>'+
+          '<input class="finput" value="'+(p.unit||"m²")+'" oninput="onPartidaField('+p.id+',&apos;unit&apos;,this.value)"></div>'+
+        '<div class="fg"><label class="flabel">Precio unit. ($)</label>'+
+          '<input class="finput" type="number" value="'+(p.precio||"")+'" placeholder="0.00" oninput="onPartidaField('+p.id+',&apos;precio&apos;,this.value)"></div>'+
+      '</div>'+
+      '<div style="text-align:right;font-size:12px;font-weight:700;color:var(--navy);margin-top:4px;">Subtotal: $'+fmtPeso(subtP)+'</div>'+
+    '</div>';
+  }).join("");
+}
+
+// ── Guardar cotización en Firestore ───────────────────────────────
+async function guardarCot(){
+  var atencion=document.getElementById("cot-atencion").value.trim();
+  var empresa=document.getElementById("cot-empresa").value.trim();
+  var fecha=document.getElementById("cot-fecha").value;
+  if(!atencion){showToast("⚠️ Ingresa el nombre de atención");return null;}
+  if(!empresa){showToast("⚠️ Ingresa la empresa");return null;}
+  if(!fecha){showToast("⚠️ Selecciona la fecha");return null;}
+
+  var tots=calcTotalesCot();
+  var folio=cotActivaId
+    ? (cotizaciones.find(function(c){return c.id===cotActivaId;})||{}).folio || generarFolioCot(empresa)
+    : generarFolioCot(empresa);
+
+  var id=cotActivaId||(Date.now()+"_"+Math.random().toString(36).slice(2,7));
+  var cot={
+    id,ts:Date.now(),folio,
+    atencion,empresa,fecha,
+    ciudad:document.getElementById("cot-ciudad").value.trim(),
+    email:document.getElementById("cot-email").value.trim(),
+    tel:document.getElementById("cot-tel").value.trim(),
+    rfc:document.getElementById("cot-rfc").value.trim().toUpperCase(),
+    nota:document.getElementById("cot-nota").value.trim(),
+    condPago:document.getElementById("cot-pago").value.trim(),
+    condTiempo:document.getElementById("cot-tiempo").value.trim(),
+    condAlcances:document.getElementById("cot-alcances").value.trim(),
+    partidas:_cotPartidas.map(function(p){
+      return {servicio:p.servicio,desc:p.desc,proc:p.proc,qty:p.qty,unit:p.unit,precio:p.precio};
+    }),
+    subtotal:tots.sub,iva:tots.iva,granTotal:tots.total,
+    creadoPorUid:currentUser?.uid||"",
+    creadoPor:currentUserProfile?.nombre||""
+  };
+  try{
+    if(cotRef) await cotRef.doc(id).set(cot);
+    cotActivaId=id;
+    showToast("✅ Cotización guardada — "+folio);
+    return cot;
+  }catch(e){showToast("❌ Error al guardar: "+e.message);return null;}
+}
+
+async function guardarYVerCot(){
+  var cot=await guardarCot();
+  if(cot) generarPdfCot(cot);
+}
+
+// ── Generar PDF cotización (fondo blanco profesional) ─────────────
+function generarPdfCot(cot){
+  if(!cot)return;
+  // Fotos de referencia (headers profesionales)
+  var fotoUrls=[
+    "https://images.unsplash.com/photo-1581094271901-8022df4466f9?w=800&q=80&auto=format&fit=crop",
+    "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&q=80&auto=format&fit=crop",
+    "https://images.unsplash.com/photo-1553361371-9b22f78e8b1d?w=800&q=80&auto=format&fit=crop"
+  ];
+
+  var sub=parseFloat(cot.subtotal||0);
+  var iva=parseFloat(cot.iva||0);
+  var total=parseFloat(cot.granTotal||0);
+  var logoUrl=window._romsaLogoAzul||"";
+
+  var partidasHtml=(cot.partidas||[]).map(function(p,i){
+    var subtP=(p.qty||0)*(p.precio||0);
+    return '<tr>'
+      +'<td style="padding:10px 12px;border-bottom:1px solid #E0E8F0;vertical-align:top;">'
+        +'<div style="font-size:11px;font-weight:700;color:#0B1F3A;margin-bottom:4px;">'+(i+1)+'. '+p.servicio+'</div>'
+        +'<div style="font-size:10px;color:#4A6A8A;line-height:1.5;margin-bottom:6px;">'+p.desc+'</div>'
+        +(p.proc?'<div style="font-size:9px;color:#7090B8;white-space:pre-line;line-height:1.6;">'+p.proc+'</div>':"")
+      +'</td>'
+      +'<td style="padding:10px 8px;border-bottom:1px solid #E0E8F0;text-align:center;vertical-align:top;white-space:nowrap;font-size:11px;color:#0B1F3A;">'+(p.qty||0)+' '+p.unit+'</td>'
+      +'<td style="padding:10px 8px;border-bottom:1px solid #E0E8F0;text-align:right;vertical-align:top;white-space:nowrap;font-size:11px;color:#0B1F3A;">$'+fmtPeso(p.precio)+'</td>'
+      +'<td style="padding:10px 8px;border-bottom:1px solid #E0E8F0;text-align:right;vertical-align:top;white-space:nowrap;font-size:11px;font-weight:700;color:#0B1F3A;">$'+fmtPeso(subtP)+'</td>'
+    +'</tr>';
+  }).join("");
+
+  var winTitle="ROMSA - Cotizacion - "+cot.folio;
+  var win=window.open("","_blank");
+  if(!win){showToast("⚠️ Permite ventanas emergentes");return;}
+
+  win.document.write('<!DOCTYPE html><html lang="es"><head>'
+    +'<meta charset="UTF-8">'
+    +'<title>'+winTitle+'</title>'
+    +'<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">'
+    +'<style>'
+    +'*{margin:0;padding:0;box-sizing:border-box;}'
+    +'html,body{background:#fff;color:#0B1F3A;font-family:-apple-system,"SF Pro Display",Inter,sans-serif;-webkit-font-smoothing:antialiased;}'
+    +'@media print{'
+    +'  html,body{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}'
+    +'  @page{size:A4 portrait;margin:15mm 12mm;}'
+    +'  .no-print{display:none!important;}'
+    +'  tr{page-break-inside:avoid;}'
+    +'}'
+    +'</style>'
+    +'</head><body>'
+
+    // HEADER FOTOS
+    +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;height:160px;margin-bottom:0;overflow:hidden;">'
+    +fotoUrls.map(function(u){
+      return '<div style="background:url('+u+') center/cover no-repeat;"></div>';
+    }).join("")
+    +'</div>'
+
+    // FRANJA AZUL con logo
+    +'<div style="background:#0B1F3A;padding:16px 24px;display:flex;align-items:center;justify-content:space-between;">'
+    +(logoUrl?'<img src="'+logoUrl+'" style="height:28px;width:auto;filter:brightness(0) invert(1);" alt="ROMSA">'
+             :'<div style="font-size:22px;font-weight:900;color:#fff;letter-spacing:-1px;">ROMSA</div>')
+    +'<div style="text-align:right;">'
+    +'<div style="font-size:9px;color:rgba(255,255,255,.5);letter-spacing:2px;text-transform:uppercase;">COTIZACIÓN</div>'
+    +'<div style="font-size:13px;font-weight:700;color:#60A5FA;">'+cot.folio+'</div>'
+    +'</div></div>'
+
+    // BODY
+    +'<div style="padding:24px;">'
+
+    // Encabezado carta
+    +'<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;">'
+    +'<div>'
+    +(cot.ciudad?'<div style="font-size:12px;color:#4A6A8A;margin-bottom:8px;">'+(cot.ciudad)+', '+new Date(cot.fecha+'T12:00:00').toLocaleDateString("es-MX",{year:"numeric",month:"long",day:"numeric"})+'</div>':"")
+    +'<div style="font-size:11px;font-weight:700;color:#0B1F3A;margin-bottom:2px;">Atención: '+cot.atencion+'</div>'
+    +(cot.empresa?'<div style="font-size:11px;color:#4A6A8A;">'+cot.empresa+'</div>':"")
+    +(cot.rfc?'<div style="font-size:10px;color:#7090B8;">RFC: '+cot.rfc+'</div>':"")
+    +(cot.email?'<div style="font-size:10px;color:#7090B8;">'+cot.email+'</div>':"")
+    +(cot.tel?'<div style="font-size:10px;color:#7090B8;">'+cot.tel+'</div>':"")
+    +'</div>'
+    +'</div>'
+
+    +'<div style="font-size:12px;color:#4A6A8A;line-height:1.7;margin-bottom:20px;">Por este medio, nos es grato cotizar los siguientes servicios para las instalaciones de <strong>'+cot.empresa+'</strong>:</div>'
+
+    // TABLA DE PARTIDAS
+    +'<table style="width:100%;border-collapse:collapse;margin-bottom:20px;font-family:-apple-system,SF Pro Display,Inter,sans-serif;">'
+    +'<thead>'
+    +'<tr style="background:#0B1F3A;">'
+    +'<th style="padding:10px 12px;text-align:left;color:#fff;font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;">Descripción y Procedimiento</th>'
+    +'<th style="padding:10px 8px;text-align:center;color:#fff;font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;white-space:nowrap;">Cant.</th>'
+    +'<th style="padding:10px 8px;text-align:right;color:#fff;font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;white-space:nowrap;">P.Unit.</th>'
+    +'<th style="padding:10px 8px;text-align:right;color:#fff;font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;white-space:nowrap;">Total</th>'
+    +'</tr>'
+    +'</thead>'
+    +'<tbody>'+partidasHtml+'</tbody>'
+    +'</table>'
+
+    // TOTALES
+    +'<div style="display:flex;justify-content:flex-end;margin-bottom:24px;">'
+    +'<div style="width:240px;">'
+    +'<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #E0E8F0;font-size:12px;"><span style="color:#4A6A8A;">Subtotal</span><span style="font-weight:600;">$'+fmtPeso(sub)+'</span></div>'
+    +'<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #E0E8F0;font-size:12px;"><span style="color:#4A6A8A;">IVA 8%</span><span style="font-weight:600;">$'+fmtPeso(iva)+'</span></div>'
+    +'<div style="display:flex;justify-content:space-between;padding:8px 0;font-size:15px;font-weight:800;color:#0B1F3A;"><span>Gran Total</span><span>$'+fmtPeso(total)+'</span></div>'
+    +'</div></div>'
+
+    // CONDICIONES
+    +'<div style="border-top:2px solid #0B1F3A;padding-top:18px;margin-bottom:20px;">'
+    +'<div style="font-size:13px;font-weight:800;color:#0B1F3A;letter-spacing:-.2px;margin-bottom:16px;">CONDICIONES GENERALES DE VENTA</div>'
+
+    +(cot.condPago?'<div style="margin-bottom:12px;"><div style="font-size:10px;font-weight:700;color:#0B1F3A;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Forma de Pago</div><div style="font-size:11px;color:#4A6A8A;line-height:1.6;">'+cot.condPago+'</div></div>':"")
+    +(cot.condTiempo?'<div style="margin-bottom:12px;"><div style="font-size:10px;font-weight:700;color:#0B1F3A;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Tiempo de Ejecución</div><div style="font-size:11px;color:#4A6A8A;line-height:1.6;">'+cot.condTiempo+'</div></div>':"")
+    +(cot.condAlcances?'<div style="margin-bottom:12px;"><div style="font-size:10px;font-weight:700;color:#0B1F3A;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Alcances y Exclusiones</div><div style="font-size:11px;color:#4A6A8A;line-height:1.6;">'+cot.condAlcances+'</div></div>':"")
+    +(cot.nota?'<div style="background:#F0F3F8;border-left:3px solid #1E6FD9;padding:10px 14px;border-radius:0 8px 8px 0;font-size:11px;color:#4A6A8A;line-height:1.6;">'+cot.nota+'</div>':"")
+    +'</div>'
+
+    // FIRMA
+    +'<div style="display:flex;justify-content:space-between;align-items:flex-end;margin-top:20px;padding-top:16px;border-top:1px solid #E0E8F0;">'
+    +(logoUrl?'<img src="'+logoUrl+'" style="height:20px;width:auto;opacity:.5;" alt="ROMSA">'
+             :'<div style="font-size:12px;font-weight:800;color:#C0C8D0;">ROMSA</div>')
+    +'<div style="text-align:center;">'
+    +'<div style="border-top:1px solid #0B1F3A;padding-top:6px;width:180px;text-align:center;">'
+    +'<div style="font-size:10px;font-weight:700;color:#0B1F3A;">'+(cot.creadoPor||"ROMSA Industrial")+'</div>'
+    +'<div style="font-size:9px;color:#7090B8;">ROMSA Industrial · Servicios y Suministros</div>'
+    +'</div></div>'
+    +'</div>'
+
+    +'</div>'// /padding
+
+    +'<script>window.onload=function(){setTimeout(function(){window.print();},800);};<\/script>'
+    +'</body></html>');
+  win.document.close();
+}
+
+// ── Exportar todas las cotizaciones a Excel ───────────────────────
+function exportarCotExcel(){
+  if(!cotizaciones.length){showToast("Sin cotizaciones para exportar");return;}
+  if(typeof XLSX==="undefined"){
+    var sc=document.createElement("script");
+    sc.src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";
+    sc.onload=function(){_exportarCotExcel();};
+    document.head.appendChild(sc);
+  } else _exportarCotExcel();
+}
+
+function _exportarCotExcel(){
+  var rows=[["Folio","Empresa","Atención","Fecha","Ciudad","Email","Tel","RFC",
+             "Servicio","Cantidad","Unidad","Precio Unit.","Subtotal Partida",
+             "Subtotal","IVA 8%","Gran Total","Creado por"]];
+  cotizaciones.forEach(function(c){
+    (c.partidas||[]).forEach(function(p,i){
+      rows.push([
+        c.folio,c.empresa,c.atencion,c.fecha,c.ciudad||"",c.email||"",c.tel||"",c.rfc||"",
+        p.servicio,p.qty,p.unit,p.precio,(p.qty*p.precio),
+        i===0?c.subtotal:"",i===0?c.iva:"",i===0?c.granTotal:"",
+        i===0?c.creadoPor:""
+      ]);
+    });
+  });
+  var wb=XLSX.utils.book_new();
+  var ws=XLSX.utils.aoa_to_sheet(rows);
+  ws["!cols"]=[8,20,18,12,15,22,14,14,30,10,8,12,14,12,10,12,18].map(function(w){return{wch:w};});
+  XLSX.utils.book_append_sheet(wb,ws,"Cotizaciones");
+  XLSX.writeFile(wb,"ROMSA-Cotizaciones-"+new Date().toLocaleDateString("es-MX").replace(/\//g,"-")+".xlsx");
+  showToast("📊 Excel exportado");
+}
+// FIN MÓDULO COTIZACIONES
+
 // Auth maneja el inicio — ver auth.onAuthStateChanged arriba
 // La vista cliente pública no requiere auth
 const _params=new URLSearchParams(window.location.search);
 if(_params.get("obra")){
   // Vista pública: ocultar login, ocultar app, mostrar vista cliente
   document.getElementById("login-screen").classList.add("hidden");
+  // Mostrar Cotizaciones para todos los usuarios autenticados
+  var elCotSnav=document.getElementById("snav-cotizaciones");
+  var elCotNb=document.getElementById("nb-cotizaciones");
+  if(elCotSnav) elCotSnav.style.display="";
+  if(elCotNb) elCotNb.style.display="";
   document.getElementById("app").style.display = "none";
   document.getElementById("vista-cliente").style.display = "block";
   if(typeof obrasRef !== "undefined") checkUrlParams();
@@ -4376,6 +4922,7 @@ auth.onAuthStateChanged(async user => {
 
     // Inicializar app
     subscribeObras();
+  subscribeCotizaciones();
     checkUrlParams();
     updateHoraCi();
 
