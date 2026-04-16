@@ -813,15 +813,29 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
   padding:0 !important;
   overflow:hidden !important;
   background:#0B1829;
+  flex-direction:column;
 }
 #screen-levantamientos.lev-active{
-  display:block !important;
+  display:flex !important;
+}
+/* Barra de escape sobre el iframe */
+#lev-escape-bar{
+  height:calc(var(--safe-top, 0px) + 44px);
+  background:#0B1829;
+  display:flex;
+  align-items:flex-end;
+  justify-content:space-between;
+  padding:0 16px 8px;
+  flex-shrink:0;
+  border-bottom:1px solid rgba(255,255,255,.06);
+  z-index:601;
 }
 #lev-iframe{
+  flex:1;
   width:100% !important;
-  height:100% !important;
   border:none !important;
   display:block !important;
+  min-height:0;
 }
 
 /* ── CARRUSEL FONDO LOGIN ── */
@@ -1126,15 +1140,27 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
             <div style="text-align:left;"><div style="font-size:12px;font-weight:700;color:#0B1F3A;">Ver obras</div><div id="dash-ver-sub" style="font-size:9px;color:#7090B8;"></div></div>
           </button>
         </div>
-        <!-- Badge Levantamientos -->
-        <button onclick="goScreen('levantamientos')" style="width:100%;background:linear-gradient(135deg,#064E3B,#065F46);border:1px solid rgba(16,185,129,.3);border-radius:12px;padding:13px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;font-family:var(--font);margin-bottom:12px;">
-          <div style="width:36px;height:36px;background:rgba(16,185,129,.2);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:18px;">📐</div>
-          <div style="text-align:left;flex:1;">
-            <div style="font-size:13px;font-weight:700;color:#fff;">Levantamientos</div>
-            <div style="font-size:10px;color:rgba(255,255,255,.5);">Medición de áreas · Reparaciones · Reporte técnico</div>
-          </div>
-          <div style="background:rgba(16,185,129,.25);border-radius:20px;padding:3px 10px;font-size:9px;font-weight:700;color:#6EE7B7;letter-spacing:.5px;flex-shrink:0;">ABRIR →</div>
-        </button>
+        <!-- Badges módulos -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
+          <!-- Levantamientos -->
+          <button onclick="goScreen('levantamientos')" style="background:linear-gradient(135deg,#064E3B,#065F46);border:1px solid rgba(16,185,129,.25);border-radius:12px;padding:13px 12px;display:flex;flex-direction:column;align-items:flex-start;gap:7px;cursor:pointer;font-family:var(--font);">
+            <div style="width:32px;height:32px;background:rgba(16,185,129,.2);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px;">📐</div>
+            <div>
+              <div style="font-size:12px;font-weight:700;color:#fff;margin-bottom:2px;">Levantamientos</div>
+              <div style="font-size:9px;color:rgba(255,255,255,.45);line-height:1.3;">Medición · Reparaciones · Reporte</div>
+            </div>
+            <div style="background:rgba(16,185,129,.2);border-radius:20px;padding:2px 8px;font-size:8px;font-weight:700;color:#6EE7B7;letter-spacing:.5px;">ABRIR →</div>
+          </button>
+          <!-- Cotizaciones -->
+          <button onclick="goScreen('cotizaciones')" style="background:linear-gradient(135deg,#2D1B69,#3730A3);border:1px solid rgba(124,58,237,.25);border-radius:12px;padding:13px 12px;display:flex;flex-direction:column;align-items:flex-start;gap:7px;cursor:pointer;font-family:var(--font);">
+            <div style="width:32px;height:32px;background:rgba(124,58,237,.2);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px;">📋</div>
+            <div>
+              <div style="font-size:12px;font-weight:700;color:#fff;margin-bottom:2px;">Cotizaciones</div>
+              <div style="font-size:9px;color:rgba(255,255,255,.45);line-height:1.3;">Genera · Envía · Exporta Excel</div>
+            </div>
+            <div style="background:rgba(124,58,237,.2);border-radius:20px;padding:2px 8px;font-size:8px;font-weight:700;color:#A78BFA;letter-spacing:.5px;">ABRIR →</div>
+          </button>
+        </div>
 
         <!-- Obras completadas recientes (solo si no hay activas) -->
         <div id="dash-recientes-wrap" style="display:none;background:#fff;border-radius:12px;border:1px solid #E0E8F0;overflow:hidden;margin-bottom:12px;">
@@ -1150,6 +1176,14 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
     <!-- ══ PANTALLA LEVANTAMIENTOS ══ -->
     <!-- LEVANTAMIENTOS — iframe a levantamientos.html -->
     <div id="screen-levantamientos" class="screen" style="padding:0;overflow:hidden;">
+      <!-- Barra de escape siempre visible sobre el iframe -->
+      <div id="lev-escape-bar" style="padding-top:calc(var(--safe-top, env(safe-area-inset-top, 0px)) + 8px);">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <button onclick="volverSelector()" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.8);font-size:11px;font-weight:700;padding:6px 12px;border-radius:8px;cursor:pointer;font-family:var(--font);">⊞ Menú</button>
+          <button onclick="goScreen('dashboard')" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.6);font-size:11px;font-weight:600;padding:6px 12px;border-radius:8px;cursor:pointer;font-family:var(--font);">← Inicio</button>
+        </div>
+        <button onclick="doLogout()" style="background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.2);color:#FCA5A5;font-size:11px;font-weight:600;padding:6px 12px;border-radius:8px;cursor:pointer;font-family:var(--font);">Salir</button>
+      </div>
       <iframe 
         id="lev-iframe"
         src="about:blank"
@@ -1547,6 +1581,15 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
             <textarea class="ftextarea" id="cot-alcances" style="min-height:80px;">La propuesta se formula con base en la información proporcionada por el cliente y en las condiciones visibles del área al momento de la visita técnica. Cualquier condición no prevista, defecto oculto en la losa o requerimiento adicional no está contemplado y será cotizado como trabajo adicional. El cliente deberá asegurar que las áreas estén libres de obstrucciones, humedad excesiva, filtraciones, aceites, grasas u otros contaminantes antes de la aplicación.</textarea></div>
           <div class="fg"><label class="flabel">Nota adicional (opcional)</label>
             <textarea class="ftextarea" id="cot-nota" placeholder="Cualquier condición especial de esta cotización..." style="min-height:50px;"></textarea></div>
+        </div>
+        <!-- Vinculación a levantamiento -->
+        <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--g1);">
+          <div style="font-size:10px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">🔗 Vincular a levantamiento (opcional)</div>
+          <div id="cot-lev-lista" style="font-size:11px;color:var(--tx2);margin-bottom:8px;">Cargando levantamientos...</div>
+          <select class="fselect" id="cot-lev-id" onchange="onCotLevChange(this.value)">
+            <option value="">Sin vincular</option>
+          </select>
+          <div id="cot-lev-info" style="display:none;background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);border-radius:8px;padding:8px 10px;margin-top:8px;font-size:11px;color:var(--tx2);"></div>
         </div>
 
         <!-- BOTONES -->
@@ -4793,6 +4836,104 @@ function _exportarCotExcel(){
   XLSX.writeFile(wb,"ROMSA-Cotizaciones-"+new Date().toLocaleDateString("es-MX").replace(/\//g,"-")+".xlsx");
   showToast("📊 Excel exportado");
 }
+
+// ── Cargar levantamientos para vinculación ───────────────────────
+function cargarLevsParaCot(){
+  var sel=document.getElementById("cot-lev-id");
+  var info=document.getElementById("cot-lev-lista");
+  if(!sel||!db)return;
+  var q=isAdmin
+    ? db.collection("proyectos").orderBy("ts","desc").limit(50)
+    : db.collection("proyectos").where("creadoPorUid","==",currentUser?.uid||"").orderBy("ts","desc").limit(50);
+  q.get().then(function(snap){
+    var levs=snap.docs.map(function(d){return d.data();});
+    sel.innerHTML='<option value="">Sin vincular</option>';
+    levs.forEach(function(l){
+      var opt=document.createElement("option");
+      opt.value=l.id;
+      opt.textContent=(l.cliente||l.nombre||"—")+" · "+(l.fecha||"")+" · "+((l.area||0).toFixed(0))+" m²";
+      sel.appendChild(opt);
+    });
+    if(info)info.textContent=levs.length+" levantamientos disponibles";
+  }).catch(function(){if(info)info.textContent="Sin levantamientos disponibles";});
+}
+
+function onCotLevChange(levId){
+  var infoDiv=document.getElementById("cot-lev-info");
+  if(!levId){if(infoDiv)infoDiv.style.display="none";return;}
+  if(!db)return;
+  db.collection("proyectos").doc(levId).get().then(function(snap){
+    if(!snap.exists){infoDiv.style.display="none";return;}
+    var l=snap.data();
+    var sd={score:100,nivel:"Bueno",color:"#10B981"};
+    try{
+      var n=l.notas||{};
+      var condMap={"Bueno — sin daños visibles":0,"Regular — desgaste superficial":10,"Malo — grietas y daños":22,"Crítico — requiere reparación urgente":30};
+      var s=100-(condMap[n.condicion]||0);
+      var urgMap={baja:0,media:7,alta:15,critica:20};
+      s-=(urgMap[n.urgencia]||0);
+      var reps=l.reparaciones||[];
+      var sevMap={Leve:.5,Moderada:2,Grave:5,"Crítica":9};
+      s-=Math.min(25,reps.reduce(function(acc,r){return acc+(sevMap[r.sev]||1);},0));
+      s=Math.max(0,Math.min(100,Math.round(s)));
+      sd.score=s;
+      sd.nivel=s>=75?"Bueno":s>=55?"Regular":s>=35?"Malo":"Crítico";
+      sd.color=s>=75?"#10B981":s>=55?"#F59E0B":"#EF4444";
+    }catch(e){}
+    window._cotLevIdActivo=levId;
+    infoDiv.style.display="block";
+    var html='<div style="font-size:10px;font-weight:700;color:var(--navy);margin-bottom:4px;">📐 '+(l.cliente||l.nombre||"—")+'</div>';
+    html+='<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:4px;">';
+    html+='<span style="color:'+sd.color+';font-weight:700;">Score: '+sd.score+' ('+sd.nivel+')</span>';
+    html+='<span>Área: '+((l.area||0).toFixed(1))+' m²</span>';
+    html+='<span>'+( l.fecha||"")+'</span></div>';
+    if(l.notas&&l.notas.condicion) html+='<div style="font-size:10px;color:var(--tx2);margin-bottom:4px;">Condición: '+l.notas.condicion+'</div>';
+    html+='<button onclick="verLevDesdesCot()" style="background:none;border:none;color:#1E6FD9;font-size:9px;font-weight:600;cursor:pointer;padding:0;font-family:var(--font);">Ver reporte de auditoría →</button>';
+    infoDiv.innerHTML=html;
+  });
+}
+
+
+function verLevDesdesCot(levId){
+  // Abrir el levantamiento directamente en una nueva pestaña
+  var url=window.location.origin+"/levantamientos.html?levantamiento="+levId;
+  window.open(url,"_blank");
+}
+
+// Cargar levantamientos al abrir el formulario de cotización
+var _origShowNuevaCot=showNuevaCot;
+showNuevaCot=function(){
+  _origShowNuevaCot();
+  cargarLevsParaCot();
+};
+var _origAbrirCot=abrirCot;
+abrirCot=function(id){
+  _origAbrirCot(id);
+  cargarLevsParaCot();
+  // Restaurar vinculación guardada
+  setTimeout(function(){
+    var cot=cotizaciones.find(function(c){return c.id===id;});
+    if(cot?.levId){
+      var sel=document.getElementById("cot-lev-id");
+      if(sel){sel.value=cot.levId;onCotLevChange(cot.levId);}
+    }
+  },500);
+};
+
+// Guardar levId en cotización
+var _origGuardarCot=guardarCot;
+guardarCot=async function(){
+  var cot=await _origGuardarCot();
+  if(cot){
+    var levSel=document.getElementById("cot-lev-id");
+    if(levSel&&levSel.value&&db){
+      await db.collection("cotizaciones").doc(cot.id).update({levId:levSel.value});
+      cot.levId=levSel.value;
+    }
+  }
+  return cot;
+};
+
 // FIN MÓDULO COTIZACIONES
 
 // Auth maneja el inicio — ver auth.onAuthStateChanged arriba
