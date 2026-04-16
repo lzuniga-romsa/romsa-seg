@@ -913,6 +913,24 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
           </label>
         </div>
       </div>
+      <!-- LINK PÚBLICO PARA EL CLIENTE -->
+      <div style="background:linear-gradient(135deg,#0D2444,#0A1628);border:1px solid rgba(30,111,217,.3);border-radius:12px;padding:14px;margin-bottom:12px;">
+        <div style="font-size:10px;font-weight:700;color:#60A5FA;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">🔗 Link del cliente</div>
+        <div id="lev-link-status" style="font-size:11px;color:rgba(255,255,255,.5);margin-bottom:10px;">Genera un link único para que tu cliente descargue el reporte de auditoría.</div>
+        <div id="lev-link-box" style="display:none;background:rgba(255,255,255,.05);border-radius:8px;padding:10px 12px;margin-bottom:10px;">
+          <div id="lev-link-text" style="font-size:10px;color:#93C5FD;word-break:break-all;margin-bottom:8px;"></div>
+          <div style="display:flex;gap:6px;">
+            <button onclick="copiarLinkLev()" style="flex:1;background:rgba(30,111,217,.3);border:1px solid rgba(30,111,217,.4);color:#fff;font-size:10px;font-weight:700;padding:6px;border-radius:6px;cursor:pointer;font-family:var(--font);">📋 Copiar</button>
+            <button onclick="compartirLinkLev()" style="flex:1;background:rgba(16,185,129,.2);border:1px solid rgba(16,185,129,.3);color:#34D399;font-size:10px;font-weight:700;padding:6px;border-radius:6px;cursor:pointer;font-family:var(--font);">📤 Compartir</button>
+            <button onclick="toggleLinkLev()" id="btn-toggle-lev-link" style="flex:1;background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.25);color:#F87171;font-size:10px;font-weight:700;padding:6px;border-radius:6px;cursor:pointer;font-family:var(--font);">🔒 Revocar</button>
+          </div>
+        </div>
+        <button onclick="generarLinkLev()" id="btn-generar-lev-link"
+          style="width:100%;background:#1E6FD9;border:none;color:#fff;font-size:12px;font-weight:700;padding:10px;border-radius:8px;cursor:pointer;font-family:var(--font);">
+          🔗 Generar link para cliente
+        </button>
+      </div>
+
       <div style="display:flex;flex-direction:column;gap:8px;padding-bottom:20px;">
         <div style="display:flex;gap:8px;">
           <button class="btn btn-secondary" style="flex:1;" onclick="compartirReporte()">📤 Compartir</button>
@@ -1020,13 +1038,17 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
 
 <!-- PDF PREVIEW -->
 <div id="pdf-preview">
-  <div class="pdf-topbar">
-    <button onclick="closePdf()" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);color:#fff;font-size:12px;font-weight:700;padding:8px 16px;border-radius:8px;cursor:pointer;font-family:var(--font);">✕ Cerrar</button>
-    <span style="color:#fff;font-size:13px;font-weight:600;">Vista previa — Reporte PDF</span>
-    <div style="display:flex;gap:8px;">
+  <div class="pdf-topbar" style="flex-direction:column;gap:8px;padding-bottom:12px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;width:100%;">
+      <button onclick="closePdf()" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);color:#fff;font-size:12px;font-weight:700;padding:8px 16px;border-radius:8px;cursor:pointer;font-family:var(--font);">✕ Cerrar</button>
+      <span style="color:#fff;font-size:13px;font-weight:600;">Vista previa</span>
       <button onclick="imprimirPDF()" style="background:#1E6FD9;border:none;color:#fff;font-size:12px;font-weight:700;padding:8px 14px;border-radius:8px;cursor:pointer;font-family:var(--font);">⬇ Descargar PDF</button>
     </div>
+    <div id="ios-hint" style="display:none;background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.3);border-radius:8px;padding:8px 12px;font-size:10px;color:#FCD34D;line-height:1.5;width:100%;text-align:center;">
+      📱 <strong>iOS:</strong> Al abrirse la ventana → toca <strong>Compartir ↑</strong> → <strong>"Guardar en Archivos"</strong> para obtener el PDF azul completo
+    </div>
   </div>
+
   <div class="pdf-body" id="pdf-body"></div>
 </div>
 
@@ -1113,7 +1135,7 @@ function showDTab(n,btn){
   if(btn)btn.classList.add("active");
   document.getElementById("main").scrollTo(0,0);
   const p=getP();
-  if(n==="reporte"&&p){actualizarReporte(p);actualizarScoreEnVivo();}
+  if(n==="reporte"&&p){actualizarReporte(p);actualizarScoreEnVivo();renderLinkLev(p);}
   if(n==="reparaciones"&&p) renderReparaciones(p);
   if(n==="fotos"&&p) renderFotos(p);
   if(n==="autor"&&p) renderAutor(p);
@@ -1165,7 +1187,7 @@ async function crearProyecto(){
   const l=parseFloat(document.getElementById("np-largo").value)||0;
   const now=new Date();
   const p={
-    id:"p"+Date.now(),ts:Date.now(),
+    id:"p"+Date.now(),ts:Date.now(),linkRevocado:false,
     nombre:nom,cliente:cli,ubicacion:ubic,
     tipo:document.getElementById("np-tipo").value,
     ancho:a,largo:l,area:parseFloat((a*l).toFixed(2)),
@@ -1737,6 +1759,85 @@ function actualizarReporte(p){
   if(fotos.length){rfe.style.display="none";rff.innerHTML=fotos.slice(0,9).map(f=>`<img src="${f.src}" style="border-radius:5px;aspect-ratio:1;object-fit:cover;width:100%;">`).join("");}
   else{rfe.style.display="block";rff.innerHTML="";}
 }
+// ── Link público para el cliente de levantamientos ────────────────
+function getLevLink(){
+  const p=getP();if(!p)return "";
+  const base=window.location.origin+window.location.pathname;
+  return base+"?levantamiento="+p.id;
+}
+
+function generarLinkLev(){
+  const p=getP();if(!p){showToast("⚠️ Abre un proyecto primero");return;}
+  const link=getLevLink();
+  // Activar el link (quitar revocado)
+  p.linkRevocado=false;
+  save();
+  document.getElementById("lev-link-box").style.display="block";
+  document.getElementById("lev-link-text").textContent=link;
+  document.getElementById("lev-link-status").textContent="Link activo — el cliente puede ver y descargar el reporte.";
+  document.getElementById("btn-generar-lev-link").style.display="none";
+  showToast("✅ Link generado");
+}
+
+function copiarLinkLev(){
+  const link=getLevLink();
+  navigator.clipboard?.writeText(link).then(()=>showToast("📋 Link copiado")).catch(()=>{
+    // fallback
+    const inp=document.createElement("input");inp.value=link;
+    document.body.appendChild(inp);inp.select();document.execCommand("copy");
+    document.body.removeChild(inp);showToast("📋 Link copiado");
+  });
+}
+
+function compartirLinkLev(){
+  const p=getP();if(!p)return;
+  const link=getLevLink();
+  const titulo="Auditoría ROMSA — "+(p.cliente||p.nombre);
+  if(navigator.share){
+    navigator.share({title:titulo,text:"Descarga tu reporte de auditoría técnica de pisos:",url:link}).catch(()=>copiarLinkLev());
+  } else copiarLinkLev();
+}
+
+async function toggleLinkLev(){
+  const p=getP();if(!p)return;
+  const revocado=p.linkRevocado===true;
+  if(!confirm(revocado?"¿Reactivar el link del cliente?":"¿Revocar acceso del cliente?"))return;
+  p.linkRevocado=!revocado;
+  await saveProyecto(p);
+  if(p.linkRevocado){
+    document.getElementById("lev-link-status").textContent="🔒 Link revocado — el cliente ya no puede acceder.";
+    document.getElementById("btn-toggle-lev-link").textContent="✅ Reactivar";
+    document.getElementById("btn-toggle-lev-link").style.color="#34D399";
+  } else {
+    document.getElementById("lev-link-status").textContent="Link activo — el cliente puede ver y descargar el reporte.";
+    document.getElementById("btn-toggle-lev-link").textContent="🔒 Revocar";
+    document.getElementById("btn-toggle-lev-link").style.color="#F87171";
+  }
+  showToast(p.linkRevocado?"🔒 Link revocado":"✅ Link reactivado");
+}
+
+// ── Carga del link al abrir el tab Reporte ─────────────────────────
+function renderLinkLev(p){
+  if(!p||!p.id)return;
+  const link=getLevLink();
+  const box=document.getElementById("lev-link-box");
+  const btnGen=document.getElementById("btn-generar-lev-link");
+  const status=document.getElementById("lev-link-status");
+  if(!box||!btnGen)return;
+  // Si ya tiene link activo, mostrarlo
+  if(p.linkRevocado===false&&box){
+    box.style.display="block";
+    document.getElementById("lev-link-text").textContent=link;
+    status.textContent="Link activo — el cliente puede ver y descargar el reporte.";
+    btnGen.style.display="none";
+  } else if(p.linkRevocado===true){
+    box.style.display="block";
+    document.getElementById("lev-link-text").textContent=link+" (revocado)";
+    status.textContent="🔒 Link revocado — el cliente ya no puede acceder.";
+    btnGen.style.display="none";
+  }
+}
+
 function compartirReporte(){
   const p=getP();if(!p)return;
   const n=p.notas||{};const reps=p.reparaciones||[];const repArea=reps.reduce((s,r)=>s+(r.area||0),0);
@@ -2355,12 +2456,18 @@ function imprimirPDF(){
   const win = window.open("", "_blank");
   if(!win){ showToast("⚠️ Permite ventanas emergentes para descargar el PDF"); return; }
 
+  // Nombre del archivo automático
+  const p2 = getP();
+  const clienteNom = (p2?.cliente||p2?.nombre||"proyecto").replace(/[^a-zA-Z0-9\u00C0-\u024F\s]/g,"").replace(/\s+/g,"-").substring(0,30);
+  const folioNom = "LEV-"+((p2?.id||"000000").slice(-6).toUpperCase());
+  const winTitle = "ROMSA - Auditoria Tecnica - " + folioNom;
+
   win.document.write(`<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Auditoría ROMSA</title>
+  <title>${winTitle}</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
   <style>
     *{margin:0;padding:0;box-sizing:border-box;}
@@ -2381,6 +2488,19 @@ function imprimirPDF(){
         size: A4 portrait;
         margin: 0;
       }
+      /* Footer pegado al margen inferior de la última página */
+      .pdf-report-footer{
+        position: running(footer) !important;
+      }
+    }
+    /* Footer siempre al fondo usando flexbox en la última sección */
+    .pdf-body-inner{
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .pdf-body-inner > div:last-child {
+      margin-top: auto;
     }
   </style>
 </head>
@@ -2529,9 +2649,105 @@ function volverAObras(){
 }
 
 loadConfig();
+
+// ── Vista pública del cliente via ?levantamiento=ID ─────────────
+(function(){
+  var params=new URLSearchParams(window.location.search);
+  var levId=params.get("levantamiento");
+  if(!levId)return;
+  // Modo público — ocultar todo y mostrar vista de descarga
+  document.getElementById("app").style.display="none";
+  var vc=document.createElement("div");
+  vc.id="lev-vista-cliente";
+  vc.style.cssText="position:fixed;inset:0;background:#0A1628;z-index:9999;overflow-y:auto;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:32px 20px;";
+  vc.innerHTML='<div style="text-align:center;margin-bottom:32px;">'
+    +'<img id="lev-vc-logo" src="" alt="ROMSA" style="height:36px;width:auto;margin-bottom:8px;"><br>'
+    +'<span style="font-size:9px;font-weight:600;color:rgba(255,255,255,.4);letter-spacing:2px;text-transform:uppercase;">AUDITORÍA TÉCNICA DE PISOS</span>'
+    +'</div>'
+    +'<div id="lev-vc-body" style="width:100%;max-width:500px;"></div>';
+  document.body.appendChild(vc);
+  // Cargar logo
+  (function waitLogo(){
+    if(window._romsaLogoBlanco){
+      var img=document.getElementById("lev-vc-logo");
+      if(img)img.src=window._romsaLogoBlanco;
+    } else setTimeout(waitLogo,100);
+  })();
+  // Cargar proyecto desde Firestore
+  db.collection("proyectos").doc(levId).get().then(function(snap){
+    var body=document.getElementById("lev-vc-body");
+    if(!snap.exists){
+      body.innerHTML='<div style="text-align:center;color:rgba(255,255,255,.5);padding:40px;">Levantamiento no encontrado.</div>';
+      return;
+    }
+    var p=snap.data();
+    if(p.linkRevocado===true){
+      body.innerHTML='<div style="text-align:center;padding:40px;">'
+        +'<div style="font-size:40px;margin-bottom:16px;">🔒</div>'
+        +'<div style="font-size:18px;font-weight:700;color:#fff;margin-bottom:8px;">Acceso no disponible</div>'
+        +'<div style="font-size:13px;color:rgba(255,255,255,.4);">El acceso a este reporte ha sido desactivado.</div>'
+        +'</div>';
+      return;
+    }
+    // Calcular score
+    var sd={score:100,nivel:"—",color:"#60A5FA"};
+    try{ sd=calcularScore(p); }catch(e){}
+    var repArea=(p.reparaciones||[]).reduce(function(s,r){return s+(r.area||0);},0);
+    body.innerHTML=
+      '<div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:20px;margin-bottom:20px;">'
+      +'<div style="font-size:9px;font-weight:600;color:rgba(255,255,255,.3);letter-spacing:3px;text-transform:uppercase;margin-bottom:6px;">AUDITORÍA DE CONDICIÓN DE PISO</div>'
+      +'<div style="font-size:24px;font-weight:800;color:#fff;margin-bottom:4px;">'+(p.cliente||p.nombre)+'</div>'
+      +'<div style="font-size:12px;color:rgba(255,255,255,.4);">'+(p.nombre||"")+(p.ubicacion?" · "+p.ubicacion:"")+'</div>'
+      +'<div style="display:flex;gap:16px;margin-top:16px;flex-wrap:wrap;">'
+      +'<div><div style="font-size:8px;color:rgba(255,255,255,.3);text-transform:uppercase;letter-spacing:1px;">Score</div>'
+      +'<div style="font-size:22px;font-weight:900;color:'+sd.color+';">'+sd.score+'</div>'
+      +'<div style="font-size:10px;font-weight:700;color:'+sd.color+';">'+sd.nivel+'</div></div>'
+      +'<div style="width:1px;background:rgba(255,255,255,.08);"></div>'
+      +'<div><div style="font-size:8px;color:rgba(255,255,255,.3);text-transform:uppercase;letter-spacing:1px;">Área</div>'
+      +'<div style="font-size:16px;font-weight:700;color:#fff;">'+(p.area||0).toFixed(1)+' m²</div></div>'
+      +'<div style="width:1px;background:rgba(255,255,255,.08);"></div>'
+      +'<div><div style="font-size:8px;color:rgba(255,255,255,.3);text-transform:uppercase;letter-spacing:1px;">Fecha</div>'
+      +'<div style="font-size:13px;font-weight:600;color:#fff;">'+(p.fecha||"—")+'</div></div>'
+      +'</div></div>'
+      // Botón descargar PDF
+      +'<button onclick="levVcDescargar()" '
+      +'style="width:100%;background:linear-gradient(135deg,#1E6FD9,#1A5FBF);border:none;border-radius:14px;padding:18px;cursor:pointer;font-family:var(--font);margin-bottom:12px;">'
+      +'<div style="font-size:14px;font-weight:800;color:#fff;letter-spacing:.3px;margin-bottom:4px;">⬇ Descargar Reporte de Auditoría Técnica</div>'
+      +'<div style="font-size:10px;color:rgba(255,255,255,.6);">Diagnóstico completo en PDF · ROMSA Industrial</div>'
+      +'</button>'
+      +'<div style="text-align:center;font-size:9px;color:rgba(255,255,255,.2);line-height:1.6;">'
+      +'Este documento fue generado por ROMSA Industrial.<br>'
+      +'<strong>No es una cotización</strong> — es el diagnóstico técnico base para tomar decisiones.</div>';
+    // Guardar proyecto activo para la descarga
+    window._levVcProyecto = p;
+  }).catch(function(err){
+    var body=document.getElementById("lev-vc-body");
+    body.innerHTML='<div style="text-align:center;color:rgba(255,255,255,.4);padding:40px;">Error: '+err.message+'</div>';
+  });
+})();
+
+// ── Descarga del PDF desde vista cliente ─────────────────────────
+function levVcDescargar(){
+  var p=window._levVcProyecto;
+  if(!p){showToast("Error: proyecto no cargado");return;}
+  // Simular apertura del proyecto y generar el PDF
+  activoId=p.id;
+  // Forzar los proyectos en el estado
+  S.proyectos=[p];
+  showPdf();
+}
+
 subscribeProyectos();
 renderHome();
 // Logo ya cargado en topbar inline
+
+// Mostrar hint de iOS si aplica
+(function(){
+  if(/iPad|iPhone|iPod/.test(navigator.userAgent)){
+    var hint=document.getElementById("ios-hint");
+    if(hint) hint.style.display="block";
+  }
+})();
 </script>
 
 <!-- MODAL PIN ADMIN -->
