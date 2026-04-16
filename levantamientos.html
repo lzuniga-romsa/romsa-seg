@@ -858,6 +858,31 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
           <div id="rp-fotos-empty" style="font-size:12px;color:var(--g3);">Sin fotos adjuntas</div>
         </div>
       </div>
+      <!-- CAMPOS EDITABLES DEL REPORTE -->
+      <div style="background:#fff;border:1px solid var(--g1);border-radius:12px;padding:14px;margin-bottom:12px;">
+        <div style="font-size:10px;font-weight:700;color:var(--tx2);letter-spacing:1px;text-transform:uppercase;margin-bottom:10px;">✏️ Editar antes de enviar</div>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <div>
+            <label style="font-size:10px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:5px;">Sistema recomendado</label>
+            <textarea id="rpt-edit-sistema" 
+              style="width:100%;background:var(--off);border:1px solid var(--g1);border-radius:8px;padding:10px 12px;font-size:12px;font-family:var(--font);color:var(--tx);line-height:1.5;resize:vertical;min-height:80px;"
+              placeholder="Describe el sistema a aplicar..."></textarea>
+          </div>
+          <div>
+            <label style="font-size:10px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:5px;">Resultado esperado</label>
+            <textarea id="rpt-edit-resultado"
+              style="width:100%;background:var(--off);border:1px solid var(--g1);border-radius:8px;padding:10px 12px;font-size:12px;font-family:var(--font);color:var(--tx);line-height:1.5;resize:vertical;min-height:60px;"
+              placeholder="Describe el resultado esperado..."></textarea>
+          </div>
+          <div>
+            <label style="font-size:10px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:5px;">Siguiente paso / CTA</label>
+            <textarea id="rpt-edit-cta"
+              style="width:100%;background:var(--off);border:1px solid var(--g1);border-radius:8px;padding:10px 12px;font-size:12px;font-family:var(--font);color:var(--tx);line-height:1.5;resize:vertical;min-height:50px;"
+              placeholder="Ej: ROMSA puede ejecutar este proyecto en X días..."></textarea>
+          </div>
+        </div>
+      </div>
+
       <!-- OPCIONES DEL REPORTE -->
       <div style="background:#fff;border:1px solid var(--g1);border-radius:12px;padding:14px;margin-bottom:12px;">
         <div style="font-size:10px;font-weight:700;color:var(--tx2);letter-spacing:1px;text-transform:uppercase;margin-bottom:10px;">Incluir en el reporte</div>
@@ -1665,6 +1690,29 @@ function af(lbl,val,style=""){
 
 // ─── REPORTE ─────────────────────────────────────
 function actualizarReporte(p){
+  // Pre-poblar campos editables si están vacíos
+  const servicio2=(p.notas?.servicio||p.tipo||"").toLowerCase();
+  let _sist, _res;
+  if(servicio2.includes("uretano")){
+    _sist="Preparación mecánica de la superficie\nAplicación de imprimante epóxico\nSistema uretano cementicio\nSellado final según especificación";
+    _res="Superficie mejorada con mayor resistencia a tráfico industrial. Resultados dependen de condición del sustrato y proceso de preparación.";
+  } else if(servicio2.includes("pulid")){
+    _sist="Evaluación y preparación del sustrato\nProceso de pulido progresivo con diamantes\nDensificador según absorción del concreto\nAcabado y sellado según requerimiento";
+    _res="Mejora en estética y limpieza. El nivel de brillo y durabilidad final depende de las condiciones del concreto base.";
+  } else {
+    _sist="Preparación mecánica de la superficie\nAplicación de imprimante y sistema epóxico\nRecubrimiento intermedio según especificación\nSellado de acabado según requerimiento";
+    _res="Superficie mejorada con mayor resistencia y facilidad de limpieza. Durabilidad depende de condiciones de operación y mantenimiento.";
+  }
+  const elSist=document.getElementById("rpt-edit-sistema");
+  const elRes=document.getElementById("rpt-edit-resultado");
+  const elCta=document.getElementById("rpt-edit-cta");
+  if(elSist&&!elSist.value.trim()) elSist.value=_sist;
+  if(elRes&&!elRes.value.trim()) elRes.value=_res;
+  if(elCta&&!elCta.value.trim()){
+    const area2=p.area||0;
+    const dias2=area2<200?"3–5":area2<500?"5–8":area2<1000?"8–12":"12–20";
+    elCta.value="ROMSA puede ejecutar este proyecto en un plazo estimado de "+dias2+" días hábiles, sujeto a confirmación técnica y disponibilidad.";
+  }
   const n=p.notas||{};const reps=p.reparaciones||[];const repArea=reps.reduce((s,r)=>s+(r.area||0),0);
   document.getElementById("rep-fecha").textContent=p.fecha;
   document.getElementById("rp-cliente").textContent=p.cliente||"—";
@@ -1853,15 +1901,20 @@ function showPdf(){
   // ── Sistema recomendado según tipo de servicio ─────────────────────
   const servicio=(n.servicio||p.tipo||"").toLowerCase();
   let sistemaRec, resultadoEsperado;
+
+  // Leer valores editados por el usuario (tienen prioridad)
+  const editSistema = document.getElementById("rpt-edit-sistema")?.value.trim();
+  const editResultado = document.getElementById("rpt-edit-resultado")?.value.trim();
+  const editCta = document.getElementById("rpt-edit-cta")?.value.trim();
   if(servicio.includes("uretano")){
-    sistemaRec=["Preparación mecánica mediante escarificado o shotblast","Aplicación de imprimante epóxico de penetración (2 mils)","Aplicación de sistema uretano cementicio de alto desempeño (3/16\")","Sellado con poliuretano alifático resistente a UV (4–5 mils)"];
-    resultadoEsperado="Superficie continua, resistente a impacto, temperatura y tráfico pesado. Apta para operación industrial de alta exigencia.";
+    sistemaRec=["Preparación mecánica de la superficie (escarificado o desbaste según condición)","Aplicación de imprimante epóxico de penetración","Aplicación de sistema uretano cementicio","Sellado final según especificación del proyecto"];
+    resultadoEsperado="Superficie con mejor desempeño mecánico y resistencia a tráfico industrial. Los resultados finales dependen de las condiciones del sustrato y del proceso de preparación.";
   } else if(servicio.includes("pulid")){
-    sistemaRec=["Preparación mediante desbaste en seco con cabezas diamantadas","Proceso de pulido progresivo (grit 30 → 800)","Aplicación de densificador de litio para consolidar la superficie","Sellado final con guardapolvos industrial"];
-    resultadoEsperado="Superficie de alto brillo, libre de polvo, resistente a tráfico y de fácil mantenimiento.";
+    sistemaRec=["Evaluación y preparación del sustrato existente","Proceso de pulido progresivo con cabezas diamantadas","Aplicación de densificador según absorción del concreto","Acabado y sellado según requerimiento operativo"];
+    resultadoEsperado="Mejora en la estética y limpieza de la superficie. El nivel de brillo y durabilidad final depende de las condiciones del concreto base.";
   } else {
-    sistemaRec=["Preparación mecánica mediante lijado o desbaste","Aplicación de sistema epóxico de alto desempeño (10 mils)","Capa de recubrimiento intermedio epóxico pigmentado","Sellado con poliuretano resistente a químicos y UV (4–5 mils)"];
-    resultadoEsperado="Superficie continua, resistente y apta para operación industrial. Acabado profesional con vida útil de 8–12 años.";
+    sistemaRec=["Preparación mecánica de la superficie según condición detectada","Aplicación de imprimante y sistema epóxico","Recubrimiento intermedio según especificación","Sellado de acabado según requerimiento del proyecto"];
+    resultadoEsperado="Superficie mejorada con mayor resistencia y facilidad de limpieza. La durabilidad y vida útil dependen de las condiciones de operación y mantenimiento posterior.";
   }
 
   // ── Plazo estimado según área ───────────────────────────────────────
@@ -1984,7 +2037,7 @@ function showPdf(){
         <div style="font-size:9px;font-weight:600;color:rgba(255,255,255,.3);letter-spacing:3px;text-transform:uppercase;margin-bottom:10px;font-family:-apple-system,'SF Pro Display',Inter,sans-serif;">AUDITORÍA DE CONDICIÓN DE PISO</div>
         <div style="font-size:30px;font-weight:800;color:#fff;line-height:1.1;letter-spacing:-1px;font-family:-apple-system,'SF Pro Display',Inter,sans-serif;">${p.cliente||p.nombre}</div>
         ${p.nombre&&p.cliente?`<div style="font-size:13px;color:rgba(255,255,255,.35);margin-top:6px;letter-spacing:.2px;font-family:-apple-system,'SF Pro Display',Inter,sans-serif;">${p.nombre}</div>`:""}
-        ${p.ubicacion?`<div style="font-size:11px;color:rgba(255,255,255,.35);margin-top:4px;font-family:-apple-system,'SF Pro Display',Inter,sans-serif;">📍 ${p.ubicacion}</div>`:""}
+        ${p.ubicacion?`<div style="font-size:11px;color:rgba(255,255,255,.35);margin-top:4px;font-family:-apple-system,'SF Pro Display',Inter,sans-serif;">${p.ubicacion}</div>`:""}
       </div>
 
       <!-- Meta datos portada -->
@@ -2165,21 +2218,21 @@ function showPdf(){
       <div style="margin-bottom:20px;">
         <div class="sec-ttl">Recomendación técnica</div>
         <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.4);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">Sistema recomendado:</div>
-        ${sistemaRec.map((s,i)=>`
+        ${(editSistema||sistemaRec.join("\n")).split("\n").filter(s=>s.trim()).map((s,i)=>`
           <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:7px;">
             <div style="width:18px;height:18px;background:rgba(30,111,217,.25);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:8px;font-weight:800;color:#60A5FA;margin-top:1px;">${i+1}</div>
-            <div style="font-size:11px;color:rgba(255,255,255,.7);line-height:1.5;">${s}</div>
+            <div style="font-size:11px;color:rgba(255,255,255,.7);line-height:1.5;">${s.replace(/^[-•]\s*/,"")}</div>
           </div>`).join("")}
         <div style="background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);border-radius:10px;padding:12px 14px;margin-top:12px;">
           <div style="font-size:10px;font-weight:700;color:#34D399;letter-spacing:.5px;margin-bottom:4px;">✓ RESULTADO ESPERADO</div>
-          <div style="font-size:11px;color:rgba(255,255,255,.65);line-height:1.5;">${resultadoEsperado}</div>
+          <div style="font-size:11px;color:rgba(255,255,255,.65);line-height:1.5;">${editResultado||resultadoEsperado}</div>
         </div>
       </div>
 
       <!-- ── SIGUIENTE PASO / CTA ── -->
       <div style="background:linear-gradient(135deg,rgba(30,111,217,.2),rgba(16,185,129,.1));border:1px solid rgba(30,111,217,.3);border-radius:14px;padding:18px 20px;margin-bottom:20px;">
         <div style="font-size:12px;font-weight:700;color:#fff;margin-bottom:6px;">Siguiente paso</div>
-        <div style="font-size:11px;color:rgba(255,255,255,.65);line-height:1.6;margin-bottom:10px;">ROMSA puede ejecutar este proyecto en un plazo estimado de <strong style="color:#60A5FA;">${dias} días hábiles</strong>, garantizando calidad, durabilidad y cumplimiento de estándares industriales.</div>
+        <div style="font-size:11px;color:rgba(255,255,255,.65);line-height:1.6;margin-bottom:10px;">${editCta||"ROMSA puede ejecutar este proyecto en un plazo estimado de "+dias+" días hábiles, sujeto a confirmación técnica y disponibilidad."}</div>
         <div style="background:rgba(30,111,217,.3);border-radius:8px;padding:10px 14px;font-size:11px;color:#93C5FD;font-weight:600;">
           📩 Solicita tu cotización formal basada en este diagnóstico.<br>
           <span style="font-size:9px;font-weight:400;color:rgba(255,255,255,.4);">Este análisis está listo para convertirse en propuesta técnica-económica.</span>
