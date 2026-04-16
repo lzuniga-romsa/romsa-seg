@@ -1493,8 +1493,9 @@ function renderRepFotoPreview(){
 }
 function addReparacion(){
   const p=getP();if(!p)return;
-  const desc=document.getElementById("r-desc").value.trim();
-  if(!desc){showToast("⚠️ Ingresa una descripción");return;}
+  const descSel=document.getElementById("r-desc-select")?.value||"";
+  const descInp=document.getElementById("r-desc")?.value.trim()||"";
+  const desc=descInp||(descSel&&descSel!=="Otro (especificar)"?descSel:"")||"Sin descripción";
   const l=parseFloat(document.getElementById("r-largo").value)||0;
   const a=parseFloat(document.getElementById("r-ancho").value)||0;
   const prof=parseFloat(document.getElementById("r-prof").value)||0;
@@ -1919,11 +1920,12 @@ function showPdf(){
         <div style="font-size:9px;color:var(--g3);margin-top:1px;">Folio: LEV-${p.id?.slice(-6)||"000000"}</div>
       </div>
     </div>
-    <div class="pdf-divider"></div>
+    <div style="height:3px;background:linear-gradient(90deg,#0B1F3A,#1E6FD9,#10B981);border-radius:2px;margin-bottom:14px;"></div>
 
     <!-- TÍTULO PROYECTO -->
-    <div style="font-size:22px;font-weight:800;color:#0B1F3A;letter-spacing:-.3px;margin-bottom:2px;">${p.nombre}</div>
-    <div style="font-size:12px;color:var(--tx2);margin-bottom:14px;">${p.tipo} · ${p.cliente||"Sin cliente"} · ${p.ubicacion||""}</div>
+    <div style="font-size:9px;font-weight:700;color:var(--blue);letter-spacing:2px;text-transform:uppercase;margin-bottom:4px;">AUDITORÍA ROMSA</div>
+    <div style="font-size:22px;font-weight:900;color:#0B1F3A;letter-spacing:-.3px;margin-bottom:2px;">${p.cliente||p.nombre}</div>
+    <div style="font-size:13px;color:var(--tx2);margin-bottom:14px;">${p.nombre}${p.ubicacion?" · "+p.ubicacion:""}</div>
 
     <!-- SCORE DEL PISO -->
     ${scoreHTML}
@@ -1940,12 +1942,17 @@ function showPdf(){
     </div>
 
     <!-- DATOS DEL TÉCNICO -->
-    <div class="pdf-sec-ttl">Técnico responsable</div>
-    <div class="pdf-grid">
-      <div class="pdf-field"><div class="pdf-field-l">Nombre</div><div class="pdf-field-v">${p.autor?.nombre||"—"}</div></div>
-      <div class="pdf-field"><div class="pdf-field-l">Ciudad</div><div class="pdf-field-v">${p.autor?.ciudad||"—"}</div></div>
-      <div class="pdf-field"><div class="pdf-field-l">Correo</div><div class="pdf-field-v">${p.autor?.email||"—"}</div></div>
-      <div class="pdf-field"><div class="pdf-field-l">Teléfono</div><div class="pdf-field-v">${p.autor?.tel||"—"}</div></div>
+    <div class="pdf-sec-ttl">Realizado por</div>
+    <div style="background:#EEF4FB;border-radius:10px;padding:12px 14px;margin-bottom:14px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
+      <div>
+        <div style="font-size:14px;font-weight:700;color:#0B1F3A;">${p.autor?.nombre||"—"}</div>
+        <div style="font-size:11px;color:#4A6A8A;margin-top:2px;">${S.config.emp||"ROMSA Industrial"}</div>
+        ${p.autor?.ciudad?'<div style="font-size:11px;color:#7090B8;margin-top:1px;">'+p.autor.ciudad+'</div>':""}
+      </div>
+      <div style="text-align:right;">
+        ${p.autor?.tel?'<div style="font-size:11px;color:#1E6FD9;font-weight:600;">'+p.autor.tel+'</div>':""}
+        ${p.autor?.email?'<div style="font-size:10px;color:#7090B8;margin-top:2px;">'+p.autor.email+'</div>':""}
+      </div>
     </div>
 
     <!-- ESTADO DEL PISO -->
@@ -1978,12 +1985,19 @@ function showPdf(){
     ${fotosHTML}
 
     <!-- FOOTER -->
-    <div class="pdf-footer">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
-        <div style="font-size:9px;color:var(--g3);">${S.config.emp||"ROMSA Industrial"} · Pisos Industriales Baja California</div>
-        <div class="pdf-stamp">✓ Reporte técnico de levantamiento</div>
+    <div style="margin-top:20px;padding-top:14px;border-top:2px solid #E0E8F0;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+        <div>
+          <div style="font-size:10px;font-weight:700;color:#0B1F3A;">${S.config.emp||"ROMSA Industrial"}</div>
+          <div style="font-size:9px;color:#9BB5CF;">Pisos Industriales · Baja California</div>
+        </div>
+        <div style="border:1.5px solid #1E6FD9;border-radius:6px;padding:4px 12px;font-size:9px;font-weight:700;color:#1E6FD9;letter-spacing:.5px;">
+          ✓ AUDITORÍA TÉCNICA ROMSA
+        </div>
       </div>
-      <div style="font-size:9px;color:var(--g3);">Este documento es un reporte técnico de levantamiento de condición de piso generado por ROMSA Industrial.</div>
+      <div style="font-size:8px;color:#C0D0E0;text-align:center;">
+        Este documento es un reporte técnico oficial de auditoría de condición de piso. Generado por ROMSA Industrial · ${new Date().toLocaleDateString("es-MX",{year:"numeric",month:"long",day:"numeric"})}
+      </div>
     </div>`;
 
   document.getElementById("pdf-preview").style.display="block";

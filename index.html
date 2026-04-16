@@ -804,21 +804,24 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
 .mod-desc{font-size:11px;color:rgba(255,255,255,.45);line-height:1.4;}
 .mod-arrow{font-size:20px;color:rgba(255,255,255,.3);flex-shrink:0;}
 
-/* ── FIX IFRAME LEVANTAMIENTOS ── */
+/* ── LEVANTAMIENTOS FULL-SCREEN ── */
 #screen-levantamientos{
-  position:absolute !important;
+  display:none;
+  position:fixed !important;
   inset:0 !important;
-  height:100% !important;
+  z-index:500 !important;
   padding:0 !important;
   overflow:hidden !important;
+  background:#0B1829;
+}
+#screen-levantamientos.lev-active{
+  display:block !important;
 }
 #lev-iframe{
   width:100% !important;
   height:100% !important;
   border:none !important;
   display:block !important;
-  position:absolute !important;
-  inset:0 !important;
 }
 
 /* ── LOGIN SCREEN ── */
@@ -1082,7 +1085,7 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
         </div>
 
         <!-- Acciones rápidas -->
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
           <button onclick="showNueva()" style="background:#1E6FD9;border:none;border-radius:12px;padding:13px;display:flex;align-items:center;gap:9px;cursor:pointer;font-family:var(--font);">
             <div style="width:28px;height:28px;background:rgba(255,255,255,.15);border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 2v10M2 7h10" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></svg>
@@ -1096,6 +1099,15 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
             <div style="text-align:left;"><div style="font-size:12px;font-weight:700;color:#0B1F3A;">Ver obras</div><div id="dash-ver-sub" style="font-size:9px;color:#7090B8;"></div></div>
           </button>
         </div>
+        <!-- Badge Levantamientos -->
+        <button onclick="goScreen('levantamientos')" style="width:100%;background:linear-gradient(135deg,#064E3B,#065F46);border:1px solid rgba(16,185,129,.3);border-radius:12px;padding:13px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;font-family:var(--font);margin-bottom:12px;">
+          <div style="width:36px;height:36px;background:rgba(16,185,129,.2);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:18px;">📐</div>
+          <div style="text-align:left;flex:1;">
+            <div style="font-size:13px;font-weight:700;color:#fff;">Levantamientos</div>
+            <div style="font-size:10px;color:rgba(255,255,255,.5);">Medición de áreas · Reparaciones · Reporte técnico</div>
+          </div>
+          <div style="background:rgba(16,185,129,.25);border-radius:20px;padding:3px 10px;font-size:9px;font-weight:700;color:#6EE7B7;letter-spacing:.5px;flex-shrink:0;">ABRIR →</div>
+        </button>
 
         <!-- Obras completadas recientes (solo si no hay activas) -->
         <div id="dash-recientes-wrap" style="display:none;background:#fff;border-radius:12px;border:1px solid #E0E8F0;overflow:hidden;margin-bottom:12px;">
@@ -1860,7 +1872,7 @@ function goScreen(n){
   document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
   // Ocultar iframe cuando no estamos en levantamientos
   var levScr=document.getElementById("screen-levantamientos");
-  if(levScr) levScr.style.display="none";
+  if(levScr) levScr.classList.remove("lev-active");
   document.querySelectorAll(".nb,.snav").forEach(b=>b.classList.remove("active"));
   var sc=document.getElementById("screen-"+n);if(sc)sc.classList.add("active");
   document.getElementById("nb-"+n)?.classList.add("active");
@@ -1868,8 +1880,9 @@ function goScreen(n){
   document.getElementById("fab").style.display=n==="obras"?"flex":"none";
   if(n==="dashboard")renderDashboard();
   if(n==="levantamientos"){
+    // Full-screen: tapar todo el app shell con el iframe
     var levScr2=document.getElementById("screen-levantamientos");
-    if(levScr2) levScr2.style.display="block";
+    if(levScr2) levScr2.classList.add("lev-active");
     var lev=document.getElementById("lev-iframe");
     if(lev&&(lev.src==="about:blank"||!lev.src||lev.src.endsWith("blank"))){
       lev.src="levantamientos.html";
