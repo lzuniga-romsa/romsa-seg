@@ -2187,12 +2187,11 @@ function showPdf(){
       </div>
 
       <!-- ── FOOTER ── -->
-      <div style="border-top:1px solid rgba(255,255,255,.06);padding-top:16px;margin-top:4px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-          ${logoB64?`<img src="${logoB64}" style="height:22px;width:auto;opacity:.6;" alt="ROMSA">`:`<div style="font-size:12px;font-weight:800;color:rgba(255,255,255,.4);">ROMSA</div>`}
-          <div style="border:1px solid rgba(30,111,217,.3);border-radius:5px;padding:3px 10px;font-size:8px;font-weight:700;color:#60A5FA;letter-spacing:.5px;">✓ AUDITORÍA TÉCNICA ROMSA</div>
+      <div style="border-top:1px solid rgba(255,255,255,.06);padding-top:16px;margin-top:4px;text-align:center;">
+        <div style="margin-bottom:10px;">
+          <span style="border:1px solid rgba(30,111,217,.3);border-radius:5px;padding:4px 14px;font-size:8px;font-weight:700;color:#60A5FA;letter-spacing:.5px;">✓ AUDITORÍA TÉCNICA ROMSA</span>
         </div>
-        <div style="font-size:8px;color:rgba(255,255,255,.2);text-align:center;line-height:1.6;">
+        <div style="font-size:8px;color:rgba(255,255,255,.2);line-height:1.6;">
           ${S.config.emp||"ROMSA Industrial"} · Pisos Industriales Baja California · ${S.config.tel||""}<br>
           Generado el ${fechaGen} · Folio ${folio}<br>
           <strong style="color:rgba(255,255,255,.3);">Este documento no es una cotización, es el diagnóstico técnico base para tomar decisiones.</strong>
