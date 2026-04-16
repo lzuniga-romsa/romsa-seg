@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="ROMSA">
 <meta name="theme-color" content="#0B1F3A">
-<title>ROMSA Industrial — Levantamientos</title>
+<title>ROMSA — Auditoría Técnica</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -1762,8 +1762,19 @@ function actualizarReporte(p){
 // ── Link público para el cliente de levantamientos ────────────────
 function getLevLink(){
   const p=getP();if(!p)return "";
+  // Slug: nombre del cliente o proyecto + ID corto
+  const raw=(p.cliente||p.nombre||"proyecto");
+  const slug=raw
+    .toLowerCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g,"") // quitar tildes
+    .replace(/[^a-z0-9\s-]/g,"")                       // solo alfanumérico
+    .trim()
+    .replace(/\s+/g,"-")                                // espacios a guiones
+    .substring(0,30)
+    .replace(/-+$/,"");                                  // quitar guión final
+  const idCorto=p.id.slice(-6).toUpperCase();
   const base=window.location.origin+window.location.pathname;
-  return base+"?levantamiento="+p.id;
+  return base+"?levantamiento="+p.id+"&ref="+slug+"-"+idCorto;
 }
 
 function generarLinkLev(){
@@ -2711,7 +2722,7 @@ loadConfig();
       +'</div></div>'
       // Botón descargar PDF
       +'<button onclick="levVcDescargar()" '
-      +'style="width:100%;background:linear-gradient(135deg,#1E6FD9,#1A5FBF);border:none;border-radius:14px;padding:18px;cursor:pointer;font-family:var(--font);margin-bottom:12px;">'
+      +'style="width:100%;background:linear-gradient(135deg,#1E6FD9,#1A5FBF);border:none;border-radius:12px;padding:14px 16px;cursor:pointer;font-family:var(--font);margin-bottom:12px;">'
       +'<div style="font-size:14px;font-weight:800;color:#fff;letter-spacing:.3px;margin-bottom:4px;">⬇ Descargar Reporte de Auditoría Técnica</div>'
       +'<div style="font-size:10px;color:rgba(255,255,255,.6);">Diagnóstico completo en PDF · ROMSA Industrial</div>'
       +'</button>'
@@ -2720,6 +2731,24 @@ loadConfig();
       +'<strong>No es una cotización</strong> — es el diagnóstico técnico base para tomar decisiones.</div>';
     // Guardar proyecto activo para la descarga
     window._levVcProyecto = p;
+
+    // Mostrar el reporte completo directamente en la vista cliente
+    // Creando DOM virtual y llamando showPdf que inyecta en #pdf-body
+    setTimeout(function(){
+      levVcDescargar();
+      // Después de generar, mostrar el pdf-body dentro de la vista cliente
+      setTimeout(function(){
+        var pdfBody=document.getElementById("pdf-body");
+        var vcBody=document.getElementById("lev-vc-body");
+        if(pdfBody&&vcBody&&pdfBody.innerHTML.trim()){
+          // Insertar el reporte debajo del botón de descarga
+          var reporteDiv=document.createElement("div");
+          reporteDiv.style.cssText="margin-top:16px;border-radius:16px;overflow:hidden;border:1px solid rgba(255,255,255,.08);";
+          reporteDiv.innerHTML=pdfBody.innerHTML;
+          vcBody.appendChild(reporteDiv);
+        }
+      },800);
+    },300);
   }).catch(function(err){
     var body=document.getElementById("lev-vc-body");
     body.innerHTML='<div style="text-align:center;color:rgba(255,255,255,.4);padding:40px;">Error: '+err.message+'</div>';
@@ -2729,12 +2758,52 @@ loadConfig();
 // ── Descarga del PDF desde vista cliente ─────────────────────────
 function levVcDescargar(){
   var p=window._levVcProyecto;
-  if(!p){showToast("Error: proyecto no cargado");return;}
-  // Simular apertura del proyecto y generar el PDF
+  if(!p){alert("Error: el reporte no está disponible");return;}
+
+  // Activar el proyecto en el estado interno
   activoId=p.id;
-  // Forzar los proyectos en el estado
   S.proyectos=[p];
-  showPdf();
+
+  // Crear checkboxes virtuales en el DOM si no existen
+  // (showPdf() los lee con getElementById)
+  var checkIds=["rpt-include-plano","rpt-include-reps","rpt-include-fotos",
+                "rpt-include-ba","rpt-include-score","rpt-include-gps"];
+  checkIds.forEach(function(id){
+    if(!document.getElementById(id)){
+      var el=document.createElement("input");
+      el.type="checkbox";
+      el.id=id;
+      // Por defecto: incluir score, reparaciones, score. No fotos (pueden ser pesadas)
+      el.checked=(id==="rpt-include-score"||id==="rpt-include-reps"||id==="rpt-include-plano"||id==="rpt-include-ba");
+      el.style.display="none";
+      document.body.appendChild(el);
+    }
+  });
+
+  // Crear textarea virtuales para sistema y resultado si no existen
+  var taIds=["rpt-edit-sistema","rpt-edit-resultado","rpt-edit-cta"];
+  taIds.forEach(function(id){
+    if(!document.getElementById(id)){
+      var el=document.createElement("textarea");
+      el.id=id;
+      el.style.display="none";
+      document.body.appendChild(el);
+    }
+  });
+
+  // Crear el canvas del plano virtual si no existe
+  if(!document.getElementById("plano-canvas")){
+    var c=document.createElement("canvas");
+    c.id="plano-canvas";c.width=400;c.height=200;
+    c.style.display="none";
+    document.body.appendChild(c);
+  }
+
+  // Generar el PDF
+  setTimeout(function(){
+    try{ showPdf(); }
+    catch(e){ alert("Error al generar el reporte: "+e.message); console.error(e); }
+  },150);
 }
 
 subscribeProyectos();
