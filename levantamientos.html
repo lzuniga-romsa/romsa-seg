@@ -2273,7 +2273,7 @@ function showPdf(){
       .no-print{display:none!important;}
     }
   </style>
-  <div class="pdf-body-inner" style="background:#0A1628;color:#fff;min-height:100vh;padding:0 0 32px;font-family:'SF Pro Display',Inter,sans-serif;">
+  <div class="pdf-body-inner" style="background:#0A1628;color:#fff;min-height:100vh;padding:0;font-family:'SF Pro Display',Inter,sans-serif;">
 
     <!-- ══ PORTADA ══ -->
     <div style="background:linear-gradient(160deg,#0D2444 0%,#0A1628 60%,#061020 100%);padding:32px 28px 28px;border-bottom:1px solid rgba(255,255,255,.06);position:relative;overflow:hidden;">
@@ -2283,7 +2283,7 @@ function showPdf(){
 
       <!-- Logo centrado -->
       <div style="text-align:center;margin-bottom:20px;">
-        ${logoB64?`<img src="${logoB64}" style="height:64px;width:auto;filter:brightness(0) invert(1);" alt="ROMSA">`:`<div style="font-size:36px;font-weight:900;color:#fff;letter-spacing:-1px;">ROMSA</div>`}
+        ${logoB64?`<img src="${logoB64}" style="height:44px;width:auto;filter:brightness(0) invert(1);" alt="ROMSA">`:`<div style="font-size:36px;font-weight:900;color:#fff;letter-spacing:-1px;">ROMSA</div>`}
       </div>
 
       <!-- Badge diagnóstico -->
@@ -2324,7 +2324,7 @@ function showPdf(){
     </div>
 
     <!-- ══ BODY DEL REPORTE ══ -->
-    <div style="padding:24px 28px;">
+    <div style="padding:24px 28px 48px;">
 
       <!-- ── SCORE PRINCIPAL ── -->
       ${inclScore?`
@@ -2379,7 +2379,15 @@ function showPdf(){
       </div>
 
       <!-- ── ESTADO DEL PISO — INICIO PÁGINA 2 ── -->
-      <div style="page-break-before:always;-webkit-column-break-before:always;break-before:page;margin-bottom:20px;">
+      <div style="page-break-before:always;-webkit-column-break-before:always;break-before:page;">
+        <!-- Header página 2 -->
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:28px 0 20px;margin-bottom:20px;border-bottom:1px solid rgba(255,255,255,.08);">
+          ${logoB64?`<img src="${logoB64}" style="height:22px;width:auto;filter:brightness(0) invert(1);opacity:.7;" alt="ROMSA">`:`<span style="font-size:13px;font-weight:800;color:rgba(255,255,255,.5);">ROMSA</span>`}
+          <div style="text-align:right;">
+            <div style="font-size:8px;color:rgba(255,255,255,.3);letter-spacing:1.5px;text-transform:uppercase;">Auditoría Técnica</div>
+            <div style="font-size:10px;font-weight:600;color:rgba(255,255,255,.4);margin-top:2px;">${folio}</div>
+          </div>
+        </div>
         <div class="sec-ttl">Estado del piso</div>
         <table class="info-table">
           <tr><td>Condición visual</td><td>${n.condicion||"—"}</td></tr>
@@ -2502,19 +2510,7 @@ function showPdf(){
       <div style="flex:1;min-height:40px;"></div>
 
     </div><!-- /body -->
-  <!-- ── FOOTER REPORTE ── -->
-  <div style="margin-top:48px;padding:24px 28px 36px;border-top:1px solid rgba(255,255,255,.07);display:flex;align-items:center;justify-content:space-between;">
-    <div>
-      ${logoB64?`<img src="${logoB64}" style="height:22px;width:auto;opacity:.5;filter:brightness(0) invert(1);" alt="ROMSA">`:`<div style="font-size:13px;font-weight:800;color:rgba(255,255,255,.3);">ROMSA</div>`}
-      <div style="font-size:9px;color:rgba(255,255,255,.25);margin-top:5px;letter-spacing:.3px;">ROMSA Industrial · Especialistas en recubrimientos industriales</div>
-      <div style="font-size:9px;color:rgba(255,255,255,.2);margin-top:2px;">Mexicali, Baja California · ventas@romsaindustrial.com · www.romsaindustrial.com</div>
-    </div>
-    <div style="text-align:right;">
-      <div style="font-size:9px;color:rgba(255,255,255,.2);">Folio ${folio}</div>
-      <div style="font-size:9px;color:rgba(255,255,255,.15);margin-top:3px;">Generado el ${fechaGen}</div>
-      <div style="font-size:8px;color:rgba(255,255,255,.12);margin-top:4px;max-width:200px;text-align:right;">Este documento es confidencial y está destinado exclusivamente al cliente indicado.</div>
-    </div>
-  </div>
+
   </div><!-- /pdf-body-inner -->
 
   <!-- ── FOOTER FIJO AL FINAL ── -->
