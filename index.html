@@ -4806,155 +4806,200 @@ async function guardarYVerCot(){
 // ── Generar PDF cotización (fondo blanco profesional) ─────────────
 function generarPdfCot(cot){
   if(!cot) return;
-  var sub   = parseFloat(cot.subtotal  || 0);
-  var iva   = parseFloat(cot.iva       || 0);
-  var total = parseFloat(cot.granTotal || 0);
-  var logoUrl = window._romsaLogoAzul || "";
 
-  // ── fotos de referencia (header) ────────────────────────────────
-  var fotos = [
-    "https://images.unsplash.com/photo-1581094271901-8022df4466f9?w=900&q=80&auto=format&fit=crop",
-    "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=900&q=80&auto=format&fit=crop",
-    "https://images.unsplash.com/photo-1553361371-9b22f78e8b1d?w=900&q=80&auto=format&fit=crop"
-  ];
+  var sub    = parseFloat(cot.subtotal  || 0);
+  var iva    = parseFloat(cot.iva       || 0);
+  var total  = parseFloat(cot.granTotal || 0);
+  var logo   = window._romsaLogoAzul || '';
+  var inclProc = document.getElementById('cot-incl-proc')?.checked !== false;
 
-  // ── tabla de partidas ────────────────────────────────────────────
-  var inclProc = document.getElementById("cot-incl-proc")?.checked !== false;
-  var filas = (cot.partidas || []).map(function(p, i){
-    var st = (p.qty||0)*(p.precio||0);
+  // ── fecha formateada ─────────────────────────────────────────────
+  var fechaFmt = '';
+  try { fechaFmt = new Date((cot.fecha||'') + 'T12:00:00').toLocaleDateString('es-MX',{year:'numeric',month:'long',day:'numeric'}); }
+  catch(e){ fechaFmt = cot.fecha || ''; }
+  var lugarFecha = (cot.ciudad ? cot.ciudad + ', ' : '') + fechaFmt;
+
+  // ── filas de partidas ─────────────────────────────────────────────
+  var filas = (cot.partidas||[]).map(function(p, i){
+    var st = (p.qty||0) * (p.precio||0);
+    var procHtml = (inclProc && p.proc)
+      ? '<div style="margin-top:8px;padding-top:8px;border-top:1px dashed #DDE3ED;">'
+          + p.proc.split('\n').filter(function(l){return l.trim();}).map(function(l){
+              return '<div style="font-size:9.5px;color:#6B7FA3;line-height:1.6;padding:1px 0;">' + l + '</div>';
+            }).join('')
+        + '</div>'
+      : '';
     return '<tr>'
-      + '<td style="padding:9px 12px;border-bottom:1px solid #E8EEF5;vertical-align:top;">'
-          + '<div style="font-size:11px;font-weight:700;color:#0B1F3A;margin-bottom:3px;">' + (i+1) + '. ' + (p.servicio||'') + '</div>'
-          + (p.desc ? '<div style="font-size:10px;color:#4A6A8A;line-height:1.55;margin-bottom:4px;">' + p.desc + '</div>' : '')
-          + (inclProc && p.proc ? '<div style="font-size:9px;color:#7090B8;white-space:pre-line;line-height:1.6;border-top:1px solid #E8EEF5;padding-top:6px;margin-top:4px;">' + p.proc + '</div>' : '')
+      + '<td style="padding:14px 20px;border-bottom:1px solid #EDF1F8;vertical-align:top;width:65%;">'
+          + '<div style="font-size:12px;font-weight:700;color:#0B1F3A;margin-bottom:5px;letter-spacing:-.1px;">' + p.servicio + '</div>'
+          + (p.desc ? '<div style="font-size:11px;color:#4A5E7A;line-height:1.65;">' + p.desc + '</div>' : '')
+          + procHtml
         + '</td>'
-      + '<td style="padding:9px 8px;border-bottom:1px solid #E8EEF5;text-align:center;white-space:nowrap;font-size:11px;color:#0B1F3A;">'
-          + (p.qty||0).toLocaleString('es-MX') + ' ' + (p.unit||'')
+      + '<td style="padding:14px 16px;border-bottom:1px solid #EDF1F8;text-align:center;vertical-align:top;white-space:nowrap;">'
+          + '<div style="font-size:12px;font-weight:600;color:#0B1F3A;">' + (p.qty||0).toLocaleString('es-MX') + '</div>'
+          + '<div style="font-size:9px;color:#8A9AB8;margin-top:2px;">' + (p.unit||'') + '</div>'
         + '</td>'
-      + '<td style="padding:9px 8px;border-bottom:1px solid #E8EEF5;text-align:right;white-space:nowrap;font-size:11px;color:#0B1F3A;">$' + fmtPeso(p.precio) + '</td>'
-      + '<td style="padding:9px 8px;border-bottom:1px solid #E8EEF5;text-align:right;white-space:nowrap;font-size:12px;font-weight:800;color:#0B1F3A;">$' + fmtPeso(st) + '</td>'
+      + '<td style="padding:14px 16px;border-bottom:1px solid #EDF1F8;text-align:right;vertical-align:top;white-space:nowrap;font-size:12px;color:#4A5E7A;">$' + fmtPeso(p.precio) + '</td>'
+      + '<td style="padding:14px 16px;border-bottom:1px solid #EDF1F8;text-align:right;vertical-align:top;white-space:nowrap;font-size:13px;font-weight:800;color:#0B1F3A;">$' + fmtPeso(st) + '</td>'
     + '</tr>';
   }).join('');
 
-  // ── condiciones ───────────────────────────────────────────────────
+  // ── condiciones ──────────────────────────────────────────────────
   var conds = [
-    {n:'1. Precio del proyecto',       v: cot.condPrecioCond   },
-    {n:'2. Forma de pago',             v: cot.condPago         },
-    {n:'3. Tiempo de ejecución',       v: cot.condTiempo       },
-    {n:'4. Alcances y exclusiones',    v: cot.condAlcances     },
-    {n:'5. Limitación de responsabilidad', v: cot.condResponsabilidad },
-    {n:'6. Garantía',                  v: cot.condGarantia     },
-    {n:'7. Entrega y recepción',       v: cot.condEntrega      }
+    {n:'1. Precio del Proyecto',          v: cot.condPrecioCond    },
+    {n:'2. Forma de Pago',                v: cot.condPago          },
+    {n:'3. Tiempo de Ejecución',          v: cot.condTiempo        },
+    {n:'4. Alcances y Exclusiones',       v: cot.condAlcances      },
+    {n:'5. Limitación de Responsabilidad',v: cot.condResponsabilidad},
+    {n:'6. Garantía',                     v: cot.condGarantia      },
+    {n:'7. Entrega y Recepción',          v: cot.condEntrega       }
   ].filter(function(c){ return c.v && c.v.trim(); });
 
   var condsHtml = conds.map(function(c){
-    return '<div style="margin-bottom:13px;">'
-      + '<div style="font-size:10px;font-weight:700;color:#0B1F3A;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">' + c.n + '</div>'
-      + '<div style="font-size:10.5px;color:#4A6A8A;line-height:1.65;white-space:pre-wrap;">' + c.v + '</div>'
+    return '<div style="margin-bottom:16px;page-break-inside:avoid;">'
+      + '<div style="font-size:9.5px;font-weight:800;color:#0B1F3A;text-transform:uppercase;letter-spacing:1px;margin-bottom:5px;">' + c.n + '</div>'
+      + '<div style="font-size:11px;color:#4A5E7A;line-height:1.75;white-space:pre-wrap;">' + c.v + '</div>'
     + '</div>';
   }).join('');
 
-  var notaHtml = cot.nota ? '<div style="background:#F0F4FA;border-left:3px solid #1E6FD9;padding:10px 14px;border-radius:0 8px 8px 0;font-size:10.5px;color:#4A6A8A;line-height:1.6;margin-top:12px;">' + cot.nota + '</div>' : '';
+  var notaHtml = cot.nota
+    ? '<div style="background:#F0F4FC;border-left:3px solid #1E6FD9;padding:12px 16px;border-radius:0 8px 8px 0;margin-top:16px;font-size:11px;color:#4A5E7A;line-height:1.65;">' + cot.nota + '</div>'
+    : '';
 
-  // ── fecha formateada ──────────────────────────────────────────────
-  var fechaFmt = '';
-  try { fechaFmt = new Date(cot.fecha + 'T12:00:00').toLocaleDateString('es-MX', {year:'numeric',month:'long',day:'numeric'}); }
-  catch(e){ fechaFmt = cot.fecha||''; }
-
-  var winTitle = 'ROMSA - Cotizacion - ' + cot.folio;
+  var title = 'ROMSA - Cotizacion - ' + cot.folio;
   var win = window.open('', '_blank');
-  if(!win){ showToast('⚠️ Permite ventanas emergentes para generar el PDF'); return; }
+  if(!win){ showToast('⚠️ Permite ventanas emergentes'); return; }
 
   win.document.write(
     '<!DOCTYPE html><html lang="es"><head>'
-    + '<meta charset="UTF-8">'
-    + '<title>' + winTitle + '</title>'
+    + '<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
+    + '<title>' + title + '</title>'
     + '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">'
     + '<style>'
-    + '*, *::before, *::after{margin:0;padding:0;box-sizing:border-box;}'
-    + 'html,body{background:#fff;color:#0B1F3A;font-family:-apple-system,"SF Pro Display",Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased;font-size:13px;}'
-    + '.no-print{display:block;}'
-    + '@media print{'
-    + '  html,body{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important;}'
-    + '  @page{size:A4 portrait;margin:0;}'
-    + '  .no-print{display:none!important;}'
-    + '  .page-body{padding:20mm 18mm!important;}'
-    + '  tr,li,div{page-break-inside:avoid;}'
+    + '*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }'
+    + 'html, body { background:#fff; color:#0B1F3A; font-family: -apple-system,"SF Pro Display","SF Pro Text",Inter,system-ui,sans-serif; -webkit-font-smoothing:antialiased; font-size:13px; }'
+    + '.doc { max-width:860px; margin:0 auto; }'
+    + '.print-bar { background:#0B1F3A; padding:12px 32px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:99; }'
+    + '.print-btn { background:#7C3AED; border:none; color:#fff; font-size:12px; font-weight:700; padding:9px 22px; border-radius:8px; cursor:pointer; font-family:inherit; letter-spacing:.2px; }'
+    + '.hero { position:relative; height:220px; overflow:hidden; }'
+    + '.hero-img { position:absolute; inset:0; background: url("https://images.unsplash.com/photo-1553361371-9b22f78e8b1d?w=1600&q=85&auto=format&fit=crop") center/cover no-repeat; }'
+    + '.hero-overlay { position:absolute; inset:0; background:linear-gradient(90deg, rgba(11,31,58,.88) 0%, rgba(11,31,58,.55) 50%, rgba(11,31,58,.75) 100%); }'
+    + '.hero-content { position:relative; z-index:2; height:100%; display:flex; align-items:center; justify-content:center; text-align:center; padding:0 40px; }'
+    + '.divider-line { height:3px; background:linear-gradient(90deg,#0B1F3A,#1E6FD9,#7C3AED); }'
+    + '.header-strip { background:#fff; padding:20px 40px 0; border-bottom:1px solid #EDF1F8; display:flex; align-items:center; justify-content:space-between; }'
+    + '.body-wrap { padding:36px 40px; }'
+    + '.label-tag { font-size:8.5px; font-weight:700; letter-spacing:2px; text-transform:uppercase; }'
+    + '.section-title { font-size:11px; font-weight:800; color:#0B1F3A; text-transform:uppercase; letter-spacing:1.5px; padding-bottom:10px; border-bottom:2px solid #0B1F3A; margin-bottom:20px; }'
+    + 'table { border-collapse:collapse; }'
+    + '@media print {'
+    + '  html, body { -webkit-print-color-adjust:exact!important; print-color-adjust:exact!important; color-adjust:exact!important; font-size:11px; }'
+    + '  @page { size:A4 portrait; margin:0; }'
+    + '  .print-bar { display:none!important; }'
+    + '  .doc { max-width:100%; }'
+    + '  .hero { height:160px; }'
+    + '  .body-wrap { padding:28px 32px; }'
+    + '  .header-strip { padding:16px 32px 0; }'
+    + '  tr, div { page-break-inside:avoid; }'
     + '}'
-    + '</style>'
-    + '</head><body>'
+    + '</style></head><body>'
 
-    // ── BOTÓN IMPRIMIR (visible solo en pantalla) ──────────────────
-    + '<div class="no-print" style="background:#0B1F3A;padding:12px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:99;">'
-    + '<div style="font-size:12px;color:rgba(255,255,255,.6);">' + winTitle + '</div>'
-    + '<button onclick="window.print()" style="background:#7C3AED;border:none;color:#fff;font-size:12px;font-weight:700;padding:8px 20px;border-radius:8px;cursor:pointer;font-family:inherit;">⬇ Descargar / Imprimir PDF</button>'
+    // ── BARRA DE DESCARGA (solo pantalla) ─────────────────────────
+    + '<div class="print-bar">'
+    +   '<div style="font-size:11px;color:rgba(255,255,255,.5);">' + title + '</div>'
+    +   '<button class="print-btn" onclick="window.print()">⬇ Descargar / Imprimir PDF</button>'
     + '</div>'
 
-    // ── FOTOS HEADER ───────────────────────────────────────────────
-    + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;height:150px;overflow:hidden;">'
-    + fotos.map(function(u){ return '<div style="background:url(' + u + ') center/cover no-repeat;"></div>'; }).join('')
-    + '</div>'
+    // ── DOCUMENTO ─────────────────────────────────────────────────
+    + '<div class="doc">'
 
-    // ── FRANJA OSCURA LOGO ─────────────────────────────────────────
-    + '<div style="background:#0B1F3A;padding:14px 28px;display:flex;align-items:center;justify-content:space-between;">'
-    + (logoUrl ? '<img src="' + logoUrl + '" style="height:26px;width:auto;filter:brightness(0) invert(1);" alt="ROMSA">' : '<span style="font-size:20px;font-weight:900;color:#fff;">ROMSA</span>')
-    + '<div style="text-align:right;"><div style="font-size:8px;color:rgba(255,255,255,.45);letter-spacing:2.5px;text-transform:uppercase;">Cotización</div><div style="font-size:14px;font-weight:700;color:#93C5FD;">' + cot.folio + '</div></div>'
-    + '</div>'
-
-    // ── CUERPO ─────────────────────────────────────────────────────
-    + '<div class="page-body" style="padding:22px 28px 28px;">'
-
-    // Destinatario
-    + '<div style="margin-bottom:22px;">'
-    + (cot.ciudad ? '<div style="font-size:11px;color:#6B82A0;margin-bottom:10px;">' + (cot.ciudad) + ', ' + fechaFmt + '</div>' : '')
-    + '<div style="font-size:12px;font-weight:700;color:#0B1F3A;">Atención: ' + cot.atencion + '</div>'
-    + (cot.empresa ? '<div style="font-size:11px;color:#4A6A8A;margin-top:2px;">' + cot.empresa + '</div>' : '')
-    + (cot.rfc ? '<div style="font-size:10px;color:#8099B8;margin-top:1px;">RFC: ' + cot.rfc + '</div>' : '')
-    + (cot.email ? '<div style="font-size:10px;color:#8099B8;margin-top:1px;">' + cot.email + '</div>' : '')
-    + (cot.tel ? '<div style="font-size:10px;color:#8099B8;margin-top:1px;">' + cot.tel + '</div>' : '')
-    + '</div>'
-
-    // Intro
-    + '<div style="font-size:11.5px;color:#4A6A8A;line-height:1.7;margin-bottom:18px;">Por este medio, nos es grato cotizar los siguientes servicios para las instalaciones de <strong style="color:#0B1F3A;">' + cot.empresa + '</strong>:</div>'
-
-    // Tabla partidas
-    + '<table style="width:100%;border-collapse:collapse;margin-bottom:20px;border:1px solid #E0E8F0;border-radius:8px;overflow:hidden;">'
-    + '<thead><tr style="background:#0B1F3A;">'
-    + '<th style="padding:10px 12px;text-align:left;color:#fff;font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;">Descripción del servicio</th>'
-    + '<th style="padding:10px 8px;text-align:center;color:#fff;font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;white-space:nowrap;">Cantidad</th>'
-    + '<th style="padding:10px 8px;text-align:right;color:#fff;font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;white-space:nowrap;">P. Unit.</th>'
-    + '<th style="padding:10px 8px;text-align:right;color:#fff;font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;white-space:nowrap;">Total</th>'
-    + '</tr></thead>'
-    + '<tbody>' + filas + '</tbody>'
-    + '</table>'
-
-    // Totales (alineados a la derecha)
-    + '<div style="display:flex;justify-content:flex-end;margin-bottom:24px;">'
-    + '<div style="width:260px;border:1px solid #E0E8F0;border-radius:8px;overflow:hidden;">'
-    + '<div style="display:flex;justify-content:space-between;padding:8px 14px;border-bottom:1px solid #E0E8F0;font-size:11.5px;"><span style="color:#6B82A0;">Subtotal</span><span style="font-weight:600;">$' + fmtPeso(sub) + '</span></div>'
-    + '<div style="display:flex;justify-content:space-between;padding:8px 14px;border-bottom:1px solid #E0E8F0;font-size:11.5px;"><span style="color:#6B82A0;">IVA 8%</span><span style="font-weight:600;">$' + fmtPeso(iva) + '</span></div>'
-    + '<div style="display:flex;justify-content:space-between;padding:10px 14px;background:#0B1F3A;font-size:14px;font-weight:900;color:#fff;"><span>Gran Total</span><span>$' + fmtPeso(total) + '</span></div>'
-    + '</div></div>'
-
-    // Condiciones
-    + '<div style="border-top:2px solid #0B1F3A;padding-top:18px;margin-bottom:20px;">'
-    + '<div style="font-size:13px;font-weight:800;color:#0B1F3A;letter-spacing:-.2px;margin-bottom:16px;">CONDICIONES GENERALES DE VENTA</div>'
-    + condsHtml
-    + notaHtml
-    + '</div>'
-
-    // Firma
-    + '<div style="display:flex;justify-content:space-between;align-items:flex-end;padding-top:16px;border-top:1px solid #E0E8F0;">'
-    + (logoUrl ? '<img src="' + logoUrl + '" style="height:18px;width:auto;opacity:.4;" alt="ROMSA">' : '<span style="font-size:11px;font-weight:800;color:#C0C8D0;">ROMSA</span>')
-    + '<div style="text-align:center;">'
-      + '<div style="border-top:1px solid #0B1F3A;padding-top:6px;width:200px;">'
-        + '<div style="font-size:11px;font-weight:700;color:#0B1F3A;">' + (cot.creadoPor || 'ROMSA Industrial') + '</div>'
-        + '<div style="font-size:9px;color:#8099B8;margin-top:2px;">ROMSA Industrial · Servicios y Suministros Industriales</div>'
+      // HERO — bodega industrial con piso epóxico
+      + '<div class="hero">'
+      +   '<div class="hero-img"></div>'
+      +   '<div class="hero-overlay"></div>'
+      +   '<div class="hero-content">'
+      +     '<div>'
+      +       '<div style="font-size:9px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:rgba(255,255,255,.5);margin-bottom:10px;">COTIZACIÓN TÉCNICA · ROMSA INDUSTRIAL</div>'
+      +       '<div style="font-size:32px;font-weight:900;color:#fff;letter-spacing:-1px;line-height:1.1;">' + (cot.empresa||'').toUpperCase() + '</div>'
+      +       (cot.ciudad ? '<div style="font-size:13px;color:rgba(255,255,255,.5);margin-top:8px;letter-spacing:.3px;">' + cot.ciudad + '</div>' : '')
+      +     '</div>'
+      +   '</div>'
       + '</div>'
-    + '</div>'
-    + '</div>'
 
-    + '</div>'// /page-body
+      // LÍNEA DEGRADADA
+      + '<div class="divider-line"></div>'
+
+      // HEADER STRIP — logo + folio
+      + '<div class="header-strip">'
+      +   (logo ? '<img src="' + logo + '" style="height:26px;width:auto;" alt="ROMSA">' : '<span style="font-size:20px;font-weight:900;color:#0B1F3A;">ROMSA</span>')
+      +   '<div style="text-align:right;">'
+      +     '<div class="label-tag" style="color:#8A9AB8;">Folio</div>'
+      +     '<div style="font-size:14px;font-weight:800;color:#7C3AED;margin-top:2px;">' + cot.folio + '</div>'
+      +   '</div>'
+      + '</div>'
+      + '<div style="height:20px;background:#fff;"></div>'
+
+      // CUERPO
+      + '<div class="body-wrap">'
+
+        // Destinatario
+        + '<div style="margin-bottom:28px;padding-bottom:24px;border-bottom:1px solid #EDF1F8;">'
+        +   '<div class="label-tag" style="color:#8A9AB8;margin-bottom:10px;">Dirigido a</div>'
+        +   '<div style="font-size:16px;font-weight:800;color:#0B1F3A;letter-spacing:-.3px;">' + cot.atencion + '</div>'
+        +   '<div style="font-size:13px;color:#4A5E7A;margin-top:3px;font-weight:500;">' + (cot.empresa||'') + '</div>'
+        +   (lugarFecha ? '<div style="font-size:11px;color:#8A9AB8;margin-top:6px;">' + lugarFecha + '</div>' : '')
+        +   ((cot.email||cot.tel) ? '<div style="font-size:11px;color:#8A9AB8;margin-top:4px;">' + [cot.email, cot.tel].filter(Boolean).join(' · ') + '</div>' : '')
+        +   (cot.rfc ? '<div style="font-size:10px;color:#8A9AB8;margin-top:2px;">RFC: ' + cot.rfc + '</div>' : '')
+        + '</div>'
+
+        // Intro
+        + '<div style="font-size:12px;color:#4A5E7A;line-height:1.8;margin-bottom:28px;">Por este medio, nos es grato presentar nuestra propuesta técnica-comercial para las instalaciones de <strong style="color:#0B1F3A;">' + cot.empresa + '</strong>. A continuación se detalla el alcance, especificaciones y condiciones del proyecto:</div>'
+
+        // Tabla
+        + '<div style="margin-bottom:28px;">'
+        +   '<table style="width:100%;border:1px solid #EDF1F8;border-radius:10px;overflow:hidden;">'
+        +     '<thead>'
+        +       '<tr style="background:#0B1F3A;">'
+        +         '<th style="padding:13px 20px;text-align:left;font-size:9.5px;font-weight:700;color:rgba(255,255,255,.7);letter-spacing:1.5px;text-transform:uppercase;">Descripción del servicio</th>'
+        +         '<th style="padding:13px 16px;text-align:center;font-size:9.5px;font-weight:700;color:rgba(255,255,255,.7);letter-spacing:1.5px;text-transform:uppercase;white-space:nowrap;">Cantidad</th>'
+        +         '<th style="padding:13px 16px;text-align:right;font-size:9.5px;font-weight:700;color:rgba(255,255,255,.7);letter-spacing:1.5px;text-transform:uppercase;white-space:nowrap;">P. Unit.</th>'
+        +         '<th style="padding:13px 16px;text-align:right;font-size:9.5px;font-weight:700;color:rgba(255,255,255,.7);letter-spacing:1.5px;text-transform:uppercase;white-space:nowrap;">Total</th>'
+        +       '</tr>'
+        +     '</thead>'
+        +     '<tbody>' + filas + '</tbody>'
+        +   '</table>'
+        + '</div>'
+
+        // Totales — alineados a la derecha, caja elegante
+        + '<div style="display:flex;justify-content:flex-end;margin-bottom:36px;">'
+        +   '<div style="width:280px;">'
+        +     '<div style="display:flex;justify-content:space-between;padding:9px 16px;background:#F7F9FC;border-radius:8px 8px 0 0;border:1px solid #EDF1F8;font-size:12px;">'
+        +       '<span style="color:#6B7FA3;">Subtotal</span><span style="font-weight:600;color:#0B1F3A;">$' + fmtPeso(sub) + '</span>'
+        +     '</div>'
+        +     '<div style="display:flex;justify-content:space-between;padding:9px 16px;background:#F7F9FC;border:1px solid #EDF1F8;border-top:none;font-size:12px;">'
+        +       '<span style="color:#6B7FA3;">IVA 8%</span><span style="font-weight:600;color:#0B1F3A;">$' + fmtPeso(iva) + '</span>'
+        +     '</div>'
+        +     '<div style="display:flex;justify-content:space-between;padding:13px 16px;background:#0B1F3A;border-radius:0 0 8px 8px;font-size:15px;font-weight:900;color:#fff;">'
+        +       '<span>Gran Total</span><span>$' + fmtPeso(total) + '</span>'
+        +     '</div>'
+        +   '</div>'
+        + '</div>'
+
+        // Condiciones
+        + (condsHtml ? '<div class="section-title">Condiciones Generales de Venta</div>' + condsHtml + notaHtml + '<div style="margin-bottom:32px;"></div>' : '')
+
+        // Firma
+        + '<div style="display:flex;align-items:flex-end;justify-content:space-between;padding-top:20px;border-top:1px solid #EDF1F8;">'
+        +   (logo ? '<img src="' + logo + '" style="height:20px;width:auto;opacity:.35;" alt="ROMSA">' : '<span style="font-size:12px;font-weight:800;color:#CBD5E1;">ROMSA</span>')
+        +   '<div style="text-align:center;">'
+        +     '<div style="border-top:1.5px solid #0B1F3A;padding-top:8px;width:220px;">'
+        +       '<div style="font-size:11.5px;font-weight:700;color:#0B1F3A;">' + (cot.creadoPor||'ROMSA Industrial') + '</div>'
+        +       '<div style="font-size:9.5px;color:#8A9AB8;margin-top:3px;letter-spacing:.3px;">ROMSA Industrial · Servicios y Suministros</div>'
+        +     '</div>'
+        +   '</div>'
+        + '</div>'
+
+      + '</div>'// /body-wrap
+    + '</div>'// /doc
 
     + '</body></html>'
   );
