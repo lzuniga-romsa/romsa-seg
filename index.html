@@ -1075,6 +1075,7 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
   </div>
 
   <div id="subnav" style="justify-content:center;">
+    <div class="snav" id="snav-menu" onclick="volverSelector()" style="color:rgba(255,255,255,.5);">⌂</div>
     <div class="snav" id="snav-dashboard" onclick="goScreen('dashboard')">Inicio</div>
     <div class="snav active" id="snav-obras" onclick="goScreen('obras')">Obras</div>
     <div class="snav" id="snav-nueva" onclick="showNueva()" style="position:relative;">+ Nueva
@@ -1103,26 +1104,26 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
     <!-- OBRA DETALLE -->
     <div id="screen-dashboard" class="screen active">
       <div style="background:#0B1F3A;padding:14px 18px 16px;">
-        <div style="font-size:9px;font-weight:700;color:#4A6A8A;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;">Resumen operativo · Hoy</div>
+        <div style="font-size:9px;font-weight:700;color:#4A6A8A;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;">Seguimiento de Obras · ROMSA</div>
         <div style="font-size:18px;font-weight:800;color:#fff;line-height:1.2;">Control total de tu <span style="color:#60A5FA;">obra en campo</span></div>
       </div>
       <div style="background:#F0F3F8;padding:16px 18px;">
-        <!-- KPIs -->
+        <!-- KPIs Obras: activas, completadas, % avance promedio -->
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px;">
           <div style="background:#fff;border-radius:12px;border:1px solid #E0E8F0;padding:12px 10px;">
             <div style="font-size:8px;font-weight:700;color:#7090B8;text-transform:uppercase;margin-bottom:5px;">Activas</div>
-            <div id="dash-activas" style="font-size:26px;font-weight:900;color:#0B1F3A;">-</div>
-            <div id="dash-total" style="font-size:9px;color:#10B981;font-weight:700;margin-top:2px;"></div>
-          </div>
-          <div style="background:#fff;border-radius:12px;border:1px solid #E0E8F0;padding:12px 10px;">
-            <div style="font-size:8px;font-weight:700;color:#7090B8;text-transform:uppercase;margin-bottom:5px;">Updates hoy</div>
-            <div id="dash-updates" style="font-size:26px;font-weight:900;color:#0B1F3A;">-</div>
-            <div style="font-size:9px;color:#1E6FD9;font-weight:700;margin-top:2px;">publicados</div>
+            <div id="dash-activas" style="font-size:26px;font-weight:900;color:#1E6FD9;">-</div>
+            <div id="dash-total" style="font-size:9px;color:#7090B8;font-weight:600;margin-top:2px;"></div>
           </div>
           <div style="background:#fff;border-radius:12px;border:1px solid #E0E8F0;padding:12px 10px;">
             <div style="font-size:8px;font-weight:700;color:#7090B8;text-transform:uppercase;margin-bottom:5px;">Completadas</div>
             <div id="dash-completadas" style="font-size:26px;font-weight:900;color:#10B981;">-</div>
-            <div style="font-size:9px;color:#10B981;font-weight:700;margin-top:2px;">este año</div>
+            <div style="font-size:9px;color:#10B981;font-weight:600;margin-top:2px;">este año</div>
+          </div>
+          <div style="background:#fff;border-radius:12px;border:1px solid #E0E8F0;padding:12px 10px;">
+            <div style="font-size:8px;font-weight:700;color:#7090B8;text-transform:uppercase;margin-bottom:5px;">% Avance</div>
+            <div id="dash-pct-prom" style="font-size:26px;font-weight:900;color:#F59E0B;">-</div>
+            <div style="font-size:9px;color:#7090B8;font-weight:600;margin-top:2px;">promedio</div>
           </div>
         </div>
 
@@ -1539,16 +1540,21 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
 
       <!-- LISTA -->
       <div id="cot-lista-wrap" style="padding:16px;">
-        <div id="cot-kpi-row" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
-          <div style="background:#fff;border:1px solid var(--g1);border-radius:12px;padding:14px;">
-            <div style="font-size:8px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">Activas</div>
-            <div id="cot-kpi-activas" style="font-size:28px;font-weight:900;color:#7C3AED;line-height:1;">0</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px;">
+          <div style="background:#fff;border:1px solid var(--g1);border-radius:12px;padding:12px 10px;">
+            <div style="font-size:8px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Este mes</div>
+            <div id="cot-kpi-mes" style="font-size:24px;font-weight:900;color:#7C3AED;line-height:1;">0</div>
             <div style="font-size:9px;color:var(--g3);margin-top:2px;">cotizaciones</div>
           </div>
-          <div style="background:#fff;border:1px solid var(--g1);border-radius:12px;padding:14px;">
-            <div style="font-size:8px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">Total cotizado</div>
-            <div id="cot-kpi-total" style="font-size:18px;font-weight:900;color:#0B1F3A;line-height:1;">$0</div>
-            <div style="font-size:9px;color:var(--g3);margin-top:2px;">MXN</div>
+          <div style="background:#fff;border:1px solid var(--g1);border-radius:12px;padding:12px 10px;">
+            <div style="font-size:8px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Total MXN</div>
+            <div id="cot-kpi-total" style="font-size:16px;font-weight:900;color:#0B1F3A;line-height:1;">$0</div>
+            <div id="cot-kpi-activas" style="font-size:9px;color:var(--g3);margin-top:2px;">0 activas</div>
+          </div>
+          <div style="background:#fff;border:1px solid var(--g1);border-radius:12px;padding:12px 10px;">
+            <div style="font-size:8px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Ganadas</div>
+            <div id="cot-kpi-ganadas" style="font-size:24px;font-weight:900;color:#10B981;line-height:1;">0</div>
+            <div style="font-size:9px;color:var(--g3);margin-top:2px;">cerradas</div>
           </div>
         </div>
         <div style="font-size:10px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">Mis cotizaciones</div>
@@ -1720,6 +1726,10 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
   </div><!-- /main -->
 
   <nav id="navbar">
+    <button class="nb" id="nb-menu" onclick="volverSelector()" title="Menú principal">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="3" y="5" width="14" height="1.5" rx=".75" fill="currentColor"/><rect x="3" y="9.25" width="14" height="1.5" rx=".75" fill="currentColor"/><rect x="3" y="13.5" width="14" height="1.5" rx=".75" fill="currentColor"/></svg>
+      Menú
+    </button>
     <button class="nb active" id="nb-dashboard" onclick="goScreen('dashboard')">
       <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M3 10L10 3l7 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M5 8.5V17h4v-4h2v4h4V8.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
       Inicio
@@ -3660,6 +3670,9 @@ function renderDashboard(){
            (o.editoresUid||[]).indexOf((currentUser&&currentUser.uid)||"")>-1;
   });
   var activas=obrasVis.filter(function(o){return o.estado==="activa"||(o.pct>0&&o.pct<100);}).length;
+  var pctProm=obrasVis.length>0?Math.round(obrasVis.reduce(function(s,o){return s+(o.pct||0);},0)/obrasVis.length):0;
+  var elPct=document.getElementById("dash-pct-prom");
+  if(elPct){elPct.textContent=pctProm+"%";elPct.style.color=pctProm>=75?"#10B981":pctProm>=40?"#F59E0B":"#EF4444";}
   var completadas=obras.filter(function(o){return o.pct>=100||o.estado==="completada";}).length;
   var upd=obras.reduce(function(s,o){return s+(o.updates||[]).filter(function(u){return new Date(u.ts).toDateString()===today;}).length;},0);
   if(el("dash-activas"))el("dash-activas").textContent=activas;
@@ -4590,14 +4603,24 @@ function resetCondicionesCot(){
 function renderListaCot(){
   var el=document.getElementById("lista-cotizaciones");
   if(!el)return;
-  // Actualizar KPIs
-  var kpiA=document.getElementById("cot-kpi-activas");
-  var kpiT=document.getElementById("cot-kpi-total");
-  if(kpiA) kpiA.textContent=cotizaciones.length;
-  if(kpiT){
-    var totalSum=cotizaciones.reduce(function(s,c){return s+parseFloat(c.granTotal||0);},0);
-    kpiT.textContent="$"+fmtPeso(totalSum);
-  }
+  // KPIs cotizaciones
+  var ahora=new Date();
+  var mesActual=ahora.getMonth();
+  var anioActual=ahora.getFullYear();
+  var cotMes=cotizaciones.filter(function(c){
+    var d=new Date((c.fecha||"")+"T12:00:00");
+    return d.getMonth()===mesActual&&d.getFullYear()===anioActual;
+  }).length;
+  var totalSum=cotizaciones.reduce(function(s,c){return s+parseFloat(c.granTotal||0);},0);
+  var ganadas=cotizaciones.filter(function(c){return c.estado==="ganada"||c.estado==="cerrada";}).length;
+  var elMes=document.getElementById("cot-kpi-mes");
+  var elTot=document.getElementById("cot-kpi-total");
+  var elAct=document.getElementById("cot-kpi-activas");
+  var elGan=document.getElementById("cot-kpi-ganadas");
+  if(elMes) elMes.textContent=cotMes;
+  if(elTot) elTot.textContent="$"+fmtPeso(totalSum);
+  if(elAct) elAct.textContent=cotizaciones.length+" total";
+  if(elGan) elGan.textContent=ganadas;
   if(!cotizaciones.length){
     el.innerHTML='<div class="empty"><div class="empty-ico">📋</div><div class="empty-ttl">Sin cotizaciones</div><div class="empty-sub">Toca "+ Nueva" para crear tu primera cotización</div></div>';
     return;
@@ -4924,7 +4947,7 @@ function generarPdfCotEnVentana(cot, _unused){
     ?'<div style="background:#F0F4FC;border-left:3px solid #1E6FD9;padding:12px 16px;border-radius:0 8px 8px 0;margin-top:16px;font-size:11px;color:#4A5E7A;line-height:1.7;">'+cot.nota+'</div>'
     :'';
 
-  var title='ROMSA - Cotizacion - '+cot.folio;
+  var title=cot.folio||('ROMSA-Cotizacion-'+Date.now());
   // win ya fue abierto antes del await
 
     var _pdfHtml=
