@@ -2294,8 +2294,7 @@ function showPdf(){
       <!-- Título -->
       <div style="text-align:center;margin-bottom:8px;">
         <div style="font-size:9px;font-weight:600;color:rgba(255,255,255,.3);letter-spacing:3px;text-transform:uppercase;margin-bottom:10px;font-family:-apple-system,'SF Pro Display',Inter,sans-serif;">AUDITORÍA DE CONDICIÓN DE PISO</div>
-        <div style="font-size:30px;font-weight:800;color:#fff;line-height:1.1;letter-spacing:-1px;font-family:-apple-system,'SF Pro Display',Inter,sans-serif;">${p.cliente||p.nombre}</div>
-        ${p.nombre&&p.cliente?`<div style="font-size:13px;color:rgba(255,255,255,.35);margin-top:6px;letter-spacing:.2px;font-family:-apple-system,'SF Pro Display',Inter,sans-serif;">${p.nombre}</div>`:""}
+        <div style="font-size:30px;font-weight:800;color:#fff;line-height:1.1;letter-spacing:-0.5px;font-family:'Inter',Inter,sans-serif;">${p.cliente||p.nombre}</div>
         ${p.ubicacion?`<div style="font-size:11px;color:rgba(255,255,255,.35);margin-top:4px;font-family:-apple-system,'SF Pro Display',Inter,sans-serif;">${p.ubicacion}</div>`:""}
       </div>
 
@@ -2421,7 +2420,7 @@ function showPdf(){
       <div style="margin-bottom:20px;">
         <div class="sec-ttl">Plano del área</div>
         <div style="position:relative;margin-bottom:6px;">
-          <img src="${planoImg}" style="width:100%;border-radius:10px;border:1px solid rgba(255,255,255,.08);display:block;">
+          <img src="${planoImg}" style="width:100%;max-width:420px;display:block;margin:0 auto;border-radius:10px;border:1px solid rgba(255,255,255,.08);">
           <!-- Medidas superpuestas sobre el plano -->
           <div style="position:absolute;bottom:10px;left:10px;background:rgba(10,22,40,.85);border:1px solid rgba(96,165,250,.3);border-radius:8px;padding:7px 12px;backdrop-filter:blur(4px);">
             <div style="display:flex;align-items:center;gap:14px;">
