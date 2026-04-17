@@ -2378,14 +2378,14 @@ function showPdf(){
         </table>
       </div>
 
-      <!-- ── ESTADO DEL PISO — INICIO PÁGINA 2 ── -->
+      <!-- ════════ PÁGINA 2 ════════ -->
       <div style="page-break-before:always;-webkit-column-break-before:always;break-before:page;">
-        <!-- Header página 2 -->
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:28px 0 20px;margin-bottom:20px;border-bottom:1px solid rgba(255,255,255,.08);">
-          ${logoB64?`<img src="${logoB64}" style="height:22px;width:auto;filter:brightness(0) invert(1);opacity:.7;" alt="ROMSA">`:`<span style="font-size:13px;font-weight:800;color:rgba(255,255,255,.5);">ROMSA</span>`}
+        <!-- Header de página -->
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:28px 0 18px;margin-bottom:24px;border-bottom:1px solid rgba(255,255,255,.08);">
+          ${logoB64?`<img src="${logoB64}" style="height:20px;width:auto;filter:brightness(0) invert(1);opacity:.65;" alt="ROMSA">`:`<span style="font-size:12px;font-weight:800;color:rgba(255,255,255,.4);">ROMSA</span>`}
           <div style="text-align:right;">
-            <div style="font-size:8px;color:rgba(255,255,255,.3);letter-spacing:1.5px;text-transform:uppercase;">Auditoría Técnica</div>
-            <div style="font-size:10px;font-weight:600;color:rgba(255,255,255,.4);margin-top:2px;">${folio}</div>
+            <div style="font-size:8px;color:rgba(255,255,255,.28);letter-spacing:1.5px;text-transform:uppercase;">Auditoría Técnica de Condición de Piso</div>
+            <div style="font-size:9px;font-weight:600;color:rgba(255,255,255,.38);margin-top:2px;">${p.cliente||p.nombre} · ${folio}</div>
           </div>
         </div>
         <div class="sec-ttl">Estado del piso</div>
@@ -2471,9 +2471,19 @@ function showPdf(){
         <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-left:3px solid #1E6FD9;border-radius:0 10px 10px 0;padding:12px 14px;font-size:11px;color:rgba(255,255,255,.65);line-height:1.6;">${n.obs}</div>
       </div>`:""}
 
-      <!-- ── DIAGNÓSTICO ── -->
-      <div style="margin-bottom:20px;">
-        <div class="sec-ttl">Diagnóstico</div>
+      <!-- ════════ PÁGINA 3 ════════ -->
+      <div style="page-break-before:always;-webkit-column-break-before:always;break-before:page;">
+        <!-- Header de página -->
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:28px 0 18px;margin-bottom:24px;border-bottom:1px solid rgba(255,255,255,.08);">
+          ${logoB64?`<img src="${logoB64}" style="height:20px;width:auto;filter:brightness(0) invert(1);opacity:.65;" alt="ROMSA">`:`<span style="font-size:12px;font-weight:800;color:rgba(255,255,255,.4);">ROMSA</span>`}
+          <div style="text-align:right;">
+            <div style="font-size:8px;color:rgba(255,255,255,.28);letter-spacing:1.5px;text-transform:uppercase;">Auditoría Técnica de Condición de Piso</div>
+            <div style="font-size:9px;font-weight:600;color:rgba(255,255,255,.38);margin-top:2px;">${p.cliente||p.nombre} · ${folio}</div>
+          </div>
+        </div>
+        <!-- Diagnóstico -->
+        <div style="margin-bottom:20px;page-break-inside:avoid;">
+          <div class="sec-ttl">Diagnóstico</div>
         <div style="background:${scoreBg};border:1px solid ${scoreColor}33;border-radius:12px;padding:14px 16px;">
           <div style="font-size:13px;font-weight:700;color:${scoreColor};margin-bottom:6px;">${sd.nivel} — Score ${sd.score}/100</div>
           <div style="font-size:11px;color:rgba(255,255,255,.65);line-height:1.6;">${sd.desc}</div>
@@ -2507,7 +2517,10 @@ function showPdf(){
       </div>
 
       <!-- ── SPACER para empujar footer al fondo ── -->
-      <div style="flex:1;min-height:40px;"></div>
+      <div style="min-height:40px;"></div>
+
+        </div><!-- /diagnóstico interno -->
+      </div><!-- /página 3 -->
 
     </div><!-- /body -->
 
