@@ -1114,6 +1114,11 @@ function volverAObras(){
   }catch(e){ window.location.href='./'; }
 }
 
+function fmtNum(n, dec){
+  if(n===null||n===undefined||isNaN(n)) return "0";
+  return parseFloat(n).toLocaleString("es-MX",{minimumFractionDigits:dec||0,maximumFractionDigits:dec||0});
+}
+
 function updateKpis(){
   const ps=S.proyectos;
   const m2=ps.reduce((s,p)=>s+(p.area||0),0);
@@ -1193,8 +1198,8 @@ function _mostrarReporteCliente(p){
   const reporteHtml = pdfBody ? pdfBody.innerHTML : "";
   
   if(!reporteHtml.trim()){
-    mainEl.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#0A1628;"><div style="text-align:center;color:#fff;font-family:Inter,sans-serif;"><div style="font-size:32px;margin-bottom:12px;">⏳</div><div style="font-size:14px;opacity:.5;">Preparando reporte...</div></div></div>';
-    setTimeout(()=>_mostrarReporteCliente(p), 700);
+    // No reintentar — si showPdf falló, el reporte no se puede generar sin datos
+    mainEl.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#0A1628;"><div style="text-align:center;color:#fff;font-family:Inter,sans-serif;padding:24px;"><div style="font-size:48px;margin-bottom:16px;">⚠️</div><div style="font-size:18px;font-weight:700;margin-bottom:8px;">Error generando reporte</div><div style="font-size:13px;opacity:.5;">Recarga la página e intenta de nuevo.</div></div></div>';
     return;
   }
   
