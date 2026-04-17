@@ -4848,29 +4848,34 @@ async function guardarCot(){
 }
 
 async function guardarYVerCot(){
-  // Abrir ventana ANTES del await para evitar bloqueo de popup en iOS/Safari
-  var win=window.open('','_blank');
-  if(!win){
-    showToast('⚠️ Activa ventanas emergentes en tu navegador');
-    return;
+  // Abrir ventana SINCRÓNICAMENTE antes del await — único momento permitido
+  var esIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)&&!window.MSStream;
+  var esSafari=/^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+  var winRef=null;
+  if(!esIOS&&!esSafari){
+    winRef=window.open('','_blank');
+    if(winRef) winRef.document.write('<html><head><title>Generando...</title></head><body style="background:#0B1F3A;display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;"><p style="color:rgba(255,255,255,.5);font-size:14px;">Generando cotización...</p></body></html>');
   }
-  win.document.write('<html><body style="background:#0B1F3A;display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;"><p style="color:rgba(255,255,255,.5);font-size:14px;">Generando cotización...</p></body></html>');
   var cot=await guardarCot();
   if(cot){
-    generarPdfCotEnVentana(cot, win);
+    _generarPdfConVentana(cot, winRef);
   } else {
-    win.close();
+    if(winRef) winRef.close();
   }
 }
 
 // ── Generar PDF cotización (fondo blanco profesional) ─────────────
 function generarPdfCot(cot){
   if(!cot) return;
-  generarPdfCotEnVentana(cot, null);
+  _generarPdfConVentana(cot, null);
 }
 
-function generarPdfCotEnVentana(cot, _unused){
-  if(!cot||!win) return;
+function _generarPdfConVentana(cot, winRef){
+  generarPdfCotEnVentana(cot, winRef);
+}
+
+function generarPdfCotEnVentana(cot, winRef){
+  if(!cot) return;
 
   var sub    = parseFloat(cot.subtotal  || 0);
   var iva    = parseFloat(cot.iva       || 0);
@@ -5150,28 +5155,26 @@ function generarPdfCotEnVentana(cot, _unused){
     +'</div>'// /doc
     +'<\/body><\/html>'
   ;
-  _inyectarPdf(_pdfHtml, title);
+  _inyectarPdf(_pdfHtml, title, winRef);
 }
 
 
 // ── Inyector de PDF universal (iOS iframe + desktop window.open) ─
-function _inyectarPdf(htmlStr, title){
+function _inyectarPdf(htmlStr, title, winRef){
   var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
   var isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
 
   if(isIOS || isSafari){
-    // iOS/Mac Safari: iframe en la misma página — no requiere popup
-    var old = document.getElementById('_pdfframe');
-    if(old) old.remove();
+    // iOS/Mac Safari: iframe en la misma página
+    var oldFr = document.getElementById('_pdfframe');
+    if(oldFr) oldFr.remove();
     var fr = document.createElement('iframe');
     fr.id = '_pdfframe';
-    fr.setAttribute('name','_pdfframe');
     fr.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;border:none;z-index:9999;background:#fff;';
     document.body.appendChild(fr);
     fr.contentDocument.open();
     fr.contentDocument.write(htmlStr);
     fr.contentDocument.close();
-    // Agregar botón cerrar sobre el iframe
     var closeBtn = document.createElement('button');
     closeBtn.textContent = '✕ Cerrar';
     closeBtn.style.cssText = 'position:fixed;top:10px;left:10px;z-index:10000;background:#0B1F3A;color:#fff;border:none;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:sans-serif;';
@@ -5182,12 +5185,17 @@ function _inyectarPdf(htmlStr, title){
         try{ fr.contentWindow.focus(); fr.contentWindow.print(); }catch(e){}
       }, 700);
     };
+  } else if(winRef){
+    // Chrome/Firefox con ventana ya abierta (síncrona desde el click)
+    winRef.document.open();
+    winRef.document.write(htmlStr);
+    winRef.document.close();
   } else {
-    // Chrome / Firefox / Edge: ventana nueva
-    var win = window.open('', '_blank');
-    if(!win){ showToast('⚠️ Permite ventanas emergentes'); return; }
-    win.document.write(htmlStr);
-    win.document.close();
+    // Fallback: abrir nueva ventana
+    var win2 = window.open('', '_blank');
+    if(!win2){ showToast('⚠️ Permite ventanas emergentes'); return; }
+    win2.document.write(htmlStr);
+    win2.document.close();
   }
 }
 

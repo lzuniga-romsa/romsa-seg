@@ -1264,8 +1264,10 @@ function renderHome(){
   const fotos=ps.reduce((s,p)=>s+(p.fotos||[]).length,0);
   document.getElementById("kpi-total").innerHTML=ps.length+'<small> proy</small>';
   document.getElementById("kpi-m2").innerHTML=m2.toFixed(0)+'<small> m²</small>';
-  document.getElementById("kpi-reps").textContent=reps;
-  document.getElementById("kpi-fotos").textContent=fotos;
+  var elReps=document.getElementById("kpi-reps");
+  var elFotos=document.getElementById("kpi-fotos");
+  if(elReps) elReps.textContent=reps;
+  if(elFotos) elFotos.textContent=fotos;
   const el=document.getElementById("lista-home");
   if(!ps.length){el.innerHTML='<div class="empty"><div class="empty-ico">🏗️</div><div class="empty-ttl">Sin proyectos aún</div><div class="empty-sub">Toca + para crear tu primer levantamiento</div></div>';return;}
   el.innerHTML=ps.slice(0,6).map(p=>prowHTML(p,"inicio")).join("");
