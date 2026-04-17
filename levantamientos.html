@@ -1986,7 +1986,16 @@ function showPdf(){
 
   // Canvas del plano
   let planoImg="";
-  if(inclPlano){const c=document.getElementById("plano-canvas");if(c)planoImg=c.toDataURL("image/png");}
+  if(inclPlano){
+    const c=document.getElementById("plano-canvas");
+    if(c) planoImg=c.toDataURL("image/png");
+    // Guardar snapshot del plano en Firestore para la vista del cliente
+    const ppSave=getP();
+    if(ppSave&&planoImg&&planoImg.length>1000&&!ppSave.planoImg){
+      ppSave.planoImg=planoImg;
+      saveProyecto(ppSave);
+    }
+  }
 
   // ── Gauge SVG del score ──────────────────────────────────────────
   const scoreColor = sd.score>=80?"#10B981":sd.score>=60?"#F59E0B":sd.score>=35?"#EF4444":"#7C3AED";
@@ -2353,20 +2362,23 @@ function showPdf(){
         </div>
       </div>
 
-      <!-- ── FOOTER ── -->
-      <div style="border-top:1px solid rgba(255,255,255,.06);padding-top:16px;margin-top:4px;text-align:center;">
-        <div style="margin-bottom:10px;">
-          <span style="border:1px solid rgba(30,111,217,.3);border-radius:5px;padding:4px 14px;font-size:8px;font-weight:700;color:#60A5FA;letter-spacing:.5px;">✓ AUDITORÍA TÉCNICA ROMSA</span>
-        </div>
-        <div style="font-size:8px;color:rgba(255,255,255,.2);line-height:1.6;">
-          ${S.config.emp||"ROMSA Industrial"} · Pisos Industriales Baja California · ${S.config.tel||""}<br>
-          Generado el ${fechaGen} · Folio ${folio}<br>
-          <strong style="color:rgba(255,255,255,.3);">Este documento no es una cotización, es el diagnóstico técnico base para tomar decisiones.</strong>
-        </div>
-      </div>
+      <!-- ── SPACER para empujar footer al fondo ── -->
+      <div style="flex:1;min-height:40px;"></div>
 
     </div><!-- /body -->
   </div><!-- /pdf-body-inner -->
+
+  <!-- ── FOOTER FIJO AL FINAL ── -->
+  <div class="pdf-report-footer" style="background:#0A1628;border-top:1px solid rgba(255,255,255,.06);padding:16px 28px;text-align:center;">
+    <div style="margin-bottom:8px;">
+      <span style="border:1px solid rgba(30,111,217,.3);border-radius:5px;padding:4px 14px;font-size:8px;font-weight:700;color:#60A5FA;letter-spacing:.5px;">✓ AUDITORÍA TÉCNICA ROMSA</span>
+    </div>
+    <div style="font-size:8px;color:rgba(255,255,255,.2);line-height:1.6;">
+      ${S.config.emp||"ROMSA Industrial"} · Pisos Industriales Baja California · ${S.config.tel||""}<br>
+      Generado el ${fechaGen} · Folio ${folio}<br>
+      <strong style="color:rgba(255,255,255,.3);">Este documento no es una cotización, es el diagnóstico técnico base para tomar decisiones.</strong>
+    </div>
+  </div>
   `;
 
   document.getElementById("pdf-preview").style.display="block";
@@ -2504,19 +2516,36 @@ function imprimirPDF(){
         position: running(footer) !important;
       }
     }
-    /* Footer siempre al fondo usando flexbox en la última sección */
-    .pdf-body-inner{
+    /* Layout completo de la página */
+    html, body {
+      height: 100%;
+    }
+    .pdf-page-wrap {
       min-height: 100vh;
       display: flex;
       flex-direction: column;
     }
-    .pdf-body-inner > div:last-child {
+    .pdf-body-inner {
+      flex: 1;
+    }
+    /* Footer siempre al fondo */
+    .pdf-report-footer {
       margin-top: auto;
+    }
+    @media print {
+      .pdf-page-wrap {
+        min-height: 100vh;
+      }
+      .pdf-report-footer {
+        page-break-inside: avoid;
+      }
     }
   </style>
 </head>
 <body>
+<div class="pdf-page-wrap">
 ${bodyEl.innerHTML}
+</div>
 <script>
   // Auto-print al cargar
   window.onload = function(){
@@ -2766,13 +2795,57 @@ function levVcDescargar(){
     }
   });
 
-  // Crear el canvas del plano virtual si no existe
-  if(!document.getElementById("plano-canvas")){
-    var c=document.createElement("canvas");
-    c.id="plano-canvas";c.width=400;c.height=200;
-    c.style.display="none";
-    document.body.appendChild(c);
-  }
+  // Crear o restaurar el canvas del plano
+  (function(){
+    var existing=document.getElementById("plano-canvas");
+    if(!existing){
+      var c=document.createElement("canvas");
+      c.id="plano-canvas";c.width=600;c.height=350;
+      c.style.display="none";
+      document.body.appendChild(c);
+      existing=c;
+    }
+    // Si el proyecto tiene plano guardado como base64, cargarlo en el canvas
+    if(p.planoImg){
+      var img=new Image();
+      img.onload=function(){
+        existing.width=img.width||600;
+        existing.height=img.height||350;
+        var ctx=existing.getContext("2d");
+        ctx.drawImage(img,0,0);
+      };
+      img.src=p.planoImg;
+      return;
+    }
+    // Si tiene secciones dibujadas, redibujarlas
+    var secs=p.secciones||[];
+    if(secs.length>0){
+      var ctx=existing.getContext("2d");
+      var W=existing.width,H=existing.height;
+      // Fondo
+      ctx.fillStyle="#0B1F3A";
+      ctx.fillRect(0,0,W,H);
+      // Grid
+      ctx.strokeStyle="rgba(255,255,255,.05)";ctx.lineWidth=1;
+      var gs=30;
+      for(var x=0;x<=W;x+=gs){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+      for(var y=0;y<=H;y+=gs){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+      // Dibujar secciones
+      secs.forEach(function(s){
+        if(!s.x1&&!s.x2)return;
+        ctx.strokeStyle="#1E6FD9";ctx.lineWidth=2;ctx.fillStyle="rgba(30,111,217,.12)";
+        var x1=Math.min(s.x1,s.x2),y1=Math.min(s.y1,s.y2);
+        var sw=Math.abs(s.x2-s.x1),sh=Math.abs(s.y2-s.y1);
+        ctx.fillRect(x1,y1,sw,sh);
+        ctx.strokeRect(x1,y1,sw,sh);
+        // Etiqueta m²
+        if(s.area){
+          ctx.fillStyle="#fff";ctx.font="bold 11px Inter,sans-serif";ctx.textAlign="center";
+          ctx.fillText(parseFloat(s.area).toFixed(1)+" m²",x1+sw/2,y1+sh/2+4);
+        }
+      });
+    }
+  })();
 
   // Generar el PDF
   setTimeout(function(){
@@ -2887,13 +2960,57 @@ function levVcDescargar(){
     }
   });
 
-  // Crear el canvas del plano virtual si no existe
-  if(!document.getElementById("plano-canvas")){
-    var c=document.createElement("canvas");
-    c.id="plano-canvas";c.width=400;c.height=200;
-    c.style.display="none";
-    document.body.appendChild(c);
-  }
+  // Crear o restaurar el canvas del plano
+  (function(){
+    var existing=document.getElementById("plano-canvas");
+    if(!existing){
+      var c=document.createElement("canvas");
+      c.id="plano-canvas";c.width=600;c.height=350;
+      c.style.display="none";
+      document.body.appendChild(c);
+      existing=c;
+    }
+    // Si el proyecto tiene plano guardado como base64, cargarlo en el canvas
+    if(p.planoImg){
+      var img=new Image();
+      img.onload=function(){
+        existing.width=img.width||600;
+        existing.height=img.height||350;
+        var ctx=existing.getContext("2d");
+        ctx.drawImage(img,0,0);
+      };
+      img.src=p.planoImg;
+      return;
+    }
+    // Si tiene secciones dibujadas, redibujarlas
+    var secs=p.secciones||[];
+    if(secs.length>0){
+      var ctx=existing.getContext("2d");
+      var W=existing.width,H=existing.height;
+      // Fondo
+      ctx.fillStyle="#0B1F3A";
+      ctx.fillRect(0,0,W,H);
+      // Grid
+      ctx.strokeStyle="rgba(255,255,255,.05)";ctx.lineWidth=1;
+      var gs=30;
+      for(var x=0;x<=W;x+=gs){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+      for(var y=0;y<=H;y+=gs){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+      // Dibujar secciones
+      secs.forEach(function(s){
+        if(!s.x1&&!s.x2)return;
+        ctx.strokeStyle="#1E6FD9";ctx.lineWidth=2;ctx.fillStyle="rgba(30,111,217,.12)";
+        var x1=Math.min(s.x1,s.x2),y1=Math.min(s.y1,s.y2);
+        var sw=Math.abs(s.x2-s.x1),sh=Math.abs(s.y2-s.y1);
+        ctx.fillRect(x1,y1,sw,sh);
+        ctx.strokeRect(x1,y1,sw,sh);
+        // Etiqueta m²
+        if(s.area){
+          ctx.fillStyle="#fff";ctx.font="bold 11px Inter,sans-serif";ctx.textAlign="center";
+          ctx.fillText(parseFloat(s.area).toFixed(1)+" m²",x1+sw/2,y1+sh/2+4);
+        }
+      });
+    }
+  })();
 
   // Generar el PDF
   setTimeout(function(){
