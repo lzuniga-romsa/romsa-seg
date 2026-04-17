@@ -1292,6 +1292,19 @@ function _descargarReporteCliente(){
 }
 function save(){const p=getP();if(p)saveProyecto(p);}
 
+async function eliminarLevantamiento(id){
+  if(!confirm("¿Eliminar este levantamiento permanentemente? Esta acción no se puede deshacer.")) return;
+  try{
+    await proyectosRef.doc(id).delete();
+    S.proyectos = S.proyectos.filter(p=>p.id!==id);
+    if(activoId===id){ activoId=null; goScreen("admin"); }
+    renderAdmin();
+    showToast("🗑️ Levantamiento eliminado");
+  }catch(e){
+    showToast("❌ Error al eliminar: "+e.message);
+  }
+}
+
 // ─── NAVIGATION ──────────────────────────────────
 function goScreen(n){
   document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
@@ -1628,20 +1641,27 @@ function prowHTML(p,from){
   const svc_color={Epóxico:"#1E6FD9",Pulido:"#10B981","Reparaciones de Concreto":"#F59E0B","Sello de Juntas y Grietas":"#6366F1","Pintura de Muros":"#EC4899","Uretano Cementicio":"#8B5CF6","Combinación de servicios":"#0B1F3A"};
   const col=svc_color[p.tipo]||"#1E6FD9";
   const reps=(p.reparaciones||[]).length;
-  return `<div class="prow" onclick="abrirProyecto('${p.id}','${from}')">
-    <div class="prow-bar" style="background:${col};"></div>
-    <div class="prow-body">
-      <div class="prow-name">${p.nombre}</div>
-      <div class="prow-meta"><strong>${p.cliente||"—"}</strong> · ${p.ubicacion||"—"}</div>
-      <div class="prow-sub">${p.autor?.nombre||"—"} · ${p.fecha} ${p.hora||""} ${p.gps?"· GPS ✓":""}</div>
-      <div style="display:flex;gap:4px;margin-top:5px;flex-wrap:wrap;">
-        <span class="badge b-blue">${p.tipo}</span>
-        ${p.area?`<span class="badge b-navy">${p.area} m²</span>`:""}
-        ${reps?`<span class="badge b-amber">${reps} rep.</span>`:""}
-        <span class="badge b-green">${p.estatus}</span>
+  const btnEliminar = from==='admin'
+    ? `<button onclick="event.stopPropagation();eliminarLevantamiento('${p.id}')"
+        style="margin-left:auto;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:#EF4444;font-size:11px;font-weight:700;padding:5px 10px;border-radius:7px;cursor:pointer;font-family:var(--font);flex-shrink:0;">🗑️</button>`
+    : '';
+  return `<div style="display:flex;align-items:center;gap:0;">
+    <div class="prow" style="flex:1;" onclick="abrirProyecto('${p.id}','${from}')">
+      <div class="prow-bar" style="background:${col};"></div>
+      <div class="prow-body">
+        <div class="prow-name">${p.nombre}</div>
+        <div class="prow-meta"><strong>${p.cliente||"—"}</strong> · ${p.ubicacion||"—"}</div>
+        <div class="prow-sub">${p.autor?.nombre||"—"} · ${p.fecha} ${p.hora||""} ${p.gps?"· GPS ✓":""}</div>
+        <div style="display:flex;gap:4px;margin-top:5px;flex-wrap:wrap;">
+          <span class="badge b-blue">${p.tipo}</span>
+          ${p.area?`<span class="badge b-navy">${p.area} m²</span>`:""}
+          ${reps?`<span class="badge b-amber">${reps} rep.</span>`:""}
+          <span class="badge b-green">${p.estatus}</span>
+        </div>
       </div>
+      <div class="prow-arr" style="color:var(--g3);font-size:16px;">›</div>
     </div>
-    <div class="prow-arr" style="color:var(--g3);font-size:16px;">›</div>
+    ${btnEliminar}
   </div>`;
 }
 
