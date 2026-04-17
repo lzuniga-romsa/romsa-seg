@@ -796,9 +796,12 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
 .mod-card:active{transform:scale(.97);border-color:var(--blue);}
 .mod-card.blue{border-color:rgba(30,111,217,.4);background:rgba(30,111,217,.12);}
 .mod-card.green{border-color:rgba(16,185,129,.3);background:rgba(16,185,129,.08);}
+.mod-card.purple{border-color:rgba(124,58,237,.4);background:rgba(124,58,237,.1);}
+.mod-card.purple:active{border-color:rgba(124,58,237,.7);}
 .mod-icon{width:48px;height:48px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;}
 .mod-icon.blue{background:rgba(30,111,217,.25);}
 .mod-icon.green{background:rgba(16,185,129,.2);}
+.mod-icon.purple{background:rgba(124,58,237,.25);}
 .mod-info{flex:1;}
 .mod-name{font-size:17px;font-weight:700;color:#fff;margin-bottom:3px;}
 .mod-desc{font-size:11px;color:rgba(255,255,255,.45);line-height:1.4;}
@@ -1017,6 +1020,15 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
     <div class="mod-info">
       <div class="mod-name">Levantamientos</div>
       <div class="mod-desc">Medición de áreas, reparaciones y reporte técnico</div>
+    </div>
+    <div class="mod-arrow">›</div>
+  </div>
+
+  <div class="mod-card purple" onclick="selectModule('cotizaciones')">
+    <div class="mod-icon purple">📋</div>
+    <div class="mod-info">
+      <div class="mod-name">Cotizaciones</div>
+      <div class="mod-desc">Genera, personaliza y envía cotizaciones en PDF</div>
     </div>
     <div class="mod-arrow">›</div>
   </div>
@@ -4413,6 +4425,8 @@ function selectModule(mod){
     goScreen('dashboard');
   } else if(mod === 'levantamientos'){
     goScreen('levantamientos');
+  } else if(mod === 'cotizaciones'){
+    goScreen('cotizaciones');
   }
 }
 
@@ -4748,134 +4762,160 @@ async function guardarYVerCot(){
 
 // ── Generar PDF cotización (fondo blanco profesional) ─────────────
 function generarPdfCot(cot){
-  if(!cot)return;
-  // Fotos de referencia (headers profesionales)
-  var fotoUrls=[
-    "https://images.unsplash.com/photo-1581094271901-8022df4466f9?w=800&q=80&auto=format&fit=crop",
-    "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&q=80&auto=format&fit=crop",
-    "https://images.unsplash.com/photo-1553361371-9b22f78e8b1d?w=800&q=80&auto=format&fit=crop"
+  if(!cot) return;
+  var sub   = parseFloat(cot.subtotal  || 0);
+  var iva   = parseFloat(cot.iva       || 0);
+  var total = parseFloat(cot.granTotal || 0);
+  var logoUrl = window._romsaLogoAzul || "";
+
+  // ── fotos de referencia (header) ────────────────────────────────
+  var fotos = [
+    "https://images.unsplash.com/photo-1581094271901-8022df4466f9?w=900&q=80&auto=format&fit=crop",
+    "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=900&q=80&auto=format&fit=crop",
+    "https://images.unsplash.com/photo-1553361371-9b22f78e8b1d?w=900&q=80&auto=format&fit=crop"
   ];
 
-  var sub=parseFloat(cot.subtotal||0);
-  var iva=parseFloat(cot.iva||0);
-  var total=parseFloat(cot.granTotal||0);
-  var logoUrl=window._romsaLogoAzul||"";
-
-  var partidasHtml=(cot.partidas||[]).map(function(p,i){
-    var subtP=(p.qty||0)*(p.precio||0);
+  // ── tabla de partidas ────────────────────────────────────────────
+  var filas = (cot.partidas || []).map(function(p, i){
+    var st = (p.qty||0)*(p.precio||0);
     return '<tr>'
-      +'<td style="padding:10px 12px;border-bottom:1px solid #E0E8F0;vertical-align:top;">'
-        +'<div style="font-size:11px;font-weight:700;color:#0B1F3A;margin-bottom:4px;">'+(i+1)+'. '+p.servicio+'</div>'
-        +'<div style="font-size:10px;color:#4A6A8A;line-height:1.5;margin-bottom:6px;">'+p.desc+'</div>'
-        +(p.proc?'<div style="font-size:9px;color:#7090B8;white-space:pre-line;line-height:1.6;">'+p.proc+'</div>':"")
-      +'</td>'
-      +'<td style="padding:10px 8px;border-bottom:1px solid #E0E8F0;text-align:center;vertical-align:top;white-space:nowrap;font-size:11px;color:#0B1F3A;">'+(p.qty||0)+' '+p.unit+'</td>'
-      +'<td style="padding:10px 8px;border-bottom:1px solid #E0E8F0;text-align:right;vertical-align:top;white-space:nowrap;font-size:11px;color:#0B1F3A;">$'+fmtPeso(p.precio)+'</td>'
-      +'<td style="padding:10px 8px;border-bottom:1px solid #E0E8F0;text-align:right;vertical-align:top;white-space:nowrap;font-size:11px;font-weight:700;color:#0B1F3A;">$'+fmtPeso(subtP)+'</td>'
-    +'</tr>';
-  }).join("");
+      + '<td style="padding:9px 12px;border-bottom:1px solid #E8EEF5;vertical-align:top;">'
+          + '<div style="font-size:11px;font-weight:700;color:#0B1F3A;margin-bottom:3px;">' + (i+1) + '. ' + (p.servicio||'') + '</div>'
+          + (p.desc ? '<div style="font-size:10px;color:#4A6A8A;line-height:1.55;">' + p.desc + '</div>' : '')
+        + '</td>'
+      + '<td style="padding:9px 8px;border-bottom:1px solid #E8EEF5;text-align:center;white-space:nowrap;font-size:11px;color:#0B1F3A;">'
+          + (p.qty||0).toLocaleString('es-MX') + ' ' + (p.unit||'')
+        + '</td>'
+      + '<td style="padding:9px 8px;border-bottom:1px solid #E8EEF5;text-align:right;white-space:nowrap;font-size:11px;color:#0B1F3A;">$' + fmtPeso(p.precio) + '</td>'
+      + '<td style="padding:9px 8px;border-bottom:1px solid #E8EEF5;text-align:right;white-space:nowrap;font-size:12px;font-weight:800;color:#0B1F3A;">$' + fmtPeso(st) + '</td>'
+    + '</tr>';
+  }).join('');
 
-  var winTitle="ROMSA - Cotizacion - "+cot.folio;
-  var win=window.open("","_blank");
-  if(!win){showToast("⚠️ Permite ventanas emergentes");return;}
+  // ── condiciones ───────────────────────────────────────────────────
+  var conds = [
+    {n:'1. Precio del proyecto',       v: cot.condPrecioCond   },
+    {n:'2. Forma de pago',             v: cot.condPago         },
+    {n:'3. Tiempo de ejecución',       v: cot.condTiempo       },
+    {n:'4. Alcances y exclusiones',    v: cot.condAlcances     },
+    {n:'5. Limitación de responsabilidad', v: cot.condResponsabilidad },
+    {n:'6. Garantía',                  v: cot.condGarantia     },
+    {n:'7. Entrega y recepción',       v: cot.condEntrega      }
+  ].filter(function(c){ return c.v && c.v.trim(); });
 
-  win.document.write('<!DOCTYPE html><html lang="es"><head>'
-    +'<meta charset="UTF-8">'
-    +'<title>'+winTitle+'</title>'
-    +'<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">'
-    +'<style>'
-    +'*{margin:0;padding:0;box-sizing:border-box;}'
-    +'html,body{background:#fff;color:#0B1F3A;font-family:-apple-system,"SF Pro Display",Inter,sans-serif;-webkit-font-smoothing:antialiased;}'
-    +'@media print{'
-    +'  html,body{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}'
-    +'  @page{size:A4 portrait;margin:15mm 12mm;}'
-    +'  .no-print{display:none!important;}'
-    +'  tr{page-break-inside:avoid;}'
-    +'}'
-    +'</style>'
-    +'</head><body>'
+  var condsHtml = conds.map(function(c){
+    return '<div style="margin-bottom:13px;">'
+      + '<div style="font-size:10px;font-weight:700;color:#0B1F3A;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">' + c.n + '</div>'
+      + '<div style="font-size:10.5px;color:#4A6A8A;line-height:1.65;white-space:pre-wrap;">' + c.v + '</div>'
+    + '</div>';
+  }).join('');
 
-    // HEADER FOTOS
-    +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;height:160px;margin-bottom:0;overflow:hidden;">'
-    +fotoUrls.map(function(u){
-      return '<div style="background:url('+u+') center/cover no-repeat;"></div>';
-    }).join("")
-    +'</div>'
+  var notaHtml = cot.nota ? '<div style="background:#F0F4FA;border-left:3px solid #1E6FD9;padding:10px 14px;border-radius:0 8px 8px 0;font-size:10.5px;color:#4A6A8A;line-height:1.6;margin-top:12px;">' + cot.nota + '</div>' : '';
 
-    // FRANJA AZUL con logo
-    +'<div style="background:#0B1F3A;padding:16px 24px;display:flex;align-items:center;justify-content:space-between;">'
-    +(logoUrl?'<img src="'+logoUrl+'" style="height:28px;width:auto;filter:brightness(0) invert(1);" alt="ROMSA">'
-             :'<div style="font-size:22px;font-weight:900;color:#fff;letter-spacing:-1px;">ROMSA</div>')
-    +'<div style="text-align:right;">'
-    +'<div style="font-size:9px;color:rgba(255,255,255,.5);letter-spacing:2px;text-transform:uppercase;">COTIZACIÓN</div>'
-    +'<div style="font-size:13px;font-weight:700;color:#60A5FA;">'+cot.folio+'</div>'
-    +'</div></div>'
+  // ── fecha formateada ──────────────────────────────────────────────
+  var fechaFmt = '';
+  try { fechaFmt = new Date(cot.fecha + 'T12:00:00').toLocaleDateString('es-MX', {year:'numeric',month:'long',day:'numeric'}); }
+  catch(e){ fechaFmt = cot.fecha||''; }
 
-    // BODY
-    +'<div style="padding:24px;">'
+  var winTitle = 'ROMSA - Cotizacion - ' + cot.folio;
+  var win = window.open('', '_blank');
+  if(!win){ showToast('⚠️ Permite ventanas emergentes para generar el PDF'); return; }
 
-    // Encabezado carta
-    +'<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;">'
-    +'<div>'
-    +(cot.ciudad?'<div style="font-size:12px;color:#4A6A8A;margin-bottom:8px;">'+(cot.ciudad)+', '+new Date(cot.fecha+'T12:00:00').toLocaleDateString("es-MX",{year:"numeric",month:"long",day:"numeric"})+'</div>':"")
-    +'<div style="font-size:11px;font-weight:700;color:#0B1F3A;margin-bottom:2px;">Atención: '+cot.atencion+'</div>'
-    +(cot.empresa?'<div style="font-size:11px;color:#4A6A8A;">'+cot.empresa+'</div>':"")
-    +(cot.rfc?'<div style="font-size:10px;color:#7090B8;">RFC: '+cot.rfc+'</div>':"")
-    +(cot.email?'<div style="font-size:10px;color:#7090B8;">'+cot.email+'</div>':"")
-    +(cot.tel?'<div style="font-size:10px;color:#7090B8;">'+cot.tel+'</div>':"")
-    +'</div>'
-    +'</div>'
+  win.document.write(
+    '<!DOCTYPE html><html lang="es"><head>'
+    + '<meta charset="UTF-8">'
+    + '<title>' + winTitle + '</title>'
+    + '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">'
+    + '<style>'
+    + '*, *::before, *::after{margin:0;padding:0;box-sizing:border-box;}'
+    + 'html,body{background:#fff;color:#0B1F3A;font-family:-apple-system,"SF Pro Display",Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased;font-size:13px;}'
+    + '.no-print{display:block;}'
+    + '@media print{'
+    + '  html,body{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important;}'
+    + '  @page{size:A4 portrait;margin:0;}'
+    + '  .no-print{display:none!important;}'
+    + '  .page-body{padding:20mm 18mm!important;}'
+    + '  tr,li,div{page-break-inside:avoid;}'
+    + '}'
+    + '</style>'
+    + '</head><body>'
 
-    +'<div style="font-size:12px;color:#4A6A8A;line-height:1.7;margin-bottom:20px;">Por este medio, nos es grato cotizar los siguientes servicios para las instalaciones de <strong>'+cot.empresa+'</strong>:</div>'
+    // ── BOTÓN IMPRIMIR (visible solo en pantalla) ──────────────────
+    + '<div class="no-print" style="background:#0B1F3A;padding:12px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:99;">'
+    + '<div style="font-size:12px;color:rgba(255,255,255,.6);">' + winTitle + '</div>'
+    + '<button onclick="window.print()" style="background:#7C3AED;border:none;color:#fff;font-size:12px;font-weight:700;padding:8px 20px;border-radius:8px;cursor:pointer;font-family:inherit;">⬇ Descargar / Imprimir PDF</button>'
+    + '</div>'
 
-    // TABLA DE PARTIDAS
-    +'<table style="width:100%;border-collapse:collapse;margin-bottom:20px;font-family:-apple-system,SF Pro Display,Inter,sans-serif;">'
-    +'<thead>'
-    +'<tr style="background:#0B1F3A;">'
-    +'<th style="padding:10px 12px;text-align:left;color:#fff;font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;">Descripción y Procedimiento</th>'
-    +'<th style="padding:10px 8px;text-align:center;color:#fff;font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;white-space:nowrap;">Cant.</th>'
-    +'<th style="padding:10px 8px;text-align:right;color:#fff;font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;white-space:nowrap;">P.Unit.</th>'
-    +'<th style="padding:10px 8px;text-align:right;color:#fff;font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;white-space:nowrap;">Total</th>'
-    +'</tr>'
-    +'</thead>'
-    +'<tbody>'+partidasHtml+'</tbody>'
-    +'</table>'
+    // ── FOTOS HEADER ───────────────────────────────────────────────
+    + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;height:150px;overflow:hidden;">'
+    + fotos.map(function(u){ return '<div style="background:url(' + u + ') center/cover no-repeat;"></div>'; }).join('')
+    + '</div>'
 
-    // TOTALES
-    +'<div style="display:flex;justify-content:flex-end;margin-bottom:24px;">'
-    +'<div style="width:240px;">'
-    +'<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #E0E8F0;font-size:12px;"><span style="color:#4A6A8A;">Subtotal</span><span style="font-weight:600;">$'+fmtPeso(sub)+'</span></div>'
-    +'<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #E0E8F0;font-size:12px;"><span style="color:#4A6A8A;">IVA 8%</span><span style="font-weight:600;">$'+fmtPeso(iva)+'</span></div>'
-    +'<div style="display:flex;justify-content:space-between;padding:8px 0;font-size:15px;font-weight:800;color:#0B1F3A;"><span>Gran Total</span><span>$'+fmtPeso(total)+'</span></div>'
-    +'</div></div>'
+    // ── FRANJA OSCURA LOGO ─────────────────────────────────────────
+    + '<div style="background:#0B1F3A;padding:14px 28px;display:flex;align-items:center;justify-content:space-between;">'
+    + (logoUrl ? '<img src="' + logoUrl + '" style="height:26px;width:auto;filter:brightness(0) invert(1);" alt="ROMSA">' : '<span style="font-size:20px;font-weight:900;color:#fff;">ROMSA</span>')
+    + '<div style="text-align:right;"><div style="font-size:8px;color:rgba(255,255,255,.45);letter-spacing:2.5px;text-transform:uppercase;">Cotización</div><div style="font-size:14px;font-weight:700;color:#93C5FD;">' + cot.folio + '</div></div>'
+    + '</div>'
 
-    // CONDICIONES
-    +'<div style="border-top:2px solid #0B1F3A;padding-top:18px;margin-bottom:20px;">'
-    +'<div style="font-size:13px;font-weight:800;color:#0B1F3A;letter-spacing:-.2px;margin-bottom:16px;">CONDICIONES GENERALES DE VENTA</div>'
+    // ── CUERPO ─────────────────────────────────────────────────────
+    + '<div class="page-body" style="padding:22px 28px 28px;">'
 
-    +(cot.condPago?'<div style="margin-bottom:12px;"><div style="font-size:10px;font-weight:700;color:#0B1F3A;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Forma de Pago</div><div style="font-size:11px;color:#4A6A8A;line-height:1.6;">'+cot.condPago+'</div></div>':"")
-    +(cot.condTiempo?'<div style="margin-bottom:12px;"><div style="font-size:10px;font-weight:700;color:#0B1F3A;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Tiempo de Ejecución</div><div style="font-size:11px;color:#4A6A8A;line-height:1.6;">'+cot.condTiempo+'</div></div>':"")
-    +(cot.condAlcances?'<div style="margin-bottom:12px;"><div style="font-size:10px;font-weight:700;color:#0B1F3A;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Alcances y Exclusiones</div><div style="font-size:11px;color:#4A6A8A;line-height:1.6;">'+cot.condAlcances+'</div></div>':"")
-    +(cot.nota?'<div style="background:#F0F3F8;border-left:3px solid #1E6FD9;padding:10px 14px;border-radius:0 8px 8px 0;font-size:11px;color:#4A6A8A;line-height:1.6;">'+cot.nota+'</div>':"")
-    +'</div>'
+    // Destinatario
+    + '<div style="margin-bottom:22px;">'
+    + (cot.ciudad ? '<div style="font-size:11px;color:#6B82A0;margin-bottom:10px;">' + (cot.ciudad) + ', ' + fechaFmt + '</div>' : '')
+    + '<div style="font-size:12px;font-weight:700;color:#0B1F3A;">Atención: ' + cot.atencion + '</div>'
+    + (cot.empresa ? '<div style="font-size:11px;color:#4A6A8A;margin-top:2px;">' + cot.empresa + '</div>' : '')
+    + (cot.rfc ? '<div style="font-size:10px;color:#8099B8;margin-top:1px;">RFC: ' + cot.rfc + '</div>' : '')
+    + (cot.email ? '<div style="font-size:10px;color:#8099B8;margin-top:1px;">' + cot.email + '</div>' : '')
+    + (cot.tel ? '<div style="font-size:10px;color:#8099B8;margin-top:1px;">' + cot.tel + '</div>' : '')
+    + '</div>'
 
-    // FIRMA
-    +'<div style="display:flex;justify-content:space-between;align-items:flex-end;margin-top:20px;padding-top:16px;border-top:1px solid #E0E8F0;">'
-    +(logoUrl?'<img src="'+logoUrl+'" style="height:20px;width:auto;opacity:.5;" alt="ROMSA">'
-             :'<div style="font-size:12px;font-weight:800;color:#C0C8D0;">ROMSA</div>')
-    +'<div style="text-align:center;">'
-    +'<div style="border-top:1px solid #0B1F3A;padding-top:6px;width:180px;text-align:center;">'
-    +'<div style="font-size:10px;font-weight:700;color:#0B1F3A;">'+(cot.creadoPor||"ROMSA Industrial")+'</div>'
-    +'<div style="font-size:9px;color:#7090B8;">ROMSA Industrial · Servicios y Suministros</div>'
-    +'</div></div>'
-    +'</div>'
+    // Intro
+    + '<div style="font-size:11.5px;color:#4A6A8A;line-height:1.7;margin-bottom:18px;">Por este medio, nos es grato cotizar los siguientes servicios para las instalaciones de <strong style="color:#0B1F3A;">' + cot.empresa + '</strong>:</div>'
 
-    +'</div>'// /padding
+    // Tabla partidas
+    + '<table style="width:100%;border-collapse:collapse;margin-bottom:20px;border:1px solid #E0E8F0;border-radius:8px;overflow:hidden;">'
+    + '<thead><tr style="background:#0B1F3A;">'
+    + '<th style="padding:10px 12px;text-align:left;color:#fff;font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;">Descripción del servicio</th>'
+    + '<th style="padding:10px 8px;text-align:center;color:#fff;font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;white-space:nowrap;">Cantidad</th>'
+    + '<th style="padding:10px 8px;text-align:right;color:#fff;font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;white-space:nowrap;">P. Unit.</th>'
+    + '<th style="padding:10px 8px;text-align:right;color:#fff;font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;white-space:nowrap;">Total</th>'
+    + '</tr></thead>'
+    + '<tbody>' + filas + '</tbody>'
+    + '</table>'
 
-    +'<script>window.onload=function(){setTimeout(function(){window.print();},800);};<\/script>'
-    +'</body></html>');
+    // Totales (alineados a la derecha)
+    + '<div style="display:flex;justify-content:flex-end;margin-bottom:24px;">'
+    + '<div style="width:260px;border:1px solid #E0E8F0;border-radius:8px;overflow:hidden;">'
+    + '<div style="display:flex;justify-content:space-between;padding:8px 14px;border-bottom:1px solid #E0E8F0;font-size:11.5px;"><span style="color:#6B82A0;">Subtotal</span><span style="font-weight:600;">$' + fmtPeso(sub) + '</span></div>'
+    + '<div style="display:flex;justify-content:space-between;padding:8px 14px;border-bottom:1px solid #E0E8F0;font-size:11.5px;"><span style="color:#6B82A0;">IVA 8%</span><span style="font-weight:600;">$' + fmtPeso(iva) + '</span></div>'
+    + '<div style="display:flex;justify-content:space-between;padding:10px 14px;background:#0B1F3A;font-size:14px;font-weight:900;color:#fff;"><span>Gran Total</span><span>$' + fmtPeso(total) + '</span></div>'
+    + '</div></div>'
+
+    // Condiciones
+    + '<div style="border-top:2px solid #0B1F3A;padding-top:18px;margin-bottom:20px;">'
+    + '<div style="font-size:13px;font-weight:800;color:#0B1F3A;letter-spacing:-.2px;margin-bottom:16px;">CONDICIONES GENERALES DE VENTA</div>'
+    + condsHtml
+    + notaHtml
+    + '</div>'
+
+    // Firma
+    + '<div style="display:flex;justify-content:space-between;align-items:flex-end;padding-top:16px;border-top:1px solid #E0E8F0;">'
+    + (logoUrl ? '<img src="' + logoUrl + '" style="height:18px;width:auto;opacity:.4;" alt="ROMSA">' : '<span style="font-size:11px;font-weight:800;color:#C0C8D0;">ROMSA</span>')
+    + '<div style="text-align:center;">'
+      + '<div style="border-top:1px solid #0B1F3A;padding-top:6px;width:200px;">'
+        + '<div style="font-size:11px;font-weight:700;color:#0B1F3A;">' + (cot.creadoPor || 'ROMSA Industrial') + '</div>'
+        + '<div style="font-size:9px;color:#8099B8;margin-top:2px;">ROMSA Industrial · Servicios y Suministros Industriales</div>'
+      + '</div>'
+    + '</div>'
+    + '</div>'
+
+    + '</div>'// /page-body
+
+    + '</body></html>'
+  );
   win.document.close();
 }
+
 
 // ── Exportar todas las cotizaciones a Excel ───────────────────────
 function exportarCotExcel(){
