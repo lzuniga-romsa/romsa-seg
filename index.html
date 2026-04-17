@@ -1192,8 +1192,7 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
       <!-- Barra de escape siempre visible sobre el iframe -->
       <div id="lev-escape-bar" style="padding-top:calc(var(--safe-top, env(safe-area-inset-top, 0px)) + 8px);">
         <div style="display:flex;align-items:center;gap:10px;">
-          <button onclick="volverSelector()" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.8);font-size:11px;font-weight:700;padding:6px 12px;border-radius:8px;cursor:pointer;font-family:var(--font);">⌂ Inicio</button>
-          <button onclick="goScreen('dashboard')" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.6);font-size:11px;font-weight:600;padding:6px 12px;border-radius:8px;cursor:pointer;font-family:var(--font);">← Inicio</button>
+          <button onclick="volverSelector()" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.8);font-size:11px;font-weight:700;padding:6px 12px;border-radius:8px;cursor:pointer;font-family:var(--font);">⌂ Menú principal</button>
         </div>
         <button onclick="doLogout()" style="background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.2);color:#FCA5A5;font-size:11px;font-weight:600;padding:6px 12px;border-radius:8px;cursor:pointer;font-family:var(--font);">Salir</button>
       </div>
@@ -5025,8 +5024,8 @@ function generarPdfCotEnVentana(cot, winRef){
       +'<div style="padding:32px 48px;flex:1;display:flex;flex-direction:column;">'
 
         // ── RESUMEN EJECUTIVO ──────────────────────────────────
-        +'<div style="background:linear-gradient(135deg,#F0F4FF,#F7F0FF);border:1px solid #E2E8F2;border-radius:12px;padding:20px 24px;margin-bottom:28px;">'
-          +'<div style="font-size:8.5px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:#7C3AED;margin-bottom:14px;">Resumen del proyecto</div>'
+        +'<div style="background:linear-gradient(135deg,#EEF2F8,#F0F4FA);border:1px solid #D4DCE8;border-radius:12px;padding:20px 24px;margin-bottom:28px;">'
+          +'<div style="font-size:8.5px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:#0B1F3A;margin-bottom:14px;">Resumen del proyecto</div>'
           +'<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;">'
             // Conceptos
             +'<div style="text-align:center;">'
@@ -5049,7 +5048,7 @@ function generarPdfCotEnVentana(cot, winRef){
               :'<div style="border-left:1px solid #E2E8F2;"></div>')
             // Gran total destacado
             +'<div style="text-align:center;border-left:1px solid #E2E8F2;padding-left:16px;">'
-              +'<div style="font-size:22px;font-weight:900;color:#7C3AED;letter-spacing:-1px;">$'+fmtPeso(total)+'</div>'
+              +'<div style="font-size:22px;font-weight:900;color:#0B3060;letter-spacing:-1px;">$'+fmtPeso(total)+'</div>'
               +'<div style="font-size:9px;color:#8A9AB8;margin-top:3px;text-transform:uppercase;letter-spacing:.8px;">Gran total MXN</div>'
             +'</div>'
           +'</div>'
@@ -5110,7 +5109,6 @@ function generarPdfCotEnVentana(cot, winRef){
       +'<div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:16px;border-bottom:2px solid #0B1F3A;margin-bottom:32px;flex-shrink:0;">'
         +'<div style="font-size:14px;font-weight:800;color:#0B1F3A;letter-spacing:-.2px;">CONDICIONES GENERALES DE VENTA</div>'
         +'<div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;">'
-          +(logo?'<img src="'+logo+'" style="height:18px;width:auto;opacity:.5;" alt="ROMSA">':'')
           +'<div style="font-size:9px;color:#B0BDD0;">'+cot.folio+' · Pág. 2 de 2</div>'
         +'</div>'
       +'</div>'

@@ -1091,6 +1091,16 @@ function subscribeProyectos(){
   },err=>{console.error(err);showToast("⚠️ Error de conexión");});
 }
 
+function volverAObras(){
+  try{
+    if(window.parent && window.parent !== window){
+      window.parent.postMessage({action:'closeLevantemientos'},'*');
+    } else {
+      window.location.href='./';
+    }
+  }catch(e){ window.location.href='./'; }
+}
+
 function updateKpis(){
   const ps=S.proyectos;
   const m2=ps.reduce((s,p)=>s+(p.area||0),0);
@@ -1114,7 +1124,7 @@ let pendingRepFotos = [];
 let pendingBaPairId = null, pendingBaSlot = null;
 let locData = null;
 
-function load(){loadConfig();}
+function load(){loadConfig();subscribeProyectos();renderHome();}
 function save(){const p=getP();if(p)saveProyecto(p);}
 
 // ─── NAVIGATION ──────────────────────────────────
