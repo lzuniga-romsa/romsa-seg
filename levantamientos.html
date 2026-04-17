@@ -1129,67 +1129,104 @@ function updateKpis(){
 
 
 
+let _modoCliente = false;
+
 function load(){
   loadConfig();
-  // Detectar si es vista de cliente (tiene ?levantamiento=ID en la URL)
+  // Detectar modo cliente — DESPUÉS de que Firebase esté listo
   const params = new URLSearchParams(window.location.search);
   const levId = params.get("levantamiento");
   if(levId){
-    // Modo vista cliente — cargar ese proyecto y mostrar el reporte
     _modoCliente = true;
-    document.getElementById("topbar") && (document.getElementById("topbar").style.display="none");
-    document.getElementById("subnav") && (document.getElementById("subnav").style.display="none");
-    document.getElementById("navbar") && (document.getElementById("navbar").style.display="none");
-    document.getElementById("fab") && (document.getElementById("fab").style.display="none");
-    document.getElementById("main").style.background="#0A1628";
-    db.collection("proyectos").doc(levId).get().then(snap=>{
-      if(!snap.exists){
-        document.getElementById("main").innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100vh;color:#fff;font-family:Inter,sans-serif;text-align:center;padding:24px;"><div><div style="font-size:48px;margin-bottom:16px;">📄</div><div style="font-size:20px;font-weight:700;margin-bottom:8px;">Reporte no disponible</div><div style="font-size:14px;opacity:.6;">El link puede haber expirado o no es válido.</div></div></div>';
-        return;
-      }
-      const p = snap.data();
-      // Verificar que el link no está revocado
-      if(p.linkRevocado){
-        document.getElementById("main").innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100vh;color:#fff;font-family:Inter,sans-serif;text-align:center;padding:24px;"><div><div style="font-size:48px;margin-bottom:16px;">🔒</div><div style="font-size:20px;font-weight:700;margin-bottom:8px;">Link desactivado</div><div style="font-size:14px;opacity:.6;">El técnico ha desactivado este reporte.</div></div></div>';
-        return;
-      }
-      // Cargar proyecto y mostrar reporte
-      S.proyectos = [p];
-      activoId = p.id;
-      _mostrarReporteCliente(p);
-    }).catch(err=>{
-      document.getElementById("main").innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100vh;color:#fff;font-family:Inter,sans-serif;text-align:center;"><div style="color:#fff;opacity:.5;">Error al cargar el reporte.</div></div>';
+    // Ocultar toda la UI de la app
+    ["topbar","subnav","navbar","fab"].forEach(id=>{
+      const el=document.getElementById(id);
+      if(el) el.style.display="none";
     });
+    const main = document.getElementById("main");
+    main.style.background="#0A1628";
+    main.style.minHeight="100vh";
+    main.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:80vh;"><div style="text-align:center;color:#fff;font-family:Inter,sans-serif;"><div style="font-size:32px;margin-bottom:12px;">⏳</div><div style="font-size:15px;opacity:.6;">Cargando diagnóstico...</div></div></div>';
+    // db ya está listo porque Firebase se inicializó antes en el script
+    db.collection("proyectos").doc(levId).get()
+      .then(snap=>{
+        if(!snap.exists){
+          main.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#0A1628;"><div style="text-align:center;color:#fff;font-family:Inter,sans-serif;padding:24px;"><div style="font-size:48px;margin-bottom:16px;">📄</div><div style="font-size:18px;font-weight:700;">Reporte no disponible</div><div style="font-size:13px;opacity:.5;margin-top:8px;">El link puede haber expirado.</div></div></div>';
+          return;
+        }
+        const p=snap.data();
+        if(p.linkRevocado){
+          main.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#0A1628;"><div style="text-align:center;color:#fff;font-family:Inter,sans-serif;padding:24px;"><div style="font-size:48px;margin-bottom:16px;">🔒</div><div style="font-size:18px;font-weight:700;">Link desactivado</div></div></div>';
+          return;
+        }
+        S.proyectos=[p];
+        activoId=p.id;
+        _mostrarReporteCliente(p);
+      })
+      .catch(err=>{
+        console.error("Error cargando reporte cliente:",err);
+        main.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#0A1628;"><div style="text-align:center;color:#fff;font-family:Inter,sans-serif;padding:24px;"><div style="font-size:48px;margin-bottom:16px;">⚠️</div><div style="font-size:18px;font-weight:700;">Error de conexión</div><div style="font-size:13px;opacity:.5;margin-top:8px;">Verifica tu conexión a internet.</div></div></div>';
+      });
   } else {
     subscribeProyectos();
   }
 }
 
-let _modoCliente = false;
-
 function _mostrarReporteCliente(p){
-  // Inyectar el reporte directamente en el main con botón de descarga
   activoId = p.id;
-  // Primero generar el HTML del reporte usando showPdf
-  showPdf();
+  const folio = "AUD-"+(p.id?p.id.slice(-6):"000000").toUpperCase();
+  const mainEl = document.getElementById("main");
+  mainEl.style.background = "#0A1628";
+  mainEl.style.overflowY = "auto";
+
+  // Ejecutar showPdf() para que llene #pdf-body, luego capturar el HTML
+  // Parchamos temporalmente para evitar que abra el overlay
+  const previewEl = document.getElementById("pdf-preview");
+  const origDisplay = previewEl ? previewEl.style.display : "";
+  
+  try { showPdf(); } catch(e){ console.error("showPdf:", e); }
+  
+  // Ocultar el overlay inmediatamente después
+  if(previewEl) previewEl.style.display = "none";
+  
   const pdfBody = document.getElementById("pdf-body");
-  const html = pdfBody ? pdfBody.innerHTML : "";
-  if(!html.trim()){ 
-    document.getElementById("main").innerHTML='<div style="color:#fff;padding:32px;text-align:center;opacity:.5;">Generando reporte...</div>';
-    setTimeout(()=>_mostrarReporteCliente(p), 800);
+  const reporteHtml = pdfBody ? pdfBody.innerHTML : "";
+  
+  if(!reporteHtml.trim()){
+    mainEl.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#0A1628;"><div style="text-align:center;color:#fff;font-family:Inter,sans-serif;"><div style="font-size:32px;margin-bottom:12px;">⏳</div><div style="font-size:14px;opacity:.5;">Preparando reporte...</div></div></div>';
+    setTimeout(()=>_mostrarReporteCliente(p), 700);
     return;
   }
-  const folio = "LEV-"+(p.id?p.id.slice(-6):"000000").toUpperCase();
-  document.getElementById("main").innerHTML = 
-    '<div style="background:#0A1628;min-height:100vh;padding:0;">'
-    +'<div style="background:#0B1F3A;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:99;">'
-      +'<div style="font-size:13px;font-weight:700;color:#fff;">Diagnóstico Técnico · '+folio+'</div>'
-      +'<button onclick="imprimirPDF()" style="background:#1E6FD9;border:none;color:#fff;font-size:12px;font-weight:700;padding:8px 16px;border-radius:8px;cursor:pointer;font-family:inherit;">⬇ Descargar PDF</button>'
+  
+  mainEl.innerHTML =
+    '<div style="background:#0A1628;min-height:100vh;">'
+    +'<div style="background:#0B1F3A;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:99;border-bottom:1px solid rgba(255,255,255,.06);">'
+      +'<div>'
+        +'<div style="font-size:9px;font-weight:700;color:rgba(255,255,255,.4);letter-spacing:2px;text-transform:uppercase;margin-bottom:2px;">ROMSA Industrial</div>'
+        +'<div style="font-size:13px;font-weight:700;color:#fff;">Auditoría Técnica · '+folio+'</div>'
+      +'</div>'
+      +'<button id="_btn_desc" onclick="_descargarReporteCliente()" style="background:#1E6FD9;border:none;color:#fff;font-size:11px;font-weight:700;padding:8px 16px;border-radius:8px;cursor:pointer;font-family:inherit;">⬇ Descargar PDF</button>'
     +'</div>'
-    +'<div style="padding:16px;max-width:680px;margin:0 auto;">'
-      +html
+    +'<div style="max-width:720px;margin:0 auto;padding:0 0 40px;">'
+      +reporteHtml
     +'</div>'
     +'</div>';
+}
+
+function _descargarReporteCliente(){
+  const btn = document.getElementById("_btn_desc");
+  if(btn){ btn.textContent="⏳ Generando..."; btn.disabled=true; }
+  // Asegurar que pdf-body tiene contenido
+  const pdfBody = document.getElementById("pdf-body");
+  if(!pdfBody || !pdfBody.innerHTML.trim()){
+    try{ showPdf(); }catch(e){ console.error(e); }
+    const previewEl = document.getElementById("pdf-preview");
+    if(previewEl) previewEl.style.display="none";
+  }
+  setTimeout(function(){
+    imprimirPDF();
+    if(btn){ btn.textContent="⬇ Descargar PDF"; btn.disabled=false; }
+  }, 400);
 }
 function save(){const p=getP();if(p)saveProyecto(p);}
 
@@ -1332,7 +1369,7 @@ function renderHome(){
   const folioEl=document.getElementById("kpi-ultimo-folio");
   if(folioEl&&ps.length>0){
     const ultimo=ps[0]; // ya ordenados por ts desc
-    const folioStr="LEV-"+(ultimo.id?ultimo.id.slice(-6).toUpperCase():"000000");
+    const folioStr="AUD-"+(ultimo.id?ultimo.id.slice(-6).toUpperCase():"000000");
     folioEl.textContent=folioStr;
   }
   const m2=ps.reduce((s,p)=>s+(p.area||0),0);
@@ -2060,7 +2097,7 @@ function showPdf(){
   const sd=calcularScore(p);
   const logoB64=window._romsaLogoBlanco||"";
   const fechaGen=new Date().toLocaleDateString("es-MX",{year:"numeric",month:"long",day:"numeric"});
-  const folio="LEV-"+(p.id?p.id.slice(-6):"000000").toUpperCase();
+  const folio="AUD-"+(p.id?p.id.slice(-6):"000000").toUpperCase();
 
   // Opciones usuario
   const inclPlano = document.getElementById("rpt-include-plano")?.checked??true;
@@ -2554,21 +2591,23 @@ function saveSessionName(nombre){
 }
 
 function imprimirPDF(){
-  // En modo cliente, el contenido está en el main, no en pdf-body
   let bodyEl = document.getElementById("pdf-body");
-  if(_modoCliente || !bodyEl || !bodyEl.innerHTML.trim()){
-    // Generar reporte si no existe
+  // Si no tiene contenido, intentar generar
+  if(!bodyEl || !bodyEl.innerHTML.trim()){
     const p = getP();
-    if(!p){ showToast("⚠️ No hay proyecto cargado"); return; }
-    showPdf();
+    if(!p){ 
+      if(!_modoCliente) showToast("⚠️ Abre un proyecto primero");
+      return; 
+    }
+    try{ showPdf(); }catch(e){}
     bodyEl = document.getElementById("pdf-body");
   }
   if(!bodyEl || !bodyEl.innerHTML.trim()){
-    showToast("⚠️ Genera el reporte primero");
+    if(!_modoCliente) showToast("⚠️ Genera el reporte primero en la pestaña Reporte");
     return;
   }
   const p2 = getP();
-  const folioNom = "LEV-"+((p2?.id||"000000").slice(-6).toUpperCase());
+  const folioNom = "AUD-"+((p2?.id||"000000").slice(-6).toUpperCase());
   const winTitle = "ROMSA - Auditoria Tecnica - " + folioNom;
 
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
