@@ -1371,6 +1371,16 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
             <div class="fg" style="margin:0;"><label class="flabel">Técnico responsable</label>
               <input class="finput" id="rep-tecnico" placeholder="Nombre del técnico a cargo"></div>
             <button class="btn btn-ghost btn-block btn-sm" onclick="saveReporte()">💾 Guardar datos</button>
+            <!-- Selector de salto de página -->
+            <div style="background:#F7F9FC;border:1px solid var(--g1);border-radius:10px;padding:12px 14px;">
+              <div style="font-size:10px;font-weight:700;color:var(--tx2);letter-spacing:.8px;text-transform:uppercase;margin-bottom:8px;">📄 Salto de página antes de:</div>
+              <select class="fselect" id="obra-page-break" style="font-size:12px;">
+                <option value="etapas">Proceso y evidencia por etapa (estándar)</option>
+                <option value="progreso">Progreso del proyecto</option>
+                <option value="ninguno">Sin salto automático</option>
+              </select>
+              <div style="font-size:10px;color:var(--tx2);margin-top:5px;">Ajusta dónde inicia la segunda página para evitar espacios vacíos.</div>
+            </div>
             <button class="btn btn-primary btn-block" onclick="showPdfPreview()">⬇ Generar reporte final PDF</button>
           </div>
         </div>
@@ -3182,6 +3192,16 @@ async function showPdfPreview(){
     return f;
   }
 
+  // Leer selector de page-break
+  var obraPageBreak = document.getElementById('obra-page-break')?.value || 'etapas';
+  var obraP2Header = '<div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:14px;margin-bottom:20px;border-bottom:2px solid #DDE5F0;">'
+    +'<img src="'+logoSrc+'" style="height:28px;width:auto;" alt="ROMSA">'
+    +'<div style="text-align:right;">'
+      +'<div style="font-size:8px;color:#9BB5CF;letter-spacing:1.5px;text-transform:uppercase;">Reporte Final de Obra</div>'
+      +'<div style="font-size:10px;font-weight:600;color:#4A6A8A;margin-top:2px;">'+o.nombre+' · '+(o.cliente||'')+'</div>'
+    +'</div>'
+    +'</div>';
+
   showToast("⏳ Preparando reporte...");
 
   // Cargar updates desde subcolección
@@ -3303,11 +3323,12 @@ async function showPdfPreview(){
     ${infoHtml}
 
     <!-- PROGRESO -->
+    ${obraPageBreak==='progreso'?'<div style="page-break-before:always;break-before:page;">'+obraP2Header+'</div>':''}
     <div style="font-size:10px;font-weight:700;color:#1E6FD9;text-transform:uppercase;letter-spacing:1.5px;border-bottom:2px solid #1E6FD9;padding-bottom:6px;margin-bottom:12px;">Progreso del Proyecto</div>
     ${progresoHtml}
 
-    <!-- ETAPAS — PÁGINA 2 -->
-    <div style="page-break-before:always;break-before:page;padding-top:20px;">
+    <!-- ETAPAS -->
+    <div style="${obraPageBreak==='etapas'?'page-break-before:always;break-before:page;':''} padding-top:${obraPageBreak==='etapas'?'20':'0'}px;">
       <!-- Header página 2 -->
       <div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:14px;margin-bottom:20px;border-bottom:2px solid #DDE5F0;">
         <img src="${logoSrc}" style="height:28px;width:auto;" alt="ROMSA">
@@ -5241,12 +5262,21 @@ function _inyectarPdf(htmlStr, title, winRef){
     winRef.document.open();
     winRef.document.write(htmlStr);
     winRef.document.close();
+    winRef.onload = function(){ setTimeout(function(){ winRef.print(); }, 400); };
+    // Si onload no dispara (documento ya cargado), imprimir directamente
+    setTimeout(function(){
+      try{ if(winRef && !winRef.closed) winRef.print(); }catch(e){}
+    }, 800);
   } else {
     // Fallback: abrir nueva ventana
     var win2 = window.open('', '_blank');
     if(!win2){ showToast('⚠️ Permite ventanas emergentes'); return; }
     win2.document.write(htmlStr);
     win2.document.close();
+    win2.onload = function(){ setTimeout(function(){ win2.print(); }, 400); };
+    setTimeout(function(){
+      try{ if(win2 && !win2.closed) win2.print(); }catch(e){}
+    }, 800);
   }
 }
 

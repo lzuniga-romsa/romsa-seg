@@ -927,6 +927,18 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
 
       <!-- OPCIONES DEL REPORTE -->
       <div style="background:#fff;border:1px solid var(--g1);border-radius:12px;padding:14px;margin-bottom:12px;">
+        <!-- Selector de salto de página -->
+        <div style="border-bottom:1px solid var(--g1);padding-bottom:12px;margin-bottom:12px;">
+          <div style="font-size:10px;font-weight:700;color:var(--tx2);letter-spacing:.8px;text-transform:uppercase;margin-bottom:8px;">📄 Salto de página antes de:</div>
+          <select id="lev-page-break" style="width:100%;background:var(--off);border:1px solid var(--g1);border-radius:8px;padding:8px 10px;font-size:12px;font-family:var(--font);color:var(--tx);">
+            <option value="estado">Estado del piso (estándar)</option>
+            <option value="resumen">Resumen ejecutivo</option>
+            <option value="hallazgos">Hallazgos técnicos</option>
+            <option value="diagnostico">Diagnóstico</option>
+            <option value="ninguno">Sin salto automático</option>
+          </select>
+          <div style="font-size:10px;color:var(--tx2);margin-top:5px;">Controla dónde inicia la siguiente página para evitar cortes.</div>
+        </div>
         <div style="font-size:10px;font-weight:700;color:var(--tx2);letter-spacing:1px;text-transform:uppercase;margin-bottom:10px;">Incluir en el reporte</div>
         <div style="display:flex;flex-direction:column;gap:8px;">
           <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
@@ -2309,6 +2321,7 @@ function showPdf(){
   const folio="AUD-"+(p.id?p.id.slice(-6):"000000").toUpperCase();
 
   // Opciones usuario
+  const levPageBreak = document.getElementById("lev-page-break")?.value || "estado";
   const inclPlano = document.getElementById("rpt-include-plano")?.checked??true;
   const inclReps  = document.getElementById("rpt-include-reps")?.checked??true;
   const inclFotos = document.getElementById("rpt-include-fotos")?.checked??false;
@@ -2577,7 +2590,7 @@ function showPdf(){
       </div>
 
       <!-- ════════ PÁGINA 2 ════════ -->
-      <div style="page-break-before:always;-webkit-column-break-before:always;break-before:page;">
+      <div style="${levPageBreak!=='ninguno'?'page-break-before:always;-webkit-column-break-before:always;break-before:page;':''}">
         <!-- Header de página -->
         <div style="display:flex;align-items:center;justify-content:space-between;padding:28px 0 18px;margin-bottom:24px;border-bottom:1px solid rgba(255,255,255,.08);">
           ${logoB64?`<img src="${logoB64}" style="height:20px;width:auto;filter:brightness(0) invert(1);opacity:.65;" alt="ROMSA">`:`<span style="font-size:12px;font-weight:800;color:rgba(255,255,255,.4);">ROMSA</span>`}
@@ -2598,12 +2611,14 @@ function showPdf(){
       </div>
 
       <!-- ── RESUMEN EJECUTIVO ── -->
+      ${levPageBreak==='resumen'?'<div style="page-break-before:always;break-before:page;"></div>':''}
       <div style="margin-bottom:20px;">
         <div class="sec-ttl">Resumen ejecutivo</div>
         <div style="font-size:12px;color:rgba(255,255,255,.65);line-height:1.7;">${resumenEjecutivo}</div>
       </div>
 
       <!-- ── HALLAZGOS TÉCNICOS ── -->
+      ${levPageBreak==='hallazgos'?'<div style="page-break-before:always;break-before:page;"></div>':''}
       ${hallazgos.length?`
       <div style="margin-bottom:20px;">
         <div class="sec-ttl">Hallazgos técnicos</div>
@@ -2668,7 +2683,7 @@ function showPdf(){
       </div>`:""}
 
       <!-- ════════ PÁGINA 3 ════════ -->
-      <div style="page-break-before:always;-webkit-column-break-before:always;break-before:page;">
+      <div style="${levPageBreak==='diagnostico'||levPageBreak==='estado'||levPageBreak==='resumen'||levPageBreak==='hallazgos'?'page-break-before:always;-webkit-column-break-before:always;break-before:page;':''}">
         <!-- Header de página -->
         <div style="display:flex;align-items:center;justify-content:space-between;padding:28px 0 18px;margin-bottom:24px;border-bottom:1px solid rgba(255,255,255,.08);">
           ${logoB64?`<img src="${logoB64}" style="height:20px;width:auto;filter:brightness(0) invert(1);opacity:.65;" alt="ROMSA">`:`<span style="font-size:12px;font-weight:800;color:rgba(255,255,255,.4);">ROMSA</span>`}
