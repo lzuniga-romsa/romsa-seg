@@ -1649,14 +1649,50 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
             <input class="finput" id="cot-vigencia" value="30" type="number" min="1" max="90" style="width:80px;display:inline-block;"> <span style="font-size:12px;color:var(--tx2);margin-left:6px;">días naturales</span></div>
         </div>
 
-        <!-- ④ OPCIÓN: incluir procedimiento en PDF -->
+        <!-- ④ OPCIONES DEL PDF — Secciones y corte de página -->
         <div class="card" style="margin-bottom:12px;padding:14px;">
-          <div style="font-size:10px;font-weight:700;color:var(--tx2);letter-spacing:1px;text-transform:uppercase;margin-bottom:10px;">⚙️ Opciones del PDF</div>
-          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
-            <input type="checkbox" id="cot-incl-proc" style="width:16px;height:16px;accent-color:#7C3AED;">
-            <span style="font-size:13px;color:var(--tx);">Incluir procedimiento técnico en el PDF</span>
-          </label>
-          <div style="font-size:10px;color:var(--tx2);margin-top:5px;margin-left:26px;">Si está activo, los pasos del proceso aparecen dentro de la tabla de la cotización.</div>
+          <div style="font-size:10px;font-weight:700;color:var(--tx2);letter-spacing:1px;text-transform:uppercase;margin-bottom:12px;">⚙️ Opciones del PDF</div>
+
+          <!-- Secciones a incluir -->
+          <div style="font-size:10px;font-weight:600;color:var(--tx2);margin-bottom:8px;">Secciones a incluir:</div>
+          <div style="display:flex;flex-direction:column;gap:7px;margin-bottom:14px;">
+            <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+              <input type="checkbox" id="cot-incl-resumen" checked style="width:15px;height:15px;accent-color:#1E6FD9;">
+              <span style="font-size:12px;color:var(--tx);">Resumen ejecutivo (métricas)</span>
+            </label>
+            <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+              <input type="checkbox" id="cot-incl-destinatario" checked style="width:15px;height:15px;accent-color:#1E6FD9;">
+              <span style="font-size:12px;color:var(--tx);">Datos del destinatario</span>
+            </label>
+            <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+              <input type="checkbox" id="cot-incl-intro" checked style="width:15px;height:15px;accent-color:#1E6FD9;">
+              <span style="font-size:12px;color:var(--tx);">Texto de introducción</span>
+            </label>
+            <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+              <input type="checkbox" id="cot-incl-proc" style="width:15px;height:15px;accent-color:#1E6FD9;">
+              <span style="font-size:12px;color:var(--tx);">Procedimiento técnico por concepto</span>
+            </label>
+            <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+              <input type="checkbox" id="cot-incl-vigencia" checked style="width:15px;height:15px;accent-color:#1E6FD9;">
+              <span style="font-size:12px;color:var(--tx);">Badge de vigencia</span>
+            </label>
+            <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+              <input type="checkbox" id="cot-incl-condiciones" checked style="width:15px;height:15px;accent-color:#1E6FD9;">
+              <span style="font-size:12px;color:var(--tx);">Condiciones generales (pág. 2)</span>
+            </label>
+          </div>
+
+          <!-- Corte de página -->
+          <div style="border-top:1px solid var(--g1);padding-top:12px;">
+            <div style="font-size:10px;font-weight:600;color:var(--tx2);margin-bottom:8px;">Salto de página antes de:</div>
+            <select id="cot-page-break" class="fselect" style="font-size:12px;">
+              <option value="condiciones">Condiciones generales (estándar)</option>
+              <option value="tabla">Tabla de conceptos</option>
+              <option value="totales">Totales</option>
+              <option value="ninguno">Sin salto automático</option>
+            </select>
+            <div style="font-size:10px;color:var(--tx2);margin-top:5px;">Controla dónde empieza la segunda página para evitar espacios vacíos.</div>
+          </div>
         </div>
 
         <!-- ④ CONDICIONES GENERALES -->
@@ -3270,12 +3306,22 @@ async function showPdfPreview(){
     <div style="font-size:10px;font-weight:700;color:#1E6FD9;text-transform:uppercase;letter-spacing:1.5px;border-bottom:2px solid #1E6FD9;padding-bottom:6px;margin-bottom:12px;">Progreso del Proyecto</div>
     ${progresoHtml}
 
-    <!-- ETAPAS -->
-    <div style="font-size:10px;font-weight:700;color:#1E6FD9;text-transform:uppercase;letter-spacing:1.5px;border-bottom:2px solid #1E6FD9;padding-bottom:6px;margin-bottom:12px;">Proceso y Evidencia por Etapa</div>
-    ${etapasHtml}
+    <!-- ETAPAS — PÁGINA 2 -->
+    <div style="page-break-before:always;break-before:page;padding-top:20px;">
+      <!-- Header página 2 -->
+      <div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:14px;margin-bottom:20px;border-bottom:2px solid #DDE5F0;">
+        <img src="${logoSrc}" style="height:28px;width:auto;" alt="ROMSA">
+        <div style="text-align:right;">
+          <div style="font-size:8px;color:#9BB5CF;letter-spacing:1.5px;text-transform:uppercase;">Reporte Final de Obra</div>
+          <div style="font-size:10px;font-weight:600;color:#4A6A8A;margin-top:2px;">${o.nombre} · ${o.cliente||""}</div>
+        </div>
+      </div>
+      <div style="font-size:10px;font-weight:700;color:#1E6FD9;text-transform:uppercase;letter-spacing:1.5px;border-bottom:2px solid #1E6FD9;padding-bottom:6px;margin-bottom:12px;">Proceso y Evidencia por Etapa</div>
+      ${etapasHtml}
 
-    <!-- ANTES/DESPUÉS -->
-    ${baHtml}
+      <!-- ANTES/DESPUÉS -->
+      ${baHtml}
+    </div>
 
     <!-- OBSERVACIONES -->
     ${rep.obs?`
@@ -4007,10 +4053,8 @@ async function guardarObsFinales(){
 
 // ── Descargar PDF desde vista cliente ────────────────────────────
 async function descargarPdfCliente(obraId){
-  // En vista pública obraActivaId puede ser null — buscar en obras[]
   let o = obras.find(x=>x.id===obraId) || getO();
   if(!o && obraId){
-    // Cargar directamente desde Firestore
     try{
       const snap = await obrasRef.doc(obraId).get();
       if(snap.exists){ o = snap.data(); obras = [o]; obraActivaId = obraId; }
@@ -4018,11 +4062,11 @@ async function descargarPdfCliente(obraId){
   }
   if(!o){ showToast("⚠️ No se pudo cargar el reporte"); return; }
   obraActivaId = o.id;
-  // Asegurar que los updates estén cargados
   if(!o.updates || !o.updates.length) await loadUpdates(o.id);
-  // Ocultar vista cliente y mostrar PDF
-  document.getElementById("vista-cliente").style.display="none";
+  // Generar el reporte en pdf-body primero
   await showPdfPreview();
+  // Luego abrir en ventana nueva para descarga correcta
+  setTimeout(()=> descargarReportePDF(), 300);
 }
 
 
@@ -4060,29 +4104,66 @@ async function borrarCheckins(){
 
 // ── Descarga de reporte PDF con instrucciones por dispositivo ────
 function descargarReportePDF(){
-  const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
-  const isAndroid = /android/i.test(navigator.userAgent);
-  const isMobile = isIos || isAndroid;
-
-  if(!isMobile){
-    // Desktop: imprimir directamente
-    window.print();
+  // Obtener el HTML generado en pdf-body
+  const bodyEl = document.getElementById("pdf-body");
+  if(!bodyEl || !bodyEl.innerHTML.trim()){
+    showToast("⚠️ Genera el reporte primero");
     return;
   }
+  const o = getO();
+  const titulo = o ? "ROMSA - Reporte - " + (o.nombre||"") : "ROMSA - Reporte";
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+  const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
 
-  // Móvil: mostrar instrucciones específicas
-  const panelIos = document.getElementById("pdf-instrucciones-ios");
-  const panelAndroid = document.getElementById("pdf-instrucciones-android");
-  if(panelIos) panelIos.style.display = isIos ? "block" : "none";
-  if(panelAndroid) panelAndroid.style.display = isAndroid ? "block" : "none";
+  const htmlContent = `<!DOCTYPE html>
+<html lang="es"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${titulo}</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html,body{background:#fff;color:#0B1F3A;font-family:-apple-system,'SF Pro Display',Inter,sans-serif;-webkit-font-smoothing:antialiased;}
+  @media print{
+    @page{size:A4 portrait;margin:15mm 12mm;}
+    html,body{background:#fff!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important;}
+    .no-print{display:none!important;}
+    h2,h3,.section-header{page-break-after:avoid;}
+    table,figure,img{page-break-inside:avoid;}
+    .page-break{page-break-before:always;break-before:page;}
+  }
+</style>
+</head><body>
+${bodyEl.innerHTML}
+<\/body><\/html>`;
 
-  document.getElementById("pdf-instrucciones").classList.add("show");
-  document.getElementById("pdf-instrucciones-overlay").style.display = "block";
+  if(isIOS || isSafari){
+    var oldFrame = document.getElementById("_obras_print_frame");
+    if(oldFrame) oldFrame.remove();
+    var frame = document.createElement("iframe");
+    frame.id = "_obras_print_frame";
+    frame.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;border:none;z-index:-1;opacity:0;";
+    document.body.appendChild(frame);
+    frame.contentDocument.open();
+    frame.contentDocument.write(htmlContent);
+    frame.contentDocument.close();
+    frame.onload = function(){
+      setTimeout(function(){
+        frame.contentWindow.focus();
+        frame.contentWindow.print();
+      }, 500);
+    };
+  } else {
+    const win = window.open("", "_blank");
+    if(!win){ showToast("⚠️ Permite ventanas emergentes en tu navegador"); return; }
+    win.document.write(htmlContent);
+    win.document.close();
+    win.onload = function(){ setTimeout(function(){ win.print(); }, 400); };
+  }
 }
 
 function imprimirAhora(){
-  cerrarInstruccionesPDF();
-  setTimeout(()=>window.print(), 300);
+  descargarReportePDF();
 }
 
 function cerrarInstruccionesPDF(){
@@ -4881,7 +4962,15 @@ function generarPdfCotEnVentana(cot, winRef){
   var total  = parseFloat(cot.granTotal || 0);
   var logo   = window._romsaLogoAzul || '';
   var logoB  = window._romsaLogoBlanco || '';
-  var inclProc = document.getElementById('cot-incl-proc')?.checked === true;
+
+  // Leer opciones del PDF
+  var inclProc         = document.getElementById('cot-incl-proc')?.checked === true;
+  var inclResumen      = document.getElementById('cot-incl-resumen')?.checked !== false;
+  var inclDestinatario = document.getElementById('cot-incl-destinatario')?.checked !== false;
+  var inclIntro        = document.getElementById('cot-incl-intro')?.checked !== false;
+  var inclVigencia     = document.getElementById('cot-incl-vigencia')?.checked !== false;
+  var inclCondiciones  = document.getElementById('cot-incl-condiciones')?.checked !== false;
+  var pageBreakEn      = document.getElementById('cot-page-break')?.value || 'condiciones';
 
   // Datos contacto ROMSA
   var rTel   = document.getElementById('cot-romsa-tel')?.value  || cot.romsaTel  || '686 138 3117';
@@ -4895,11 +4984,10 @@ function generarPdfCotEnVentana(cot, winRef){
   catch(e){ fechaFmt = cot.fecha||''; }
   var lugarFecha = (cot.ciudad?cot.ciudad+', ':'')+fechaFmt;
 
-  // Resumen ejecutivo — métricas clave
+  // Métricas
   var totalM2 = (cot.partidas||[]).reduce(function(s,p){
     return s + ((p.unit||'').toLowerCase().includes('m')?(parseFloat(p.qty)||0):0);
   },0);
-  var precioM2 = totalM2>0 ? (sub/totalM2) : 0;
   var numConceptos = (cot.partidas||[]).length;
   var tiempoEst = totalM2>0 ? Math.ceil(totalM2/100)*2 : null;
 
@@ -4951,10 +5039,87 @@ function generarPdfCotEnVentana(cot, winRef){
     :'';
 
   var title=cot.folio||('ROMSA-Cotizacion-'+Date.now());
-  // win ya fue abierto antes del await
 
-    var _pdfHtml=
-    
+  // ── Construir secciones como variables ─────────────────────────
+  var secResumen = !inclResumen ? '' :
+    '<div style="background:linear-gradient(135deg,#EEF2F8,#F0F4FA);border:1px solid #D4DCE8;border-radius:12px;padding:20px 24px;margin-bottom:28px;">'
+    +'<div style="font-size:8.5px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:#0B1F3A;margin-bottom:14px;">Resumen del proyecto</div>'
+    +'<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;">'
+      +'<div style="text-align:center;">'
+        +'<div style="font-size:24px;font-weight:900;color:#0B1F3A;letter-spacing:-1px;">'+numConceptos+'</div>'
+        +'<div style="font-size:9px;color:#8A9AB8;margin-top:3px;text-transform:uppercase;letter-spacing:.8px;">Concepto'+(numConceptos!==1?'s':'')+'</div>'
+      +'</div>'
+      +(totalM2>0
+        ?'<div style="text-align:center;border-left:1px solid #E2E8F2;padding-left:16px;">'
+          +'<div style="font-size:24px;font-weight:900;color:#0B1F3A;letter-spacing:-1px;">'+totalM2.toLocaleString('es-MX')+'</div>'
+          +'<div style="font-size:9px;color:#8A9AB8;margin-top:3px;text-transform:uppercase;letter-spacing:.8px;">m² totales</div>'
+        +'</div>'
+        :'<div style="border-left:1px solid #E2E8F2;"></div>')
+      +(tiempoEst
+        ?'<div style="text-align:center;border-left:1px solid #E2E8F2;padding-left:16px;">'
+          +'<div style="font-size:24px;font-weight:900;color:#0B1F3A;letter-spacing:-1px;">'+tiempoEst+'</div>'
+          +'<div style="font-size:9px;color:#8A9AB8;margin-top:3px;text-transform:uppercase;letter-spacing:.8px;">días estimados</div>'
+        +'</div>'
+        :'<div style="border-left:1px solid #E2E8F2;"></div>')
+      +'<div style="text-align:center;border-left:1px solid #E2E8F2;padding-left:16px;">'
+        +'<div style="font-size:22px;font-weight:900;color:#0B3060;letter-spacing:-1px;">$'+fmtPeso(total)+'</div>'
+        +'<div style="font-size:9px;color:#8A9AB8;margin-top:3px;text-transform:uppercase;letter-spacing:.8px;">Gran total MXN</div>'
+      +'</div>'
+    +'</div>'
+    +'</div>';
+
+  var secDestinatario = !inclDestinatario ? '' :
+    '<div style="margin-bottom:22px;">'
+    +'<div style="font-size:8.5px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#8A9AB8;margin-bottom:8px;">Dirigido a</div>'
+    +'<div style="font-size:16px;font-weight:800;color:#0B1F3A;letter-spacing:-.3px;">'+cot.atencion+'</div>'
+    +'<div style="font-size:13px;color:#4A5E7A;font-weight:500;margin-top:3px;">'+(cot.empresa||'')+'</div>'
+    +((cot.email||cot.tel)?'<div style="font-size:11px;color:#8A9AB8;margin-top:4px;">'+(cot.email||'')+(cot.email&&cot.tel?' · ':'')+( cot.tel||'')+'</div>':'')
+    +(cot.rfc?'<div style="font-size:10px;color:#8A9AB8;margin-top:2px;">RFC: '+cot.rfc+'</div>':'')
+    +'</div>';
+
+  var secIntro = !inclIntro ? '' :
+    '<div style="font-size:12px;color:#4A5E7A;line-height:1.8;margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid #EDF1F8;">Por este medio, nos es grato presentar nuestra propuesta técnica‑comercial para las instalaciones de <strong style="color:#0B1F3A;">'+cot.empresa+'</strong>. A continuación se detalla el alcance, especificaciones y condiciones del proyecto:</div>';
+
+  var brTabla = pageBreakEn==='tabla' ? '<div style="page-break-before:always;break-before:page;"></div>' : '';
+  var brTotales = pageBreakEn==='totales' ? '<div style="page-break-before:always;break-before:page;"></div>' : '';
+
+  var secVigencia = !inclVigencia ? '' :
+    '<div style="display:flex;justify-content:flex-end;margin-top:10px;">'
+    +'<div style="background:#FFF7ED;border:1px solid #FCD34D;border-radius:6px;padding:6px 14px;font-size:9.5px;color:#92400E;font-weight:600;">'
+    +'⏳ Cotización válida por '+vigencia+' días naturales a partir de la fecha de emisión'
+    +'</div></div>';
+
+  // Página 2 — condiciones
+  var brP2 = pageBreakEn==='condiciones' ? ' page-break' : '';
+  var secCondiciones = !inclCondiciones ? '' :
+    '<div class="page2'+brP2+'">'
+    +'<div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:16px;border-bottom:2px solid #0B1F3A;margin-bottom:32px;flex-shrink:0;">'
+      +'<div style="font-size:14px;font-weight:800;color:#0B1F3A;letter-spacing:-.2px;">CONDICIONES GENERALES DE VENTA</div>'
+      +'<div style="font-size:9px;color:#B0BDD0;">'+cot.folio+' · Pág. 2</div>'
+    +'</div>'
+    +'<div style="flex:1;">'+condsHtml+notaHtml+'</div>'
+    +'<div style="margin-top:auto;padding-top:28px;">'
+      +'<div style="height:2px;background:linear-gradient(90deg,#0B1F3A,#1E6FD9,#1B3F72);margin-bottom:24px;"></div>'
+      +'<div style="display:flex;align-items:center;justify-content:space-between;">'
+        +'<div>'
+          +(logo?'<img src="'+logo+'" style="height:22px;width:auto;margin-bottom:8px;display:block;" alt="ROMSA">':'')
+          +'<div style="font-size:10px;font-weight:700;color:#1E6FD9;">ROMSA Industrial</div>'
+          +'<div style="font-size:9.5px;color:#8A9AB8;margin-top:2px;">Especialistas en mantenimiento y recubrimientos industriales</div>'
+        +'</div>'
+        +'<div style="text-align:right;">'
+          +'<div style="font-size:9.5px;color:#4A5E7A;line-height:1.8;">'
+            +'Mexicali, Baja California, México<br>'
+            +'<a href="tel:'+rTel+'" style="color:#4A5E7A;text-decoration:none;">'+rTel+'</a><br>'
+            +'<a href="mailto:'+rEmail+'" style="color:#1E6FD9;text-decoration:none;">'+rEmail+'</a><br>'
+            +'<a href="https://'+rWeb+'" style="color:#1E6FD9;text-decoration:none;">'+rWeb+'</a>'
+          +'</div>'
+        +'</div>'
+      +'</div>'
+      +'<div style="text-align:center;margin-top:16px;font-size:8.5px;color:#C0CBD8;letter-spacing:.5px;">2 DE 2</div>'
+    +'</div>'
+    +'</div>';
+
+  var _pdfHtml=
     '<!DOCTYPE html><html lang="es"><head>'
     +'<meta charset="UTF-8">'
     +'<title>'+title+'</title>'
@@ -4964,39 +5129,24 @@ function generarPdfCotEnVentana(cot, winRef){
     +'html,body{background:#fff;color:#0B1F3A;font-family:-apple-system,"SF Pro Display","SF Pro Text",Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased;}'
     +'.doc{max-width:900px;margin:0 auto;}'
     +'.page1{min-height:100vh;display:flex;flex-direction:column;}'
-    +'.page2{padding:48px 56px;min-height:100vh;display:flex;flex-direction:column;}'
-    +'.print-bar{background:#0B1F3A;padding:12px 32px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:99;}'
-    +'.print-btn{background:#0B1F3A;border:none;color:#fff;font-size:12px;font-weight:700;padding:9px 22px;border-radius:8px;cursor:pointer;font-family:inherit;letter-spacing:.2px;}'
+    +'.page2{min-height:100vh;padding:48px;display:flex;flex-direction:column;}'
+    +'.page-break{page-break-before:always;break-before:page;}'
     +'@media print{'
-    +'  html,body{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important;}'
     +'  @page{size:A4 portrait;margin:0;}'
-    +'  .print-bar{display:none!important;}'
-    +'  .doc{max-width:100%;}'
-    +'  .page-break{page-break-before:always;}'
-    +'  .page1{min-height:297mm;}'
-    +'  .page2{padding:32px 48px;min-height:297mm;}'
+    +'  html,body{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}'
     +'  tr,.cond-item{page-break-inside:avoid;}'
     +'}'
-    +'</style></head><body>'
+    +'</style>'
+    +'</head><body><div class="doc">'
 
-    // BARRA DESCARGA
-    +'<div class="print-bar">'
-    +'<span style="font-size:11px;color:rgba(255,255,255,.45);">'+title+'</span>'
-    +'<button class="print-btn" onclick="window.print()">⬇ Descargar PDF</button>'
-    +'</div>'
-
-    +'<div class="doc">'
-
-    // ══ PÁGINA 1 ══════════════════════════════════════════════════
+    // ══ PÁGINA 1 ══
     +'<div class="page1">'
 
-      // HERO azul marino + logo blanco centrado
-      +'<div style="position:relative;height:210px;background:#0B1F3A;flex-shrink:0;overflow:hidden;">'
-        // Patrón sutil
+      // Hero
+      +'<div style="background:linear-gradient(160deg,#0B1F3A 0%,#0F2A5A 100%);min-height:200px;padding:48px;display:flex;flex-direction:column;justify-content:center;position:relative;overflow:hidden;flex-shrink:0;">'
         +'<div style="position:absolute;right:-60px;top:-60px;width:320px;height:320px;border-radius:50%;background:rgba(30,111,217,.08);"></div>'
-        +'<div style="position:absolute;right:60px;bottom:-80px;width:200px;height:200px;border-radius:50%;background:rgba(124,58,237,.06);"></div>'
+        +'<div style="position:absolute;right:60px;bottom:-80px;width:200px;height:200px;border-radius:50%;background:rgba(30,111,217,.06);"></div>'
         +'<div style="position:absolute;left:-40px;bottom:-60px;width:240px;height:240px;border-radius:50%;background:rgba(30,111,217,.05);"></div>'
-        // Contenido centrado
         +'<div style="position:relative;z-index:2;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;">'
           +(logoB?'<img src="'+logoB+'" style="height:48px;width:auto;" alt="ROMSA">':'<div style="font-size:38px;font-weight:900;color:#fff;letter-spacing:-1.5px;">ROMSA</div>')
           +'<div style="display:flex;align-items:center;gap:12px;">'
@@ -5007,10 +5157,10 @@ function generarPdfCotEnVentana(cot, winRef){
         +'</div>'
       +'</div>'
 
-      // LÍNEA DEGRADADA
+      // Línea degradada
       +'<div style="height:3px;background:linear-gradient(90deg,#0B1F3A,#1E6FD9,#1B3F72);flex-shrink:0;"></div>'
 
-      // FOLIO STRIP
+      // Folio strip
       +'<div style="padding:14px 48px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #EDF1F8;flex-shrink:0;">'
         +'<div style="font-size:11px;color:#8A9AB8;">'+lugarFecha+'</div>'
         +'<div style="text-align:right;">'
@@ -5019,53 +5169,12 @@ function generarPdfCotEnVentana(cot, winRef){
         +'</div>'
       +'</div>'
 
-      // CUERPO P1
+      // Cuerpo P1
       +'<div style="padding:32px 48px;flex:1;display:flex;flex-direction:column;">'
-
-        // ── RESUMEN EJECUTIVO ──────────────────────────────────
-        +'<div style="background:linear-gradient(135deg,#EEF2F8,#F0F4FA);border:1px solid #D4DCE8;border-radius:12px;padding:20px 24px;margin-bottom:28px;">'
-          +'<div style="font-size:8.5px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:#0B1F3A;margin-bottom:14px;">Resumen del proyecto</div>'
-          +'<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;">'
-            // Conceptos
-            +'<div style="text-align:center;">'
-              +'<div style="font-size:24px;font-weight:900;color:#0B1F3A;letter-spacing:-1px;">'+numConceptos+'</div>'
-              +'<div style="font-size:9px;color:#8A9AB8;margin-top:3px;text-transform:uppercase;letter-spacing:.8px;">Concepto'+(numConceptos!==1?'s':'')+'</div>'
-            +'</div>'
-            // Área total (solo si hay m²)
-            +(totalM2>0
-              ?'<div style="text-align:center;border-left:1px solid #E2E8F2;padding-left:16px;">'
-                +'<div style="font-size:24px;font-weight:900;color:#0B1F3A;letter-spacing:-1px;">'+totalM2.toLocaleString('es-MX')+'</div>'
-                +'<div style="font-size:9px;color:#8A9AB8;margin-top:3px;text-transform:uppercase;letter-spacing:.8px;">m² totales</div>'
-              +'</div>'
-              :'<div style="border-left:1px solid #E2E8F2;"></div>')
-            // Tiempo estimado
-            +(tiempoEst
-              ?'<div style="text-align:center;border-left:1px solid #E2E8F2;padding-left:16px;">'
-                +'<div style="font-size:24px;font-weight:900;color:#0B1F3A;letter-spacing:-1px;">'+tiempoEst+'</div>'
-                +'<div style="font-size:9px;color:#8A9AB8;margin-top:3px;text-transform:uppercase;letter-spacing:.8px;">días estimados</div>'
-              +'</div>'
-              :'<div style="border-left:1px solid #E2E8F2;"></div>')
-            // Gran total destacado
-            +'<div style="text-align:center;border-left:1px solid #E2E8F2;padding-left:16px;">'
-              +'<div style="font-size:22px;font-weight:900;color:#0B3060;letter-spacing:-1px;">$'+fmtPeso(total)+'</div>'
-              +'<div style="font-size:9px;color:#8A9AB8;margin-top:3px;text-transform:uppercase;letter-spacing:.8px;">Gran total MXN</div>'
-            +'</div>'
-          +'</div>'
-        +'</div>'
-
-        // Destinatario
-        +'<div style="margin-bottom:22px;">'
-          +'<div style="font-size:8.5px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#8A9AB8;margin-bottom:8px;">Dirigido a</div>'
-          +'<div style="font-size:16px;font-weight:800;color:#0B1F3A;letter-spacing:-.3px;">'+cot.atencion+'</div>'
-          +'<div style="font-size:13px;color:#4A5E7A;font-weight:500;margin-top:3px;">'+(cot.empresa||'')+'</div>'
-          +((cot.email||cot.tel)?'<div style="font-size:11px;color:#8A9AB8;margin-top:4px;">'+(cot.email||'')+(cot.email&&cot.tel?' · ':'')+( cot.tel||'')+'</div>':'')
-          +(cot.rfc?'<div style="font-size:10px;color:#8A9AB8;margin-top:2px;">RFC: '+cot.rfc+'</div>':'')
-        +'</div>'
-
-        // Intro
-        +'<div style="font-size:12px;color:#4A5E7A;line-height:1.8;margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid #EDF1F8;">Por este medio, nos es grato presentar nuestra propuesta técnica‑comercial para las instalaciones de <strong style="color:#0B1F3A;">'+cot.empresa+'</strong>. A continuación se detalla el alcance, especificaciones y condiciones del proyecto:</div>'
-
-        // Tabla
+        +secResumen
+        +secDestinatario
+        +secIntro
+        +brTabla
         +'<table style="width:100%;border-collapse:collapse;border:1px solid #E2E8F2;border-radius:10px;overflow:hidden;margin-bottom:24px;">'
           +'<thead><tr style="background:#0B1F3A;">'
             +'<th style="padding:12px 20px;text-align:left;font-size:9px;font-weight:700;color:rgba(255,255,255,.65);letter-spacing:1.5px;text-transform:uppercase;">Descripción del servicio</th>'
@@ -5075,8 +5184,7 @@ function generarPdfCotEnVentana(cot, winRef){
           +'</tr></thead>'
           +'<tbody>'+filas+'</tbody>'
         +'</table>'
-
-        // Totales
+        +brTotales
         +'<div style="display:flex;justify-content:flex-end;margin-bottom:auto;">'
           +'<div style="width:290px;">'
             +'<div style="display:flex;justify-content:space-between;padding:10px 18px;background:#F7F9FC;border:1px solid #E2E8F2;border-radius:8px 8px 0 0;font-size:12px;">'
@@ -5090,68 +5198,14 @@ function generarPdfCotEnVentana(cot, winRef){
             +'</div>'
           +'</div>'
         +'</div>'
-
-        // Badge vigencia
-        +'<div style="display:flex;justify-content:flex-end;margin-top:10px;">'
-          +'<div style="background:#FFF7ED;border:1px solid #FCD34D;border-radius:6px;padding:6px 14px;font-size:9.5px;color:#92400E;font-weight:600;">'
-            +'⏳ Cotización válida por '+vigencia+' días naturales a partir de la fecha de emisión'
-          +'</div>'
-        +'</div>'
-
+        +secVigencia
       +'</div>'// /cuerpo p1
     +'</div>'// /page1
 
-    // ══ PÁGINA 2 — CONDICIONES ═════════════════════════════════════
-    +'<div class="page2 page-break">'
-
-      // Cabecera p2
-      +'<div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:16px;border-bottom:2px solid #0B1F3A;margin-bottom:32px;flex-shrink:0;">'
-        +'<div style="font-size:14px;font-weight:800;color:#0B1F3A;letter-spacing:-.2px;">CONDICIONES GENERALES DE VENTA</div>'
-        +'<div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;">'
-          +'<div style="font-size:9px;color:#B0BDD0;">'+cot.folio+' · Pág. 2 de 2</div>'
-        +'</div>'
-      +'</div>'
-
-      // Condiciones
-      +'<div style="flex:1;">'+condsHtml+notaHtml+'</div>'
-
-      // ── FOOTER P2 ─────────────────────────────────────────────
-      +'<div style="margin-top:auto;padding-top:28px;">'
-
-        // Separador degradado
-        +'<div style="height:2px;background:linear-gradient(90deg,#0B1F3A,#1E6FD9,#1B3F72);margin-bottom:24px;"></div>'
-
-        // Logo + tagline + contacto
-        +'<div style="display:flex;align-items:center;justify-content:space-between;">'
-
-          // Izquierda: logo + tagline
-          +'<div>'
-            +(logo?'<img src="'+logo+'" style="height:22px;width:auto;margin-bottom:8px;display:block;" alt="ROMSA">':'')
-            +'<div style="font-size:10px;font-weight:700;color:#1E6FD9;letter-spacing:.2px;">ROMSA Industrial</div>'
-            +'<div style="font-size:9.5px;color:#8A9AB8;margin-top:2px;">Especialistas en mantenimiento y recubrimientos industriales</div>'
-          +'</div>'
-
-          // Derecha: datos de contacto
-          +'<div style="text-align:right;">'
-            +'<div style="font-size:9.5px;color:#4A5E7A;line-height:1.8;">'
-              +'Mexicali, Baja California, México<br>'
-              +'<a href="tel:'+rTel+'" style="color:#4A5E7A;text-decoration:none;">'+rTel+'</a><br>'
-              +'<a href="mailto:'+rEmail+'" style="color:#1E6FD9;text-decoration:none;">'+rEmail+'</a><br>'
-              +'<a href="https://'+rWeb+'" style="color:#1E6FD9;text-decoration:none;">'+rWeb+'</a>'
-            +'</div>'
-          +'</div>'
-
-        +'</div>'
-
-        // Numeración
-        +'<div style="text-align:center;margin-top:16px;font-size:8.5px;color:#C0CBD8;letter-spacing:.5px;">2 DE 2</div>'
-
-      +'</div>'// /footer
-    +'</div>'// /page2
+    +secCondiciones
 
     +'</div>'// /doc
-    +'<\/body><\/html>'
-  ;
+    +'<\/body><\/html>';
   _inyectarPdf(_pdfHtml, title, winRef);
 }
 
