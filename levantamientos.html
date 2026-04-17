@@ -1095,10 +1095,13 @@ async function saveProyecto(p){
 function subscribeProyectos(){
   proyectosRef.orderBy("ts","desc").onSnapshot(snap=>{
     S.proyectos=snap.docs.map(d=>d.data());
-    const a=document.querySelector(".screen.active");
-    if(a){if(a.id==="screen-inicio")renderHome();if(a.id==="screen-admin")renderAdmin();}
+    // Siempre actualizar UI cuando llegan datos
     updateKpis();
-  },err=>{console.error(err);showToast("⚠️ Error de conexión");});
+    const a=document.querySelector(".screen.active");
+    const activeId = a ? a.id : "screen-inicio";
+    if(activeId==="screen-inicio"||!a) renderHome();
+    if(activeId==="screen-admin") renderAdmin();
+  },err=>{console.error(err);showToast("⚠️ Error de conexión: "+err.message);});
 }
 
 function volverAObras(){
@@ -1126,7 +1129,7 @@ function updateKpis(){
 
 
 
-function load(){loadConfig();subscribeProyectos();renderHome();}
+function load(){loadConfig();subscribeProyectos();}
 function save(){const p=getP();if(p)saveProyecto(p);}
 
 // ─── NAVIGATION ──────────────────────────────────

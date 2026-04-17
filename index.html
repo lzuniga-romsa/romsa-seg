@@ -4921,8 +4921,7 @@ function generarPdfCotEnVentana(cot, winRef){
           +procHtml
         +'</td>'
       +'<td style="padding:16px 16px;border-bottom:1px solid #EDF1F8;text-align:center;vertical-align:top;white-space:nowrap;">'
-          +'<div style="font-size:13px;font-weight:700;color:#0B1F3A;">'+(p.qty||0).toLocaleString('es-MX')+'</div>'
-          +'<div style="font-size:9px;color:#8A9AB8;margin-top:2px;">'+(p.unit||'')+'</div>'
+          +'<div style="font-size:13px;font-weight:700;color:#0B1F3A;">'+(p.qty||0).toLocaleString('es-MX')+' <span style="font-size:11px;font-weight:500;color:#4A5E7A;">'+(p.unit||'')+'</span></div>'
         +'</td>'
       +'<td style="padding:16px 16px;border-bottom:1px solid #EDF1F8;text-align:right;vertical-align:top;white-space:nowrap;font-size:12px;color:#4A5E7A;">$'+fmtPeso(p.precio)+'</td>'
       +'<td style="padding:16px 16px;border-bottom:1px solid #EDF1F8;text-align:right;vertical-align:top;white-space:nowrap;font-size:14px;font-weight:900;color:#0B1F3A;">$'+fmtPeso(st)+'</td>'
