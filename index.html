@@ -79,7 +79,7 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
 .nb-fab:active{transform:scale(.91);}
 
 /* ── SCREENS ── */
-.screen{display:none;} .screen.active{display:block;}
+.screen{display:none;} .screen.active{display:block;} #screen-cotizaciones.active{display:flex!important;}
 
 /* ── CARDS ── */
 .card{background:var(--white);border-radius:var(--r);border:1px solid var(--g1);overflow:hidden;margin-bottom:10px;box-shadow:var(--shadow);}
@@ -426,7 +426,7 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
 .nb-fab:active{transform:scale(.92);}
 
 /* ── SCREENS ── */
-.screen{display:none;} .screen.active{display:block;}
+.screen{display:none;} .screen.active{display:block;} #screen-cotizaciones.active{display:flex!important;}
 
 /* ── VALUE BANNER ── */
 .vbanner{background:var(--navy);padding:18px 18px 16px;border-bottom:1px solid rgba(255,255,255,.06);}
@@ -1517,7 +1517,7 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
     </div>
 
   <!-- ══ PANTALLA COTIZACIONES ══ -->
-  <div id="screen-cotizaciones" class="screen" style="display:none;padding:0;flex-direction:column;">
+  <div id="screen-cotizaciones" class="screen" style="display:none;padding:0;flex-direction:column;height:100%;overflow:hidden;">
 
     <!-- TOPBAR -->
     <div style="background:#0B1F3A;padding:calc(var(--safe-top)+10px) 18px 12px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;">
@@ -1555,86 +1555,128 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
       </div>
 
       <!-- FORMULARIO -->
-      <div id="cot-form-wrap" style="display:none;padding:16px;">
+      <div id="cot-form-wrap" style="display:none;flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;">
+        <div style="padding:16px;">
+
         <!-- Header -->
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
-          <button onclick="cerrarFormCot()" style="background:rgba(11,31,58,.08);border:none;width:34px;height:34px;border-radius:9px;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;font-family:var(--font);">←</button>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;">
+          <button onclick="cerrarFormCot()" style="background:rgba(11,31,58,.08);border:none;width:34px;height:34px;border-radius:9px;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;font-family:var(--font);flex-shrink:0;">←</button>
           <div style="flex:1;">
             <div id="cot-form-titulo" style="font-size:16px;font-weight:800;color:var(--navy);">Nueva cotización</div>
-            <div id="cot-folio-badge" style="font-size:10px;color:var(--tx2);"></div>
+            <div id="cot-folio-badge" style="font-size:10px;color:var(--tx2);margin-top:1px;"></div>
           </div>
-          <button onclick="guardarYVerCot()" style="background:#7C3AED;border:none;color:#fff;font-size:11px;font-weight:700;padding:8px 14px;border-radius:9px;cursor:pointer;font-family:var(--font);">Guardar PDF</button>
+          <button onclick="guardarYVerCot()" style="background:#7C3AED;border:none;color:#fff;font-size:11px;font-weight:700;padding:8px 16px;border-radius:9px;cursor:pointer;font-family:var(--font);">PDF →</button>
         </div>
 
-        <!-- CLIENTE -->
-        <div class="card" style="margin-bottom:12px;padding:14px;">
-          <div style="font-size:10px;font-weight:700;color:var(--tx2);letter-spacing:1px;text-transform:uppercase;margin-bottom:10px;">Datos del cliente</div>
-          <div class="fg"><label class="flabel">Atención (nombre) <span class="req">*</span></label>
-            <input class="finput" id="cot-atencion" placeholder="Ing. Juan Pérez"></div>
-          <div class="fg"><label class="flabel">Empresa <span class="req">*</span></label>
-            <input class="finput" id="cot-empresa" placeholder="Nombre de la empresa"></div>
+        <!-- ① ENCABEZADO DE CARTA (igual que tu PDF) -->
+        <div class="card" style="margin-bottom:12px;padding:16px;">
+          <div style="font-size:10px;font-weight:700;color:#7C3AED;letter-spacing:1px;text-transform:uppercase;margin-bottom:12px;">📍 Encabezado de la carta</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-            <div class="fg"><label class="flabel">Fecha <span class="req">*</span></label>
-              <input class="finput" id="cot-fecha" type="date"></div>
-            <div class="fg"><label class="flabel">Ciudad</label>
-              <input class="finput" id="cot-ciudad" placeholder="Mexicali, B.C."></div>
+            <div class="fg" style="margin:0;">
+              <label class="flabel">Ciudad <span class="req">*</span></label>
+              <input class="finput" id="cot-ciudad" placeholder="Ensenada, B.C.">
+            </div>
+            <div class="fg" style="margin:0;">
+              <label class="flabel">Fecha <span class="req">*</span></label>
+              <input class="finput" id="cot-fecha" type="date">
+            </div>
+          </div>
+          <div class="fg">
+            <label class="flabel">Atención — nombre del contacto <span class="req">*</span></label>
+            <input class="finput" id="cot-atencion" placeholder="Ing. Juan Pérez">
+          </div>
+          <div class="fg">
+            <label class="flabel">Empresa <span class="req">*</span></label>
+            <input class="finput" id="cot-empresa" placeholder="Nombre de la empresa">
           </div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-            <div class="fg"><label class="flabel">Correo</label>
-              <input class="finput" id="cot-email" type="email" placeholder="correo@empresa.com"></div>
-            <div class="fg"><label class="flabel">Teléfono</label>
-              <input class="finput" id="cot-tel" type="tel" placeholder="+52 686 000 0000"></div>
+            <div class="fg" style="margin:0;">
+              <label class="flabel">Correo</label>
+              <input class="finput" id="cot-email" type="email" placeholder="correo@empresa.com">
+            </div>
+            <div class="fg" style="margin:0;">
+              <label class="flabel">Teléfono</label>
+              <input class="finput" id="cot-tel" type="tel" placeholder="+52 686...">
+            </div>
           </div>
-          <div class="fg"><label class="flabel">RFC (opcional)</label>
-            <input class="finput" id="cot-rfc" placeholder="RFC del cliente" style="text-transform:uppercase;"></div>
+          <div class="fg">
+            <label class="flabel">RFC (opcional)</label>
+            <input class="finput" id="cot-rfc" placeholder="RFC del cliente" style="text-transform:uppercase;">
+          </div>
         </div>
 
-        <!-- PARTIDAS -->
-        <div class="card" style="margin-bottom:12px;padding:14px;">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-            <div style="font-size:10px;font-weight:700;color:var(--tx2);letter-spacing:1px;text-transform:uppercase;">Conceptos y precios</div>
-            <button onclick="addPartidaCot()" style="background:rgba(124,58,237,.1);border:1px solid rgba(124,58,237,.2);color:#7C3AED;font-size:10px;font-weight:700;padding:5px 12px;border-radius:7px;cursor:pointer;font-family:var(--font);">+ Concepto</button>
+        <!-- ② TABLA DE CONCEPTOS (lo central de la cotización) -->
+        <div class="card" style="margin-bottom:12px;padding:16px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+            <div style="font-size:10px;font-weight:700;color:#7C3AED;letter-spacing:1px;text-transform:uppercase;">🔧 Conceptos</div>
+            <button onclick="addPartidaCot()" style="background:rgba(124,58,237,.1);border:1px solid rgba(124,58,237,.25);color:#7C3AED;font-size:10px;font-weight:700;padding:6px 12px;border-radius:7px;cursor:pointer;font-family:var(--font);">+ Agregar</button>
           </div>
           <div id="cot-partidas-wrap"></div>
           <!-- Totales -->
-          <div style="border-top:2px solid var(--off);padding-top:12px;margin-top:8px;">
-            <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:12px;color:var(--tx2);">
+          <div style="border-top:2px solid var(--off);padding-top:12px;margin-top:4px;">
+            <div style="display:flex;justify-content:space-between;padding:5px 0;font-size:12px;color:var(--tx2);">
               <span>Subtotal</span><span id="cot-subtotal" style="font-weight:600;">$0.00</span>
             </div>
-            <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:12px;color:var(--tx2);">
+            <div style="display:flex;justify-content:space-between;padding:5px 0;font-size:12px;color:var(--tx2);border-bottom:1px solid var(--g1);">
               <span>IVA 8%</span><span id="cot-iva" style="font-weight:600;">$0.00</span>
             </div>
-            <div style="display:flex;justify-content:space-between;padding:8px 0 0;font-size:16px;font-weight:900;color:var(--navy);">
+            <div style="display:flex;justify-content:space-between;padding:10px 0 4px;font-size:18px;font-weight:900;color:var(--navy);">
               <span>Gran Total</span><span id="cot-total">$0.00</span>
             </div>
           </div>
         </div>
 
-        <!-- CONDICIONES GENERALES -->
+        <!-- ③ OPCIÓN: incluir procedimiento en PDF -->
         <div class="card" style="margin-bottom:12px;padding:14px;">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-            <div style="font-size:10px;font-weight:700;color:var(--tx2);letter-spacing:1px;text-transform:uppercase;">Condiciones generales</div>
-            <button onclick="resetCondicionesCot()" style="background:none;border:none;color:var(--blue);font-size:10px;font-weight:600;cursor:pointer;font-family:var(--font);">↺ Restaurar</button>
-          </div>
-          <div class="fg"><label class="flabel">1. Precio del proyecto</label>
-            <textarea class="ftextarea" id="cot-precio-cond" style="min-height:55px;">El precio de la cotización está contemplado como paquete y cualquier modificación podría afectar el precio final.</textarea></div>
-          <div class="fg"><label class="flabel">2. Forma de pago</label>
-            <textarea class="ftextarea" id="cot-pago" style="min-height:55px;">El esquema de pago será 60% anticipo y 40% contra entrega de área finalizada y recepción de factura final. Los pagos deberán realizarse en las fechas estipuladas. En caso de retraso en el pago por parte del cliente, se generará un cargo moratorio equivalente al 0.03% del saldo pendiente por cada día natural de atraso.</textarea></div>
-          <div class="fg"><label class="flabel">3. Tiempo de ejecución</label>
-            <textarea class="ftextarea" id="cot-tiempo" style="min-height:70px;">El tiempo de ejecución está considerado para 2 días por cada 100 m², en área libre y continua. El área mínima por evento es de 100 m². Favor de considerar 2 semanas para entrega de materiales en planta, una vez recibido el anticipo, orden de compra y firma de contrato. Sujeto a disponibilidad de inventario.</textarea></div>
-          <div class="fg"><label class="flabel">4. Alcances y exclusiones</label>
-            <textarea class="ftextarea" id="cot-alcances" style="min-height:100px;">La propuesta se formula con base en la información proporcionada por el cliente y en las condiciones visibles del área al momento de la visita técnica. Cualquier condición no prevista, defecto oculto en la losa o requerimiento adicional (humedad ascendente, contaminantes químicos, variaciones en el sustrato, etc.) no está contemplado y será cotizado como trabajo adicional. El cliente deberá asegurar que las áreas estén libres de obstrucciones, humedad excesiva, filtraciones, aceites, grasas u otros contaminantes antes de la aplicación.</textarea></div>
-          <div class="fg"><label class="flabel">5. Limitación de responsabilidad</label>
-            <textarea class="ftextarea" id="cot-responsabilidad" style="min-height:70px;">Nuestra responsabilidad se limita estrictamente al área aplicada bajo contrato y hasta por el monto total del valor de la obra. ROMSA Industrial no se hace responsable por fallas derivadas de: deficiencias estructurales de la losa, humedad ascendente no declarada, contaminación química del sustrato, movimientos sísmicos, sobrecargas no previstas, o mantenimiento inadecuado por parte del cliente.</textarea></div>
-          <div class="fg"><label class="flabel">6. Garantía</label>
-            <textarea class="ftextarea" id="cot-garantia" style="min-height:80px;">La garantía cubre exclusivamente defectos de aplicación atribuibles a ROMSA Industrial, bajo las siguientes condiciones: (a) El cliente debe dar aviso por escrito dentro de los 30 días naturales posteriores a la detección del defecto. (b) La garantía queda sin efecto en caso de: humedad ascendente, fallas en la losa base, uso inadecuado del recubrimiento, modificaciones realizadas por terceros, o falta de mantenimiento. (c) La garantía no aplica sobre áreas donde el cliente no haya cumplido con las condiciones previas de preparación.</textarea></div>
-          <div class="fg"><label class="flabel">7. Entrega y recepción</label>
-            <textarea class="ftextarea" id="cot-entrega" style="min-height:55px;">Al término de los trabajos, se realizará una entrega formal del área aplicada junto con la factura final. La recepción por parte del cliente confirmará la aceptación de los trabajos realizados.</textarea></div>
-          <div class="fg"><label class="flabel">Nota adicional (opcional)</label>
-            <textarea class="ftextarea" id="cot-nota" placeholder="Cualquier condición especial de esta cotización..." style="min-height:50px;"></textarea></div>
+          <div style="font-size:10px;font-weight:700;color:var(--tx2);letter-spacing:1px;text-transform:uppercase;margin-bottom:10px;">⚙️ Opciones del PDF</div>
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+            <input type="checkbox" id="cot-incl-proc" checked style="width:16px;height:16px;accent-color:#7C3AED;">
+            <span style="font-size:13px;color:var(--tx);">Incluir procedimiento técnico en el PDF</span>
+          </label>
+          <div style="font-size:10px;color:var(--tx2);margin-top:5px;margin-left:26px;">Si está activo, los pasos del proceso aparecen dentro de la tabla de la cotización.</div>
         </div>
 
-        <!-- VINCULAR LEVANTAMIENTO -->
+        <!-- ④ CONDICIONES GENERALES -->
+        <div class="card" style="margin-bottom:12px;padding:16px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+            <div style="font-size:10px;font-weight:700;color:var(--tx2);letter-spacing:1px;text-transform:uppercase;">📄 Condiciones generales</div>
+            <button onclick="resetCondicionesCot()" style="background:none;border:none;color:var(--blue);font-size:10px;font-weight:600;cursor:pointer;font-family:var(--font);">↺ Restaurar</button>
+          </div>
+          <div class="fg">
+            <label class="flabel">1. Precio del proyecto</label>
+            <textarea class="ftextarea" id="cot-precio-cond" style="min-height:52px;">El precio de la cotización está contemplado como paquete y cualquier modificación podría afectar el precio final.</textarea>
+          </div>
+          <div class="fg">
+            <label class="flabel">2. Forma de pago</label>
+            <textarea class="ftextarea" id="cot-pago" style="min-height:72px;">El esquema de pago será 60% anticipo y 40% contra entrega de área finalizada y recepción de factura final. Los pagos deberán realizarse en las fechas estipuladas. En caso de retraso en el pago por parte del cliente, se generará un cargo moratorio equivalente al 0.03% del saldo pendiente por cada día natural de atraso.</textarea>
+          </div>
+          <div class="fg">
+            <label class="flabel">3. Tiempo de ejecución</label>
+            <textarea class="ftextarea" id="cot-tiempo" style="min-height:72px;">El tiempo de ejecución está considerado para 2 días por cada 100 m², en área libre y continua. El área mínima por evento es de 100 m². Favor de considerar 2 semanas para entrega de materiales en planta, una vez recibido el anticipo, orden de compra y firma de contrato. Sujeto a disponibilidad de inventario.</textarea>
+          </div>
+          <div class="fg">
+            <label class="flabel">4. Alcances y exclusiones</label>
+            <textarea class="ftextarea" id="cot-alcances" style="min-height:100px;">La propuesta se formula con base en la información proporcionada por el cliente y en las condiciones visibles del área al momento de la visita técnica. Cualquier condición no prevista, defecto oculto en la losa o requerimiento adicional (humedad ascendente, contaminantes químicos, variaciones en el sustrato, etc.) no está contemplado y será cotizado como trabajo adicional. El cliente deberá asegurar que las áreas estén libres de obstrucciones, humedad excesiva, filtraciones, aceites, grasas u otros contaminantes antes de la aplicación.</textarea>
+          </div>
+          <div class="fg">
+            <label class="flabel">5. Limitación de responsabilidad</label>
+            <textarea class="ftextarea" id="cot-responsabilidad" style="min-height:80px;">Nuestra responsabilidad se limita estrictamente al área aplicada bajo contrato y hasta por el monto total del valor de la obra. ROMSA Industrial no se hace responsable por fallas derivadas de: deficiencias estructurales de la losa, humedad ascendente no declarada, contaminación química del sustrato, movimientos sísmicos, sobrecargas no previstas, o mantenimiento inadecuado por parte del cliente.</textarea>
+          </div>
+          <div class="fg">
+            <label class="flabel">6. Garantía</label>
+            <textarea class="ftextarea" id="cot-garantia" style="min-height:90px;">La garantía cubre exclusivamente defectos de aplicación atribuibles a ROMSA Industrial, bajo las siguientes condiciones: (a) El cliente debe dar aviso por escrito dentro de los 30 días naturales posteriores a la detección del defecto. (b) La garantía queda sin efecto en caso de: humedad ascendente, fallas en la losa base, uso inadecuado del recubrimiento, modificaciones realizadas por terceros, o falta de mantenimiento. (c) La garantía no aplica sobre áreas donde el cliente no haya cumplido con las condiciones previas de preparación.</textarea>
+          </div>
+          <div class="fg">
+            <label class="flabel">7. Entrega y recepción</label>
+            <textarea class="ftextarea" id="cot-entrega" style="min-height:52px;">Al término de los trabajos, se realizará una entrega formal del área aplicada junto con la factura final. La recepción por parte del cliente confirmará la aceptación de los trabajos realizados.</textarea>
+          </div>
+          <div class="fg">
+            <label class="flabel">Nota adicional (opcional)</label>
+            <textarea class="ftextarea" id="cot-nota" placeholder="Cualquier condición especial..." style="min-height:50px;"></textarea>
+          </div>
+        </div>
+
+        <!-- ⑤ VINCULAR LEVANTAMIENTO -->
         <div class="card" style="margin-bottom:12px;padding:14px;">
           <div style="font-size:10px;font-weight:700;color:var(--tx2);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">🔗 Vincular levantamiento (opcional)</div>
           <select class="fselect" id="cot-lev-id" onchange="onCotLevChange(this.value)">
@@ -1652,6 +1694,7 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
           </div>
         </div>
 
+        </div><!-- /padding -->
       </div><!-- /cot-form-wrap -->
     </div><!-- /scrollable -->
   </div><!-- /screen-cotizaciones -->
@@ -4776,12 +4819,14 @@ function generarPdfCot(cot){
   ];
 
   // ── tabla de partidas ────────────────────────────────────────────
+  var inclProc = document.getElementById("cot-incl-proc")?.checked !== false;
   var filas = (cot.partidas || []).map(function(p, i){
     var st = (p.qty||0)*(p.precio||0);
     return '<tr>'
       + '<td style="padding:9px 12px;border-bottom:1px solid #E8EEF5;vertical-align:top;">'
           + '<div style="font-size:11px;font-weight:700;color:#0B1F3A;margin-bottom:3px;">' + (i+1) + '. ' + (p.servicio||'') + '</div>'
-          + (p.desc ? '<div style="font-size:10px;color:#4A6A8A;line-height:1.55;">' + p.desc + '</div>' : '')
+          + (p.desc ? '<div style="font-size:10px;color:#4A6A8A;line-height:1.55;margin-bottom:4px;">' + p.desc + '</div>' : '')
+          + (inclProc && p.proc ? '<div style="font-size:9px;color:#7090B8;white-space:pre-line;line-height:1.6;border-top:1px solid #E8EEF5;padding-top:6px;margin-top:4px;">' + p.proc + '</div>' : '')
         + '</td>'
       + '<td style="padding:9px 8px;border-bottom:1px solid #E8EEF5;text-align:center;white-space:nowrap;font-size:11px;color:#0B1F3A;">'
           + (p.qty||0).toLocaleString('es-MX') + ' ' + (p.unit||'')
