@@ -1066,7 +1066,7 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
     </div>
     <img id="tb-logo-img" alt="ROMSA" src="" style="height:22px;width:auto;position:absolute;left:50%;transform:translateX(-50%);">
     <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
-      <button onclick="volverSelector()" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);color:rgba(255,255,255,.5);font-size:10px;font-weight:600;padding:5px 9px;border-radius:8px;cursor:pointer;font-family:var(--font);" title="Cambiar módulo">⊞</button>
+      <button onclick="volverSelector()" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);color:rgba(255,255,255,.5);font-size:10px;font-weight:600;padding:5px 9px;border-radius:8px;cursor:pointer;font-family:var(--font);" title="Menú principal">⌂</button>
       <button onclick="doLogout()" style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.7);font-size:11px;font-weight:600;padding:6px 12px;border-radius:8px;cursor:pointer;font-family:var(--font);">Salir</button>
     </div>
     <div id="tb-live" style="display:none;"></div>
@@ -1191,7 +1191,7 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
       <!-- Barra de escape siempre visible sobre el iframe -->
       <div id="lev-escape-bar" style="padding-top:calc(var(--safe-top, env(safe-area-inset-top, 0px)) + 8px);">
         <div style="display:flex;align-items:center;gap:10px;">
-          <button onclick="volverSelector()" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.8);font-size:11px;font-weight:700;padding:6px 12px;border-radius:8px;cursor:pointer;font-family:var(--font);">⊞ Menú</button>
+          <button onclick="volverSelector()" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.8);font-size:11px;font-weight:700;padding:6px 12px;border-radius:8px;cursor:pointer;font-family:var(--font);">⌂ Inicio</button>
           <button onclick="goScreen('dashboard')" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.6);font-size:11px;font-weight:600;padding:6px 12px;border-radius:8px;cursor:pointer;font-family:var(--font);">← Inicio</button>
         </div>
         <button onclick="doLogout()" style="background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.2);color:#FCA5A5;font-size:11px;font-weight:600;padding:6px 12px;border-radius:8px;cursor:pointer;font-family:var(--font);">Salir</button>
@@ -1521,9 +1521,12 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
 
     <!-- TOPBAR -->
     <div style="background:#0B1F3A;padding:calc(var(--safe-top)+10px) 18px 12px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;">
-      <div>
-        <div style="font-size:9px;font-weight:700;color:#4A6A8A;letter-spacing:1px;text-transform:uppercase;margin-bottom:3px;">ROMSA Industrial</div>
-        <div style="font-size:17px;font-weight:800;color:#fff;line-height:1.2;">📋 Cotizaciones</div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <button onclick="volverSelector()" title="Menú principal" style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.7);font-size:14px;width:32px;height:32px;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:var(--font);flex-shrink:0;">⌂</button>
+        <div>
+          <div style="font-size:9px;font-weight:700;color:#4A6A8A;letter-spacing:1px;text-transform:uppercase;margin-bottom:3px;">ROMSA Industrial</div>
+          <div style="font-size:17px;font-weight:800;color:#fff;line-height:1.2;">📋 Cotizaciones</div>
+        </div>
       </div>
       <button onclick="showNuevaCot()" style="background:#7C3AED;border:none;color:#fff;font-size:12px;font-weight:700;padding:8px 16px;border-radius:10px;cursor:pointer;font-family:var(--font);display:flex;align-items:center;gap:6px;">
         <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1v10M1 6h10" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></svg>
@@ -4822,13 +4825,29 @@ async function guardarCot(){
 }
 
 async function guardarYVerCot(){
+  // Abrir ventana ANTES del await para evitar bloqueo de popup en iOS/Safari
+  var win=window.open('','_blank');
+  if(!win){
+    showToast('⚠️ Activa ventanas emergentes en tu navegador');
+    return;
+  }
+  win.document.write('<html><body style="background:#0B1F3A;display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;"><p style="color:rgba(255,255,255,.5);font-size:14px;">Generando cotización...</p></body></html>');
   var cot=await guardarCot();
-  if(cot) generarPdfCot(cot);
+  if(cot){
+    generarPdfCotEnVentana(cot, win);
+  } else {
+    win.close();
+  }
 }
 
 // ── Generar PDF cotización (fondo blanco profesional) ─────────────
 function generarPdfCot(cot){
   if(!cot) return;
+  generarPdfCotEnVentana(cot, null);
+}
+
+function generarPdfCotEnVentana(cot, _unused){
+  if(!cot||!win) return;
 
   var sub    = parseFloat(cot.subtotal  || 0);
   var iva    = parseFloat(cot.iva       || 0);
@@ -4906,10 +4925,10 @@ function generarPdfCot(cot){
     :'';
 
   var title='ROMSA - Cotizacion - '+cot.folio;
-  var win=window.open('','_blank');
-  if(!win){showToast('⚠️ Permite ventanas emergentes');return;}
+  // win ya fue abierto antes del await
 
-  win.document.write(
+    var _pdfHtml=
+    
     '<!DOCTYPE html><html lang="es"><head>'
     +'<meta charset="UTF-8">'
     +'<title>'+title+'</title>'
@@ -5107,10 +5126,47 @@ function generarPdfCot(cot){
 
     +'</div>'// /doc
     +'<\/body><\/html>'
-  );
-  win.document.close();
+  ;
+  _inyectarPdf(_pdfHtml, title);
 }
 
+
+// ── Inyector de PDF universal (iOS iframe + desktop window.open) ─
+function _inyectarPdf(htmlStr, title){
+  var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+  var isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+
+  if(isIOS || isSafari){
+    // iOS/Mac Safari: iframe en la misma página — no requiere popup
+    var old = document.getElementById('_pdfframe');
+    if(old) old.remove();
+    var fr = document.createElement('iframe');
+    fr.id = '_pdfframe';
+    fr.setAttribute('name','_pdfframe');
+    fr.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;border:none;z-index:9999;background:#fff;';
+    document.body.appendChild(fr);
+    fr.contentDocument.open();
+    fr.contentDocument.write(htmlStr);
+    fr.contentDocument.close();
+    // Agregar botón cerrar sobre el iframe
+    var closeBtn = document.createElement('button');
+    closeBtn.textContent = '✕ Cerrar';
+    closeBtn.style.cssText = 'position:fixed;top:10px;left:10px;z-index:10000;background:#0B1F3A;color:#fff;border:none;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:sans-serif;';
+    closeBtn.onclick = function(){ fr.remove(); closeBtn.remove(); };
+    document.body.appendChild(closeBtn);
+    fr.onload = function(){
+      setTimeout(function(){
+        try{ fr.contentWindow.focus(); fr.contentWindow.print(); }catch(e){}
+      }, 700);
+    };
+  } else {
+    // Chrome / Firefox / Edge: ventana nueva
+    var win = window.open('', '_blank');
+    if(!win){ showToast('⚠️ Permite ventanas emergentes'); return; }
+    win.document.write(htmlStr);
+    win.document.close();
+  }
+}
 
 // ── Exportar todas las cotizaciones a Excel ───────────────────────
 function exportarCotExcel(){
