@@ -1129,7 +1129,68 @@ function updateKpis(){
 
 
 
-function load(){loadConfig();subscribeProyectos();}
+function load(){
+  loadConfig();
+  // Detectar si es vista de cliente (tiene ?levantamiento=ID en la URL)
+  const params = new URLSearchParams(window.location.search);
+  const levId = params.get("levantamiento");
+  if(levId){
+    // Modo vista cliente — cargar ese proyecto y mostrar el reporte
+    _modoCliente = true;
+    document.getElementById("topbar") && (document.getElementById("topbar").style.display="none");
+    document.getElementById("subnav") && (document.getElementById("subnav").style.display="none");
+    document.getElementById("navbar") && (document.getElementById("navbar").style.display="none");
+    document.getElementById("fab") && (document.getElementById("fab").style.display="none");
+    document.getElementById("main").style.background="#0A1628";
+    db.collection("proyectos").doc(levId).get().then(snap=>{
+      if(!snap.exists){
+        document.getElementById("main").innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100vh;color:#fff;font-family:Inter,sans-serif;text-align:center;padding:24px;"><div><div style="font-size:48px;margin-bottom:16px;">📄</div><div style="font-size:20px;font-weight:700;margin-bottom:8px;">Reporte no disponible</div><div style="font-size:14px;opacity:.6;">El link puede haber expirado o no es válido.</div></div></div>';
+        return;
+      }
+      const p = snap.data();
+      // Verificar que el link no está revocado
+      if(p.linkRevocado){
+        document.getElementById("main").innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100vh;color:#fff;font-family:Inter,sans-serif;text-align:center;padding:24px;"><div><div style="font-size:48px;margin-bottom:16px;">🔒</div><div style="font-size:20px;font-weight:700;margin-bottom:8px;">Link desactivado</div><div style="font-size:14px;opacity:.6;">El técnico ha desactivado este reporte.</div></div></div>';
+        return;
+      }
+      // Cargar proyecto y mostrar reporte
+      S.proyectos = [p];
+      activoId = p.id;
+      _mostrarReporteCliente(p);
+    }).catch(err=>{
+      document.getElementById("main").innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100vh;color:#fff;font-family:Inter,sans-serif;text-align:center;"><div style="color:#fff;opacity:.5;">Error al cargar el reporte.</div></div>';
+    });
+  } else {
+    subscribeProyectos();
+  }
+}
+
+let _modoCliente = false;
+
+function _mostrarReporteCliente(p){
+  // Inyectar el reporte directamente en el main con botón de descarga
+  activoId = p.id;
+  // Primero generar el HTML del reporte usando showPdf
+  showPdf();
+  const pdfBody = document.getElementById("pdf-body");
+  const html = pdfBody ? pdfBody.innerHTML : "";
+  if(!html.trim()){ 
+    document.getElementById("main").innerHTML='<div style="color:#fff;padding:32px;text-align:center;opacity:.5;">Generando reporte...</div>';
+    setTimeout(()=>_mostrarReporteCliente(p), 800);
+    return;
+  }
+  const folio = "LEV-"+(p.id?p.id.slice(-6):"000000").toUpperCase();
+  document.getElementById("main").innerHTML = 
+    '<div style="background:#0A1628;min-height:100vh;padding:0;">'
+    +'<div style="background:#0B1F3A;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:99;">'
+      +'<div style="font-size:13px;font-weight:700;color:#fff;">Diagnóstico Técnico · '+folio+'</div>'
+      +'<button onclick="imprimirPDF()" style="background:#1E6FD9;border:none;color:#fff;font-size:12px;font-weight:700;padding:8px 16px;border-radius:8px;cursor:pointer;font-family:inherit;">⬇ Descargar PDF</button>'
+    +'</div>'
+    +'<div style="padding:16px;max-width:680px;margin:0 auto;">'
+      +html
+    +'</div>'
+    +'</div>';
+}
 function save(){const p=getP();if(p)saveProyecto(p);}
 
 // ─── NAVIGATION ──────────────────────────────────
@@ -1798,7 +1859,7 @@ function getLevLink(){
     .substring(0,30)
     .replace(/-+$/,"");                                  // quitar guión final
   const idCorto=p.id.slice(-6).toUpperCase();
-  const base=window.location.origin+window.location.pathname;
+  const base=window.location.origin+"/levantamientos.html";
   return base+"?levantamiento="+p.id+"&ref="+slug+"-"+idCorto;
 }
 
@@ -2493,7 +2554,15 @@ function saveSessionName(nombre){
 }
 
 function imprimirPDF(){
-  const bodyEl = document.getElementById("pdf-body");
+  // En modo cliente, el contenido está en el main, no en pdf-body
+  let bodyEl = document.getElementById("pdf-body");
+  if(_modoCliente || !bodyEl || !bodyEl.innerHTML.trim()){
+    // Generar reporte si no existe
+    const p = getP();
+    if(!p){ showToast("⚠️ No hay proyecto cargado"); return; }
+    showPdf();
+    bodyEl = document.getElementById("pdf-body");
+  }
   if(!bodyEl || !bodyEl.innerHTML.trim()){
     showToast("⚠️ Genera el reporte primero");
     return;
