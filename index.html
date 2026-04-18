@@ -1614,7 +1614,7 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
               <span>Subtotal</span><span id="cot-subtotal" style="font-weight:600;">$0.00</span>
             </div>
             <div style="display:flex;justify-content:space-between;padding:5px 0;font-size:12px;color:var(--tx2);border-bottom:1px solid var(--g1);">
-              <span>IVA 8%</span><span id="cot-iva" style="font-weight:600;">$0.00</span>
+              <span>IVA 8% (Región Fronteriza)</span><span id="cot-iva" style="font-weight:600;">$0.00</span>
             </div>
             <div style="display:flex;justify-content:space-between;padding:10px 0 4px;font-size:18px;font-weight:900;color:var(--navy);">
               <span>Gran Total</span><span id="cot-total">$0.00</span>
@@ -1711,7 +1711,7 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
           </div>
           <div class="fg">
             <label class="flabel">6. Garantía</label>
-            <textarea class="ftextarea" id="cot-garantia" style="min-height:90px;">La garantía cubre exclusivamente defectos de aplicación atribuibles a ROMSA Industrial, bajo las siguientes condiciones: (a) El cliente debe dar aviso por escrito dentro de los 30 días naturales posteriores a la detección del defecto. (b) La garantía queda sin efecto en caso de: humedad ascendente, fallas en la losa base, uso inadecuado del recubrimiento, modificaciones realizadas por terceros, o falta de mantenimiento. (c) La garantía no aplica sobre áreas donde el cliente no haya cumplido con las condiciones previas de preparación.</textarea>
+            <textarea class="ftextarea" id="cot-garantia" style="min-height:90px;">ROMSA Industrial otorga garantía por un periodo de doce (12) meses a partir de la fecha de entrega formal del área, que cubre exclusivamente defectos de aplicación atribuibles a ROMSA Industrial, bajo las siguientes condiciones: (a) El cliente debe dar aviso por escrito dentro de los 30 días naturales posteriores a la detección del defecto. (b) La garantía queda sin efecto en caso de: humedad ascendente, fallas en la losa base, uso inadecuado del recubrimiento, modificaciones realizadas por terceros, o falta de mantenimiento. (c) La garantía no aplica sobre áreas donde el cliente no haya cumplido con las condiciones previas de preparación.</textarea>
           </div>
           <div class="fg">
             <label class="flabel">7. Entrega y recepción</label>
@@ -4733,7 +4733,7 @@ function resetCondicionesCot(){
   document.getElementById("cot-tiempo").value="El tiempo de ejecución está considerado para 2 días por cada 100 m², en área libre y continua. El área mínima por evento es de 100 m². Favor de considerar 2 semanas para entrega de materiales en planta, una vez recibido el anticipo, orden de compra y firma de contrato. Sujeto a disponibilidad de inventario.";
   document.getElementById("cot-alcances").value="La propuesta se formula con base en la información proporcionada por el cliente y en las condiciones visibles del área al momento de la visita técnica. Cualquier condición no prevista, defecto oculto en la losa o requerimiento adicional (humedad ascendente, contaminantes químicos, variaciones en el sustrato, etc.) no está contemplado y será cotizado como trabajo adicional. El cliente deberá asegurar que las áreas estén libres de obstrucciones, humedad excesiva, filtraciones, aceites, grasas u otros contaminantes antes de la aplicación.";
   document.getElementById("cot-responsabilidad").value="Nuestra responsabilidad se limita estrictamente al área aplicada bajo contrato y hasta por el monto total del valor de la obra. ROMSA Industrial no se hace responsable por fallas derivadas de: deficiencias estructurales de la losa, humedad ascendente no declarada, contaminación química del sustrato, movimientos sísmicos, sobrecargas no previstas, o mantenimiento inadecuado por parte del cliente.";
-  document.getElementById("cot-garantia").value="La garantía cubre exclusivamente defectos de aplicación atribuibles a ROMSA Industrial, bajo las siguientes condiciones: (a) El cliente debe dar aviso por escrito dentro de los 30 días naturales posteriores a la detección del defecto. (b) La garantía queda sin efecto en caso de: humedad ascendente, fallas en la losa base, uso inadecuado del recubrimiento, modificaciones realizadas por terceros, o falta de mantenimiento. (c) La garantía no aplica sobre áreas donde el cliente no haya cumplido con las condiciones previas de preparación.";
+  document.getElementById("cot-garantia").value="ROMSA Industrial otorga garantía por un periodo de doce (12) meses a partir de la fecha de entrega formal del área, que cubre exclusivamente defectos de aplicación atribuibles a ROMSA Industrial, bajo las siguientes condiciones: (a) El cliente debe dar aviso por escrito dentro de los 30 días naturales posteriores a la detección del defecto. (b) La garantía queda sin efecto en caso de: humedad ascendente, fallas en la losa base, uso inadecuado del recubrimiento, modificaciones realizadas por terceros, o falta de mantenimiento. (c) La garantía no aplica sobre áreas donde el cliente no haya cumplido con las condiciones previas de preparación.";
   document.getElementById("cot-entrega").value="Al término de los trabajos, se realizará una entrega formal del área aplicada junto con la factura final. La recepción por parte del cliente confirmará la aceptación de los trabajos realizados.";
   showToast("↺ Condiciones restauradas");
 }
@@ -4899,7 +4899,7 @@ function calcTotalesCot(){
 function renderPartidasCot(){
   var wrap=document.getElementById("cot-partidas-wrap");
   if(!wrap)return;
-  var UNITS=["m²","m lineal","lote","pieza","servicio","m³","kg","hr"];
+  var UNITS=["m²","m.l. (metro lineal)","lote","pieza","servicio","m³","kg","hr"];
   wrap.innerHTML=_cotPartidas.map(function(p){
     var subtP=(p.qty||0)*(p.precio||0);
     var unitsOpts=UNITS.map(function(u){return '<option value="'+u+'"'+(u===(p.unit||"m²")?" selected":"")+'>'+u+'</option>';}).join("");
@@ -5231,20 +5231,52 @@ function generarPdfCotEnVentana(cot, winRef){
           +'<tbody>'+filas+'</tbody>'
         +'</table>'
         +brTotales
-        +'<div style="display:flex;justify-content:flex-end;margin-bottom:auto;">'
-          +'<div style="width:290px;">'
-            +'<div style="display:flex;justify-content:space-between;padding:10px 18px;background:#F7F9FC;border:1px solid #E2E8F2;border-radius:8px 8px 0 0;font-size:12px;">'
-              +'<span style="color:#6B7FA3;">Subtotal</span><span style="font-weight:600;color:#0B1F3A;">$'+fmtPeso(sub)+'</span>'
+        +'<div style="display:flex;justify-content:flex-end;margin-bottom:20px;">'
+          +'<div style="width:380px;">'
+            // Subtotal
+            +'<div style="display:flex;justify-content:space-between;align-items:center;padding:11px 20px;background:#F7F9FC;border:1px solid #E2E8F2;border-radius:10px 10px 0 0;font-size:12px;">'
+              +'<span style="color:#6B7FA3;letter-spacing:.3px;">Subtotal</span><span style="font-weight:600;color:#0B1F3A;font-variant-numeric:tabular-nums;">$'+fmtPeso(sub)+'</span>'
             +'</div>'
-            +'<div style="display:flex;justify-content:space-between;padding:10px 18px;background:#F7F9FC;border:1px solid #E2E8F2;border-top:none;font-size:12px;">'
-              +'<span style="color:#6B7FA3;">IVA 8%</span><span style="font-weight:600;color:#0B1F3A;">$'+fmtPeso(iva)+'</span>'
+            // IVA
+            +'<div style="display:flex;justify-content:space-between;align-items:center;padding:11px 20px;background:#F7F9FC;border:1px solid #E2E8F2;border-top:none;font-size:11.5px;">'
+              +'<span style="color:#6B7FA3;letter-spacing:.3px;">IVA 8% <span style="font-size:9px;color:#9AAAC4;font-weight:500;">· Región Fronteriza</span></span><span style="font-weight:600;color:#0B1F3A;font-variant-numeric:tabular-nums;">$'+fmtPeso(iva)+'</span>'
             +'</div>'
-            +'<div style="display:flex;justify-content:space-between;padding:14px 18px;background:#0B1F3A;border-radius:0 0 8px 8px;font-size:15px;font-weight:900;color:#fff;">'
-              +'<span>Gran Total</span><span>$'+fmtPeso(total)+'</span>'
+            // Gran Total — bloque ejecutivo
+            +'<div style="background:linear-gradient(135deg,#0B1F3A 0%,#1B3F72 100%);border-radius:0 0 10px 10px;padding:18px 22px;position:relative;overflow:hidden;">'
+              +'<div style="position:absolute;right:-30px;top:-30px;width:120px;height:120px;border-radius:50%;background:rgba(30,111,217,.12);"></div>'
+              +'<div style="position:relative;z-index:2;">'
+                +'<div style="font-size:9px;font-weight:700;letter-spacing:2.5px;color:rgba(255,255,255,.5);text-transform:uppercase;margin-bottom:4px;">Gran Total</div>'
+                +'<div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px;">'
+                  +'<div style="font-size:28px;font-weight:900;color:#fff;letter-spacing:-.8px;font-variant-numeric:tabular-nums;line-height:1;">$'+fmtPeso(total)+'</div>'
+                  +'<div style="font-size:11px;font-weight:700;color:#60A5FA;letter-spacing:1px;">MXN</div>'
+                +'</div>'
+              +'</div>'
             +'</div>'
           +'</div>'
         +'</div>'
         +secVigencia
+        // Próximos pasos — cierre comercial ejecutivo
+        +'<div style="margin-top:24px;margin-bottom:auto;background:#F7F9FC;border:1px solid #E2E8F2;border-left:3px solid #1E6FD9;border-radius:8px;padding:16px 20px;">'
+          +'<div style="font-size:9px;font-weight:700;letter-spacing:2px;color:#1E6FD9;text-transform:uppercase;margin-bottom:10px;">Próximos pasos</div>'
+          +'<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;">'
+            +'<div style="display:flex;gap:8px;align-items:flex-start;">'
+              +'<div style="min-width:22px;height:22px;border-radius:50%;background:#1E6FD9;color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;">1</div>'
+              +'<div style="font-size:10px;color:#4A5E7A;line-height:1.4;"><strong style="color:#0B1F3A;">Aceptación</strong><br>Firma de esta propuesta</div>'
+            +'</div>'
+            +'<div style="display:flex;gap:8px;align-items:flex-start;">'
+              +'<div style="min-width:22px;height:22px;border-radius:50%;background:#1E6FD9;color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;">2</div>'
+              +'<div style="font-size:10px;color:#4A5E7A;line-height:1.4;"><strong style="color:#0B1F3A;">Orden de compra</strong><br>Emisión a ROMSA</div>'
+            +'</div>'
+            +'<div style="display:flex;gap:8px;align-items:flex-start;">'
+              +'<div style="min-width:22px;height:22px;border-radius:50%;background:#1E6FD9;color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;">3</div>'
+              +'<div style="font-size:10px;color:#4A5E7A;line-height:1.4;"><strong style="color:#0B1F3A;">Anticipo 60%</strong><br>Transferencia bancaria</div>'
+            +'</div>'
+            +'<div style="display:flex;gap:8px;align-items:flex-start;">'
+              +'<div style="min-width:22px;height:22px;border-radius:50%;background:#10B981;color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;">4</div>'
+              +'<div style="font-size:10px;color:#4A5E7A;line-height:1.4;"><strong style="color:#0B1F3A;">Inicio de obra</strong><br>Programación inmediata</div>'
+            +'</div>'
+          +'</div>'
+        +'</div>'
       +'</div>'// /cuerpo p1
     +'</div>'// /page1
 
@@ -5319,7 +5351,7 @@ function exportarCotExcel(){
 function _exportarCotExcel(){
   var rows=[["Folio","Empresa","Atención","Fecha","Ciudad","Email","Tel","RFC",
              "Servicio","Cantidad","Unidad","Precio Unit.","Subtotal Partida",
-             "Subtotal","IVA 8%","Gran Total","Creado por"]];
+             "Subtotal","IVA 8% (Región Fronteriza)","Gran Total","Creado por"]];
   cotizaciones.forEach(function(c){
     (c.partidas||[]).forEach(function(p,i){
       rows.push([
