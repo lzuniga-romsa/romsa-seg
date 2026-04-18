@@ -3304,8 +3304,9 @@ async function showPdfPreview(){
       </div>`).join("")}
     </div>`:"";
 
-  document.getElementById("pdf-body").innerHTML=`
-    <!-- PORTADA -->
+
+  // ── Generar HTML completo ──────────────────────────────────────
+  const _reporteBody = `    <!-- PORTADA -->
     <div style="text-align:center;padding-bottom:16px;border-bottom:3px solid #0B1F3A;margin-bottom:0;">
       <img src="${logoSrc}" style="height:52px;width:auto;display:block;margin:0 auto 6px;" alt="ROMSA">
       <div style="font-size:10px;color:#7090B8;letter-spacing:.3px;">ROMSA Pisos Industriales · Mexicali, Baja California</div>
@@ -3351,9 +3352,68 @@ async function showPdfPreview(){
       <div style="display:inline-flex;align-items:center;gap:6px;padding:6px 16px;border:1.5px solid #1E6FD9;border-radius:8px;color:#1E6FD9;font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;">✓ Reporte técnico de obra finalizada</div>
     </div>`;
 
-  document.getElementById("pdf-preview").style.display="block";
-  document.getElementById("pdf-preview").scrollTo(0,0);
-  showToast("✅ Reporte listo");
+  const _titulo = "ROMSA – Reporte de Obra – " + (o.nombre||"");
+
+  // ── Generar HTML del documento ─────────────────────────────────
+  var _previewBar = '<div id="preview-bar">'
+    + '<div class="bar-title">Vista previa — '+_titulo+'</div>'
+    + '<div class="bar-actions">'
+      + '<button class="btn-dl" onclick="window.print()">⬇ Descargar PDF</button>'
+      + '<button class="btn-close" onclick="window.close()">✕ Cerrar</button>'
+    + '</div></div>';
+
+  var _docStyles = '<style>'
+    + '*{margin:0;padding:0;box-sizing:border-box;}'
+    + 'html,body{background:#F0F3F8;font-family:-apple-system,"SF Pro Display",Inter,sans-serif;}'
+    + '#preview-bar{position:fixed;top:0;left:0;right:0;z-index:9999;background:#0B1F3A;'
+      + 'display:flex;align-items:center;justify-content:space-between;'
+      + 'padding:10px 20px;box-shadow:0 2px 12px rgba(0,0,0,.3);}'
+    + '#preview-bar .bar-title{color:rgba(255,255,255,.7);font-size:12px;font-weight:600;}'
+    + '#preview-bar .bar-actions{display:flex;gap:8px;}'
+    + '#preview-bar button{border:none;cursor:pointer;font-family:inherit;font-size:12px;font-weight:700;padding:7px 16px;border-radius:8px;}'
+    + '.btn-dl{background:#1E6FD9;color:#fff;}'
+    + '.btn-close{background:rgba(255,255,255,.1);color:rgba(255,255,255,.7);}'
+    + '#doc-wrap{margin-top:52px;padding:24px 0;min-height:100vh;}'
+    + '#doc-page{background:#fff;max-width:900px;margin:0 auto;padding:20px 28px;'
+      + 'box-shadow:0 2px 20px rgba(0,0,0,.1);border-radius:4px;}'
+    + '@media print{'
+      + '#preview-bar{display:none!important;}'
+      + '#doc-wrap{margin:0!important;padding:0!important;}'
+      + '#doc-page{box-shadow:none!important;border-radius:0!important;max-width:100%!important;padding:0!important;}'
+      + 'html,body{background:#fff!important;}'
+      + '@page{size:A4 portrait;margin:12mm 14mm;}'
+      + 'html,body{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}'
+      + '.section-block{page-break-inside:avoid;}'
+      + 'img{page-break-inside:avoid;max-width:100%!important;}'
+      + 'table{page-break-inside:avoid;}'
+    + '}'
+    + '</style>';
+
+    // ── Abrir ventana de preview ────────────────────────────────────
+  var _previewWin = window.open('', '_blank');
+  if(!_previewWin){
+    document.getElementById("pdf-body").innerHTML = _reporteBody;
+    document.getElementById("pdf-preview").style.display = "block";
+    document.getElementById("pdf-preview").scrollTo(0,0);
+    showToast("✅ Reporte listo — activa ventanas emergentes para preview completo");
+    return;
+  }
+  _previewWin.document.open();
+  _previewWin.document.write(
+    '<!DOCTYPE html><html lang="es"><head>'
+    + '<meta charset="UTF-8">'
+    + '<meta name="viewport" content="width=device-width,initial-scale=1">'
+    + '<title>' + _titulo + '</title>'
+    + '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">'
+    + _docStyles
+    + '</head><body>'
+    + _previewBar
+    + '<div id="doc-wrap"><div id="doc-page">'
+    + _reporteBody
+    + '</div></div></body></html>'
+  );
+  _previewWin.document.close();
+  showToast("✅ Reporte abierto — revisa y descarga desde la nueva ventana");
 }
 function closePdf(){ document.getElementById("pdf-preview").style.display="none"; }
 
