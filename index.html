@@ -5100,31 +5100,37 @@ function generarPdfCotEnVentana(cot, winRef){
 
   // ── Construir secciones como variables ─────────────────────────
   var secResumen = !inclResumen ? '' :
-    '<div style="background:linear-gradient(135deg,#EEF2F8,#F0F4FA);border:1px solid #D4DCE8;border-radius:12px;padding:20px 24px;margin-bottom:28px;">'
-    +'<div style="font-size:8.5px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:#0B1F3A;margin-bottom:16px;">Resumen del proyecto</div>'
-    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:0;">'
-      +'<div style="text-align:center;padding:8px 16px;">'
-        +'<div style="font-size:28px;font-weight:900;color:#0B1F3A;letter-spacing:-1px;">'+numConceptos+'</div>'
-        +'<div style="font-size:9px;color:#8A9AB8;margin-top:3px;text-transform:uppercase;letter-spacing:.8px;">Conceptos cotizados</div>'
+    '<div style="display:flex;align-items:stretch;background:#F7F9FC;border:1px solid #E2E8F2;border-radius:8px;padding:0;margin-bottom:18px;overflow:hidden;">'
+      +'<div style="background:#0B1F3A;padding:10px 16px;display:flex;align-items:center;">'
+        +'<div style="font-size:8px;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;color:rgba(255,255,255,.6);">Resumen<br>del proyecto</div>'
       +'</div>'
-      +'<div style="text-align:center;padding:8px 16px;border-left:1px solid #E2E8F2;">'
-        +'<div style="font-size:24px;font-weight:900;color:#0B3060;letter-spacing:-1px;">$'+fmtPeso(total)+'</div>'
-        +'<div style="font-size:9px;color:#8A9AB8;margin-top:3px;text-transform:uppercase;letter-spacing:.8px;">Gran total MXN</div>'
+      +'<div style="flex:1;display:flex;align-items:center;padding:0 20px;">'
+        +'<div style="display:flex;align-items:center;gap:8px;">'
+          +'<div style="font-size:18px;font-weight:900;color:#0B1F3A;letter-spacing:-.3px;font-variant-numeric:tabular-nums;">'+numConceptos+'</div>'
+          +'<div style="font-size:9.5px;color:#6B7FA3;text-transform:uppercase;letter-spacing:.8px;font-weight:600;line-height:1.1;">Conceptos<br>cotizados</div>'
+        +'</div>'
       +'</div>'
-    +'</div>'
+      +'<div style="width:1px;background:#E2E8F2;"></div>'
+      +'<div style="flex:1.5;display:flex;align-items:center;justify-content:flex-end;padding:0 20px;background:#fff;">'
+        +'<div style="display:flex;align-items:baseline;gap:6px;">'
+          +'<div style="font-size:9.5px;color:#6B7FA3;text-transform:uppercase;letter-spacing:.8px;font-weight:600;">Gran Total</div>'
+          +'<div style="font-size:18px;font-weight:900;color:#0B3060;letter-spacing:-.3px;font-variant-numeric:tabular-nums;">$'+fmtPeso(total)+'</div>'
+          +'<div style="font-size:8.5px;font-weight:700;color:#1E6FD9;letter-spacing:.8px;">MXN</div>'
+        +'</div>'
+      +'</div>'
     +'</div>';
 
   var secDestinatario = !inclDestinatario ? '' :
-    '<div style="margin-bottom:22px;">'
-    +'<div style="font-size:8.5px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#8A9AB8;margin-bottom:8px;">Dirigido a</div>'
+    '<div style="margin-bottom:16px;">'
+    +'<div style="font-size:8.5px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#8A9AB8;margin-bottom:6px;">Dirigido a</div>'
     +'<div style="font-size:17px;font-weight:900;color:#0B1F3A;letter-spacing:-.3px;">'+(cot.empresa||'')+'</div>'
-    +'<div style="font-size:13px;color:#4A5E7A;font-weight:500;margin-top:4px;">Attn: '+cot.atencion+'</div>'
-    +((cot.email||cot.tel)?'<div style="font-size:11px;color:#8A9AB8;margin-top:4px;">'+(cot.email||'')+(cot.email&&cot.tel?' · ':'')+( cot.tel||'')+'</div>':'')
+    +'<div style="font-size:13px;color:#4A5E7A;font-weight:500;margin-top:3px;">Attn: '+cot.atencion+'</div>'
+    +((cot.email||cot.tel)?'<div style="font-size:11px;color:#8A9AB8;margin-top:3px;">'+(cot.email||'')+(cot.email&&cot.tel?' · ':'')+( cot.tel||'')+'</div>':'')
     +(cot.rfc?'<div style="font-size:10px;color:#8A9AB8;margin-top:2px;">RFC: '+cot.rfc+'</div>':'')
     +'</div>';
 
   var secIntro = !inclIntro ? '' :
-    '<div style="font-size:12px;color:#4A5E7A;line-height:1.8;margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid #EDF1F8;">Por este medio, nos es grato presentar nuestra propuesta técnica‑comercial para las instalaciones de <strong style="color:#0B1F3A;">'+cot.empresa+'</strong>. A continuación se detalla el alcance, especificaciones y condiciones del proyecto:</div>';
+    '<div style="font-size:12px;color:#4A5E7A;line-height:1.7;margin-bottom:18px;padding-bottom:16px;border-bottom:1px solid #EDF1F8;">Por este medio, nos es grato presentar nuestra propuesta técnica‑comercial para las instalaciones de <strong style="color:#0B1F3A;">'+cot.empresa+'</strong>. A continuación se detalla el alcance, especificaciones y condiciones del proyecto:</div>';
 
   var brTabla = pageBreakEn==='tabla' ? '<div style="page-break-before:always;break-before:page;"></div>' : '';
   var brTotales = pageBreakEn==='totales' ? '<div style="page-break-before:always;break-before:page;"></div>' : '';
@@ -5141,16 +5147,12 @@ function generarPdfCotEnVentana(cot, winRef){
   var brP2 = pageBreakEn==='condiciones' ? ' page-break' : '';
   var secCondiciones = !inclCondiciones ? '' :
     '<div class="page2'+brP2+'">'
-    // Header navy strip — consistente con branding de P1 pero compacto
+    // Header navy strip — solo título a la izquierda
     +'<div style="background:linear-gradient(160deg,#0B1F3A 0%,#0F2A5A 100%);padding:20px 48px;display:flex;align-items:center;justify-content:space-between;position:relative;overflow:hidden;flex-shrink:0;">'
       +'<div style="position:absolute;right:-40px;top:-40px;width:160px;height:160px;border-radius:50%;background:rgba(30,111,217,.08);"></div>'
-      +'<div style="position:relative;z-index:2;display:flex;align-items:center;gap:16px;">'
-        +(logoB?'<img src="'+logoB+'" style="height:24px;width:auto;" alt="ROMSA">':'<div style="font-size:20px;font-weight:900;color:#fff;letter-spacing:-.5px;">ROMSA</div>')
-        +'<div style="width:1px;height:24px;background:rgba(255,255,255,.2);"></div>'
-        +'<div>'
-          +'<div style="font-size:8px;font-weight:600;letter-spacing:2.5px;text-transform:uppercase;color:rgba(255,255,255,.45);">Cotización Técnica</div>'
-          +'<div style="font-size:11px;font-weight:700;color:#fff;letter-spacing:.3px;margin-top:1px;">Condiciones Generales de Venta</div>'
-        +'</div>'
+      +'<div style="position:relative;z-index:2;">'
+        +'<div style="font-size:8px;font-weight:600;letter-spacing:2.5px;text-transform:uppercase;color:rgba(255,255,255,.45);">Cotización Técnica</div>'
+        +'<div style="font-size:14px;font-weight:700;color:#fff;letter-spacing:.3px;margin-top:3px;">Condiciones Generales de Venta</div>'
       +'</div>'
       +'<div style="position:relative;z-index:2;text-align:right;">'
         +'<div style="font-size:7.5px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.4);">Folio</div>'
