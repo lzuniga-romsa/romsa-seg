@@ -5075,6 +5075,7 @@ function generarPdfCotEnVentana(cot, winRef){
   }).join('');
 
   // Condiciones
+  var _vigTxt = 'La presente propuesta tiene una vigencia de '+vigencia+' días naturales contados a partir de la fecha de emisión. Transcurrido dicho plazo, ROMSA Industrial se reserva el derecho de revisar los precios y condiciones ofertadas conforme a las variaciones de mercado en materiales, insumos y tipo de cambio. Para garantizar los precios aquí indicados, el cliente deberá aceptar formalmente la propuesta y emitir la orden de compra correspondiente dentro del periodo de vigencia.';
   var conds=[
     {n:'1. Precio del Proyecto',           v:cot.condPrecioCond    },
     {n:'2. Forma de Pago',                 v:cot.condPago          },
@@ -5082,7 +5083,8 @@ function generarPdfCotEnVentana(cot, winRef){
     {n:'4. Alcances y Exclusiones',        v:cot.condAlcances      },
     {n:'5. Limitación de Responsabilidad', v:cot.condResponsabilidad},
     {n:'6. Garantía',                      v:cot.condGarantia      },
-    {n:'7. Entrega y Recepción',           v:cot.condEntrega       }
+    {n:'7. Entrega y Recepción',           v:cot.condEntrega       },
+    {n:'8. Vigencia de la Propuesta',      v:_vigTxt               }
   ].filter(function(c){return c.v&&c.v.trim();});
 
   var condsHtml=conds.map(function(c){
@@ -5100,48 +5102,45 @@ function generarPdfCotEnVentana(cot, winRef){
 
   // ── Construir secciones como variables ─────────────────────────
   var secResumen = !inclResumen ? '' :
-    '<div style="display:flex;align-items:stretch;background:#F7F9FC;border:1px solid #E2E8F2;border-radius:8px;padding:0;margin-bottom:18px;overflow:hidden;">'
-      +'<div style="background:#0B1F3A;padding:10px 16px;display:flex;align-items:center;">'
-        +'<div style="font-size:8px;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;color:rgba(255,255,255,.6);">Resumen<br>del proyecto</div>'
+    '<div style="background:#F7F9FC;border:1px solid #E2E8F2;border-radius:8px;margin-bottom:16px;overflow:hidden;">'
+      // Header
+      +'<div style="background:#0B1F3A;padding:7px 14px;">'
+        +'<div style="font-size:8px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.6);">Resumen del proyecto</div>'
       +'</div>'
-      +'<div style="flex:1;display:flex;align-items:center;padding:0 20px;">'
-        +'<div style="display:flex;align-items:center;gap:8px;">'
-          +'<div style="font-size:18px;font-weight:900;color:#0B1F3A;letter-spacing:-.3px;font-variant-numeric:tabular-nums;">'+numConceptos+'</div>'
-          +'<div style="font-size:9.5px;color:#6B7FA3;text-transform:uppercase;letter-spacing:.8px;font-weight:600;line-height:1.1;">Conceptos<br>cotizados</div>'
+      // Body: 2 bloques
+      +'<div style="display:flex;align-items:stretch;">'
+        +'<div style="flex:1;display:flex;align-items:center;justify-content:center;padding:11px 16px;">'
+          +'<div style="display:flex;align-items:center;gap:10px;">'
+            +'<div style="font-size:22px;font-weight:900;color:#0B1F3A;letter-spacing:-.3px;font-variant-numeric:tabular-nums;line-height:1;">'+numConceptos+'</div>'
+            +'<div style="font-size:9px;color:#6B7FA3;text-transform:uppercase;letter-spacing:.8px;font-weight:600;line-height:1.2;">Conceptos<br>cotizados</div>'
+          +'</div>'
         +'</div>'
-      +'</div>'
-      +'<div style="width:1px;background:#E2E8F2;"></div>'
-      +'<div style="flex:1.5;display:flex;align-items:center;justify-content:flex-end;padding:0 20px;background:#fff;">'
-        +'<div style="display:flex;align-items:baseline;gap:6px;">'
-          +'<div style="font-size:9.5px;color:#6B7FA3;text-transform:uppercase;letter-spacing:.8px;font-weight:600;">Gran Total</div>'
-          +'<div style="font-size:18px;font-weight:900;color:#0B3060;letter-spacing:-.3px;font-variant-numeric:tabular-nums;">$'+fmtPeso(total)+'</div>'
-          +'<div style="font-size:8.5px;font-weight:700;color:#1E6FD9;letter-spacing:.8px;">MXN</div>'
+        +'<div style="width:1px;background:#E2E8F2;"></div>'
+        +'<div style="flex:1;display:flex;align-items:baseline;justify-content:center;gap:8px;padding:11px 16px;background:#fff;">'
+          +'<div style="font-size:9px;color:#6B7FA3;text-transform:uppercase;letter-spacing:.8px;font-weight:600;">Gran Total</div>'
+          +'<div style="font-size:20px;font-weight:900;color:#0B3060;letter-spacing:-.3px;font-variant-numeric:tabular-nums;line-height:1;">$'+fmtPeso(total)+'</div>'
+          +'<div style="font-size:9px;font-weight:700;color:#1E6FD9;letter-spacing:.8px;">MXN</div>'
         +'</div>'
       +'</div>'
     +'</div>';
 
   var secDestinatario = !inclDestinatario ? '' :
-    '<div style="margin-bottom:16px;">'
-    +'<div style="font-size:8.5px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#8A9AB8;margin-bottom:6px;">Dirigido a</div>'
-    +'<div style="font-size:17px;font-weight:900;color:#0B1F3A;letter-spacing:-.3px;">'+(cot.empresa||'')+'</div>'
-    +'<div style="font-size:13px;color:#4A5E7A;font-weight:500;margin-top:3px;">Attn: '+cot.atencion+'</div>'
-    +((cot.email||cot.tel)?'<div style="font-size:11px;color:#8A9AB8;margin-top:3px;">'+(cot.email||'')+(cot.email&&cot.tel?' · ':'')+( cot.tel||'')+'</div>':'')
+    '<div style="margin-bottom:12px;">'
+    +'<div style="font-size:8px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#8A9AB8;margin-bottom:4px;">Dirigido a</div>'
+    +'<div style="font-size:12px;color:#0B1F3A;font-weight:600;">'+(cot.empresa||'')+'</div>'
+    +'<div style="font-size:12px;color:#4A5E7A;font-weight:500;">Attn: '+cot.atencion+'</div>'
+    +((cot.email||cot.tel)?'<div style="font-size:10.5px;color:#8A9AB8;margin-top:2px;">'+(cot.email||'')+(cot.email&&cot.tel?' · ':'')+( cot.tel||'')+'</div>':'')
     +(cot.rfc?'<div style="font-size:10px;color:#8A9AB8;margin-top:2px;">RFC: '+cot.rfc+'</div>':'')
     +'</div>';
 
   var secIntro = !inclIntro ? '' :
-    '<div style="font-size:12px;color:#4A5E7A;line-height:1.7;margin-bottom:18px;padding-bottom:16px;border-bottom:1px solid #EDF1F8;">Por este medio, nos es grato presentar nuestra propuesta técnica‑comercial para las instalaciones de <strong style="color:#0B1F3A;">'+cot.empresa+'</strong>. A continuación se detalla el alcance, especificaciones y condiciones del proyecto:</div>';
+    '<div style="font-size:11px;color:#4A5E7A;line-height:1.6;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid #EDF1F8;">Por este medio, nos es grato presentar nuestra propuesta técnica‑comercial para las instalaciones de <strong style="color:#0B1F3A;">'+cot.empresa+'</strong>. A continuación se detalla el alcance, especificaciones y condiciones del proyecto:</div>';
 
   var brTabla = pageBreakEn==='tabla' ? '<div style="page-break-before:always;break-before:page;"></div>' : '';
   var brTotales = pageBreakEn==='totales' ? '<div style="page-break-before:always;break-before:page;"></div>' : '';
 
-  var secVigencia = !inclVigencia ? '' :
-    '<div style="display:flex;justify-content:flex-end;margin-top:12px;">'
-    +'<div style="display:inline-flex;align-items:center;gap:10px;background:#F7F9FC;border:1px solid #E2E8F2;border-left:3px solid #1E6FD9;border-radius:4px;padding:8px 16px;">'
-      +'<span style="font-size:9px;font-weight:700;letter-spacing:1.5px;color:#1E6FD9;text-transform:uppercase;">Vigencia</span>'
-      +'<span style="width:1px;height:12px;background:#D5DDE8;"></span>'
-      +'<span style="font-size:10.5px;color:#4A5E7A;font-weight:500;">Cotización válida por <strong style="color:#0B1F3A;font-weight:700;">'+vigencia+' días naturales</strong> a partir de la fecha de emisión</span>'
-    +'</div></div>';
+  // Vigencia ahora se muestra integrada en el header de Próximos pasos
+  var secVigenciaLegacy = '';
 
   // Página 2 — condiciones
   var brP2 = pageBreakEn==='condiciones' ? ' page-break' : '';
@@ -5275,26 +5274,35 @@ function generarPdfCotEnVentana(cot, winRef){
             +'</div>'
           +'</div>'
         +'</div>'
-        +secVigencia
-        // Próximos pasos — cierre comercial compacto (sin page-break)
-        +'<div style="margin-top:14px;margin-bottom:auto;background:#F7F9FC;border:1px solid #E2E8F2;border-left:3px solid #1E6FD9;border-radius:6px;padding:12px 16px;page-break-inside:avoid;break-inside:avoid;">'
-          +'<div style="font-size:8.5px;font-weight:700;letter-spacing:2px;color:#1E6FD9;text-transform:uppercase;margin-bottom:8px;">Próximos pasos</div>'
-          +'<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">'
-            +'<div style="display:flex;gap:6px;align-items:flex-start;">'
-              +'<div style="min-width:18px;height:18px;border-radius:50%;background:#1E6FD9;color:#fff;display:flex;align-items:center;justify-content:center;font-size:9.5px;font-weight:800;flex-shrink:0;">1</div>'
-              +'<div style="font-size:9px;color:#4A5E7A;line-height:1.35;"><strong style="color:#0B1F3A;font-size:9.5px;">Aceptación</strong><br>Firma de esta propuesta</div>'
+        +secVigenciaLegacy
+        // Próximos pasos con vigencia integrada en el header (Opción A)
+        +'<div style="margin-top:14px;margin-bottom:auto;background:#F7F9FC;border:1px solid #E2E8F2;border-left:3px solid #1E6FD9;border-radius:6px;overflow:hidden;page-break-inside:avoid;break-inside:avoid;">'
+          // Header con título a la izq + vigencia a la der
+          +'<div style="padding:8px 14px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #E8EDF5;">'
+            +'<div style="font-size:8.5px;font-weight:700;letter-spacing:2px;color:#1E6FD9;text-transform:uppercase;">Próximos pasos</div>'
+            +(inclVigencia?'<div style="display:flex;align-items:center;gap:8px;">'
+              +'<span style="font-size:7.5px;font-weight:700;letter-spacing:1.5px;color:#8A9AB8;text-transform:uppercase;">Vigencia</span>'
+              +'<span style="width:1px;height:10px;background:#D5DDE8;"></span>'
+              +'<span style="font-size:9.5px;color:#4A5E7A;"><strong style="color:#0B1F3A;font-weight:700;">'+vigencia+' días naturales</strong> desde emisión</span>'
+            +'</div>':'')
+          +'</div>'
+          // Body con los 4 pasos
+          +'<div style="display:flex;align-items:center;gap:14px;padding:10px 14px;">'
+            +'<div style="display:flex;align-items:center;gap:6px;flex:1;">'
+              +'<div style="min-width:18px;height:18px;border-radius:50%;background:#1E6FD9;color:#fff;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;flex-shrink:0;">1</div>'
+              +'<div style="font-size:9px;color:#4A5E7A;line-height:1.25;"><strong style="color:#0B1F3A;font-size:9.5px;">Aceptación</strong><br>Firma propuesta</div>'
             +'</div>'
-            +'<div style="display:flex;gap:6px;align-items:flex-start;">'
-              +'<div style="min-width:18px;height:18px;border-radius:50%;background:#1E6FD9;color:#fff;display:flex;align-items:center;justify-content:center;font-size:9.5px;font-weight:800;flex-shrink:0;">2</div>'
-              +'<div style="font-size:9px;color:#4A5E7A;line-height:1.35;"><strong style="color:#0B1F3A;font-size:9.5px;">Orden de compra</strong><br>Emisión a ROMSA</div>'
+            +'<div style="display:flex;align-items:center;gap:6px;flex:1;">'
+              +'<div style="min-width:18px;height:18px;border-radius:50%;background:#1E6FD9;color:#fff;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;flex-shrink:0;">2</div>'
+              +'<div style="font-size:9px;color:#4A5E7A;line-height:1.25;"><strong style="color:#0B1F3A;font-size:9.5px;">Orden compra</strong><br>Emisión a ROMSA</div>'
             +'</div>'
-            +'<div style="display:flex;gap:6px;align-items:flex-start;">'
-              +'<div style="min-width:18px;height:18px;border-radius:50%;background:#1E6FD9;color:#fff;display:flex;align-items:center;justify-content:center;font-size:9.5px;font-weight:800;flex-shrink:0;">3</div>'
-              +'<div style="font-size:9px;color:#4A5E7A;line-height:1.35;"><strong style="color:#0B1F3A;font-size:9.5px;">Anticipo 60%</strong><br>Transferencia bancaria</div>'
+            +'<div style="display:flex;align-items:center;gap:6px;flex:1;">'
+              +'<div style="min-width:18px;height:18px;border-radius:50%;background:#1E6FD9;color:#fff;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;flex-shrink:0;">3</div>'
+              +'<div style="font-size:9px;color:#4A5E7A;line-height:1.25;"><strong style="color:#0B1F3A;font-size:9.5px;">Anticipo 60%</strong><br>Transferencia</div>'
             +'</div>'
-            +'<div style="display:flex;gap:6px;align-items:flex-start;">'
-              +'<div style="min-width:18px;height:18px;border-radius:50%;background:#10B981;color:#fff;display:flex;align-items:center;justify-content:center;font-size:9.5px;font-weight:800;flex-shrink:0;">4</div>'
-              +'<div style="font-size:9px;color:#4A5E7A;line-height:1.35;"><strong style="color:#0B1F3A;font-size:9.5px;">Inicio de obra</strong><br>Programación inmediata</div>'
+            +'<div style="display:flex;align-items:center;gap:6px;flex:1;">'
+              +'<div style="min-width:18px;height:18px;border-radius:50%;background:#10B981;color:#fff;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;flex-shrink:0;">4</div>'
+              +'<div style="font-size:9px;color:#4A5E7A;line-height:1.25;"><strong style="color:#0B1F3A;font-size:9.5px;">Inicio obra</strong><br>Programación</div>'
             +'</div>'
           +'</div>'
         +'</div>'
