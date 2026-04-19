@@ -1087,6 +1087,16 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
     </div>
     <div class="mod-arrow">›</div>
   </div>
+
+  <!-- Módulo Costeo — Solo visible para usuarios autorizados -->
+  <div id="mod-card-costeo" class="mod-card" onclick="selectModule('costeo')" style="display:none;background:linear-gradient(135deg,#1B3F72,#0B1F3A);border:1px solid rgba(96,165,250,.3);">
+    <div class="mod-icon" style="background:rgba(96,165,250,.2);color:#60A5FA;">💰</div>
+    <div class="mod-info">
+      <div class="mod-name" style="color:#fff;">Costeo <span style="font-size:8px;font-weight:700;letter-spacing:1px;color:#60A5FA;margin-left:4px;padding:1px 6px;border:1px solid rgba(96,165,250,.4);border-radius:10px;vertical-align:middle;">INTERNO</span></div>
+      <div class="mod-desc" style="color:rgba(255,255,255,.5);">Análisis de costos, materiales y utilidad</div>
+    </div>
+    <div class="mod-arrow" style="color:#60A5FA;">›</div>
+  </div>
 </div>
 
 <!-- LOGIN SCREEN -->
@@ -4910,6 +4920,9 @@ function selectModule(mod){
     goScreen('levantamientos');
   } else if(mod === 'cotizaciones'){
     goScreen('cotizaciones');
+  } else if(mod === 'costeo'){
+    if(!window._costeoAcceso){ showToast("🔒 Sin acceso a este módulo"); volverSelector(); return; }
+    goScreen('costeo');
   }
 }
 
@@ -7330,6 +7343,9 @@ auth.onAuthStateChanged(async user => {
     });
 
     if(costeoTab) costeoTab.style.display = _tieneCosteo ? "" : "none";
+    // También mostrar/ocultar la tarjeta en el selector de módulos
+    const modCardCosteo = document.getElementById("mod-card-costeo");
+    if(modCardCosteo) modCardCosteo.style.display = _tieneCosteo ? "" : "none";
     window._costeoAcceso = _tieneCosteo;
 
     // Logo en login
