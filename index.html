@@ -708,6 +708,61 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
 .empty-ttl{font-size:15px;font-weight:600;color:var(--tx2);margin-bottom:4px;}
 .empty-sub{font-size:12px;color:var(--g3);line-height:1.5;}
 
+/* ══ MÓDULO COSTEO ══ */
+#screen-costeo.active{display:flex;flex-direction:column;}
+.cos-tab{padding:12px 14px;font-size:11px;font-weight:700;color:var(--tx2);letter-spacing:.3px;cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;}
+.cos-tab-active{color:#1E6FD9;border-bottom-color:#1E6FD9;}
+.cos-cat-tab-active{background:var(--navy)!important;color:#fff!important;}
+.cos-card{background:#fff;border:1px solid var(--g1);border-radius:10px;padding:12px 14px;margin-bottom:8px;}
+.cos-card-row{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+.cos-card-title{font-size:13px;font-weight:700;color:var(--navy);}
+.cos-card-meta{font-size:10px;color:var(--tx2);margin-top:2px;}
+.cos-input{width:100%;padding:8px 10px;border:1px solid var(--g1);border-radius:6px;font-size:12px;font-family:var(--font);color:var(--navy);background:#fff;}
+.cos-input:focus{outline:none;border-color:#1E6FD9;}
+.cos-label{font-size:9px;font-weight:700;color:var(--tx2);letter-spacing:.8px;text-transform:uppercase;display:block;margin-bottom:4px;}
+.cos-btn-sm{background:var(--off);border:1px solid var(--g1);color:var(--tx2);font-size:10px;font-weight:600;padding:5px 10px;border-radius:6px;cursor:pointer;font-family:var(--font);}
+.cos-btn-sm:hover{background:var(--g1);}
+.cos-btn-primary{background:#1E6FD9;color:#fff;border:none;padding:8px 14px;border-radius:7px;font-size:11px;font-weight:700;cursor:pointer;font-family:var(--font);}
+.cos-btn-danger{background:#FEE2E2;color:#DC2626;border:none;padding:5px 10px;border-radius:6px;font-size:10px;font-weight:700;cursor:pointer;font-family:var(--font);}
+.cos-rendimiento{background:var(--off2);border:1px solid var(--off);border-radius:8px;padding:8px 10px;margin-top:6px;display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:6px;align-items:end;}
+
+/* Editor de Costeo */
+.cos-editor{padding:16px;max-width:100%;}
+.cos-sistema{background:#fff;border:1px solid var(--g1);border-radius:12px;margin-bottom:14px;overflow:hidden;}
+.cos-sistema-hdr{background:linear-gradient(135deg,#1B3F72,#0B1F3A);padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px;}
+.cos-sistema-title{flex:1;display:flex;align-items:center;gap:10px;}
+.cos-sistema-body{padding:12px 14px;}
+.cos-partidas-header{display:grid;grid-template-columns:60px 2fr 85px 85px 85px 85px 55px 32px;gap:6px;padding:6px 8px;background:var(--off);border-radius:6px;margin-bottom:6px;font-size:8px;font-weight:700;color:var(--tx2);letter-spacing:.6px;text-transform:uppercase;}
+.cos-partida{display:grid;grid-template-columns:60px 2fr 85px 85px 85px 85px 55px 32px;gap:6px;padding:4px 8px;align-items:center;font-size:11px;}
+.cos-partida:nth-child(even){background:var(--off2);}
+.cos-partida input{font-size:11px;padding:5px 7px;border:1px solid var(--g1);border-radius:4px;font-family:var(--font);width:100%;color:var(--navy);background:#fff;}
+.cos-partida-name{font-size:11px;color:var(--navy);font-weight:500;padding:2px 0;}
+.cos-partida-tag{display:inline-block;font-size:7.5px;font-weight:700;padding:1px 5px;border-radius:3px;letter-spacing:.4px;text-transform:uppercase;margin-right:4px;vertical-align:middle;}
+.cos-tag-mo{background:#DBEAFE;color:#1E40AF;}
+.cos-tag-mat{background:#DCFCE7;color:#166534;}
+.cos-tag-ind{background:#FEF3C7;color:#78350F;}
+.cos-totales{background:linear-gradient(135deg,#0B1F3A,#1B3F72);color:#fff;padding:12px 14px;border-radius:0 0 11px 11px;}
+.cos-totales-row{display:flex;justify-content:space-between;align-items:baseline;padding:3px 0;font-size:11px;}
+.cos-totales-row strong{font-weight:700;color:#fff;font-variant-numeric:tabular-nums;}
+.cos-totales-label{color:rgba(255,255,255,.55);font-size:10px;}
+.cos-totales-divider{height:1px;background:rgba(255,255,255,.12);margin:5px 0;}
+.cos-totales-final{padding:6px 0;font-size:14px;font-weight:800;}
+.cos-totales-final strong{font-size:16px;color:#60A5FA;}
+.cos-margen-pill{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;font-variant-numeric:tabular-nums;}
+.cos-margen-ok{background:rgba(16,185,129,.2);color:#10B981;}
+.cos-margen-warn{background:rgba(245,158,11,.2);color:#FBBf24;}
+.cos-margen-bad{background:rgba(239,68,68,.2);color:#F87171;}
+
+/* Modal selector de material */
+.cos-modal-ov{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:700;display:flex;align-items:flex-end;justify-content:center;}
+.cos-modal{background:#fff;width:100%;max-width:500px;max-height:85vh;border-radius:16px 16px 0 0;overflow:hidden;display:flex;flex-direction:column;}
+.cos-modal-hdr{padding:14px 16px;border-bottom:1px solid var(--g1);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.cos-modal-body{flex:1;overflow-y:auto;padding:12px 16px;}
+.cos-modal-opt{padding:10px 12px;border:1px solid var(--g1);border-radius:8px;margin-bottom:6px;cursor:pointer;transition:all .15s;}
+.cos-modal-opt:hover{border-color:#1E6FD9;background:var(--off);}
+.cos-modal-opt-title{font-size:12px;font-weight:700;color:var(--navy);}
+.cos-modal-opt-meta{font-size:10px;color:var(--tx2);margin-top:2px;}
+
 /* ── PDF PREVIEW ── */
 #pdf-preview{display:none;position:fixed;inset:0;background:#F0F3F8;z-index:400;overflow-y:auto;}
 .pdf-topbar{position:sticky;top:0;background:var(--navy);padding:calc(var(--safe-top) + 10px) 16px 10px;display:flex;align-items:center;justify-content:space-between;z-index:10;}
@@ -1082,6 +1137,7 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
       <span id="tb-user-badge" style="position:absolute;top:-6px;right:-4px;background:#1E6FD9;color:#fff;font-size:8px;font-weight:700;padding:2px 6px;border-radius:10px;white-space:nowrap;display:none;max-width:80px;overflow:hidden;text-overflow:ellipsis;"></span>
     </div>
     <div class="snav" id="snav-cotizaciones" onclick="goScreen('cotizaciones')" style="display:none;">Cotizaciones</div>
+    <div class="snav" id="snav-costeo" onclick="goScreen('costeo')" style="display:none;">Costeo</div>
     <div class="snav" id="snav-admin" onclick="goScreen('admin')" style="display:none;">Admin</div>
   </div>
 
@@ -1746,6 +1802,190 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
     </div><!-- /scrollable -->
   </div><!-- /screen-cotizaciones -->
 
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- ══ MÓDULO COSTEO ══ Solo admins y usuarios autorizados ══ -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <div id="screen-costeo" class="screen" style="padding:0;overflow-y:auto;background:var(--off);">
+
+    <!-- Header Hero -->
+    <div style="background:linear-gradient(135deg,#1B3F72,#0B1F3A);padding:16px 18px;border-bottom:1px solid rgba(255,255,255,.05);">
+      <div style="font-size:9px;font-weight:700;color:#60A5FA;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:3px;">Módulo interno · ROMSA</div>
+      <div style="font-size:18px;font-weight:800;color:#fff;line-height:1.2;">Costeo de proyectos</div>
+      <div style="font-size:10px;color:rgba(255,255,255,.5);margin-top:4px;">Análisis de costos · Materiales · Mano de obra · Utilidad</div>
+    </div>
+
+    <!-- Sub-tabs del módulo -->
+    <div style="background:#fff;border-bottom:1px solid var(--g1);display:flex;padding:0 16px;">
+      <div class="cos-tab cos-tab-active" data-cos-tab="dashboard" onclick="switchCosteoTab('dashboard')">📊 Dashboard</div>
+      <div class="cos-tab" data-cos-tab="catalogos" onclick="switchCosteoTab('catalogos')">📂 Catálogos</div>
+      <div class="cos-tab" data-cos-tab="costeos" onclick="switchCosteoTab('costeos')">📋 Costeos</div>
+    </div>
+
+    <!-- ─── TAB: DASHBOARD ─── -->
+    <div id="cos-tab-dashboard" class="cos-tab-panel" style="padding:16px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
+        <div style="background:#fff;border:1px solid var(--g1);border-radius:12px;padding:14px;">
+          <div style="font-size:8px;font-weight:700;color:#7090B8;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">Costeos activos</div>
+          <div id="cos-kpi-activos" style="font-size:24px;font-weight:900;color:#1B3F72;">0</div>
+        </div>
+        <div style="background:#fff;border:1px solid var(--g1);border-radius:12px;padding:14px;">
+          <div style="font-size:8px;font-weight:700;color:#7090B8;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">Valor cotizado</div>
+          <div id="cos-kpi-valor" style="font-size:20px;font-weight:900;color:#10B981;">$0</div>
+          <div style="font-size:9px;color:#7090B8;margin-top:2px;">este año</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">
+        <div style="background:#fff;border:1px solid var(--g1);border-radius:12px;padding:14px;">
+          <div style="font-size:8px;font-weight:700;color:#7090B8;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">Utilidad proyectada</div>
+          <div id="cos-kpi-utilidad" style="font-size:20px;font-weight:900;color:#F59E0B;">$0</div>
+          <div style="font-size:9px;color:#7090B8;margin-top:2px;">antes de IVA</div>
+        </div>
+        <div style="background:#fff;border:1px solid var(--g1);border-radius:12px;padding:14px;">
+          <div style="font-size:8px;font-weight:700;color:#7090B8;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">Margen promedio</div>
+          <div id="cos-kpi-margen" style="font-size:20px;font-weight:900;color:#1E6FD9;">0%</div>
+        </div>
+      </div>
+
+      <!-- Quick actions -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
+        <button onclick="switchCosteoTab('costeos'); setTimeout(nuevoCosteo,100);" style="background:#1E6FD9;border:none;border-radius:12px;padding:14px;display:flex;align-items:center;gap:10px;cursor:pointer;font-family:var(--font);">
+          <div style="width:30px;height:30px;background:rgba(255,255,255,.15);border-radius:8px;display:flex;align-items:center;justify-content:center;">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 2v10M2 7h10" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></svg>
+          </div>
+          <div style="text-align:left;">
+            <div style="font-size:12px;font-weight:700;color:#fff;">Nuevo Costeo</div>
+            <div style="font-size:9px;color:rgba(255,255,255,.6);">Crear análisis</div>
+          </div>
+        </button>
+        <button onclick="switchCosteoTab('catalogos')" style="background:#fff;border:1px solid var(--g1);border-radius:12px;padding:14px;display:flex;align-items:center;gap:10px;cursor:pointer;font-family:var(--font);">
+          <div style="width:30px;height:30px;background:var(--off);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;">📂</div>
+          <div style="text-align:left;">
+            <div style="font-size:12px;font-weight:700;color:var(--navy);">Catálogos</div>
+            <div style="font-size:9px;color:var(--tx2);">Materiales · MO · Indirectos</div>
+          </div>
+        </button>
+      </div>
+
+      <!-- Info box -->
+      <div style="background:#FEF3C7;border:1px solid #FCD34D;border-left:3px solid #F59E0B;border-radius:8px;padding:12px;font-size:11px;color:#78350F;line-height:1.6;">
+        <strong>🔒 Módulo de acceso restringido.</strong> La información aquí es confidencial. Incluye costos de materiales, mano de obra y márgenes de utilidad reales de ROMSA Industrial.
+      </div>
+    </div>
+
+    <!-- ─── TAB: CATÁLOGOS ─── -->
+    <div id="cos-tab-catalogos" class="cos-tab-panel" style="display:none;padding:16px;">
+      <!-- Sub-sub tabs de catálogos -->
+      <div style="display:flex;gap:0;background:#fff;border:1px solid var(--g1);border-radius:10px;padding:3px;margin-bottom:14px;">
+        <div class="cos-cat-tab cos-cat-tab-active" data-cat-tab="materiales" onclick="switchCatTab('materiales')" style="flex:1;padding:8px 10px;text-align:center;font-size:10px;font-weight:700;color:var(--tx2);letter-spacing:.5px;text-transform:uppercase;cursor:pointer;border-radius:8px;transition:all .15s;">Materiales</div>
+        <div class="cos-cat-tab" data-cat-tab="mo" onclick="switchCatTab('mo')" style="flex:1;padding:8px 10px;text-align:center;font-size:10px;font-weight:700;color:var(--tx2);letter-spacing:.5px;text-transform:uppercase;cursor:pointer;border-radius:8px;transition:all .15s;">Mano de Obra</div>
+        <div class="cos-cat-tab" data-cat-tab="indirectos" onclick="switchCatTab('indirectos')" style="flex:1;padding:8px 10px;text-align:center;font-size:10px;font-weight:700;color:var(--tx2);letter-spacing:.5px;text-transform:uppercase;cursor:pointer;border-radius:8px;transition:all .15s;">Indirectos</div>
+      </div>
+
+      <!-- Cat: Materiales -->
+      <div id="cat-panel-materiales" class="cat-panel">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <div style="font-size:11px;color:var(--tx2);">Catálogo base de materiales. Los precios y rendimientos son editables.</div>
+          <button onclick="nuevoMaterial()" style="background:#1E6FD9;color:#fff;border:none;padding:6px 12px;border-radius:7px;font-size:10px;font-weight:700;cursor:pointer;font-family:var(--font);">+ Material</button>
+        </div>
+        <div id="lista-materiales"></div>
+      </div>
+
+      <!-- Cat: Mano de Obra -->
+      <div id="cat-panel-mo" class="cat-panel" style="display:none;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <div style="font-size:11px;color:var(--tx2);">Costos de mano de obra por tipo de trabajo.</div>
+          <button onclick="nuevoTipoMO()" style="background:#1E6FD9;color:#fff;border:none;padding:6px 12px;border-radius:7px;font-size:10px;font-weight:700;cursor:pointer;font-family:var(--font);">+ Tipo</button>
+        </div>
+        <div id="lista-mo"></div>
+      </div>
+
+      <!-- Cat: Indirectos -->
+      <div id="cat-panel-indirectos" class="cat-panel" style="display:none;">
+        <div style="font-size:11px;color:var(--tx2);margin-bottom:10px;">Costos indirectos estándar del proyecto (editables).</div>
+        <div id="lista-indirectos"></div>
+      </div>
+    </div>
+
+    <!-- ─── TAB: COSTEOS ─── -->
+    <div id="cos-tab-costeos" class="cos-tab-panel" style="display:none;padding:16px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <div style="font-size:12px;font-weight:700;color:var(--navy);">Costeos de proyectos</div>
+        <button onclick="nuevoCosteo()" style="background:#1E6FD9;color:#fff;border:none;padding:8px 14px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:var(--font);">+ Nuevo Costeo</button>
+      </div>
+      <div id="lista-costeos">
+        <div style="background:#fff;border:1px dashed var(--g1);border-radius:12px;padding:24px;text-align:center;">
+          <div style="font-size:28px;margin-bottom:6px;">📋</div>
+          <div style="font-size:12px;font-weight:700;color:var(--navy);margin-bottom:2px;">Sin costeos todavía</div>
+          <div style="font-size:10px;color:var(--tx2);">Crea tu primer análisis de costos</div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /screen-costeo -->
+
+  <!-- ══ EDITOR DE COSTEO ══ -->
+  <div id="screen-costeo-editor" class="screen" style="padding:0;overflow-y:auto;background:var(--off);">
+    <!-- Header con back + datos del proyecto -->
+    <div style="background:linear-gradient(135deg,#1B3F72,#0B1F3A);padding:12px 16px;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+        <button onclick="cerrarEditorCosteo()" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);color:#fff;font-size:11px;font-weight:700;padding:6px 10px;border-radius:6px;cursor:pointer;font-family:var(--font);">← Volver</button>
+        <div style="flex:1;">
+          <div id="ce-folio" style="font-size:9px;font-weight:700;color:#60A5FA;letter-spacing:1.5px;text-transform:uppercase;">COS-XXX-YYYYMMDD-NNN</div>
+          <div style="font-size:14px;font-weight:800;color:#fff;line-height:1.2;margin-top:1px;">Costeo de proyecto</div>
+        </div>
+        <button onclick="guardarCosteoActual()" class="cos-btn-primary" style="flex-shrink:0;">💾 Guardar</button>
+      </div>
+    </div>
+
+    <!-- Datos del proyecto -->
+    <div style="background:#fff;border-bottom:1px solid var(--g1);padding:14px 16px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px;">
+        <div><div class="cos-label">Proyecto</div><input class="cos-input" id="ce-proyecto" placeholder="Ej: Planta ELM"></div>
+        <div><div class="cos-label">Cliente</div><input class="cos-input" id="ce-cliente" placeholder="Ej: ELM Aerospace"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
+        <div><div class="cos-label">Prefijo cliente</div><input class="cos-input" id="ce-prefijo" placeholder="ELM" maxlength="6" style="text-transform:uppercase;"></div>
+        <div><div class="cos-label">Fecha</div><input class="cos-input" id="ce-fecha" type="date"></div>
+        <div><div class="cos-label">Atención a</div><input class="cos-input" id="ce-atencion" placeholder="Ing. ..."></div>
+      </div>
+    </div>
+
+    <!-- Sistemas -->
+    <div class="cos-editor">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <div style="font-size:13px;font-weight:700;color:var(--navy);">Sistemas del proyecto</div>
+        <button onclick="agregarSistema()" class="cos-btn-primary">+ Sistema</button>
+      </div>
+
+      <div id="ce-sistemas-wrap"></div>
+
+      <!-- Resumen global del costeo -->
+      <div id="ce-resumen-global" style="background:#fff;border:2px solid #1E6FD9;border-radius:12px;padding:14px;margin-top:12px;display:none;">
+        <div style="font-size:9px;font-weight:700;color:#1E6FD9;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;">Resumen Global del Costeo</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
+          <div style="background:var(--off);padding:10px;border-radius:8px;">
+            <div style="font-size:8px;font-weight:700;color:var(--tx2);letter-spacing:.8px;text-transform:uppercase;">Costo total</div>
+            <div id="ce-global-costo" style="font-size:18px;font-weight:900;color:var(--navy);margin-top:2px;font-variant-numeric:tabular-nums;">$0</div>
+          </div>
+          <div style="background:var(--off);padding:10px;border-radius:8px;">
+            <div style="font-size:8px;font-weight:700;color:var(--tx2);letter-spacing:.8px;text-transform:uppercase;">Precio total</div>
+            <div id="ce-global-precio" style="font-size:18px;font-weight:900;color:#10B981;margin-top:2px;font-variant-numeric:tabular-nums;">$0</div>
+          </div>
+          <div style="background:var(--off);padding:10px;border-radius:8px;">
+            <div style="font-size:8px;font-weight:700;color:var(--tx2);letter-spacing:.8px;text-transform:uppercase;">Utilidad</div>
+            <div id="ce-global-utilidad" style="font-size:18px;font-weight:900;color:#F59E0B;margin-top:2px;font-variant-numeric:tabular-nums;">$0</div>
+          </div>
+          <div style="background:var(--off);padding:10px;border-radius:8px;">
+            <div style="font-size:8px;font-weight:700;color:var(--tx2);letter-spacing:.8px;text-transform:uppercase;">Margen global</div>
+            <div id="ce-global-margen" style="font-size:18px;font-weight:900;margin-top:2px;">0%</div>
+          </div>
+        </div>
+        <div id="ce-alerta-margen" style="font-size:10px;padding:8px 10px;border-radius:6px;display:none;"></div>
+      </div>
+
+    </div>
+  </div><!-- /screen-costeo-editor -->
+
   </div><!-- /main -->
 
   <nav id="navbar">
@@ -2211,6 +2451,14 @@ function goScreen(n){
     else { goScreen("obras"); }
   }
   if(n==="cotizaciones"){ renderListaCot(); }
+  if(n==="costeo"){
+    if(!window._costeoAcceso){ showToast("🔒 Sin acceso a este módulo"); goScreen("obras"); return; }
+    // Asegurar que el tab dashboard esté activo al entrar
+    if(typeof switchCosteoTab==="function") switchCosteoTab("dashboard");
+  }
+  if(n==="costeo-editor"){
+    if(!window._costeoAcceso){ showToast("🔒 Sin acceso a este módulo"); goScreen("obras"); return; }
+  }
 }
 function showDTab(n,btn){
   document.querySelectorAll(".dtab-content").forEach(t=>t.style.display="none");
@@ -5517,9 +5765,1118 @@ updateHoraCi();
 // ═══════════════════════════════════════════════════════════════
 // ─── AUTH & ROLES ──────────────────────────────────────────────
 // ═══════════════════════════════════════════════════════════════
-const ADMIN_UID = "OVsuuX8DsSdhLqXmK01gW2K8Rrh1";
+// ═══════════════════════════════════════════════════════════════
+// ─── MÓDULO COSTEO ─────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+
+// Lista blanca de usuarios autorizados al módulo Costeo
+const COSTEO_USUARIOS_AUTORIZADOS = [
+  "sroman@romsaindustrial.com",
+  "lzuniga@romsaindustrial.com"
+];
+
+// Referencias a colecciones de Firestore
+const costeoMaterialesRef = db ? db.collection("costeo_catalogo_materiales") : null;
+const costeoMoRef         = db ? db.collection("costeo_catalogo_mo") : null;
+const costeoIndirectosRef = db ? db.collection("costeo_catalogo_indirectos") : null;
+const costeoCosteosRef    = db ? db.collection("costeos") : null;
+
+// Estado local
+let _costeoMateriales = [];
+let _costeoMO = [];
+let _costeoIndirectos = null;
+let _costeoCosteos = [];
+
+// ── Seed de datos iniciales (pre-cargados, editables) ────────
+const COSTEO_SEED_MATERIALES = [
+  {
+    id: "mat_lm555_gris",
+    nombre: "LM555 Color Gris",
+    presentacion: "cubeta",
+    precio: 3453.00,
+    notas: "Epóxico 100% sólidos — Parte A",
+    rendimientos: [
+      {espesor:"10 mils",   m2PorGalon:14.86},
+      {espesor:"15 mils",   m2PorGalon: 9.90},
+      {espesor:"20 mils",   m2PorGalon: 7.43},
+      {espesor:"30 mils",   m2PorGalon: 4.95}
+    ]
+  },
+  {
+    id: "mat_epo35",
+    nombre: "EPO35",
+    presentacion: "cubeta",
+    precio: 3524.00,
+    notas: "Epóxico 100% sólidos — Parte B",
+    rendimientos: [
+      {espesor:"10 mils",   m2PorGalon:14.86},
+      {espesor:"15 mils",   m2PorGalon: 9.90},
+      {espesor:"20 mils",   m2PorGalon: 7.43},
+      {espesor:"30 mils",   m2PorGalon: 4.95}
+    ]
+  },
+  {
+    id: "mat_poliuretano_l32",
+    nombre: "Poliuretano Línea 32",
+    presentacion: "cubeta",
+    precio: 6894.00,
+    notas: "Acabado de poliuretano resistente a UV",
+    rendimientos: [
+      {espesor:"4 mils",    m2PorGalon:140.00}  /* rango 120-160, promedio */
+    ]
+  },
+  {
+    id: "mat_flowfresh_rt",
+    nombre: "Flowfresh RT (kit)",
+    presentacion: "kit",
+    precio: 2884.20,
+    notas: "Mortero uretano cementicio — kit completo",
+    rendimientos: []
+  },
+  {
+    id: "mat_sikaflex_2c_sl",
+    nombre: "Sikaflex 2C SL",
+    presentacion: "galón",
+    precio: 2000.00,
+    notas: "Sellador epóxico-poliuretano bicomponente",
+    rendimientos: [
+      {espesor:"1/4\" ancho",  m2PorGalon: 93.84,  unidad:"m lineal"},
+      {espesor:"3/8\" ancho",  m2PorGalon: 62.50,  unidad:"m lineal"},
+      {espesor:"1/2\" ancho",  m2PorGalon: 46.90,  unidad:"m lineal"},
+      {espesor:"3/4\" ancho",  m2PorGalon: 31.27,  unidad:"m lineal"},
+      {espesor:"1\" ancho",    m2PorGalon: 23.47,  unidad:"m lineal"},
+      {espesor:"1.25\" ancho", m2PorGalon: 18.78,  unidad:"m lineal"},
+      {espesor:"1.5\" ancho",  m2PorGalon: 15.64,  unidad:"m lineal"}
+    ]
+  }
+];
+
+const COSTEO_SEED_MO = [
+  {id:"mo_epoxico",         nombre:"Aplicación epóxico",          costoPorUnidad:200, unidad:"m²",     utilSug:80},
+  {id:"mo_mortero",         nombre:"Aplicación mortero uretano",  costoPorUnidad:300, unidad:"m²",     utilSug:80},
+  {id:"mo_sello",           nombre:"Sello de juntas",             costoPorUnidad: 60, unidad:"m.l.",   utilSug:70},
+  {id:"mo_reparacion",      nombre:"Reparación de grietas",       costoPorUnidad: 80, unidad:"m.l.",   utilSug:70},
+  {id:"mo_pintura",         nombre:"Pintura de muros",            costoPorUnidad:150, unidad:"m²",     utilSug:75}
+];
+
+const COSTEO_SEED_INDIRECTOS = {
+  supervisorDia:     1500,
+  consumiblesPct:    7,     /* % sugerido sobre costo material+MO */
+  fleteDefault:      1800,
+  comidasSug:        750,
+  casetasSug:        1200,
+  gasolinaSug:       2000
+};
+
+// ── Subscribe: cargar catálogos y poblar si están vacíos ──────
+function subscribeCosteo(){
+  if(!costeoMaterialesRef){
+    console.warn("Firestore no disponible para Costeo");
+    return;
+  }
+
+  // Materiales
+  costeoMaterialesRef.onSnapshot(snap=>{
+    if(snap.empty){
+      seedCosteoMateriales();
+      return;
+    }
+    _costeoMateriales = snap.docs.map(d=>d.data());
+    renderMateriales();
+    renderKPIsCosteo();
+  }, err=>console.error("Costeo materiales:", err));
+
+  // Mano de Obra
+  costeoMoRef.onSnapshot(snap=>{
+    if(snap.empty){
+      seedCosteoMO();
+      return;
+    }
+    _costeoMO = snap.docs.map(d=>d.data());
+    renderMO();
+  }, err=>console.error("Costeo MO:", err));
+
+  // Indirectos (documento único)
+  costeoIndirectosRef.doc("default").onSnapshot(snap=>{
+    if(!snap.exists){
+      costeoIndirectosRef.doc("default").set(COSTEO_SEED_INDIRECTOS);
+      return;
+    }
+    _costeoIndirectos = snap.data();
+    renderIndirectos();
+  }, err=>console.error("Costeo indirectos:", err));
+
+  // Costeos guardados (para el dashboard)
+  costeoCosteosRef.orderBy("ts","desc").onSnapshot(snap=>{
+    _costeoCosteos = snap.docs.map(d=>d.data());
+    renderKPIsCosteo();
+    renderListaCosteos();
+  }, err=>console.error("Costeos:", err));
+}
+
+async function seedCosteoMateriales(){
+  try{
+    const batch = db.batch();
+    COSTEO_SEED_MATERIALES.forEach(m=>{
+      batch.set(costeoMaterialesRef.doc(m.id), m);
+    });
+    await batch.commit();
+    showToast("✓ Catálogo de materiales inicializado");
+  }catch(e){ console.error("Seed materiales:", e); }
+}
+
+async function seedCosteoMO(){
+  try{
+    const batch = db.batch();
+    COSTEO_SEED_MO.forEach(m=>{
+      batch.set(costeoMoRef.doc(m.id), m);
+    });
+    await batch.commit();
+    showToast("✓ Catálogo de mano de obra inicializado");
+  }catch(e){ console.error("Seed MO:", e); }
+}
+
+// ── Navegación de tabs ────────────────────────────────────────
+function switchCosteoTab(tab){
+  document.querySelectorAll(".cos-tab").forEach(t=>t.classList.remove("cos-tab-active"));
+  document.querySelector('.cos-tab[data-cos-tab="'+tab+'"]')?.classList.add("cos-tab-active");
+  document.querySelectorAll(".cos-tab-panel").forEach(p=>p.style.display="none");
+  const panel = document.getElementById("cos-tab-"+tab);
+  if(panel) panel.style.display = "block";
+}
+
+function switchCatTab(tab){
+  document.querySelectorAll(".cos-cat-tab").forEach(t=>t.classList.remove("cos-cat-tab-active"));
+  document.querySelector('.cos-cat-tab[data-cat-tab="'+tab+'"]')?.classList.add("cos-cat-tab-active");
+  document.querySelectorAll(".cat-panel").forEach(p=>p.style.display="none");
+  const panel = document.getElementById("cat-panel-"+tab);
+  if(panel) panel.style.display = "block";
+}
+
+// ── Render: MATERIALES ───────────────────────────────────────
+function renderMateriales(){
+  const wrap = document.getElementById("lista-materiales");
+  if(!wrap) return;
+  if(!_costeoMateriales.length){
+    wrap.innerHTML = '<div style="background:#fff;border:1px dashed var(--g1);border-radius:10px;padding:20px;text-align:center;font-size:11px;color:var(--tx2);">Sin materiales. Click en + Material para agregar.</div>';
+    return;
+  }
+  wrap.innerHTML = _costeoMateriales.map(m=>{
+    const rendHtml = (m.rendimientos||[]).map((r,idx)=>{
+      const unitLbl = r.unidad || "m²";
+      return '<div class="cos-rendimiento">'
+        +'<div><div class="cos-label">Espesor / Medida</div><input class="cos-input" value="'+escapeHtml(r.espesor||"")+'" onchange="updRend(\''+m.id+'\','+idx+',\'espesor\',this.value)"></div>'
+        +'<div><div class="cos-label">'+unitLbl+'/galón</div><input class="cos-input" type="number" step="0.01" value="'+(r.m2PorGalon||"")+'" onchange="updRend(\''+m.id+'\','+idx+',\'m2PorGalon\',parseFloat(this.value)||0)"></div>'
+        +'<div><div class="cos-label">Unidad</div><select class="cos-input" onchange="updRend(\''+m.id+'\','+idx+',\'unidad\',this.value)"><option value="m²"'+(unitLbl==="m²"?" selected":"")+'>m²</option><option value="m lineal"'+(unitLbl==="m lineal"?" selected":"")+'>m lineal</option></select></div>'
+        +'<button class="cos-btn-danger" onclick="delRend(\''+m.id+'\','+idx+')">✕</button>'
+      +'</div>';
+    }).join("");
+
+    return '<div class="cos-card">'
+      +'<div class="cos-card-row" style="margin-bottom:10px;">'
+        +'<div style="flex:1;">'
+          +'<div class="cos-label">Nombre</div>'
+          +'<input class="cos-input" value="'+escapeHtml(m.nombre||"")+'" onchange="updMaterial(\''+m.id+'\',\'nombre\',this.value)">'
+        +'</div>'
+        +'<button class="cos-btn-danger" onclick="delMaterial(\''+m.id+'\')" style="align-self:flex-end;">Eliminar</button>'
+      +'</div>'
+      +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px;">'
+        +'<div><div class="cos-label">Presentación</div>'
+          +'<select class="cos-input" onchange="updMaterial(\''+m.id+'\',\'presentacion\',this.value)">'
+            +['cubeta','galón','saco','kit','pieza','litro','kg'].map(p=>'<option value="'+p+'"'+(m.presentacion===p?" selected":"")+'>'+p+'</option>').join("")
+          +'</select>'
+        +'</div>'
+        +'<div><div class="cos-label">Precio MXN</div>'
+          +'<input class="cos-input" type="number" step="0.01" value="'+(m.precio||0)+'" onchange="updMaterial(\''+m.id+'\',\'precio\',parseFloat(this.value)||0)">'
+        +'</div>'
+        +'<div><div class="cos-label">Notas</div>'
+          +'<input class="cos-input" value="'+escapeHtml(m.notas||"")+'" onchange="updMaterial(\''+m.id+'\',\'notas\',this.value)" placeholder="—">'
+        +'</div>'
+      +'</div>'
+      +'<div style="margin-top:10px;">'
+        +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">'
+          +'<div class="cos-label" style="margin:0;">Rendimientos</div>'
+          +'<button class="cos-btn-sm" onclick="addRend(\''+m.id+'\')">+ Rendimiento</button>'
+        +'</div>'
+        +(rendHtml||'<div style="font-size:10px;color:var(--tx3);padding:6px 0;">Sin rendimientos registrados.</div>')
+      +'</div>'
+    +'</div>';
+  }).join("");
+}
+
+function escapeHtml(s){ return (s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+
+async function updMaterial(id, campo, valor){
+  const m = _costeoMateriales.find(x=>x.id===id);
+  if(!m) return;
+  m[campo] = valor;
+  try{ await costeoMaterialesRef.doc(id).set(m); }catch(e){ showToast("⚠️ "+e.message); }
+}
+
+async function delMaterial(id){
+  if(!confirm("¿Eliminar este material del catálogo?")) return;
+  try{ await costeoMaterialesRef.doc(id).delete(); showToast("✓ Material eliminado"); }catch(e){ showToast("⚠️ "+e.message); }
+}
+
+async function nuevoMaterial(){
+  const nombre = prompt("Nombre del material:");
+  if(!nombre) return;
+  const id = "mat_"+Date.now();
+  const nuevo = {id, nombre, presentacion:"cubeta", precio:0, notas:"", rendimientos:[]};
+  try{ await costeoMaterialesRef.doc(id).set(nuevo); }catch(e){ showToast("⚠️ "+e.message); }
+}
+
+async function addRend(matId){
+  const m = _costeoMateriales.find(x=>x.id===matId);
+  if(!m) return;
+  m.rendimientos = m.rendimientos || [];
+  m.rendimientos.push({espesor:"", m2PorGalon:0, unidad:"m²"});
+  try{ await costeoMaterialesRef.doc(matId).set(m); }catch(e){ showToast("⚠️ "+e.message); }
+}
+
+async function delRend(matId, idx){
+  const m = _costeoMateriales.find(x=>x.id===matId);
+  if(!m || !m.rendimientos) return;
+  m.rendimientos.splice(idx,1);
+  try{ await costeoMaterialesRef.doc(matId).set(m); }catch(e){ showToast("⚠️ "+e.message); }
+}
+
+async function updRend(matId, idx, campo, valor){
+  const m = _costeoMateriales.find(x=>x.id===matId);
+  if(!m || !m.rendimientos || !m.rendimientos[idx]) return;
+  m.rendimientos[idx][campo] = valor;
+  try{ await costeoMaterialesRef.doc(matId).set(m); }catch(e){ showToast("⚠️ "+e.message); }
+}
+
+// ── Render: MANO DE OBRA ─────────────────────────────────────
+function renderMO(){
+  const wrap = document.getElementById("lista-mo");
+  if(!wrap) return;
+  if(!_costeoMO.length){
+    wrap.innerHTML = '<div style="background:#fff;border:1px dashed var(--g1);border-radius:10px;padding:20px;text-align:center;font-size:11px;color:var(--tx2);">Sin tipos de mano de obra. Click en + Tipo.</div>';
+    return;
+  }
+  wrap.innerHTML = _costeoMO.map(m=>{
+    return '<div class="cos-card">'
+      +'<div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr auto;gap:8px;align-items:end;">'
+        +'<div><div class="cos-label">Tipo de trabajo</div><input class="cos-input" value="'+escapeHtml(m.nombre||"")+'" onchange="updMO(\''+m.id+'\',\'nombre\',this.value)"></div>'
+        +'<div><div class="cos-label">Costo</div><input class="cos-input" type="number" step="0.01" value="'+(m.costoPorUnidad||0)+'" onchange="updMO(\''+m.id+'\',\'costoPorUnidad\',parseFloat(this.value)||0)"></div>'
+        +'<div><div class="cos-label">Unidad</div>'
+          +'<select class="cos-input" onchange="updMO(\''+m.id+'\',\'unidad\',this.value)">'
+            +['m²','m.l.','lote','día','hora'].map(u=>'<option value="'+u+'"'+(m.unidad===u?" selected":"")+'>'+u+'</option>').join("")
+          +'</select>'
+        +'</div>'
+        +'<div><div class="cos-label">% Util. sug.</div><input class="cos-input" type="number" min="0" max="100" value="'+(m.utilSug||80)+'" onchange="updMO(\''+m.id+'\',\'utilSug\',parseFloat(this.value)||0)"></div>'
+        +'<button class="cos-btn-danger" onclick="delMO(\''+m.id+'\')">✕</button>'
+      +'</div>'
+    +'</div>';
+  }).join("");
+}
+
+async function updMO(id, campo, valor){
+  const m = _costeoMO.find(x=>x.id===id);
+  if(!m) return;
+  m[campo] = valor;
+  try{ await costeoMoRef.doc(id).set(m); }catch(e){ showToast("⚠️ "+e.message); }
+}
+
+async function delMO(id){
+  if(!confirm("¿Eliminar este tipo de mano de obra?")) return;
+  try{ await costeoMoRef.doc(id).delete(); showToast("✓ Tipo eliminado"); }catch(e){ showToast("⚠️ "+e.message); }
+}
+
+async function nuevoTipoMO(){
+  const nombre = prompt("Nombre del tipo de trabajo:");
+  if(!nombre) return;
+  const id = "mo_"+Date.now();
+  const nuevo = {id, nombre, costoPorUnidad:0, unidad:"m²", utilSug:80};
+  try{ await costeoMoRef.doc(id).set(nuevo); }catch(e){ showToast("⚠️ "+e.message); }
+}
+
+// ── Render: INDIRECTOS ───────────────────────────────────────
+function renderIndirectos(){
+  const wrap = document.getElementById("lista-indirectos");
+  if(!wrap || !_costeoIndirectos) return;
+  const i = _costeoIndirectos;
+  wrap.innerHTML = '<div class="cos-card">'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">'
+      +'<div><div class="cos-label">Supervisor por día (MXN)</div><input class="cos-input" type="number" step="0.01" value="'+(i.supervisorDia||0)+'" onchange="updIndirecto(\'supervisorDia\',parseFloat(this.value)||0)"></div>'
+      +'<div><div class="cos-label">Consumibles (% sugerido)</div><input class="cos-input" type="number" step="0.1" value="'+(i.consumiblesPct||0)+'" onchange="updIndirecto(\'consumiblesPct\',parseFloat(this.value)||0)"></div>'
+      +'<div><div class="cos-label">Flete default (MXN)</div><input class="cos-input" type="number" step="0.01" value="'+(i.fleteDefault||0)+'" onchange="updIndirecto(\'fleteDefault\',parseFloat(this.value)||0)"></div>'
+      +'<div><div class="cos-label">Comidas sugerido (MXN)</div><input class="cos-input" type="number" step="0.01" value="'+(i.comidasSug||0)+'" onchange="updIndirecto(\'comidasSug\',parseFloat(this.value)||0)"></div>'
+      +'<div><div class="cos-label">Casetas sugerido (MXN)</div><input class="cos-input" type="number" step="0.01" value="'+(i.casetasSug||0)+'" onchange="updIndirecto(\'casetasSug\',parseFloat(this.value)||0)"></div>'
+      +'<div><div class="cos-label">Gasolina sugerido (MXN)</div><input class="cos-input" type="number" step="0.01" value="'+(i.gasolinaSug||0)+'" onchange="updIndirecto(\'gasolinaSug\',parseFloat(this.value)||0)"></div>'
+    +'</div>'
+    +'<div style="margin-top:12px;padding:10px;background:var(--off);border-radius:8px;font-size:10px;color:var(--tx2);line-height:1.6;">'
+      +'<strong style="color:var(--navy);">💡 Nota:</strong> Estos son valores base que el sistema sugiere al crear un costeo. Siempre los puedes sobreescribir en cada proyecto.'
+    +'</div>'
+  +'</div>';
+}
+
+async function updIndirecto(campo, valor){
+  if(!_costeoIndirectos) _costeoIndirectos = {};
+  _costeoIndirectos[campo] = valor;
+  try{ await costeoIndirectosRef.doc("default").set(_costeoIndirectos); }catch(e){ showToast("⚠️ "+e.message); }
+}
+
+// ── Render: KPIs del dashboard ───────────────────────────────
+function renderKPIsCosteo(){
+  const elActivos = document.getElementById("cos-kpi-activos");
+  const elValor = document.getElementById("cos-kpi-valor");
+  const elUtilidad = document.getElementById("cos-kpi-utilidad");
+  const elMargen = document.getElementById("cos-kpi-margen");
+
+  if(!elActivos) return;
+
+  const activos = _costeoCosteos.filter(c=>c.estado!=="archivado").length;
+  const valorTotal = _costeoCosteos.reduce((s,c)=>s+(c.precioTotal||0),0);
+  const utilidadTotal = _costeoCosteos.reduce((s,c)=>s+(c.utilidadTotal||0),0);
+  const margenProm = valorTotal > 0 ? (utilidadTotal/valorTotal*100) : 0;
+
+  elActivos.textContent = activos;
+  elValor.textContent = "$"+valorTotal.toLocaleString("es-MX",{maximumFractionDigits:0});
+  elUtilidad.textContent = "$"+utilidadTotal.toLocaleString("es-MX",{maximumFractionDigits:0});
+  elMargen.textContent = margenProm.toFixed(1)+"%";
+}
+
+// ── Render: Lista de costeos ─────────────────────────────────
+function renderListaCosteos(){
+  const wrap = document.getElementById("lista-costeos");
+  if(!wrap) return;
+  if(!_costeoCosteos.length){
+    wrap.innerHTML = '<div style="background:#fff;border:1px dashed var(--g1);border-radius:12px;padding:24px;text-align:center;">'
+      +'<div style="font-size:28px;margin-bottom:6px;">📋</div>'
+      +'<div style="font-size:12px;font-weight:700;color:var(--navy);margin-bottom:2px;">Sin costeos todavía</div>'
+      +'<div style="font-size:10px;color:var(--tx2);">Crea tu primer análisis de costos</div>'
+    +'</div>';
+    return;
+  }
+  wrap.innerHTML = _costeoCosteos.map(c=>{
+    const fecha = c.fecha ? new Date(c.fecha).toLocaleDateString("es-MX") : "—";
+    const margen = c.precioTotal ? (c.utilidadTotal/c.precioTotal*100) : 0;
+    const colorMargen = margen>=30?"#10B981":(margen>=20?"#F59E0B":"#EF4444");
+    return '<div class="cos-card" style="cursor:pointer;" onclick="abrirCosteo(\''+c.id+'\')">'
+      +'<div class="cos-card-row">'
+        +'<div style="flex:1;">'
+          +'<div class="cos-card-title">'+escapeHtml(c.proyecto||"Sin nombre")+'</div>'
+          +'<div class="cos-card-meta">'+escapeHtml(c.folio||"")+' · '+fecha+'</div>'
+        +'</div>'
+        +'<div style="text-align:right;">'
+          +'<div style="font-size:14px;font-weight:800;color:var(--navy);">$'+((c.precioTotal||0).toLocaleString("es-MX",{maximumFractionDigits:0}))+'</div>'
+          +'<div style="font-size:10px;font-weight:700;color:'+colorMargen+';">'+margen.toFixed(1)+'% margen</div>'
+        +'</div>'
+      +'</div>'
+    +'</div>';
+  }).join("");
+}
+
+// ── EDITOR DE COSTEO ─────────────────────────────────────────
+
+// Estado del costeo en edición
+let _ceCosteo = null;  // {id, folio, proyecto, cliente, prefijo, fecha, atencion, sistemas:[]}
+
+// Sistemas predefinidos (editables-libres)
+const COSTEO_SISTEMAS_PREDEF = [
+  "Desbaste y pulido de concreto",
+  "Epóxico con acabado de poliuretano",
+  "Epóxico 100% sólidos",
+  "Mortero uretano cementicio",
+  "Sello de juntas y grietas",
+  "Reparación de losa",
+  "Pintura industrial"
+];
+
+// Kits predefinidos (auto-agregan materiales con proporción)
+const COSTEO_KITS = {
+  "Epóxico con acabado de poliuretano": {
+    materiales:[
+      {matId:"mat_lm555_gris",      proporcion:2, nombre:"LM555 (Parte A)"},
+      {matId:"mat_epo35",           proporcion:1, nombre:"EPO35 (Parte B)"},
+      {matId:"mat_poliuretano_l32", proporcion:0.5, nombre:"Poliuretano L32 (acabado)", rendOverride:"4 mils"}
+    ],
+    moDefault:"mo_epoxico"
+  },
+  "Epóxico 100% sólidos": {
+    materiales:[
+      {matId:"mat_lm555_gris", proporcion:2, nombre:"LM555 (Parte A)"},
+      {matId:"mat_epo35",      proporcion:1, nombre:"EPO35 (Parte B)"}
+    ],
+    moDefault:"mo_epoxico"
+  },
+  "Mortero uretano cementicio": {
+    materiales:[
+      {matId:"mat_flowfresh_rt", proporcion:1, nombre:"Flowfresh RT (kit)"}
+    ],
+    moDefault:"mo_mortero"
+  },
+  "Sello de juntas y grietas": {
+    materiales:[
+      {matId:"mat_sikaflex_2c_sl", proporcion:1, nombre:"Sikaflex 2C SL"}
+    ],
+    moDefault:"mo_sello"
+  }
+};
+
+// Galones por cubeta (configurable por material si fuera necesario; default 5)
+const GALONES_POR_CUBETA = 5;
+
+// ── Abrir editor (nuevo) ──────────────────────────────────────
+function nuevoCosteo(){
+  const hoy = new Date();
+  const fechaStr = hoy.toISOString().slice(0,10);
+  _ceCosteo = {
+    id: "cos_"+Date.now(),
+    folio: "",  // se genera al guardar
+    proyecto: "",
+    cliente: "",
+    prefijo: "",
+    fecha: fechaStr,
+    atencion: "",
+    sistemas: [],
+    estado: "borrador",
+    ts: Date.now(),
+    creadoPor: (currentUserProfile && currentUserProfile.email) || (currentUser && currentUser.email) || ""
+  };
+  _renderEditorCosteo();
+  goScreen("costeo-editor");
+}
+
+// ── Abrir editor (cargar existente) ───────────────────────────
+function abrirCosteo(id){
+  const c = _costeoCosteos.find(x=>x.id===id);
+  if(!c){ showToast("⚠️ Costeo no encontrado"); return; }
+  _ceCosteo = JSON.parse(JSON.stringify(c));  // copia profunda
+  _renderEditorCosteo();
+  goScreen("costeo-editor");
+}
+
+function cerrarEditorCosteo(){
+  if(_ceCosteo && _ceCosteo.sistemas && _ceCosteo.sistemas.length){
+    if(!confirm("¿Salir sin guardar? Los cambios se perderán.")) return;
+  }
+  _ceCosteo = null;
+  goScreen("costeo");
+  switchCosteoTab("costeos");
+}
+
+// ── Render completo del editor ────────────────────────────────
+function _renderEditorCosteo(){
+  if(!_ceCosteo) return;
+  const c = _ceCosteo;
+  document.getElementById("ce-folio").textContent = c.folio || "Nuevo costeo (sin folio)";
+  document.getElementById("ce-proyecto").value = c.proyecto || "";
+  document.getElementById("ce-cliente").value = c.cliente || "";
+  document.getElementById("ce-prefijo").value = c.prefijo || "";
+  document.getElementById("ce-fecha").value = c.fecha || "";
+  document.getElementById("ce-atencion").value = c.atencion || "";
+
+  // Listeners para actualizar estado
+  ["proyecto","cliente","prefijo","fecha","atencion"].forEach(f=>{
+    const el = document.getElementById("ce-"+f);
+    if(el){
+      el.oninput = ()=>{ _ceCosteo[f] = el.value; };
+    }
+  });
+
+  _renderSistemas();
+}
+
+function _renderSistemas(){
+  const wrap = document.getElementById("ce-sistemas-wrap");
+  if(!wrap) return;
+  if(!_ceCosteo.sistemas.length){
+    wrap.innerHTML = '<div style="background:#fff;border:1px dashed var(--g1);border-radius:12px;padding:28px;text-align:center;">'
+      +'<div style="font-size:28px;margin-bottom:6px;">🏗️</div>'
+      +'<div style="font-size:12px;font-weight:700;color:var(--navy);margin-bottom:2px;">Sin sistemas todavía</div>'
+      +'<div style="font-size:10px;color:var(--tx2);margin-bottom:10px;">Agrega el primer sistema de trabajo del proyecto</div>'
+      +'<button onclick="agregarSistema()" class="cos-btn-primary">+ Agregar sistema</button>'
+    +'</div>';
+    document.getElementById("ce-resumen-global").style.display = "none";
+    return;
+  }
+
+  wrap.innerHTML = _ceCosteo.sistemas.map((s,idx)=>_htmlSistema(s,idx)).join("");
+  _actualizarResumenGlobal();
+}
+
+function _htmlSistema(s, idx){
+  const tot = _calcSistema(s);
+  const margenPct = tot.precio>0 ? (tot.utilidad/tot.precio*100) : 0;
+  const cls = margenPct>=30?"cos-margen-ok":(margenPct>=20?"cos-margen-warn":"cos-margen-bad");
+
+  const sistemasOpts = COSTEO_SISTEMAS_PREDEF.map(n=>'<option value="'+n+'"'+(s.nombre===n?" selected":"")+'>'+n+'</option>').join("")
+    + '<option value="__custom__"'+(!COSTEO_SISTEMAS_PREDEF.includes(s.nombre)?" selected":"")+'>✏️ Personalizado...</option>';
+
+  const nombreInput = COSTEO_SISTEMAS_PREDEF.includes(s.nombre)
+    ? '<select class="cos-input" style="background:#fff;color:#fff;background-color:rgba(255,255,255,.1);border-color:rgba(255,255,255,.2);" onchange="onSistemaNombreSelect('+idx+',this.value)">'+sistemasOpts+'</select>'
+    : '<input class="cos-input" style="background-color:rgba(255,255,255,.1);border-color:rgba(255,255,255,.2);color:#fff;" value="'+escapeHtml(s.nombre||"")+'" onchange="updSistema('+idx+',\'nombre\',this.value)" placeholder="Nombre del sistema">';
+
+  return '<div class="cos-sistema">'
+    +'<div class="cos-sistema-hdr">'
+      +'<div class="cos-sistema-title">'
+        +'<div style="flex:1;min-width:0;">'
+          +'<div style="font-size:8px;font-weight:700;color:rgba(255,255,255,.5);letter-spacing:2px;text-transform:uppercase;margin-bottom:3px;">Sistema '+(idx+1)+'</div>'
+          +nombreInput
+        +'</div>'
+        +'<div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">'
+          +'<div><div style="font-size:8px;font-weight:700;color:rgba(255,255,255,.5);letter-spacing:1px;text-transform:uppercase;margin-bottom:2px;">Cant.</div>'
+            +'<input class="cos-input" style="background-color:rgba(255,255,255,.1);border-color:rgba(255,255,255,.2);color:#fff;width:70px;text-align:right;" type="number" min="0" step="any" value="'+(s.cantidad||"")+'" onchange="updSistema('+idx+',\'cantidad\',parseFloat(this.value)||0)" oninput="updSistema('+idx+',\'cantidad\',parseFloat(this.value)||0)">'
+          +'</div>'
+          +'<div><div style="font-size:8px;font-weight:700;color:rgba(255,255,255,.5);letter-spacing:1px;text-transform:uppercase;margin-bottom:2px;">Unidad</div>'
+            +'<select class="cos-input" style="background-color:rgba(255,255,255,.1);border-color:rgba(255,255,255,.2);color:#fff;width:80px;" onchange="updSistema('+idx+',\'unidad\',this.value)">'
+              +['m²','m.l.','lote','pieza'].map(u=>'<option value="'+u+'"'+(s.unidad===u?" selected":"")+' style="color:#0B1F3A;">'+u+'</option>').join("")
+            +'</select>'
+          +'</div>'
+        +'</div>'
+      +'</div>'
+      +'<button onclick="eliminarSistema('+idx+')" style="background:rgba(239,68,68,.2);border:1px solid rgba(239,68,68,.3);color:#FCA5A5;font-size:10px;font-weight:700;padding:6px 10px;border-radius:6px;cursor:pointer;font-family:var(--font);flex-shrink:0;">🗑️</button>'
+    +'</div>'
+
+    +'<div class="cos-sistema-body">'
+      // Header tabla
+      +'<div class="cos-partidas-header">'
+        +'<div>Cant</div><div>Descripción</div><div>C. Unit</div><div>P. Unit</div><div>Costo Tot</div><div>Precio Tot</div><div>% Util</div><div></div>'
+      +'</div>'
+
+      +'<div id="ce-partidas-s'+idx+'">'+
+        (s.partidas||[]).map((p,pIdx)=>_htmlPartida(idx,pIdx,p)).join("")
+      +'</div>'
+
+      +'<div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;">'
+        +'<button onclick="agregarPartidaMat('+idx+')" class="cos-btn-sm" style="background:#DCFCE7;color:#166534;border-color:#BBF7D0;">+ Material</button>'
+        +'<button onclick="agregarPartidaMO('+idx+')" class="cos-btn-sm" style="background:#DBEAFE;color:#1E40AF;border-color:#BFDBFE;">+ Mano de Obra</button>'
+        +'<button onclick="agregarPartidaInd('+idx+')" class="cos-btn-sm" style="background:#FEF3C7;color:#78350F;border-color:#FDE68A;">+ Indirecto</button>'
+        +'<button onclick="aplicarKit('+idx+')" class="cos-btn-sm" style="background:#EDE9FE;color:#5B21B6;border-color:#DDD6FE;">⚡ Aplicar kit</button>'
+      +'</div>'
+    +'</div>'
+
+    +'<div class="cos-totales">'
+      +'<div class="cos-totales-row"><span class="cos-totales-label">Costo total</span><strong>$'+_fmt(tot.costo)+'</strong></div>'
+      +'<div class="cos-totales-row"><span class="cos-totales-label">Precio total</span><strong>$'+_fmt(tot.precio)+'</strong></div>'
+      +'<div class="cos-totales-row"><span class="cos-totales-label">IVA 8%</span><strong>$'+_fmt(tot.iva)+'</strong></div>'
+      +'<div class="cos-totales-divider"></div>'
+      +'<div class="cos-totales-row cos-totales-final"><span style="color:#fff;">Total c/IVA</span><strong>$'+_fmt(tot.totalConIva)+'</strong></div>'
+      +'<div class="cos-totales-divider"></div>'
+      +'<div class="cos-totales-row"><span class="cos-totales-label">Utilidad</span>'
+        +'<span style="display:flex;align-items:center;gap:6px;">'
+          +'<strong>$'+_fmt(tot.utilidad)+'</strong>'
+          +'<span class="cos-margen-pill '+cls+'">'+margenPct.toFixed(1)+'%</span>'
+        +'</span>'
+      +'</div>'
+      +(s.cantidad>0?'<div class="cos-totales-row"><span class="cos-totales-label">Precio por '+(s.unidad||"m²")+'</span><strong>$'+_fmt(tot.precio/s.cantidad)+'</strong></div>':'')
+    +'</div>'
+  +'</div>';
+}
+
+function _htmlPartida(sIdx, pIdx, p){
+  const tag = p.tipo==="mo"?'<span class="cos-partida-tag cos-tag-mo">MO</span>':
+              p.tipo==="material"?'<span class="cos-partida-tag cos-tag-mat">MAT</span>':
+              '<span class="cos-partida-tag cos-tag-ind">IND</span>';
+  const cTot = (p.cantidad||0)*(p.costoUnit||0);
+  const pTot = (p.cantidad||0)*(p.precioUnit||0);
+
+  return '<div class="cos-partida">'
+    +'<div><input type="number" min="0" step="any" value="'+(p.cantidad||0)+'" oninput="updPartida('+sIdx+','+pIdx+',\'cantidad\',parseFloat(this.value)||0)"></div>'
+    +'<div class="cos-partida-name">'+tag+escapeHtml(p.descripcion||"")+(p.rendNota?'<span style="color:var(--tx3);font-size:9px;"> · '+escapeHtml(p.rendNota)+'</span>':"")+'</div>'
+    +'<div><input type="number" min="0" step="0.01" value="'+(p.costoUnit||0)+'" oninput="updPartida('+sIdx+','+pIdx+',\'costoUnit\',parseFloat(this.value)||0)"></div>'
+    +'<div><input type="number" min="0" step="0.01" value="'+(p.precioUnit||0)+'" oninput="updPartida('+sIdx+','+pIdx+',\'precioUnit\',parseFloat(this.value)||0)"></div>'
+    +'<div style="font-size:11px;color:var(--tx2);text-align:right;font-variant-numeric:tabular-nums;padding:0 4px;">$'+_fmt(cTot)+'</div>'
+    +'<div style="font-size:11px;color:var(--navy);font-weight:700;text-align:right;font-variant-numeric:tabular-nums;padding:0 4px;">$'+_fmt(pTot)+'</div>'
+    +'<div><input type="number" min="0" max="100" step="1" value="'+(p.utilPct||0)+'" oninput="onUtilChange('+sIdx+','+pIdx+',parseFloat(this.value)||0)"></div>'
+    +'<div style="text-align:center;"><button onclick="eliminarPartida('+sIdx+','+pIdx+')" style="background:none;border:none;color:#EF4444;font-size:13px;cursor:pointer;padding:2px 4px;">✕</button></div>'
+  +'</div>';
+}
+
+function _fmt(n){ return (n||0).toLocaleString("es-MX",{minimumFractionDigits:2,maximumFractionDigits:2}); }
+
+// ── Cálculo por sistema ───────────────────────────────────────
+function _calcSistema(s){
+  let costo=0, precio=0;
+  (s.partidas||[]).forEach(p=>{
+    costo  += (p.cantidad||0)*(p.costoUnit||0);
+    precio += (p.cantidad||0)*(p.precioUnit||0);
+  });
+  const iva = precio * 0.08;
+  const totalConIva = precio + iva;
+  const utilidad = precio - costo;
+  return {costo, precio, iva, totalConIva, utilidad};
+}
+
+function _actualizarResumenGlobal(){
+  const el = document.getElementById("ce-resumen-global");
+  if(!el || !_ceCosteo || !_ceCosteo.sistemas.length){
+    if(el) el.style.display="none";
+    return;
+  }
+  let costo=0, precio=0, utilidad=0;
+  _ceCosteo.sistemas.forEach(s=>{
+    const t = _calcSistema(s);
+    costo    += t.costo;
+    precio   += t.precio;
+    utilidad += t.utilidad;
+  });
+  const margen = precio>0 ? (utilidad/precio*100) : 0;
+
+  el.style.display = "block";
+  document.getElementById("ce-global-costo").textContent    = "$"+_fmt(costo);
+  document.getElementById("ce-global-precio").textContent   = "$"+_fmt(precio);
+  document.getElementById("ce-global-utilidad").textContent = "$"+_fmt(utilidad);
+  const marEl = document.getElementById("ce-global-margen");
+  marEl.textContent = margen.toFixed(1)+"%";
+  marEl.style.color = margen>=30?"#10B981":(margen>=20?"#F59E0B":"#EF4444");
+
+  // Alerta visual
+  const al = document.getElementById("ce-alerta-margen");
+  if(margen < 20){
+    al.style.display = "block";
+    al.style.background = "#FEE2E2";
+    al.style.color = "#991B1B";
+    al.style.border = "1px solid #FCA5A5";
+    al.innerHTML = "🚨 <strong>Margen crítico</strong> — Por debajo del 20%, considera revisar precios o reducir costos.";
+  } else if(margen < 30){
+    al.style.display = "block";
+    al.style.background = "#FEF3C7";
+    al.style.color = "#78350F";
+    al.style.border = "1px solid #FCD34D";
+    al.innerHTML = "⚠️ <strong>Margen bajo</strong> — Entre 20% y 30%. Aceptable pero sin mucho margen para imprevistos.";
+  } else {
+    al.style.display = "none";
+  }
+}
+
+// ── Acciones: Sistemas ────────────────────────────────────────
+function agregarSistema(){
+  if(!_ceCosteo) return;
+  _ceCosteo.sistemas.push({
+    nombre: COSTEO_SISTEMAS_PREDEF[0],
+    cantidad: 0,
+    unidad: "m²",
+    partidas: []
+  });
+  _renderSistemas();
+}
+
+function eliminarSistema(idx){
+  if(!confirm("¿Eliminar este sistema completo?")) return;
+  _ceCosteo.sistemas.splice(idx,1);
+  _renderSistemas();
+}
+
+function updSistema(idx, campo, valor){
+  if(!_ceCosteo.sistemas[idx]) return;
+  _ceCosteo.sistemas[idx][campo] = valor;
+  if(campo==="cantidad"){
+    // Recalcular cantidades auto de partidas que tengan autoCalc
+    _recalcAutoPartidas(idx);
+  }
+  _renderSistemas();
+}
+
+function onSistemaNombreSelect(idx, valor){
+  if(valor==="__custom__"){
+    _ceCosteo.sistemas[idx].nombre = "";
+    _renderSistemas();
+    return;
+  }
+  _ceCosteo.sistemas[idx].nombre = valor;
+  _renderSistemas();
+}
+
+// ── Acciones: Partidas ────────────────────────────────────────
+function updPartida(sIdx, pIdx, campo, valor){
+  const s = _ceCosteo.sistemas[sIdx];
+  if(!s || !s.partidas[pIdx]) return;
+  s.partidas[pIdx][campo] = valor;
+  // Si editan cantidad manualmente, marcar como override
+  if(campo==="cantidad") s.partidas[pIdx].cantManual = true;
+  _renderSistemas();
+}
+
+function onUtilChange(sIdx, pIdx, pct){
+  const s = _ceCosteo.sistemas[sIdx];
+  if(!s || !s.partidas[pIdx]) return;
+  const p = s.partidas[pIdx];
+  p.utilPct = pct;
+  // Recalcular precio unitario según costo + utilidad
+  p.precioUnit = (p.costoUnit||0) * (1 + pct/100);
+  _renderSistemas();
+}
+
+function eliminarPartida(sIdx, pIdx){
+  if(!_ceCosteo.sistemas[sIdx]) return;
+  _ceCosteo.sistemas[sIdx].partidas.splice(pIdx,1);
+  _renderSistemas();
+}
+
+// Agregar partida: abre modal selector
+function agregarPartidaMat(sIdx){ _abrirModalSelector("material", sIdx); }
+function agregarPartidaMO(sIdx){  _abrirModalSelector("mo", sIdx); }
+function agregarPartidaInd(sIdx){ _abrirModalSelector("indirecto", sIdx); }
+
+function _abrirModalSelector(tipo, sIdx){
+  const ov = document.createElement("div");
+  ov.className = "cos-modal-ov";
+  ov.onclick = (e)=>{ if(e.target===ov) ov.remove(); };
+
+  let opciones = "";
+  let titulo = "";
+
+  if(tipo==="material"){
+    titulo = "Elegir material";
+    opciones = _costeoMateriales.map(m=>{
+      const rendInfo = m.rendimientos && m.rendimientos.length
+        ? ' · '+m.rendimientos.length+' rendimiento'+(m.rendimientos.length>1?"s":"")
+        : "";
+      return '<div class="cos-modal-opt" onclick="_seleccionarMaterial(\''+m.id+'\','+sIdx+');document.querySelector(\'.cos-modal-ov\').remove();">'
+        +'<div class="cos-modal-opt-title">'+escapeHtml(m.nombre)+'</div>'
+        +'<div class="cos-modal-opt-meta">$'+_fmt(m.precio||0)+' / '+m.presentacion+rendInfo+'</div>'
+      +'</div>';
+    }).join("") || '<div style="font-size:11px;color:var(--tx2);text-align:center;padding:20px;">Sin materiales en el catálogo</div>';
+  }
+  else if(tipo==="mo"){
+    titulo = "Elegir tipo de mano de obra";
+    opciones = _costeoMO.map(m=>{
+      return '<div class="cos-modal-opt" onclick="_seleccionarMO(\''+m.id+'\','+sIdx+');document.querySelector(\'.cos-modal-ov\').remove();">'
+        +'<div class="cos-modal-opt-title">'+escapeHtml(m.nombre)+'</div>'
+        +'<div class="cos-modal-opt-meta">$'+_fmt(m.costoPorUnidad||0)+' / '+m.unidad+' · Util. sug. '+(m.utilSug||80)+'%</div>'
+      +'</div>';
+    }).join("") || '<div style="font-size:11px;color:var(--tx2);text-align:center;padding:20px;">Sin tipos de MO en el catálogo</div>';
+  }
+  else if(tipo==="indirecto"){
+    titulo = "Agregar indirecto";
+    const opts = [
+      {id:"supervisor", nombre:"Supervisor (por día)",  costo:(_costeoIndirectos||{}).supervisorDia||1500, unidad:"día"},
+      {id:"flete",      nombre:"Flete / Transporte",    costo:(_costeoIndirectos||{}).fleteDefault||1800, unidad:"servicio"},
+      {id:"comidas",    nombre:"Comidas",               costo:(_costeoIndirectos||{}).comidasSug||750,    unidad:"servicio"},
+      {id:"casetas",    nombre:"Casetas",               costo:(_costeoIndirectos||{}).casetasSug||1200,   unidad:"servicio"},
+      {id:"gasolina",   nombre:"Gasolina",              costo:(_costeoIndirectos||{}).gasolinaSug||2000,  unidad:"servicio"},
+      {id:"consumibles",nombre:"Consumibles",           costo:10000,                                       unidad:"lote"},
+      {id:"custom",     nombre:"✏️ Otro (personalizado)", costo:0, unidad:"servicio"}
+    ];
+    opciones = opts.map(o=>{
+      return '<div class="cos-modal-opt" onclick="_seleccionarIndirecto(\''+o.id+'\','+sIdx+');document.querySelector(\'.cos-modal-ov\').remove();">'
+        +'<div class="cos-modal-opt-title">'+o.nombre+'</div>'
+        +(o.costo>0?'<div class="cos-modal-opt-meta">$'+_fmt(o.costo)+' / '+o.unidad+'</div>':'')
+      +'</div>';
+    }).join("");
+  }
+
+  ov.innerHTML = '<div class="cos-modal" onclick="event.stopPropagation();">'
+    +'<div class="cos-modal-hdr">'
+      +'<div style="font-size:13px;font-weight:700;color:var(--navy);">'+titulo+'</div>'
+      +'<button onclick="this.closest(\'.cos-modal-ov\').remove()" style="background:none;border:none;font-size:18px;color:var(--tx2);cursor:pointer;">✕</button>'
+    +'</div>'
+    +'<div class="cos-modal-body">'+opciones+'</div>'
+  +'</div>';
+  document.body.appendChild(ov);
+}
+
+// ── Calcular cantidad auto para material ─────────────────────
+function _calcularCantMaterial(m2, rend){
+  if(!rend || !rend.m2PorGalon || !m2) return 0;
+  const galonesNecesarios = m2 / rend.m2PorGalon;
+  const cubetasNecesarias = galonesNecesarios / GALONES_POR_CUBETA;
+  return Math.ceil(cubetasNecesarias * 100) / 100;  // 2 decimales, redondeado hacia arriba
+}
+
+// ── Selección de Material ─────────────────────────────────────
+function _seleccionarMaterial(matId, sIdx){
+  const m = _costeoMateriales.find(x=>x.id===matId);
+  if(!m) return;
+  const s = _ceCosteo.sistemas[sIdx];
+  if(!s) return;
+
+  // Si tiene rendimientos, pedir al usuario elegir cuál
+  if(m.rendimientos && m.rendimientos.length > 1){
+    _pedirRendimiento(m, sIdx);
+    return;
+  }
+
+  const rend = (m.rendimientos && m.rendimientos[0]) || null;
+  const cantAuto = rend ? _calcularCantMaterial(s.cantidad||0, rend) : 1;
+
+  s.partidas.push({
+    tipo:"material",
+    matId: m.id,
+    rendIdx: rend ? 0 : -1,
+    rendNota: rend ? rend.espesor : "",
+    descripcion: m.nombre,
+    cantidad: Math.ceil(cantAuto),
+    costoUnit: m.precio || 0,
+    precioUnit: (m.precio||0) * 1.5,  // 50% util default material
+    utilPct: 50,
+    autoCalc: !!rend
+  });
+  _renderSistemas();
+}
+
+function _pedirRendimiento(m, sIdx){
+  const s = _ceCosteo.sistemas[sIdx];
+  const opts = m.rendimientos.map((r,i)=>{
+    const unidad = r.unidad || "m²";
+    return '<div class="cos-modal-opt" onclick="_materialConRend(\''+m.id+'\','+sIdx+','+i+');document.querySelectorAll(\'.cos-modal-ov\').forEach(x=>x.remove());">'
+      +'<div class="cos-modal-opt-title">'+escapeHtml(r.espesor)+'</div>'
+      +'<div class="cos-modal-opt-meta">Rinde '+(r.m2PorGalon||0)+' '+unidad+' por galón</div>'
+    +'</div>';
+  }).join("");
+
+  const ov = document.createElement("div");
+  ov.className = "cos-modal-ov";
+  ov.onclick = (e)=>{ if(e.target===ov) ov.remove(); };
+  ov.innerHTML = '<div class="cos-modal" onclick="event.stopPropagation();">'
+    +'<div class="cos-modal-hdr">'
+      +'<div style="font-size:13px;font-weight:700;color:var(--navy);">Rendimiento de '+escapeHtml(m.nombre)+'</div>'
+      +'<button onclick="this.closest(\'.cos-modal-ov\').remove()" style="background:none;border:none;font-size:18px;color:var(--tx2);cursor:pointer;">✕</button>'
+    +'</div>'
+    +'<div class="cos-modal-body">'+opts+'</div>'
+  +'</div>';
+  document.body.appendChild(ov);
+}
+
+function _materialConRend(matId, sIdx, rendIdx){
+  const m = _costeoMateriales.find(x=>x.id===matId);
+  const s = _ceCosteo.sistemas[sIdx];
+  if(!m || !s) return;
+  const rend = m.rendimientos[rendIdx];
+  const cantAuto = _calcularCantMaterial(s.cantidad||0, rend);
+
+  s.partidas.push({
+    tipo:"material",
+    matId: m.id,
+    rendIdx: rendIdx,
+    rendNota: rend.espesor,
+    descripcion: m.nombre,
+    cantidad: Math.ceil(cantAuto),
+    costoUnit: m.precio || 0,
+    precioUnit: (m.precio||0) * 1.5,
+    utilPct: 50,
+    autoCalc: true
+  });
+  _renderSistemas();
+}
+
+// ── Selección de MO ──────────────────────────────────────────
+function _seleccionarMO(moId, sIdx){
+  const mo = _costeoMO.find(x=>x.id===moId);
+  if(!mo) return;
+  const s = _ceCosteo.sistemas[sIdx];
+  if(!s) return;
+
+  const utilSug = mo.utilSug || 80;
+  s.partidas.push({
+    tipo:"mo",
+    moId: mo.id,
+    descripcion: mo.nombre,
+    cantidad: s.cantidad || 0,  // usa la cantidad del sistema
+    costoUnit: mo.costoPorUnidad || 0,
+    precioUnit: (mo.costoPorUnidad||0) * (1 + utilSug/100),
+    utilPct: utilSug,
+    autoCalc: true
+  });
+  _renderSistemas();
+}
+
+// ── Selección de Indirecto ───────────────────────────────────
+function _seleccionarIndirecto(tipo, sIdx){
+  const s = _ceCosteo.sistemas[sIdx];
+  if(!s) return;
+  const ind = _costeoIndirectos || {};
+  let desc="", costo=0, cant=1;
+
+  switch(tipo){
+    case "supervisor":  desc="Supervisor de obra"; costo=ind.supervisorDia||1500; cant=1; break;
+    case "flete":       desc="Flete / Transporte"; costo=ind.fleteDefault||1800; cant=1; break;
+    case "comidas":     desc="Comidas";            costo=ind.comidasSug||750;    cant=1; break;
+    case "casetas":     desc="Casetas";            costo=ind.casetasSug||1200;   cant=1; break;
+    case "gasolina":    desc="Gasolina";           costo=ind.gasolinaSug||2000;  cant=1; break;
+    case "consumibles": desc="Consumibles";        costo=10000;                  cant=1; break;
+    case "custom":      desc=prompt("Descripción:")||"Indirecto"; costo=0; cant=1; break;
+  }
+  if(tipo==="custom" && !desc) return;
+
+  s.partidas.push({
+    tipo:"indirecto",
+    descripcion: desc,
+    cantidad: cant,
+    costoUnit: costo,
+    precioUnit: costo,  // indirectos al costo por default
+    utilPct: 0
+  });
+  _renderSistemas();
+}
+
+// ── Aplicar kit (auto-agrega materiales + MO) ────────────────
+function aplicarKit(sIdx){
+  const s = _ceCosteo.sistemas[sIdx];
+  if(!s) return;
+  const kit = COSTEO_KITS[s.nombre];
+  if(!kit){
+    showToast("⚠️ No hay kit predefinido para este sistema");
+    return;
+  }
+  if(!s.cantidad || s.cantidad<=0){
+    showToast("⚠️ Primero define la cantidad de "+s.unidad+" del sistema");
+    return;
+  }
+  if(s.partidas.length && !confirm("Ya hay partidas. ¿Reemplazar con el kit?\n\nSe borrarán las partidas actuales.")) return;
+
+  s.partidas = [];
+
+  // Agregar materiales con proporción
+  kit.materiales.forEach(km=>{
+    const mat = _costeoMateriales.find(x=>x.id===km.matId);
+    if(!mat) return;
+
+    // Rendimiento: el primero o el especificado
+    let rend = null;
+    let rendIdx = -1;
+    if(mat.rendimientos && mat.rendimientos.length){
+      if(km.rendOverride){
+        rendIdx = mat.rendimientos.findIndex(r=>r.espesor===km.rendOverride);
+        if(rendIdx<0) rendIdx = 0;
+      } else {
+        // Para kits, usar 30 mils por default si existe
+        rendIdx = mat.rendimientos.findIndex(r=>r.espesor==="30 mils");
+        if(rendIdx<0) rendIdx = 0;
+      }
+      rend = mat.rendimientos[rendIdx];
+    }
+
+    const cantTotal = rend ? _calcularCantMaterial(s.cantidad, rend) : 1;
+    const cantFinal = Math.ceil(cantTotal * (km.proporcion / _sumProporciones(kit.materiales)));
+
+    s.partidas.push({
+      tipo:"material",
+      matId: mat.id,
+      rendIdx: rendIdx,
+      rendNota: rend ? rend.espesor : "",
+      descripcion: km.nombre || mat.nombre,
+      cantidad: Math.max(1, cantFinal),
+      costoUnit: mat.precio || 0,
+      precioUnit: (mat.precio||0) * 1.5,
+      utilPct: 50,
+      autoCalc: true,
+      proporcion: km.proporcion
+    });
+  });
+
+  // Agregar MO default
+  if(kit.moDefault){
+    const mo = _costeoMO.find(x=>x.id===kit.moDefault);
+    if(mo){
+      const utilSug = mo.utilSug || 80;
+      s.partidas.push({
+        tipo:"mo",
+        moId: mo.id,
+        descripcion: mo.nombre,
+        cantidad: s.cantidad,
+        costoUnit: mo.costoPorUnidad || 0,
+        precioUnit: (mo.costoPorUnidad||0) * (1 + utilSug/100),
+        utilPct: utilSug,
+        autoCalc: true
+      });
+    }
+  }
+
+  showToast("⚡ Kit aplicado — "+kit.materiales.length+" materiales + MO");
+  _renderSistemas();
+}
+
+function _sumProporciones(arr){
+  return arr.reduce((s,x)=>s+(x.proporcion||1), 0);
+}
+
+// ── Recalcular cantidades auto cuando cambia m² del sistema ─
+function _recalcAutoPartidas(sIdx){
+  const s = _ceCosteo.sistemas[sIdx];
+  if(!s) return;
+  s.partidas.forEach(p=>{
+    if(!p.autoCalc || p.cantManual) return;
+    if(p.tipo==="mo"){
+      p.cantidad = s.cantidad;
+    }
+    else if(p.tipo==="material" && p.rendIdx>=0){
+      const mat = _costeoMateriales.find(x=>x.id===p.matId);
+      if(!mat || !mat.rendimientos) return;
+      const rend = mat.rendimientos[p.rendIdx];
+      if(!rend) return;
+      if(p.proporcion){
+        // Es parte de un kit: aplicar proporción
+        const cantTotal = _calcularCantMaterial(s.cantidad, rend);
+        // Buscar suma de proporciones del kit
+        const sumProp = s.partidas.filter(x=>x.proporcion).reduce((a,b)=>a+(b.proporcion||1),0);
+        p.cantidad = Math.max(1, Math.ceil(cantTotal * (p.proporcion/sumProp)));
+      } else {
+        p.cantidad = Math.max(1, Math.ceil(_calcularCantMaterial(s.cantidad, rend)));
+      }
+    }
+  });
+}
+
+// ── Guardar costeo ───────────────────────────────────────────
+async function guardarCosteoActual(){
+  if(!_ceCosteo){ showToast("⚠️ Sin costeo activo"); return; }
+
+  // Actualizar con datos del form
+  _ceCosteo.proyecto = document.getElementById("ce-proyecto").value.trim();
+  _ceCosteo.cliente  = document.getElementById("ce-cliente").value.trim();
+  _ceCosteo.prefijo  = (document.getElementById("ce-prefijo").value||"").toUpperCase().trim();
+  _ceCosteo.fecha    = document.getElementById("ce-fecha").value;
+  _ceCosteo.atencion = document.getElementById("ce-atencion").value.trim();
+
+  if(!_ceCosteo.proyecto){ showToast("⚠️ Falta nombre del proyecto"); return; }
+  if(!_ceCosteo.prefijo){  showToast("⚠️ Falta prefijo del cliente (ej: ELM)"); return; }
+
+  // Generar folio si no tiene
+  if(!_ceCosteo.folio){
+    _ceCosteo.folio = await _generarFolioCosteo(_ceCosteo.prefijo, _ceCosteo.fecha);
+  }
+
+  // Calcular totales globales
+  let costo=0, precio=0, utilidad=0;
+  _ceCosteo.sistemas.forEach(s=>{
+    const t = _calcSistema(s);
+    costo    += t.costo;
+    precio   += t.precio;
+    utilidad += t.utilidad;
+  });
+  _ceCosteo.costoTotal = costo;
+  _ceCosteo.precioTotal = precio;
+  _ceCosteo.utilidadTotal = utilidad;
+  _ceCosteo.ts = Date.now();
+
+  try{
+    await costeoCosteosRef.doc(_ceCosteo.id).set(_ceCosteo);
+    showToast("✓ Costeo guardado · "+_ceCosteo.folio);
+    document.getElementById("ce-folio").textContent = _ceCosteo.folio;
+  }catch(e){
+    console.error(e);
+    showToast("⚠️ Error al guardar: "+e.message);
+  }
+}
+
+async function _generarFolioCosteo(prefijo, fecha){
+  const fStr = (fecha || new Date().toISOString().slice(0,10)).replace(/-/g,"");
+  // Buscar consecutivo del día
+  try{
+    const snap = await costeoCosteosRef.where("folioBase","==","COS-"+prefijo+"-"+fStr).get();
+    const n = String(snap.size + 1).padStart(3,"0");
+    const folio = "COS-"+prefijo+"-"+fStr+"-"+n;
+    _ceCosteo.folioBase = "COS-"+prefijo+"-"+fStr;
+    return folio;
+  }catch(e){
+    const n = String(Math.floor(Math.random()*900)+100);
+    return "COS-"+prefijo+"-"+fStr+"-"+n;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+
+
 const auth = firebase.auth();
 const usersRef = db.collection("usuarios");
+
+const ADMIN_UID = "OVsuuX8DsSdhLqXmK01gW2K8Rrh1";
 
 let currentUser = null;
 let currentUserProfile = null;
@@ -5618,6 +6975,13 @@ auth.onAuthStateChanged(async user => {
     const adminTab = document.getElementById("snav-admin");
     if(adminTab) adminTab.style.display = isAdmin ? "" : "none";
 
+    // Mostrar tab Costeo solo para usuarios autorizados (admin + lista blanca)
+    const costeoTab = document.getElementById("snav-costeo");
+    const _userEmail = (user.email||"").toLowerCase();
+    const _tieneCosteo = isAdmin || COSTEO_USUARIOS_AUTORIZADOS.includes(_userEmail);
+    if(costeoTab) costeoTab.style.display = _tieneCosteo ? "" : "none";
+    window._costeoAcceso = _tieneCosteo;
+
     // Logo en login
     const ll = document.getElementById("login-logo-img");
     const ml = document.getElementById("tb-logo-img");
@@ -5626,6 +6990,7 @@ auth.onAuthStateChanged(async user => {
     // Inicializar app
     subscribeObras();
   subscribeCotizaciones();
+    if(_tieneCosteo) subscribeCosteo();
     checkUrlParams();
     updateHoraCi();
 
