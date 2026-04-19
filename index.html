@@ -1659,9 +1659,16 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
 
         <!-- ② TABLA DE CONCEPTOS (lo central de la cotización) -->
         <div class="card" style="margin-bottom:12px;padding:16px;">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:6px;flex-wrap:wrap;">
             <div style="font-size:10px;font-weight:700;color:#7C3AED;letter-spacing:1px;text-transform:uppercase;">🔧 Conceptos</div>
-            <button onclick="addPartidaCot()" style="background:rgba(124,58,237,.1);border:1px solid rgba(124,58,237,.25);color:#7C3AED;font-size:10px;font-weight:700;padding:6px 12px;border-radius:7px;cursor:pointer;font-family:var(--font);">+ Agregar</button>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;">
+              <button id="cot-btn-cargar-costeo" onclick="abrirModalCargarCosteo()" style="display:none;background:rgba(124,58,237,.1);border:1px solid rgba(124,58,237,.25);color:#7C3AED;font-size:10px;font-weight:700;padding:6px 12px;border-radius:7px;cursor:pointer;font-family:var(--font);">⚡ Cargar desde Costeo</button>
+              <button onclick="addPartidaCot()" style="background:rgba(124,58,237,.1);border:1px solid rgba(124,58,237,.25);color:#7C3AED;font-size:10px;font-weight:700;padding:6px 12px;border-radius:7px;cursor:pointer;font-family:var(--font);">+ Agregar</button>
+            </div>
+          </div>
+          <!-- Indicador de vinculación con costeo -->
+          <div id="cot-vinculo-costeo" style="display:none;background:#EDE9FE;border:1px solid #C4B5FD;border-left:3px solid #7C3AED;border-radius:6px;padding:8px 10px;margin-bottom:10px;font-size:10.5px;color:#4A5E7A;line-height:1.5;">
+            <!-- Se llena dinámicamente -->
           </div>
           <div id="cot-partidas-wrap"></div>
           <!-- Totales -->
@@ -1981,6 +1988,22 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
           </div>
         </div>
         <div id="ce-alerta-margen" style="font-size:10px;padding:8px 10px;border-radius:6px;display:none;"></div>
+
+        <!-- Vinculación con cotización -->
+        <div id="ce-vinculo-cot" style="display:none;margin-top:10px;padding:10px;background:#EDE9FE;border:1px solid #C4B5FD;border-left:3px solid #7C3AED;border-radius:8px;">
+          <div style="font-size:8.5px;font-weight:700;color:#5B21B6;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:4px;">✓ Cotización vinculada</div>
+          <div id="ce-vinculo-texto" style="font-size:11px;color:#4A5E7A;line-height:1.5;"></div>
+        </div>
+
+        <!-- Acciones finales -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;">
+          <button onclick="generarCotizacionDesdeCosteo()" style="background:#7C3AED;color:#fff;border:none;padding:12px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font);">
+            📋 Generar Cotización
+          </button>
+          <button onclick="duplicarCosteoActual()" class="cos-btn-sm" style="padding:12px;font-size:12px;">
+            📑 Duplicar Costeo
+          </button>
+        </div>
       </div>
 
     </div>
@@ -5013,14 +5036,16 @@ function renderListaCot(){
   }
   el.innerHTML=cotizaciones.map(function(c){
     var total=parseFloat(c.granTotal||0);
+    var fromCosteo = c.folioCosteoOrigen ? '<span class="badge" style="background:#EDE9FE;color:#5B21B6;border:1px solid #C4B5FD;">⚡ '+c.folioCosteoOrigen+'</span>' : '';
     return '<div class="prow" onclick="abrirCot(\''+c.id+'\')">'+
       '<div class="prow-bar" style="background:#7C3AED;"></div>'+
       '<div class="prow-body">'+
         '<div class="prow-name">'+c.empresa+'</div>'+
         '<div class="prow-meta">'+c.atencion+' · '+c.fecha+'</div>'+
-        '<div style="display:flex;gap:5px;margin-top:5px;">'+
+        '<div style="display:flex;gap:5px;margin-top:5px;flex-wrap:wrap;">'+
           '<span class="badge b-navy">'+c.folio+'</span>'+
           '<span class="badge b-green">$'+fmtPeso(total)+'</span>'+
+          fromCosteo+
         '</div>'+
       '</div>'+
       '<div class="prow-arr">›</div>'+
@@ -5050,6 +5075,10 @@ function showNuevaCot(){
   }];
   renderPartidasCot();
   calcTotalesCot();
+  // Ocultar vínculo (es cotización nueva desde cero)
+  var vincElN = document.getElementById("cot-vinculo-costeo");
+  if(vincElN) vincElN.style.display = "none";
+  window._cotizacionCosteoOrigen = null;
   document.getElementById("cot-lista-wrap").style.display="none";
   document.getElementById("cot-form-wrap").style.display="block";
 }
@@ -5083,8 +5112,34 @@ function abrirCot(id){
   if(!_cotPartidas.length) _cotPartidas=[{id:1,servicio:"",desc:"",proc:"",qty:0,unit:"m²",precio:0}];
   renderPartidasCot();
   calcTotalesCot();
+
+  // Mostrar vínculo al costeo si existe
+  var vincEl = document.getElementById("cot-vinculo-costeo");
+  if(vincEl){
+    if(c.folioCosteoOrigen){
+      vincEl.style.display = "block";
+      vincEl.innerHTML = '<strong style="color:#5B21B6;">⚡ Cotización generada desde costeo:</strong> '+c.folioCosteoOrigen
+        +' <a href="#" onclick="event.preventDefault();_irAlCosteoOrigen(\''+(c.costeoIdOrigen||"")+'\');" style="color:#7C3AED;text-decoration:none;font-weight:700;margin-left:6px;">Abrir costeo →</a>';
+    } else {
+      vincEl.style.display = "none";
+    }
+  }
+  // Limpiar flag de origen (edición de cotización existente, no generación nueva)
+  window._cotizacionCosteoOrigen = null;
+
   document.getElementById("cot-lista-wrap").style.display="none";
   document.getElementById("cot-form-wrap").style.display="block";
+}
+
+// Navegar al costeo origen desde la cotización
+function _irAlCosteoOrigen(costeoId){
+  if(!costeoId){ showToast("⚠️ No se encontró el costeo origen"); return; }
+  if(!window._costeoAcceso){ showToast("🔒 Sin acceso al módulo Costeo"); return; }
+  goScreen("costeo");
+  setTimeout(()=>{
+    switchCosteoTab("costeos");
+    setTimeout(()=>abrirCosteo(costeoId), 150);
+  }, 150);
 }
 
 // ── Partidas ──────────────────────────────────────────────────────
@@ -5228,6 +5283,10 @@ async function guardarCot(){
   try{
     if(cotRef) await cotRef.doc(id).set(cot);
     cotActivaId=id;
+    // Hook: si esta cotización viene de un costeo, vincular bidireccionalmente
+    if(typeof window._actualizarVinculoPostGuardadoCotizacion === "function" && window._cotizacionCosteoOrigen){
+      window._actualizarVinculoPostGuardadoCotizacion(cot);
+    }
     showToast("✅ Cotización guardada — "+folio);
     return cot;
   }catch(e){showToast("❌ Error al guardar: "+e.message);return null;}
@@ -6871,6 +6930,284 @@ async function _generarFolioCosteo(prefijo, fecha){
 }
 
 // ═══════════════════════════════════════════════════════════════
+// ─── FASE 3: INTEGRACIÓN COSTEO ↔ COTIZACIÓN ──────────────────
+// ═══════════════════════════════════════════════════════════════
+
+// Re-render del resumen global con el indicador de vínculo
+function _actualizarVinculoCosteo(){
+  const el = document.getElementById("ce-vinculo-cot");
+  if(!el || !_ceCosteo) return;
+  if(!_ceCosteo.folioCotizacionGenerada){
+    el.style.display = "none";
+    return;
+  }
+  // Buscar la cotización vinculada para mostrar precio real ofertado
+  const cotFolio = _ceCosteo.folioCotizacionGenerada;
+  const cot = (cotizaciones||[]).find(c=>c.folio===cotFolio);
+
+  let txt = 'Folio cotización: <strong style="color:#5B21B6;">'+escapeHtml(cotFolio)+'</strong>';
+
+  if(cot && _ceCosteo.sistemas && _ceCosteo.sistemas.length){
+    // Calcular precio promedio por m² del costeo vs cotización
+    const precioCosteo = _ceCosteo.sistemas.reduce((sum,s)=>{
+      const t = _calcSistema(s);
+      return sum + (s.cantidad>0 ? t.precio/s.cantidad : 0);
+    },0) / _ceCosteo.sistemas.length;
+
+    const precioCot = cot.partidas && cot.partidas.length
+      ? cot.partidas.reduce((sum,p)=>sum+(parseFloat(p.precio)||0),0)/cot.partidas.length
+      : 0;
+
+    if(precioCosteo>0 && precioCot>0){
+      const delta = ((precioCot-precioCosteo)/precioCosteo*100);
+      const col = delta<-10?"#DC2626":(delta<0?"#F59E0B":"#10B981");
+      txt += '<br>Precio sugerido costeo: <strong>$'+_fmt(precioCosteo)+'/unidad</strong>';
+      txt += '<br>Precio ofertado cliente: <strong>$'+_fmt(precioCot)+'/unidad</strong>';
+      txt += '<br>Diferencia: <strong style="color:'+col+';">'+(delta>=0?"+":"")+delta.toFixed(1)+'%</strong>';
+    }
+  }
+
+  el.innerHTML = '<div style="font-size:8.5px;font-weight:700;color:#5B21B6;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:4px;">✓ Cotización vinculada</div>'
+    +'<div id="ce-vinculo-texto" style="font-size:10.5px;color:#4A5E7A;line-height:1.5;">'+txt+'</div>';
+  el.style.display = "block";
+}
+
+// Hook: Re-renderizar el vínculo cuando el resumen global se actualiza
+const _origActualizarResumenGlobal = typeof _actualizarResumenGlobal === "function" ? _actualizarResumenGlobal : null;
+// Re-binding inside _renderSistemas — al final ya se llama _actualizarResumenGlobal, ahora también llamamos _actualizarVinculoCosteo
+// (lo hacemos con patch en el closure)
+(function(){
+  const _orig = _actualizarResumenGlobal;
+  _actualizarResumenGlobal = function(){
+    _orig();
+    _actualizarVinculoCosteo();
+  };
+})();
+
+// ── Generar Cotización desde Costeo ──────────────────────────
+async function generarCotizacionDesdeCosteo(){
+  if(!_ceCosteo){ showToast("⚠️ Sin costeo activo"); return; }
+  if(!_ceCosteo.sistemas || !_ceCosteo.sistemas.length){
+    showToast("⚠️ El costeo no tiene sistemas"); return;
+  }
+  if(!_ceCosteo.folio){
+    if(!confirm("El costeo no está guardado. ¿Guardar primero?")) return;
+    await guardarCosteoActual();
+    if(!_ceCosteo.folio){ showToast("⚠️ No se pudo guardar"); return; }
+  }
+
+  // Si ya hay cotización vinculada, preguntar si sobreescribir
+  if(_ceCosteo.folioCotizacionGenerada){
+    if(!confirm("Ya existe una cotización vinculada ("+_ceCosteo.folioCotizacionGenerada+"). ¿Generar una nueva? La vinculación anterior se reemplazará.")) return;
+  }
+
+  // Navegar al módulo Cotizaciones
+  goScreen("cotizaciones");
+
+  // Simular "Nueva cotización"
+  setTimeout(()=>{
+    if(typeof nuevaCotizacion === "function") nuevaCotizacion();
+    else if(typeof showNuevaCot === "function") showNuevaCot();
+    else {
+      showToast("⚠️ No se pudo abrir editor de cotizaciones");
+      return;
+    }
+
+    // Después de otro tick, llenar con los datos del costeo
+    setTimeout(()=>_llenarCotizacionDesdeCosteo(_ceCosteo), 250);
+  }, 200);
+}
+
+function _llenarCotizacionDesdeCosteo(costeo){
+  try{
+    // Datos principales del cliente
+    const setV = (id,val)=>{ const el=document.getElementById(id); if(el) el.value = val||""; };
+    setV("cot-empresa", costeo.cliente);
+    setV("cot-atencion", costeo.atencion);
+    setV("cot-prefijo", costeo.prefijo);
+    if(costeo.fecha){
+      const fInput = document.getElementById("cot-fecha");
+      if(fInput) fInput.value = costeo.fecha;
+    }
+
+    // Limpiar partidas existentes y agregar una por sistema
+    _cotPartidas = [];
+    costeo.sistemas.forEach((s,i)=>{
+      const t = _calcSistema(s);
+      const precioUnit = (s.cantidad||0) > 0 ? (t.precio / s.cantidad) : 0;
+      _cotPartidas.push({
+        id: i+1,
+        servicio: s.nombre || "Sistema "+(i+1),
+        desc: _construirDescripcionPartida(s),
+        qty: s.cantidad || 0,
+        unit: s.unidad || "m²",
+        precio: Math.round(precioUnit*100)/100
+      });
+    });
+    if(typeof renderPartidasCot === "function") renderPartidasCot();
+    if(typeof recalcTotalesCot === "function") recalcTotalesCot();
+
+    // Guardar referencia al costeo origen (se leerá al guardar la cotización)
+    window._cotizacionCosteoOrigen = {
+      folioCosteo: costeo.folio,
+      costeoId: costeo.id
+    };
+
+    // Mostrar indicador visual en la cotización
+    const vincEl = document.getElementById("cot-vinculo-costeo");
+    if(vincEl){
+      vincEl.style.display = "block";
+      vincEl.innerHTML = '<strong style="color:#5B21B6;">⚡ Cotización generada desde costeo:</strong> '+escapeHtml(costeo.folio)
+        +'<br><span style="color:var(--tx3);">Los precios por unidad fueron pre-calculados. Puedes editarlos libremente antes de enviar.</span>';
+    }
+
+    showToast("⚡ Cotización pre-llenada desde costeo · "+costeo.folio);
+  }catch(e){
+    console.error("Error llenando cotización:", e);
+    showToast("⚠️ Error: "+e.message);
+  }
+}
+
+// Construir descripción formal de la partida a partir del sistema
+function _construirDescripcionPartida(s){
+  // Extraer materiales principales del sistema para armar descripción
+  const mats = (s.partidas||[]).filter(p=>p.tipo==="material");
+  if(!mats.length) return s.nombre || "";
+
+  // Buscar rendimientos mencionados
+  const espesores = mats.map(m=>m.rendNota).filter(x=>x);
+  const espesorUnico = [...new Set(espesores)].join(", ");
+
+  let desc = "Suministro y aplicación de ";
+  if(s.nombre && s.nombre.toLowerCase().includes("epóxico")){
+    desc += "sistema de recubrimiento epóxico 100% sólidos";
+    if(espesorUnico) desc += " a un espesor de "+espesorUnico;
+    if(s.nombre.toLowerCase().includes("poliuretano")){
+      desc += " con acabado final de poliuretano alifático";
+    }
+  } else if(s.nombre && s.nombre.toLowerCase().includes("mortero")){
+    desc += "mortero uretano cementicio sobre superficie de concreto";
+  } else if(s.nombre && s.nombre.toLowerCase().includes("sello")){
+    desc += "sellador bicomponente en juntas y grietas";
+  } else {
+    desc = s.nombre || "";
+  }
+  desc += ". Incluye preparación de superficie, limpieza y todo lo necesario para su correcta ejecución.";
+  return desc;
+}
+
+// ── Modal: Cargar desde Costeo (desde una cotización) ────────
+function abrirModalCargarCosteo(){
+  if(!_costeoCosteos || !_costeoCosteos.length){
+    alert("No hay costeos guardados. Crea uno primero en el módulo Costeo.");
+    return;
+  }
+
+  const opts = _costeoCosteos.map(c=>{
+    const fecha = c.fecha ? new Date(c.fecha).toLocaleDateString("es-MX") : "";
+    const margen = c.precioTotal ? (c.utilidadTotal/c.precioTotal*100).toFixed(1) : "0";
+    return '<div class="cos-modal-opt" onclick="_cargarCotDesdeCosteo(\''+c.id+'\');document.querySelector(\'.cos-modal-ov\').remove();">'
+      +'<div class="cos-modal-opt-title">'+escapeHtml(c.proyecto||"Sin nombre")+'</div>'
+      +'<div class="cos-modal-opt-meta">'+escapeHtml(c.folio||"")+' · '+fecha+' · $'+((c.precioTotal||0).toLocaleString("es-MX",{maximumFractionDigits:0}))+' · '+margen+'% margen</div>'
+    +'</div>';
+  }).join("");
+
+  const ov = document.createElement("div");
+  ov.className = "cos-modal-ov";
+  ov.onclick = (e)=>{ if(e.target===ov) ov.remove(); };
+  ov.innerHTML = '<div class="cos-modal" onclick="event.stopPropagation();">'
+    +'<div class="cos-modal-hdr">'
+      +'<div style="font-size:13px;font-weight:700;color:var(--navy);">Cargar desde costeo</div>'
+      +'<button onclick="this.closest(\'.cos-modal-ov\').remove()" style="background:none;border:none;font-size:18px;color:var(--tx2);cursor:pointer;">✕</button>'
+    +'</div>'
+    +'<div class="cos-modal-body">'
+      +'<div style="font-size:10px;color:var(--tx2);margin-bottom:8px;">Los precios por unidad se calcularán como Precio Total ÷ cantidad del sistema. Podrás editarlos después.</div>'
+      +opts
+    +'</div>'
+  +'</div>';
+  document.body.appendChild(ov);
+}
+
+function _cargarCotDesdeCosteo(costeoId){
+  const costeo = _costeoCosteos.find(c=>c.id===costeoId);
+  if(!costeo){ showToast("⚠️ Costeo no encontrado"); return; }
+  if(!costeo.sistemas || !costeo.sistemas.length){
+    showToast("⚠️ El costeo no tiene sistemas"); return;
+  }
+  _llenarCotizacionDesdeCosteo(costeo);
+}
+
+// Mostrar/ocultar el botón "Cargar desde Costeo" según acceso al módulo
+function _actualizarBtnCargarCosteo(){
+  const btn = document.getElementById("cot-btn-cargar-costeo");
+  if(!btn) return;
+  btn.style.display = (window._costeoAcceso && _costeoCosteos && _costeoCosteos.length) ? "" : "none";
+}
+// Hook: actualizar botón cuando cargan costeos
+(function(){
+  const _orig = typeof renderListaCosteos === "function" ? renderListaCosteos : null;
+  if(_orig){
+    renderListaCosteos = function(){
+      _orig();
+      _actualizarBtnCargarCosteo();
+    };
+  }
+})();
+
+// ── Hook al guardar cotización: guardar referencia al costeo ─
+// Se ejecuta automáticamente leyendo window._cotizacionCosteoOrigen al momento de guardar
+// (Se maneja en el saveCotizacion existente extendido más abajo)
+
+// ── Hook: al guardar una cotización, actualizar vínculo en el costeo ─
+// Lo implementamos vigilando cambios en la colección de cotizaciones
+function _actualizarVinculoPostGuardadoCotizacion(cotObj){
+  try{
+    if(!window._cotizacionCosteoOrigen) return;
+    const origen = window._cotizacionCosteoOrigen;
+    if(!origen.costeoId || !origen.folioCosteo) return;
+
+    // Actualizar el costeo con el folio de la cotización generada
+    costeoCosteosRef.doc(origen.costeoId).update({
+      folioCotizacionGenerada: cotObj.folio,
+      cotizacionIdGenerada: cotObj.id
+    }).then(()=>{
+      console.log("[COSTEO] Vínculo actualizado:", origen.folioCosteo, "→", cotObj.folio);
+    }).catch(e=>console.error("Error vinculando:", e));
+
+    // Guardar el origen en la cotización también
+    if(typeof cotRef !== "undefined" && cotRef){
+      cotRef.doc(cotObj.id).update({
+        folioCosteoOrigen: origen.folioCosteo,
+        costeoIdOrigen: origen.costeoId
+      }).catch(e=>console.error("Error guardando origen en cotización:", e));
+    }
+
+    // Limpiar el flag
+    window._cotizacionCosteoOrigen = null;
+  }catch(e){ console.error("Error en vínculo post-guardado:", e); }
+}
+window._actualizarVinculoPostGuardadoCotizacion = _actualizarVinculoPostGuardadoCotizacion;
+
+// ── Duplicar costeo actual ────────────────────────────────────
+async function duplicarCosteoActual(){
+  if(!_ceCosteo){ showToast("⚠️ Sin costeo activo"); return; }
+  if(!confirm("¿Duplicar este costeo como borrador nuevo?")) return;
+
+  const clon = JSON.parse(JSON.stringify(_ceCosteo));
+  clon.id = "cos_"+Date.now();
+  clon.folio = "";
+  clon.folioBase = "";
+  clon.folioCotizacionGenerada = null;
+  clon.cotizacionIdGenerada = null;
+  clon.estado = "borrador";
+  clon.ts = Date.now();
+  clon.proyecto = (clon.proyecto||"") + " (copia)";
+  _ceCosteo = clon;
+  _renderEditorCosteo();
+  showToast("📑 Costeo duplicado como borrador");
+}
+
+// ═══════════════════════════════════════════════════════════════
 
 
 const auth = firebase.auth();
@@ -6975,10 +7312,23 @@ auth.onAuthStateChanged(async user => {
     const adminTab = document.getElementById("snav-admin");
     if(adminTab) adminTab.style.display = isAdmin ? "" : "none";
 
-    // Mostrar tab Costeo solo para usuarios autorizados (admin + lista blanca)
+    // Mostrar tab Costeo para: admin, lista blanca por email, o rol=admin en perfil
     const costeoTab = document.getElementById("snav-costeo");
-    const _userEmail = (user.email||"").toLowerCase();
-    const _tieneCosteo = isAdmin || COSTEO_USUARIOS_AUTORIZADOS.includes(_userEmail);
+    const _userEmail = (user.email||"").toLowerCase().trim();
+    const _rolProfile = (currentUserProfile && currentUserProfile.rol || "").toLowerCase();
+    const _enListaBlanca = COSTEO_USUARIOS_AUTORIZADOS.some(e=>e.toLowerCase().trim()===_userEmail);
+    const _tieneCosteo = isAdmin || _enListaBlanca || _rolProfile==="admin";
+
+    console.log("[COSTEO] Check acceso:", {
+      email: _userEmail,
+      uid: user.uid,
+      isAdmin: isAdmin,
+      rolPerfil: _rolProfile,
+      enListaBlanca: _enListaBlanca,
+      accesoFinal: _tieneCosteo,
+      listaConfigurada: COSTEO_USUARIOS_AUTORIZADOS
+    });
+
     if(costeoTab) costeoTab.style.display = _tieneCosteo ? "" : "none";
     window._costeoAcceso = _tieneCosteo;
 
