@@ -2486,10 +2486,10 @@ function goScreen(n){
     else { goScreen("obras"); }
   }
   if(n==="cotizaciones"){ renderListaCot(); }
-  // Modo vista amplia para módulo Costeo (desktop)
+  // Modo vista amplia para módulos de escritorio (Costeo y Cotizaciones)
   const _appEl = document.getElementById("app");
   if(_appEl){
-    if(n==="costeo" || n==="costeo-editor"){
+    if(n==="costeo" || n==="costeo-editor" || n==="cotizaciones"){
       _appEl.classList.add("wide-mode");
     } else {
       _appEl.classList.remove("wide-mode");
@@ -5298,14 +5298,25 @@ async function guardarCot(){
     condGarantia:document.getElementById("cot-garantia")?.value.trim()||"",
     condEntrega:document.getElementById("cot-entrega")?.value.trim()||"",
     partidas:_cotPartidas.map(function(p){
-      return {servicio:p.servicio,desc:p.desc,proc:p.proc,qty:p.qty,unit:p.unit,precio:p.precio};
+      return {
+        servicio: p.servicio || "",
+        desc:     p.desc     || "",
+        proc:     p.proc     || "",
+        qty:      parseFloat(p.qty) || 0,
+        unit:     p.unit     || "m²",
+        precio:   parseFloat(p.precio) || 0
+      };
     }),
     subtotal:tots.sub,iva:tots.iva,granTotal:tots.total,
     creadoPorUid:currentUser?.uid||"",
     creadoPor:currentUserProfile?.nombre||""
   };
   try{
-    if(cotRef) await cotRef.doc(id).set(cot);
+    if(cotRef){
+      // Sanitizar: Firestore no acepta undefined. Convertimos a "" o 0.
+      const cotSafe = _sanitizarParaFirestore(cot);
+      await cotRef.doc(id).set(cotSafe);
+    }
     cotActivaId=id;
     // Hook: si esta cotización viene de un costeo, vincular bidireccionalmente
     if(typeof window._actualizarVinculoPostGuardadoCotizacion === "function" && window._cotizacionCosteoOrigen){
@@ -5313,7 +5324,31 @@ async function guardarCot(){
     }
     showToast("✅ Cotización guardada — "+folio);
     return cot;
-  }catch(e){showToast("❌ Error al guardar: "+e.message);return null;}
+  }catch(e){
+    console.error("Error guardando cotización:", e, "Objeto:", cot);
+    showToast("❌ Error al guardar: "+e.message);
+    return null;
+  }
+}
+
+// Sanitiza recursivamente un objeto para Firestore (quita undefined)
+function _sanitizarParaFirestore(obj){
+  if(obj === null || obj === undefined) return null;
+  if(typeof obj !== "object") return obj;
+  if(Array.isArray(obj)){
+    return obj.map(x => _sanitizarParaFirestore(x)).filter(x => x !== undefined);
+  }
+  const out = {};
+  for(const k in obj){
+    const v = obj[k];
+    if(v === undefined) continue; // skip undefined fields
+    if(typeof v === "object" && v !== null){
+      out[k] = _sanitizarParaFirestore(v);
+    } else {
+      out[k] = v;
+    }
+  }
+  return out;
 }
 
 async function guardarYVerCot(){
@@ -6987,7 +7022,8 @@ async function guardarCosteoActual(){
   _ceCosteo.ts = Date.now();
 
   try{
-    await costeoCosteosRef.doc(_ceCosteo.id).set(_ceCosteo);
+    const costeoSafe = (typeof _sanitizarParaFirestore==="function") ? _sanitizarParaFirestore(_ceCosteo) : _ceCosteo;
+    await costeoCosteosRef.doc(_ceCosteo.id).set(costeoSafe);
     showToast("✓ Costeo guardado · "+_ceCosteo.folio);
     document.getElementById("ce-folio").textContent = _ceCosteo.folio;
   }catch(e){
@@ -7100,6 +7136,35 @@ async function generarCotizacionDesdeCosteo(){
   }, 200);
 }
 
+// Mapeo: nombre del sistema de costeo → tipo de trabajo de cotización
+const _COSTEO_A_COTIZACION_MAP = {
+  "Epóxico con acabado de poliuretano": "Epóxico 100% Sólidos con Sello de Poliuretano",
+  "Epóxico 100% sólidos":               "Epóxico 100% Sólidos",
+  "Mortero uretano cementicio":         "Uretano Cementicio",
+  "Sello de juntas y grietas":          "Sello de Juntas y Grietas",
+  "Reparación de losa":                 "Reparaciones de Concreto",
+  "Desbaste y pulido de concreto":      "Pulido de Concreto",
+  "Pintura industrial":                 "" // no hay match exacto, queda libre
+};
+
+function _mapearSistemaAServicio(nombreSistema){
+  if(!nombreSistema) return "";
+  // Match exacto
+  if(_COSTEO_A_COTIZACION_MAP[nombreSistema] !== undefined){
+    return _COSTEO_A_COTIZACION_MAP[nombreSistema];
+  }
+  // Match fuzzy: busca keywords
+  const n = nombreSistema.toLowerCase();
+  if(n.includes("epóxico") && n.includes("poliuretano")) return "Epóxico 100% Sólidos con Sello de Poliuretano";
+  if(n.includes("epóxico")) return "Epóxico 100% Sólidos";
+  if(n.includes("mortero") || n.includes("uretano cementicio") || n.includes("flowfresh")) return "Uretano Cementicio";
+  if(n.includes("sello") || n.includes("junta") || n.includes("grieta")) return "Sello de Juntas y Grietas";
+  if(n.includes("reparaci")) return "Reparaciones de Concreto";
+  if(n.includes("pulido") || n.includes("desbaste")) return "Pulido de Concreto";
+  if(n.includes("cajón") || n.includes("cajon")) return "Cajones de Juntas";
+  return ""; // sin match, deja libre
+}
+
 function _llenarCotizacionDesdeCosteo(costeo){
   try{
     // Datos principales del cliente
@@ -7117,17 +7182,40 @@ function _llenarCotizacionDesdeCosteo(costeo){
     costeo.sistemas.forEach((s,i)=>{
       const t = _calcSistema(s);
       const precioUnit = (s.cantidad||0) > 0 ? (t.precio / s.cantidad) : 0;
+
+      // Mapear sistema de costeo → servicio del catálogo de cotización
+      const servicioMapeado = _mapearSistemaAServicio(s.nombre);
+      const servicioFinal = servicioMapeado || s.nombre || "Sistema "+(i+1);
+
+      // Si hay match en catálogo, usar la descripción y proceso oficiales
+      let desc, proc;
+      if(servicioMapeado && CAT_SERVICIOS[servicioMapeado]){
+        desc = CAT_SERVICIOS[servicioMapeado].desc || "";
+        proc = CAT_SERVICIOS[servicioMapeado].proc || "";
+        // Enriquecer descripción con espesor si está disponible
+        const mats = (s.partidas||[]).filter(p=>p.tipo==="material");
+        const espesores = [...new Set(mats.map(m=>m.rendNota).filter(x=>x))];
+        if(espesores.length){
+          desc = desc.replace(/\.$/,"") + " a un espesor de "+espesores.join(", ")+".";
+        }
+      } else {
+        // Sin match: construir descripción genérica
+        desc = _construirDescripcionPartida(s);
+        proc = "";
+      }
+
       _cotPartidas.push({
         id: i+1,
-        servicio: s.nombre || "Sistema "+(i+1),
-        desc: _construirDescripcionPartida(s),
+        servicio: servicioFinal,
+        desc: desc,
+        proc: proc,
         qty: s.cantidad || 0,
         unit: s.unidad || "m²",
         precio: Math.round(precioUnit*100)/100
       });
     });
     if(typeof renderPartidasCot === "function") renderPartidasCot();
-    if(typeof recalcTotalesCot === "function") recalcTotalesCot();
+    if(typeof calcTotalesCot === "function") calcTotalesCot();
 
     // Guardar referencia al costeo origen (se leerá al guardar la cotización)
     window._cotizacionCosteoOrigen = {
@@ -7250,8 +7338,8 @@ function _actualizarVinculoPostGuardadoCotizacion(cotObj){
 
     // Actualizar el costeo con el folio de la cotización generada
     costeoCosteosRef.doc(origen.costeoId).update({
-      folioCotizacionGenerada: cotObj.folio,
-      cotizacionIdGenerada: cotObj.id
+      folioCotizacionGenerada: cotObj.folio || "",
+      cotizacionIdGenerada: cotObj.id || ""
     }).then(()=>{
       console.log("[COSTEO] Vínculo actualizado:", origen.folioCosteo, "→", cotObj.folio);
     }).catch(e=>console.error("Error vinculando:", e));
@@ -7259,8 +7347,8 @@ function _actualizarVinculoPostGuardadoCotizacion(cotObj){
     // Guardar el origen en la cotización también
     if(typeof cotRef !== "undefined" && cotRef){
       cotRef.doc(cotObj.id).update({
-        folioCosteoOrigen: origen.folioCosteo,
-        costeoIdOrigen: origen.costeoId
+        folioCosteoOrigen: origen.folioCosteo || "",
+        costeoIdOrigen: origen.costeoId || ""
       }).catch(e=>console.error("Error guardando origen en cotización:", e));
     }
 
