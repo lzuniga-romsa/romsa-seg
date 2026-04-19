@@ -54,7 +54,8 @@
 html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--font);-webkit-font-smoothing:antialiased;overflow:hidden;}
 
 /* ── SHELL ── */
-#app{display:flex;flex-direction:column;height:100dvh;max-width:500px;margin:0 auto;background:var(--off);}
+#app{display:flex;flex-direction:column;height:100dvh;max-width:500px;margin:0 auto;background:var(--off);transition:max-width .2s;}
+#app.wide-mode{max-width:1400px;}
 #topbar{background:var(--navy);padding:calc(var(--safe-top)+11px) 18px 13px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;border-bottom:1px solid rgba(255,255,255,.05);}
 .tb-brand{display:flex;align-items:center;gap:11px;}
 .tb-logo-img{height:24px;width:auto;}
@@ -732,10 +733,11 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
 .cos-sistema-hdr{background:linear-gradient(135deg,#1B3F72,#0B1F3A);padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px;}
 .cos-sistema-title{flex:1;display:flex;align-items:center;gap:10px;}
 .cos-sistema-body{padding:12px 14px;}
-.cos-partidas-header{display:grid;grid-template-columns:60px 2fr 85px 85px 85px 85px 55px 32px;gap:6px;padding:6px 8px;background:var(--off);border-radius:6px;margin-bottom:6px;font-size:8px;font-weight:700;color:var(--tx2);letter-spacing:.6px;text-transform:uppercase;}
-.cos-partida{display:grid;grid-template-columns:60px 2fr 85px 85px 85px 85px 55px 32px;gap:6px;padding:4px 8px;align-items:center;font-size:11px;}
+.cos-partidas-header{display:grid;grid-template-columns:80px 1fr 110px 110px 110px 110px 70px 40px;gap:8px;padding:8px 10px;background:var(--off);border-radius:6px;margin-bottom:6px;font-size:9px;font-weight:700;color:var(--tx2);letter-spacing:.6px;text-transform:uppercase;}
+.cos-partida{display:grid;grid-template-columns:80px 1fr 110px 110px 110px 110px 70px 40px;gap:8px;padding:6px 10px;align-items:center;font-size:11px;}
 .cos-partida:nth-child(even){background:var(--off2);}
-.cos-partida input{font-size:11px;padding:5px 7px;border:1px solid var(--g1);border-radius:4px;font-family:var(--font);width:100%;color:var(--navy);background:#fff;}
+.cos-partida input{font-size:12px;padding:7px 8px;border:1px solid var(--g1);border-radius:4px;font-family:var(--font);width:100%;color:var(--navy);background:#fff;}
+.cos-partida input:focus{outline:none;border-color:#1E6FD9;box-shadow:0 0 0 2px rgba(30,111,217,.12);}
 .cos-partida-name{font-size:11px;color:var(--navy);font-weight:500;padding:2px 0;}
 .cos-partida-tag{display:inline-block;font-size:7.5px;font-weight:700;padding:1px 5px;border-radius:3px;letter-spacing:.4px;text-transform:uppercase;margin-right:4px;vertical-align:middle;}
 .cos-tag-mo{background:#DBEAFE;color:#1E40AF;}
@@ -2484,6 +2486,15 @@ function goScreen(n){
     else { goScreen("obras"); }
   }
   if(n==="cotizaciones"){ renderListaCot(); }
+  // Modo vista amplia para módulo Costeo (desktop)
+  const _appEl = document.getElementById("app");
+  if(_appEl){
+    if(n==="costeo" || n==="costeo-editor"){
+      _appEl.classList.add("wide-mode");
+    } else {
+      _appEl.classList.remove("wide-mode");
+    }
+  }
   if(n==="costeo"){
     if(!window._costeoAcceso){ showToast("🔒 Sin acceso a este módulo"); goScreen("obras"); return; }
     // Asegurar que el tab dashboard esté activo al entrar
@@ -6376,8 +6387,8 @@ function _htmlSistema(s, idx){
   const margenPct = tot.precio>0 ? (tot.utilidad/tot.precio*100) : 0;
   const cls = margenPct>=30?"cos-margen-ok":(margenPct>=20?"cos-margen-warn":"cos-margen-bad");
 
-  const sistemasOpts = COSTEO_SISTEMAS_PREDEF.map(n=>'<option value="'+n+'"'+(s.nombre===n?" selected":"")+'>'+n+'</option>').join("")
-    + '<option value="__custom__"'+(!COSTEO_SISTEMAS_PREDEF.includes(s.nombre)?" selected":"")+'>✏️ Personalizado...</option>';
+  const sistemasOpts = COSTEO_SISTEMAS_PREDEF.map(n=>'<option value="'+n+'"'+(s.nombre===n?" selected":"")+' style="color:#0B1F3A;background:#fff;">'+n+'</option>').join("")
+    + '<option value="__custom__"'+(!COSTEO_SISTEMAS_PREDEF.includes(s.nombre)?" selected":"")+' style="color:#0B1F3A;background:#fff;">✏️ Personalizado...</option>';
 
   const nombreInput = COSTEO_SISTEMAS_PREDEF.includes(s.nombre)
     ? '<select class="cos-input" style="background:#fff;color:#fff;background-color:rgba(255,255,255,.1);border-color:rgba(255,255,255,.2);" onchange="onSistemaNombreSelect('+idx+',this.value)">'+sistemasOpts+'</select>'
@@ -6392,7 +6403,7 @@ function _htmlSistema(s, idx){
         +'</div>'
         +'<div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">'
           +'<div><div style="font-size:8px;font-weight:700;color:rgba(255,255,255,.5);letter-spacing:1px;text-transform:uppercase;margin-bottom:2px;">Cant.</div>'
-            +'<input class="cos-input" style="background-color:rgba(255,255,255,.1);border-color:rgba(255,255,255,.2);color:#fff;width:70px;text-align:right;" type="number" min="0" step="any" value="'+(s.cantidad||"")+'" onchange="updSistema('+idx+',\'cantidad\',parseFloat(this.value)||0)" oninput="updSistema('+idx+',\'cantidad\',parseFloat(this.value)||0)">'
+            +'<input class="cos-input" style="background-color:rgba(255,255,255,.1);border-color:rgba(255,255,255,.2);color:#fff;width:80px;text-align:right;" type="number" min="0" step="any" value="'+(s.cantidad||"")+'" onchange="updSistema('+idx+',\'cantidad\',parseFloat(this.value)||0)">'
           +'</div>'
           +'<div><div style="font-size:8px;font-weight:700;color:rgba(255,255,255,.5);letter-spacing:1px;text-transform:uppercase;margin-bottom:2px;">Unidad</div>'
             +'<select class="cos-input" style="background-color:rgba(255,255,255,.1);border-color:rgba(255,255,255,.2);color:#fff;width:80px;" onchange="updSistema('+idx+',\'unidad\',this.value)">'
@@ -6448,13 +6459,13 @@ function _htmlPartida(sIdx, pIdx, p){
   const pTot = (p.cantidad||0)*(p.precioUnit||0);
 
   return '<div class="cos-partida">'
-    +'<div><input type="number" min="0" step="any" value="'+(p.cantidad||0)+'" oninput="updPartida('+sIdx+','+pIdx+',\'cantidad\',parseFloat(this.value)||0)"></div>'
+    +'<div><input type="number" min="0" step="any" value="'+(p.cantidad||0)+'" data-sidx="'+sIdx+'" data-pidx="'+pIdx+'" data-campo="cantidad" class="cos-part-input" onchange="updPartida('+sIdx+','+pIdx+',\'cantidad\',parseFloat(this.value)||0)"></div>'
     +'<div class="cos-partida-name">'+tag+escapeHtml(p.descripcion||"")+(p.rendNota?'<span style="color:var(--tx3);font-size:9px;"> · '+escapeHtml(p.rendNota)+'</span>':"")+'</div>'
-    +'<div><input type="number" min="0" step="0.01" value="'+(p.costoUnit||0)+'" oninput="updPartida('+sIdx+','+pIdx+',\'costoUnit\',parseFloat(this.value)||0)"></div>'
-    +'<div><input type="number" min="0" step="0.01" value="'+(p.precioUnit||0)+'" oninput="updPartida('+sIdx+','+pIdx+',\'precioUnit\',parseFloat(this.value)||0)"></div>'
-    +'<div style="font-size:11px;color:var(--tx2);text-align:right;font-variant-numeric:tabular-nums;padding:0 4px;">$'+_fmt(cTot)+'</div>'
-    +'<div style="font-size:11px;color:var(--navy);font-weight:700;text-align:right;font-variant-numeric:tabular-nums;padding:0 4px;">$'+_fmt(pTot)+'</div>'
-    +'<div><input type="number" min="0" max="100" step="1" value="'+(p.utilPct||0)+'" oninput="onUtilChange('+sIdx+','+pIdx+',parseFloat(this.value)||0)"></div>'
+    +'<div><input type="number" min="0" step="0.01" value="'+(p.costoUnit||0)+'" data-sidx="'+sIdx+'" data-pidx="'+pIdx+'" data-campo="costoUnit" class="cos-part-input" onchange="updPartida('+sIdx+','+pIdx+',\'costoUnit\',parseFloat(this.value)||0)"></div>'
+    +'<div><input type="number" min="0" step="0.01" value="'+(p.precioUnit||0)+'" data-sidx="'+sIdx+'" data-pidx="'+pIdx+'" data-campo="precioUnit" class="cos-part-input" onchange="updPartida('+sIdx+','+pIdx+',\'precioUnit\',parseFloat(this.value)||0)"></div>'
+    +'<div class="cos-ct" data-sidx="'+sIdx+'" data-pidx="'+pIdx+'" style="font-size:11px;color:var(--tx2);text-align:right;font-variant-numeric:tabular-nums;padding:0 4px;">$'+_fmt(cTot)+'</div>'
+    +'<div class="cos-pt" data-sidx="'+sIdx+'" data-pidx="'+pIdx+'" style="font-size:11px;color:var(--navy);font-weight:700;text-align:right;font-variant-numeric:tabular-nums;padding:0 4px;">$'+_fmt(pTot)+'</div>'
+    +'<div><input type="number" min="0" max="100" step="1" value="'+(p.utilPct||0)+'" data-sidx="'+sIdx+'" data-pidx="'+pIdx+'" data-campo="utilPct" class="cos-part-input-util" onchange="onUtilChange('+sIdx+','+pIdx+',parseFloat(this.value)||0)"></div>'
     +'<div style="text-align:center;"><button onclick="eliminarPartida('+sIdx+','+pIdx+')" style="background:none;border:none;color:#EF4444;font-size:13px;cursor:pointer;padding:2px 4px;">✕</button></div>'
   +'</div>';
 }
@@ -6540,8 +6551,19 @@ function updSistema(idx, campo, valor){
   if(campo==="cantidad"){
     // Recalcular cantidades auto de partidas que tengan autoCalc
     _recalcAutoPartidas(idx);
+    _renderSistemas();  // SI necesita re-render (cantidades cambian)
   }
-  _renderSistemas();
+  else if(campo==="unidad"){
+    _renderSistemas();  // cambio de unidad requiere re-render del label "Precio por X"
+  }
+  else if(campo==="nombre"){
+    // Nombre cambió: solo actualizar totales si fuera necesario (no hay impacto)
+    _actualizarResumenGlobal();
+  }
+  else {
+    _actualizarTotalesSistema(idx);
+    _actualizarResumenGlobal();
+  }
 }
 
 function onSistemaNombreSelect(idx, valor){
@@ -6561,7 +6583,9 @@ function updPartida(sIdx, pIdx, campo, valor){
   s.partidas[pIdx][campo] = valor;
   // Si editan cantidad manualmente, marcar como override
   if(campo==="cantidad") s.partidas[pIdx].cantManual = true;
-  _renderSistemas();
+  // Actualizar solo los totales, sin re-renderizar DOM (preserva foco en inputs)
+  _actualizarTotalesSistema(sIdx);
+  _actualizarResumenGlobal();
 }
 
 function onUtilChange(sIdx, pIdx, pct){
@@ -6571,7 +6595,52 @@ function onUtilChange(sIdx, pIdx, pct){
   p.utilPct = pct;
   // Recalcular precio unitario según costo + utilidad
   p.precioUnit = (p.costoUnit||0) * (1 + pct/100);
-  _renderSistemas();
+  // Actualizar el input de precio unitario en el DOM directamente
+  const inp = document.querySelector('input[data-sidx="'+sIdx+'"][data-pidx="'+pIdx+'"][data-campo="precioUnit"]');
+  if(inp) inp.value = p.precioUnit.toFixed(2);
+  _actualizarTotalesSistema(sIdx);
+  _actualizarResumenGlobal();
+}
+
+// Actualiza el bloque de totales de un sistema + las celdas de costo/precio total
+// por partida, SIN destruir los inputs (preserva foco)
+function _actualizarTotalesSistema(sIdx){
+  const s = _ceCosteo.sistemas[sIdx];
+  if(!s) return;
+  const tot = _calcSistema(s);
+  const margenPct = tot.precio>0 ? (tot.utilidad/tot.precio*100) : 0;
+
+  // Actualizar columnas Costo Total y Precio Total por partida
+  (s.partidas||[]).forEach((p, pIdx)=>{
+    const cTot = (p.cantidad||0)*(p.costoUnit||0);
+    const pTot = (p.cantidad||0)*(p.precioUnit||0);
+    const ctEl = document.querySelector('.cos-ct[data-sidx="'+sIdx+'"][data-pidx="'+pIdx+'"]');
+    const ptEl = document.querySelector('.cos-pt[data-sidx="'+sIdx+'"][data-pidx="'+pIdx+'"]');
+    if(ctEl) ctEl.textContent = "$"+_fmt(cTot);
+    if(ptEl) ptEl.textContent = "$"+_fmt(pTot);
+  });
+
+  // Actualizar bloque de totales del sistema
+  const blk = document.getElementById("ce-partidas-s"+sIdx);
+  if(!blk) return;
+  const totalesBlk = blk.closest(".cos-sistema")?.querySelector(".cos-totales");
+  if(!totalesBlk) return;
+
+  const cls = margenPct>=30?"cos-margen-ok":(margenPct>=20?"cos-margen-warn":"cos-margen-bad");
+  totalesBlk.innerHTML = ''
+    +'<div class="cos-totales-row"><span class="cos-totales-label">Costo total</span><strong>$'+_fmt(tot.costo)+'</strong></div>'
+    +'<div class="cos-totales-row"><span class="cos-totales-label">Precio total</span><strong>$'+_fmt(tot.precio)+'</strong></div>'
+    +'<div class="cos-totales-row"><span class="cos-totales-label">IVA 8%</span><strong>$'+_fmt(tot.iva)+'</strong></div>'
+    +'<div class="cos-totales-divider"></div>'
+    +'<div class="cos-totales-row cos-totales-final"><span style="color:#fff;">Total c/IVA</span><strong>$'+_fmt(tot.totalConIva)+'</strong></div>'
+    +'<div class="cos-totales-divider"></div>'
+    +'<div class="cos-totales-row"><span class="cos-totales-label">Utilidad</span>'
+      +'<span style="display:flex;align-items:center;gap:6px;">'
+        +'<strong>$'+_fmt(tot.utilidad)+'</strong>'
+        +'<span class="cos-margen-pill '+cls+'">'+margenPct.toFixed(1)+'%</span>'
+      +'</span>'
+    +'</div>'
+    +(s.cantidad>0?'<div class="cos-totales-row"><span class="cos-totales-label">Precio por '+(s.unidad||"m²")+'</span><strong>$'+_fmt(tot.precio/s.cantidad)+'</strong></div>':'');
 }
 
 function eliminarPartida(sIdx, pIdx){
