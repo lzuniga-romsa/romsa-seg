@@ -738,6 +738,12 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
 .cos-partida:nth-child(even){background:var(--off2);}
 .cos-partida input{font-size:12px;padding:7px 8px;border:1px solid var(--g1);border-radius:4px;font-family:var(--font);width:100%;color:var(--navy);background:#fff;}
 .cos-partida input:focus{outline:none;border-color:#1E6FD9;box-shadow:0 0 0 2px rgba(30,111,217,.12);}
+.cos-input-money{position:relative;}
+.cos-input-money-sym{position:absolute;left:8px;top:50%;transform:translateY(-50%);font-size:12px;color:var(--tx2);font-weight:600;pointer-events:none;z-index:1;}
+.cos-input-money input{padding-left:18px;}
+.cos-input-pct{position:relative;}
+.cos-input-pct-sym{position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:11px;color:var(--tx2);font-weight:600;pointer-events:none;z-index:1;}
+.cos-input-pct input{padding-right:18px;}
 .cos-partida-name{font-size:11px;color:var(--navy);font-weight:500;padding:2px 0;}
 .cos-partida-tag{display:inline-block;font-size:7.5px;font-weight:700;padding:1px 5px;border-radius:3px;letter-spacing:.4px;text-transform:uppercase;margin-right:4px;vertical-align:middle;}
 .cos-tag-mo{background:#DBEAFE;color:#1E40AF;}
@@ -5215,10 +5221,12 @@ function calcTotalesCot(){
   if(elS)elS.textContent="$"+fmtPeso(sub);
   if(elI)elI.textContent="$"+fmtPeso(iva);
   if(elT)elT.textContent="$"+fmtPeso(total);
-  // Actualizar subtotales individuales
+  // Actualizar subtotales individuales y texto descriptivo
   _cotPartidas.forEach(function(p){
     var elSub=document.getElementById("cot-p-sub-"+p.id);
     if(elSub) elSub.textContent="$"+fmtPeso((p.qty||0)*(p.precio||0));
+    var elDesc=document.getElementById("cot-p-desc-calc-"+p.id);
+    if(elDesc) elDesc.textContent = (p.qty||0).toLocaleString("es-MX")+' '+(p.unit||"m²")+(p.precio?" × $"+fmtPeso(p.precio):"");
   });
   return {sub:sub,iva:iva,total:total};
 }
@@ -5256,7 +5264,7 @@ function renderPartidasCot(){
           +'<input class="finput" id="cot-p-precio-'+p.id+'" type="number" min="0" step="any" value="'+(p.precio||"")+'" placeholder="0.00" oninput="onPartidaField('+p.id+',&apos;precio&apos;,this.value)" style="font-size:14px;font-weight:700;"></div>'
       +'</div>'
       +'<div style="background:rgba(124,58,237,.08);border:1px solid rgba(124,58,237,.15);border-radius:8px;padding:8px 12px;display:flex;align-items:center;justify-content:space-between;">'
-        +'<span style="font-size:10px;color:var(--tx2);">'+( (p.qty||0).toLocaleString("es-MX")+' '+( p.unit||"m²")+(p.precio?" × $"+fmtPeso(p.precio):""))+'</span>'
+        +'<span id="cot-p-desc-calc-'+p.id+'" style="font-size:10px;color:var(--tx2);">'+( (p.qty||0).toLocaleString("es-MX")+' '+( p.unit||"m²")+(p.precio?" × $"+fmtPeso(p.precio):""))+'</span>'
         +'<span id="cot-p-sub-'+p.id+'" style="font-size:14px;font-weight:800;color:#7C3AED;">$'+fmtPeso(subtP)+'</span>'
       +'</div>'
     +'</div>';
@@ -5970,11 +5978,12 @@ const COSTEO_SEED_MATERIALES = [
 ];
 
 const COSTEO_SEED_MO = [
-  {id:"mo_epoxico",         nombre:"Aplicación epóxico",          costoPorUnidad:200, unidad:"m²",     utilSug:80},
-  {id:"mo_mortero",         nombre:"Aplicación mortero uretano",  costoPorUnidad:300, unidad:"m²",     utilSug:80},
-  {id:"mo_sello",           nombre:"Sello de juntas",             costoPorUnidad: 60, unidad:"m.l.",   utilSug:70},
-  {id:"mo_reparacion",      nombre:"Reparación de grietas",       costoPorUnidad: 80, unidad:"m.l.",   utilSug:70},
-  {id:"mo_pintura",         nombre:"Pintura de muros",            costoPorUnidad:150, unidad:"m²",     utilSug:75}
+  {id:"mo_epoxico",         nombre:"Aplicación epóxico",                          costoPorUnidad:200, unidad:"m²",     utilSug:80},
+  {id:"mo_mortero",         nombre:"Aplicación mortero uretano",                  costoPorUnidad:300, unidad:"m²",     utilSug:80},
+  {id:"mo_sello",           nombre:"Sello de juntas",                             costoPorUnidad: 60, unidad:"m.l.",   utilSug:70},
+  {id:"mo_reparacion",      nombre:"Reparación de grietas",                       costoPorUnidad: 80, unidad:"m.l.",   utilSug:70},
+  {id:"mo_pintura",         nombre:"Pintura de muros",                            costoPorUnidad:150, unidad:"m²",     utilSug:75},
+  {id:"mo_dpa",             nombre:"DPA — Desbaste, Pulido y Abrillantado",       costoPorUnidad:180, unidad:"m²",     utilSug:75}
 ];
 
 const COSTEO_SEED_INDIRECTOS = {
@@ -6332,6 +6341,10 @@ const COSTEO_KITS = {
       {matId:"mat_sikaflex_2c_sl", proporcion:1, nombre:"Sikaflex 2C SL"}
     ],
     moDefault:"mo_sello"
+  },
+  "Desbaste y pulido de concreto": {
+    materiales:[],  // principalmente es mano de obra, sin materiales fijos
+    moDefault:"mo_dpa"
   }
 };
 
@@ -6496,11 +6509,11 @@ function _htmlPartida(sIdx, pIdx, p){
   return '<div class="cos-partida">'
     +'<div><input type="number" min="0" step="any" value="'+(p.cantidad||0)+'" data-sidx="'+sIdx+'" data-pidx="'+pIdx+'" data-campo="cantidad" class="cos-part-input" onchange="updPartida('+sIdx+','+pIdx+',\'cantidad\',parseFloat(this.value)||0)"></div>'
     +'<div class="cos-partida-name">'+tag+escapeHtml(p.descripcion||"")+(p.rendNota?'<span style="color:var(--tx3);font-size:9px;"> · '+escapeHtml(p.rendNota)+'</span>':"")+'</div>'
-    +'<div><input type="number" min="0" step="0.01" value="'+(p.costoUnit||0)+'" data-sidx="'+sIdx+'" data-pidx="'+pIdx+'" data-campo="costoUnit" class="cos-part-input" onchange="updPartida('+sIdx+','+pIdx+',\'costoUnit\',parseFloat(this.value)||0)"></div>'
-    +'<div><input type="number" min="0" step="0.01" value="'+(p.precioUnit||0)+'" data-sidx="'+sIdx+'" data-pidx="'+pIdx+'" data-campo="precioUnit" class="cos-part-input" onchange="updPartida('+sIdx+','+pIdx+',\'precioUnit\',parseFloat(this.value)||0)"></div>'
+    +'<div class="cos-input-money"><span class="cos-input-money-sym">$</span><input type="number" min="0" step="0.01" value="'+(p.costoUnit||0)+'" data-sidx="'+sIdx+'" data-pidx="'+pIdx+'" data-campo="costoUnit" class="cos-part-input" onchange="updPartida('+sIdx+','+pIdx+',\'costoUnit\',parseFloat(this.value)||0)"></div>'
+    +'<div class="cos-input-money"><span class="cos-input-money-sym">$</span><input type="number" min="0" step="0.01" value="'+(p.precioUnit||0)+'" data-sidx="'+sIdx+'" data-pidx="'+pIdx+'" data-campo="precioUnit" class="cos-part-input" onchange="updPartida('+sIdx+','+pIdx+',\'precioUnit\',parseFloat(this.value)||0)"></div>'
     +'<div class="cos-ct" data-sidx="'+sIdx+'" data-pidx="'+pIdx+'" style="font-size:11px;color:var(--tx2);text-align:right;font-variant-numeric:tabular-nums;padding:0 4px;">$'+_fmt(cTot)+'</div>'
     +'<div class="cos-pt" data-sidx="'+sIdx+'" data-pidx="'+pIdx+'" style="font-size:11px;color:var(--navy);font-weight:700;text-align:right;font-variant-numeric:tabular-nums;padding:0 4px;">$'+_fmt(pTot)+'</div>'
-    +'<div><input type="number" min="0" max="100" step="1" value="'+(p.utilPct||0)+'" data-sidx="'+sIdx+'" data-pidx="'+pIdx+'" data-campo="utilPct" class="cos-part-input-util" onchange="onUtilChange('+sIdx+','+pIdx+',parseFloat(this.value)||0)"></div>'
+    +'<div class="cos-input-pct"><input type="number" min="0" max="100" step="1" value="'+(p.utilPct||0)+'" data-sidx="'+sIdx+'" data-pidx="'+pIdx+'" data-campo="utilPct" class="cos-part-input-util" oninput="onUtilChange('+sIdx+','+pIdx+',parseFloat(this.value)||0)"><span class="cos-input-pct-sym">%</span></div>'
     +'<div style="text-align:center;"><button onclick="eliminarPartida('+sIdx+','+pIdx+')" style="background:none;border:none;color:#EF4444;font-size:13px;cursor:pointer;padding:2px 4px;">✕</button></div>'
   +'</div>';
 }
