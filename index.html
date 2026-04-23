@@ -1629,9 +1629,15 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
         <div style="padding:16px;">
 
         <!-- Header -->
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:20px;flex-wrap:wrap;">
           <button onclick="cerrarFormCot()" style="background:rgba(11,31,58,.08);border:none;width:34px;height:34px;border-radius:9px;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;font-family:var(--font);flex-shrink:0;">←</button>
-          <div style="flex:1;">
+          <!-- Botones Undo / Rehacer -->
+          <button id="cot-btn-undo" onclick="cotDeshacer()" title="Deshacer (Ctrl+Z)" style="background:rgba(124,58,237,.08);border:1px solid rgba(124,58,237,.2);color:#7C3AED;font-size:11px;font-weight:700;padding:7px 10px;border-radius:9px;cursor:pointer;font-family:var(--font);opacity:.35;pointer-events:none;display:flex;align-items:center;gap:5px;">
+            ↶ Deshacer
+            <span class="cot-undo-count" style="background:rgba(124,58,237,.2);color:#7C3AED;font-size:9px;padding:1px 5px;border-radius:8px;min-width:14px;text-align:center;">0</span>
+          </button>
+          <button id="cot-btn-redo" onclick="cotRehacer()" title="Rehacer (Ctrl+Shift+Z)" style="background:rgba(124,58,237,.08);border:1px solid rgba(124,58,237,.2);color:#7C3AED;font-size:11px;font-weight:700;padding:7px 10px;border-radius:9px;cursor:pointer;font-family:var(--font);opacity:.35;pointer-events:none;">↷ Rehacer</button>
+          <div style="flex:1;min-width:150px;">
             <div id="cot-form-titulo" style="font-size:16px;font-weight:800;color:var(--navy);">Nueva cotización</div>
             <div id="cot-folio-badge" style="font-size:10px;color:var(--tx2);margin-top:1px;"></div>
           </div>
@@ -1952,8 +1958,14 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
   <div id="screen-costeo-editor" class="screen" style="padding:0;overflow-y:auto;background:var(--off);">
     <!-- Header con back + datos del proyecto -->
     <div style="background:linear-gradient(135deg,#1B3F72,#0B1F3A);padding:12px 16px;">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap;">
         <button onclick="cerrarEditorCosteo()" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);color:#fff;font-size:11px;font-weight:700;padding:6px 10px;border-radius:6px;cursor:pointer;font-family:var(--font);">← Volver</button>
+        <!-- Botones Undo / Rehacer -->
+        <button id="ce-btn-undo" onclick="ceDeshacer()" title="Deshacer (Ctrl+Z)" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);color:#fff;font-size:11px;font-weight:700;padding:6px 10px;border-radius:6px;cursor:pointer;font-family:var(--font);opacity:.35;pointer-events:none;display:flex;align-items:center;gap:5px;">
+          ↶ Deshacer
+          <span class="ce-undo-count" style="background:rgba(96,165,250,.25);color:#60A5FA;font-size:9px;padding:1px 5px;border-radius:8px;min-width:14px;text-align:center;">0</span>
+        </button>
+        <button id="ce-btn-redo" onclick="ceRehacer()" title="Rehacer (Ctrl+Shift+Z)" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);color:#fff;font-size:11px;font-weight:700;padding:6px 10px;border-radius:6px;cursor:pointer;font-family:var(--font);opacity:.35;pointer-events:none;">↷ Rehacer</button>
         <div style="flex:1;">
           <div id="ce-folio" style="font-size:9px;font-weight:700;color:#60A5FA;letter-spacing:1.5px;text-transform:uppercase;">COS-XXX-YYYYMMDD-NNN</div>
           <div style="font-size:14px;font-weight:800;color:#fff;line-height:1.2;margin-top:1px;">Costeo de proyecto</div>
@@ -5111,6 +5123,7 @@ function showNuevaCot(){
   window._cotizacionCosteoOrigen = null;
   document.getElementById("cot-lista-wrap").style.display="none";
   document.getElementById("cot-form-wrap").style.display="block";
+  if(typeof _cotResetHistorial==="function") _cotResetHistorial();
 }
 
 function cerrarFormCot(){
@@ -5159,6 +5172,7 @@ function abrirCot(id){
 
   document.getElementById("cot-lista-wrap").style.display="none";
   document.getElementById("cot-form-wrap").style.display="block";
+  if(typeof _cotResetHistorial==="function") _cotResetHistorial();
 }
 
 // Navegar al costeo origen desde la cotización
@@ -5176,7 +5190,104 @@ function _irAlCosteoOrigen(costeoId){
 var _cotPartidas=[];
 var _cotPartidaNextId=1;
 
+// ── Historial Undo/Rehacer para cotización ─────────
+// Captura _cotPartidas + los campos del form (empresa, atención, etc.)
+var _cotUndoStack = [];
+var _cotRedoStack = [];
+var _cotUndoDebounce = null;
+const _COT_UNDO_MAX = 30;
+
+function _cotCapturarEstado(){
+  // Snapshot incluye partidas + todos los campos del form
+  var campos = {};
+  ["cot-ciudad","cot-fecha","cot-atencion","cot-empresa","cot-email","cot-tel","cot-rfc",
+   "cot-vigencia","cot-garantia","cot-forma-pago","cot-condiciones","cot-notas",
+   "cot-iva-pct","cot-subject-override"].forEach(function(id){
+    var el = document.getElementById(id);
+    if(el) campos[id] = el.value;
+  });
+  return JSON.stringify({partidas:_cotPartidas, campos:campos});
+}
+
+function _cotRestaurarEstado(snap){
+  try{
+    var obj = JSON.parse(snap);
+    _cotPartidas = obj.partidas || [];
+    if(obj.campos){
+      Object.keys(obj.campos).forEach(function(id){
+        var el = document.getElementById(id);
+        if(el) el.value = obj.campos[id];
+      });
+    }
+    renderPartidasCot();
+    calcTotalesCot();
+  }catch(e){ showToast("⚠️ Error al restaurar"); }
+}
+
+function _cotSnapshot(force){
+  if(!force){
+    if(_cotUndoDebounce) clearTimeout(_cotUndoDebounce);
+    _cotUndoDebounce = setTimeout(()=>_cotSnapshotAhora(), 800);
+    return;
+  }
+  _cotSnapshotAhora();
+}
+
+function _cotSnapshotAhora(){
+  try{
+    var snap = _cotCapturarEstado();
+    if(_cotUndoStack.length && _cotUndoStack[_cotUndoStack.length-1] === snap) return;
+    _cotUndoStack.push(snap);
+    if(_cotUndoStack.length > _COT_UNDO_MAX) _cotUndoStack.shift();
+    _cotRedoStack = [];
+    _cotActualizarBotonesUndo();
+  }catch(e){ console.warn("Snapshot cot failed:", e); }
+}
+
+function cotDeshacer(){
+  if(_cotUndoStack.length < 2){ showToast("Nada que deshacer"); return; }
+  var actual = _cotUndoStack.pop();
+  _cotRedoStack.push(actual);
+  var anterior = _cotUndoStack[_cotUndoStack.length-1];
+  _cotRestaurarEstado(anterior);
+  _cotActualizarBotonesUndo();
+  showToast("↶ Cambio deshecho");
+}
+
+function cotRehacer(){
+  if(!_cotRedoStack.length){ showToast("Nada que rehacer"); return; }
+  var sig = _cotRedoStack.pop();
+  _cotUndoStack.push(sig);
+  _cotRestaurarEstado(sig);
+  _cotActualizarBotonesUndo();
+  showToast("↷ Cambio rehecho");
+}
+
+function _cotActualizarBotonesUndo(){
+  var bU = document.getElementById("cot-btn-undo");
+  var bR = document.getElementById("cot-btn-redo");
+  if(bU){
+    var dis = _cotUndoStack.length < 2;
+    bU.style.opacity = dis ? "0.35" : "1";
+    bU.style.pointerEvents = dis ? "none" : "auto";
+    var cnt = bU.querySelector(".cot-undo-count");
+    if(cnt) cnt.textContent = Math.max(0, _cotUndoStack.length-1);
+  }
+  if(bR){
+    var dis = !_cotRedoStack.length;
+    bR.style.opacity = dis ? "0.35" : "1";
+    bR.style.pointerEvents = dis ? "none" : "auto";
+  }
+}
+
+function _cotResetHistorial(){
+  _cotUndoStack = [];
+  _cotRedoStack = [];
+  _cotSnapshotAhora();
+}
+
 function addPartidaCot(){
+  if(typeof _cotSnapshot==="function") _cotSnapshot(true);
   _cotPartidaNextId=(_cotPartidas[_cotPartidas.length-1]?.id||0)+1;
   _cotPartidas.push({id:_cotPartidaNextId,servicio:"Epóxico 100% Sólidos",
     desc:CAT_SERVICIOS["Epóxico 100% Sólidos"].desc,
@@ -5186,6 +5297,7 @@ function addPartidaCot(){
 }
 
 function removePartidaCot(id){
+  if(typeof _cotSnapshot==="function") _cotSnapshot(true);
   _cotPartidas=_cotPartidas.filter(function(p){return p.id!==id;});
   renderPartidasCot();
   calcTotalesCot();
@@ -5194,6 +5306,7 @@ function removePartidaCot(id){
 function onServicioChange(id, val){
   var p=_cotPartidas.find(function(x){return x.id===id;});
   if(!p)return;
+  if(typeof _cotSnapshot==="function") _cotSnapshot(true);
   p.servicio=val;
   var cat=CAT_SERVICIOS[val];
   if(cat){p.desc=cat.desc;p.proc=cat.proc;}
@@ -5208,6 +5321,7 @@ function onPartidaField(id,field,val){
   if(!p)return;
   if(field==="qty"||field==="precio") p[field]=parseFloat(val)||0;
   else p[field]=val;
+  if(typeof _cotSnapshot==="function") _cotSnapshot();  // debounced
   calcTotalesCot();
 }
 
@@ -6302,6 +6416,132 @@ function renderListaCosteos(){
 // Estado del costeo en edición
 let _ceCosteo = null;  // {id, folio, proyecto, cliente, prefijo, fecha, atencion, sistemas:[]}
 
+// ── Historial Undo/Rehacer para el editor de costeo ─────────
+let _ceUndoStack = [];  // snapshots previos
+let _ceRedoStack = [];  // snapshots rehacer (al deshacer se mueven acá)
+let _ceUndoDebounce = null;
+const _CE_UNDO_MAX = 30;  // máximo 30 niveles de historial
+
+function _ceSnapshot(force){
+  if(!_ceCosteo) return;
+  // Debounce: no crear snapshots por cada tecla cuando force=false
+  if(!force){
+    if(_ceUndoDebounce) clearTimeout(_ceUndoDebounce);
+    _ceUndoDebounce = setTimeout(()=>_ceSnapshotAhora(), 800);
+    return;
+  }
+  _ceSnapshotAhora();
+}
+
+function _ceSnapshotAhora(){
+  if(!_ceCosteo) return;
+  try{
+    const snap = JSON.stringify(_ceCosteo);
+    // No duplicar snapshots idénticos consecutivos
+    if(_ceUndoStack.length && _ceUndoStack[_ceUndoStack.length-1] === snap) return;
+    _ceUndoStack.push(snap);
+    if(_ceUndoStack.length > _CE_UNDO_MAX) _ceUndoStack.shift();
+    _ceRedoStack = [];  // al hacer un cambio nuevo, el redo se pierde
+    _ceActualizarBotonesUndo();
+  }catch(e){ console.warn("No se pudo snapshot:", e); }
+}
+
+function ceDeshacer(){
+  if(_ceUndoStack.length < 2){ showToast("Nada que deshacer"); return; }
+  // Mover el actual al redo stack
+  const actual = _ceUndoStack.pop();
+  _ceRedoStack.push(actual);
+  // Restaurar el anterior
+  const anterior = _ceUndoStack[_ceUndoStack.length-1];
+  try{
+    _ceCosteo = JSON.parse(anterior);
+    _renderEditorCosteo();
+    _ceActualizarBotonesUndo();
+    showToast("↶ Cambio deshecho");
+  }catch(e){ showToast("⚠️ Error al deshacer"); }
+}
+
+function ceRehacer(){
+  if(!_ceRedoStack.length){ showToast("Nada que rehacer"); return; }
+  const sig = _ceRedoStack.pop();
+  _ceUndoStack.push(sig);
+  try{
+    _ceCosteo = JSON.parse(sig);
+    _renderEditorCosteo();
+    _ceActualizarBotonesUndo();
+    showToast("↷ Cambio rehecho");
+  }catch(e){ showToast("⚠️ Error al rehacer"); }
+}
+
+function _ceActualizarBotonesUndo(){
+  const bU = document.getElementById("ce-btn-undo");
+  const bR = document.getElementById("ce-btn-redo");
+  if(bU){
+    const dis = _ceUndoStack.length < 2;
+    bU.style.opacity = dis ? "0.35" : "1";
+    bU.style.pointerEvents = dis ? "none" : "auto";
+    const cnt = bU.querySelector(".ce-undo-count");
+    if(cnt) cnt.textContent = Math.max(0, _ceUndoStack.length-1);
+  }
+  if(bR){
+    const dis = !_ceRedoStack.length;
+    bR.style.opacity = dis ? "0.35" : "1";
+    bR.style.pointerEvents = dis ? "none" : "auto";
+  }
+}
+
+function _ceResetHistorial(){
+  _ceUndoStack = [];
+  _ceRedoStack = [];
+  if(_ceCosteo) _ceSnapshotAhora();  // snapshot inicial
+}
+
+// Listener global de atajos de teclado (Ctrl+Z / Ctrl+Shift+Z / Cmd+Z en Mac)
+document.addEventListener("keydown", function(e){
+  // Detectar Ctrl (Windows) o Cmd (Mac)
+  const ctrlOrCmd = e.ctrlKey || e.metaKey;
+  if(!ctrlOrCmd) return;
+  // No interceptar si el usuario está en un input de tipo text/number y hay texto seleccionado
+  // (respeta el undo nativo del navegador en los campos)
+  const target = e.target;
+  const isInput = target && (target.tagName==="INPUT" || target.tagName==="TEXTAREA" || target.isContentEditable);
+
+  // Ctrl+Z / Cmd+Z (sin shift) = Deshacer
+  if(e.key === "z" && !e.shiftKey){
+    // Si estamos dentro del editor de costeo, aplicar undo del costeo
+    if(_ceCosteo && document.getElementById("screen-costeo-editor")?.classList.contains("active")){
+      // Si es input y no está vacío, dejar el undo nativo primero
+      if(isInput) return;
+      e.preventDefault();
+      ceDeshacer();
+      return;
+    }
+    // Si estamos en editor de cotización
+    if(typeof _cotPartidas !== "undefined" && document.getElementById("cot-form-wrap")?.style.display === "block"){
+      if(isInput) return;
+      e.preventDefault();
+      if(typeof cotDeshacer === "function") cotDeshacer();
+      return;
+    }
+  }
+  // Ctrl+Shift+Z / Cmd+Shift+Z = Rehacer
+  if(e.key === "z" && e.shiftKey){
+    if(_ceCosteo && document.getElementById("screen-costeo-editor")?.classList.contains("active")){
+      if(isInput) return;
+      e.preventDefault();
+      ceRehacer();
+      return;
+    }
+    if(typeof _cotPartidas !== "undefined" && document.getElementById("cot-form-wrap")?.style.display === "block"){
+      if(isInput) return;
+      e.preventDefault();
+      if(typeof cotRehacer === "function") cotRehacer();
+      return;
+    }
+  }
+});
+
+
 // Sistemas predefinidos (editables-libres)
 const COSTEO_SISTEMAS_PREDEF = [
   "Desbaste y pulido de concreto",
@@ -6368,6 +6608,7 @@ function nuevoCosteo(){
     ts: Date.now(),
     creadoPor: (currentUserProfile && currentUserProfile.email) || (currentUser && currentUser.email) || ""
   };
+  _ceResetHistorial();
   _renderEditorCosteo();
   goScreen("costeo-editor");
 }
@@ -6377,6 +6618,7 @@ function abrirCosteo(id){
   const c = _costeoCosteos.find(x=>x.id===id);
   if(!c){ showToast("⚠️ Costeo no encontrado"); return; }
   _ceCosteo = JSON.parse(JSON.stringify(c));  // copia profunda
+  _ceResetHistorial();
   _renderEditorCosteo();
   goScreen("costeo-editor");
 }
@@ -6506,9 +6748,29 @@ function _htmlPartida(sIdx, pIdx, p){
   const cTot = (p.cantidad||0)*(p.costoUnit||0);
   const pTot = (p.cantidad||0)*(p.precioUnit||0);
 
+  // Nombre editable inline + rendimiento clickable + badge custom
+  const badgeCustom = p.custom ? '<span style="display:inline-block;font-size:7.5px;font-weight:700;padding:1px 5px;border-radius:3px;letter-spacing:.4px;text-transform:uppercase;margin-left:4px;background:#FEF3C7;color:#78350F;">CUSTOM</span>' : '';
+  let rendBadge = '';
+  if(p.rendNota){
+    // Si es material con múltiples rendimientos en catálogo, hacer click-to-change
+    const mat = p.matId ? _costeoMateriales.find(m=>m.id===p.matId) : null;
+    const clickable = mat && mat.rendimientos && mat.rendimientos.length > 1;
+    rendBadge = clickable
+      ? '<span onclick="_cambiarRendimientoPartida('+sIdx+','+pIdx+')" style="color:var(--tx3);font-size:9px;cursor:pointer;padding:1px 4px;border-radius:3px;background:rgba(30,111,217,.08);margin-left:2px;" title="Cambiar rendimiento">· '+escapeHtml(p.rendNota)+' ▾</span>'
+      : '<span style="color:var(--tx3);font-size:9px;margin-left:2px;"> · '+escapeHtml(p.rendNota)+'</span>';
+  }
+  // Botón guardar al catálogo (solo admin, solo si es custom)
+  let saveBtn = '';
+  if(p.custom && window.isAdmin){
+    saveBtn = '<button onclick="_guardarPartidaAlCatalogo('+sIdx+','+pIdx+')" title="Guardar al catálogo global" style="background:none;border:none;color:#10B981;font-size:12px;cursor:pointer;padding:0 2px;margin-left:3px;">💾</button>';
+  }
+
   return '<div class="cos-partida">'
     +'<div><input type="number" min="0" step="any" value="'+(p.cantidad||0)+'" data-sidx="'+sIdx+'" data-pidx="'+pIdx+'" data-campo="cantidad" class="cos-part-input" onchange="updPartida('+sIdx+','+pIdx+',\'cantidad\',parseFloat(this.value)||0)"></div>'
-    +'<div class="cos-partida-name">'+tag+escapeHtml(p.descripcion||"")+(p.rendNota?'<span style="color:var(--tx3);font-size:9px;"> · '+escapeHtml(p.rendNota)+'</span>':"")+'</div>'
+    +'<div class="cos-partida-name">'+tag
+      +'<span class="cos-partida-desc" onclick="_editarNombrePartida('+sIdx+','+pIdx+',this)" title="Click para editar" style="cursor:text;padding:2px 3px;border-radius:3px;transition:background .15s;">'+escapeHtml(p.descripcion||"")+'</span>'
+      +rendBadge+badgeCustom+saveBtn
+    +'</div>'
     +'<div class="cos-input-money"><span class="cos-input-money-sym">$</span><input type="number" min="0" step="0.01" value="'+(p.costoUnit||0)+'" data-sidx="'+sIdx+'" data-pidx="'+pIdx+'" data-campo="costoUnit" class="cos-part-input" onchange="updPartida('+sIdx+','+pIdx+',\'costoUnit\',parseFloat(this.value)||0)"></div>'
     +'<div class="cos-input-money"><span class="cos-input-money-sym">$</span><input type="number" min="0" step="0.01" value="'+(p.precioUnit||0)+'" data-sidx="'+sIdx+'" data-pidx="'+pIdx+'" data-campo="precioUnit" class="cos-part-input" onchange="updPartida('+sIdx+','+pIdx+',\'precioUnit\',parseFloat(this.value)||0)"></div>'
     +'<div class="cos-ct" data-sidx="'+sIdx+'" data-pidx="'+pIdx+'" style="font-size:11px;color:var(--tx2);text-align:right;font-variant-numeric:tabular-nums;padding:0 4px;">$'+_fmt(cTot)+'</div>'
@@ -6516,6 +6778,92 @@ function _htmlPartida(sIdx, pIdx, p){
     +'<div class="cos-input-pct"><input type="number" min="0" max="100" step="1" value="'+(p.utilPct||0)+'" data-sidx="'+sIdx+'" data-pidx="'+pIdx+'" data-campo="utilPct" class="cos-part-input-util" oninput="onUtilChange('+sIdx+','+pIdx+',parseFloat(this.value)||0)"><span class="cos-input-pct-sym">%</span></div>'
     +'<div style="text-align:center;"><button onclick="eliminarPartida('+sIdx+','+pIdx+')" style="background:none;border:none;color:#EF4444;font-size:13px;cursor:pointer;padding:2px 4px;">✕</button></div>'
   +'</div>';
+}
+
+// Editar inline el nombre/descripción de una partida del costeo
+function _editarNombrePartida(sIdx, pIdx, spanEl){
+  const s = _ceCosteo?.sistemas?.[sIdx];
+  const p = s?.partidas?.[pIdx];
+  if(!p) return;
+  const actual = p.descripcion || "";
+  // Reemplaza el span por un input temporal
+  const inp = document.createElement("input");
+  inp.type = "text";
+  inp.value = actual;
+  inp.style.cssText = "width:100%;font-size:11px;padding:4px 6px;border:1px solid #1E6FD9;border-radius:3px;font-family:var(--font);color:var(--navy);background:#fff;";
+  spanEl.replaceWith(inp);
+  inp.focus();
+  inp.select();
+  const guardar = ()=>{
+    const nuevo = inp.value.trim();
+    if(nuevo && nuevo !== actual){
+      _ceSnapshot(true);
+      p.descripcion = nuevo;
+      showToast("✓ Nombre actualizado (solo en este costeo)");
+    }
+    _renderSistemas();
+  };
+  inp.addEventListener("blur", guardar);
+  inp.addEventListener("keydown", e=>{
+    if(e.key==="Enter") inp.blur();
+    if(e.key==="Escape"){ inp.value=actual; inp.blur(); }
+  });
+}
+
+// Cambiar el rendimiento de una partida material (dropdown modal)
+function _cambiarRendimientoPartida(sIdx, pIdx){
+  const s = _ceCosteo?.sistemas?.[sIdx];
+  const p = s?.partidas?.[pIdx];
+  if(!p || !p.matId) return;
+  const mat = _costeoMateriales.find(m=>m.id===p.matId);
+  if(!mat || !mat.rendimientos || mat.rendimientos.length < 2) return;
+
+  const opts = mat.rendimientos.map((r,i)=>{
+    const unidad = r.unidad || "m²";
+    const sel = i===p.rendIdx ? ' style="background:#EDE9FE;"' : '';
+    return '<div class="cos-modal-opt"'+sel+' onclick="_aplicarRendimientoPartida('+sIdx+','+pIdx+','+i+');document.querySelector(\'.cos-modal-ov\').remove();">'
+      +'<div class="cos-modal-opt-title">'+escapeHtml(r.espesor)+(i===p.rendIdx?' (actual)':'')+'</div>'
+      +'<div class="cos-modal-opt-meta">Rinde '+(r.m2PorGalon||0)+' '+unidad+' por galón</div>'
+    +'</div>';
+  }).join("");
+
+  const ov = document.createElement("div");
+  ov.className = "cos-modal-ov";
+  ov.onclick = (e)=>{ if(e.target===ov) ov.remove(); };
+  ov.innerHTML = '<div class="cos-modal" onclick="event.stopPropagation();">'
+    +'<div class="cos-modal-hdr">'
+      +'<div style="font-size:13px;font-weight:700;color:var(--navy);">Cambiar rendimiento — '+escapeHtml(mat.nombre)+'</div>'
+      +'<button onclick="this.closest(\'.cos-modal-ov\').remove()" style="background:none;border:none;font-size:18px;color:var(--tx2);cursor:pointer;">✕</button>'
+    +'</div>'
+    +'<div class="cos-modal-body">'
+      +'<div style="font-size:10px;color:var(--tx2);margin-bottom:8px;">Al cambiar el rendimiento se recalculará la cantidad automáticamente según los m² del sistema.</div>'
+      +opts
+    +'</div>'
+  +'</div>';
+  document.body.appendChild(ov);
+}
+
+function _aplicarRendimientoPartida(sIdx, pIdx, rendIdx){
+  const s = _ceCosteo?.sistemas?.[sIdx];
+  const p = s?.partidas?.[pIdx];
+  if(!p || !p.matId) return;
+  const mat = _costeoMateriales.find(m=>m.id===p.matId);
+  if(!mat || !mat.rendimientos || !mat.rendimientos[rendIdx]) return;
+  _ceSnapshot(true);
+  const rend = mat.rendimientos[rendIdx];
+  p.rendIdx = rendIdx;
+  p.rendNota = rend.espesor;
+  // Recalcular cantidad si autoCalc y no override manual
+  if(p.autoCalc && !p.cantManual){
+    let cantBase = _calcularCantMaterial(s.cantidad||0, rend);
+    if(p.proporcion){
+      const sumProp = s.partidas.filter(x=>x.proporcion).reduce((a,b)=>a+(b.proporcion||1),0);
+      cantBase = cantBase * (p.proporcion/sumProp);
+    }
+    p.cantidad = Math.max(1, Math.ceil(cantBase));
+  }
+  showToast("✓ Rendimiento cambiado a "+rend.espesor);
+  _renderSistemas();
 }
 
 function _fmt(n){ return (n||0).toLocaleString("es-MX",{minimumFractionDigits:2,maximumFractionDigits:2}); }
@@ -6578,6 +6926,7 @@ function _actualizarResumenGlobal(){
 // ── Acciones: Sistemas ────────────────────────────────────────
 function agregarSistema(){
   if(!_ceCosteo) return;
+  _ceSnapshot(true);  // snapshot antes del cambio
   _ceCosteo.sistemas.push({
     nombre: COSTEO_SISTEMAS_PREDEF[0],
     cantidad: 0,
@@ -6589,6 +6938,7 @@ function agregarSistema(){
 
 function eliminarSistema(idx){
   if(!confirm("¿Eliminar este sistema completo?")) return;
+  _ceSnapshot(true);
   _ceCosteo.sistemas.splice(idx,1);
   _renderSistemas();
 }
@@ -6597,18 +6947,20 @@ function updSistema(idx, campo, valor){
   if(!_ceCosteo.sistemas[idx]) return;
   _ceCosteo.sistemas[idx][campo] = valor;
   if(campo==="cantidad"){
-    // Recalcular cantidades auto de partidas que tengan autoCalc
+    _ceSnapshot(true);  // cambio estructural, snapshot inmediato
     _recalcAutoPartidas(idx);
-    _renderSistemas();  // SI necesita re-render (cantidades cambian)
+    _renderSistemas();
   }
   else if(campo==="unidad"){
-    _renderSistemas();  // cambio de unidad requiere re-render del label "Precio por X"
+    _ceSnapshot(true);
+    _renderSistemas();
   }
   else if(campo==="nombre"){
-    // Nombre cambió: solo actualizar totales si fuera necesario (no hay impacto)
+    _ceSnapshot();  // debounced
     _actualizarResumenGlobal();
   }
   else {
+    _ceSnapshot();
     _actualizarTotalesSistema(idx);
     _actualizarResumenGlobal();
   }
@@ -6629,9 +6981,8 @@ function updPartida(sIdx, pIdx, campo, valor){
   const s = _ceCosteo.sistemas[sIdx];
   if(!s || !s.partidas[pIdx]) return;
   s.partidas[pIdx][campo] = valor;
-  // Si editan cantidad manualmente, marcar como override
   if(campo==="cantidad") s.partidas[pIdx].cantManual = true;
-  // Actualizar solo los totales, sin re-renderizar DOM (preserva foco en inputs)
+  _ceSnapshot();  // debounced (permite tipear sin crear 10 snapshots)
   _actualizarTotalesSistema(sIdx);
   _actualizarResumenGlobal();
 }
@@ -6641,11 +6992,10 @@ function onUtilChange(sIdx, pIdx, pct){
   if(!s || !s.partidas[pIdx]) return;
   const p = s.partidas[pIdx];
   p.utilPct = pct;
-  // Recalcular precio unitario según costo + utilidad
   p.precioUnit = (p.costoUnit||0) * (1 + pct/100);
-  // Actualizar el input de precio unitario en el DOM directamente
   const inp = document.querySelector('input[data-sidx="'+sIdx+'"][data-pidx="'+pIdx+'"][data-campo="precioUnit"]');
   if(inp) inp.value = p.precioUnit.toFixed(2);
+  _ceSnapshot();
   _actualizarTotalesSistema(sIdx);
   _actualizarResumenGlobal();
 }
@@ -6693,6 +7043,7 @@ function _actualizarTotalesSistema(sIdx){
 
 function eliminarPartida(sIdx, pIdx){
   if(!_ceCosteo.sistemas[sIdx]) return;
+  _ceSnapshot(true);
   _ceCosteo.sistemas[sIdx].partidas.splice(pIdx,1);
   _renderSistemas();
 }
@@ -6712,7 +7063,7 @@ function _abrirModalSelector(tipo, sIdx){
 
   if(tipo==="material"){
     titulo = "Elegir material";
-    opciones = _costeoMateriales.map(m=>{
+    const listado = _costeoMateriales.map(m=>{
       const rendInfo = m.rendimientos && m.rendimientos.length
         ? ' · '+m.rendimientos.length+' rendimiento'+(m.rendimientos.length>1?"s":"")
         : "";
@@ -6721,15 +7072,25 @@ function _abrirModalSelector(tipo, sIdx){
         +'<div class="cos-modal-opt-meta">$'+_fmt(m.precio||0)+' / '+m.presentacion+rendInfo+'</div>'
       +'</div>';
     }).join("") || '<div style="font-size:11px;color:var(--tx2);text-align:center;padding:20px;">Sin materiales en el catálogo</div>';
+    const customBtn = '<div class="cos-modal-opt" onclick="_abrirFormMaterialCustom('+sIdx+');document.querySelector(\'.cos-modal-ov\').remove();" style="border-color:#1E6FD9;background:rgba(30,111,217,.05);margin-top:10px;">'
+      +'<div class="cos-modal-opt-title" style="color:#1E6FD9;">✏️ Crear material personalizado</div>'
+      +'<div class="cos-modal-opt-meta" style="color:#1E6FD9;">Solo para este costeo (no se agrega al catálogo)</div>'
+    +'</div>';
+    opciones = listado + customBtn;
   }
   else if(tipo==="mo"){
     titulo = "Elegir tipo de mano de obra";
-    opciones = _costeoMO.map(m=>{
+    const listado = _costeoMO.map(m=>{
       return '<div class="cos-modal-opt" onclick="_seleccionarMO(\''+m.id+'\','+sIdx+');document.querySelector(\'.cos-modal-ov\').remove();">'
         +'<div class="cos-modal-opt-title">'+escapeHtml(m.nombre)+'</div>'
         +'<div class="cos-modal-opt-meta">$'+_fmt(m.costoPorUnidad||0)+' / '+m.unidad+' · Util. sug. '+(m.utilSug||80)+'%</div>'
       +'</div>';
     }).join("") || '<div style="font-size:11px;color:var(--tx2);text-align:center;padding:20px;">Sin tipos de MO en el catálogo</div>';
+    const customBtn = '<div class="cos-modal-opt" onclick="_abrirFormMOCustom('+sIdx+');document.querySelector(\'.cos-modal-ov\').remove();" style="border-color:#1E6FD9;background:rgba(30,111,217,.05);margin-top:10px;">'
+      +'<div class="cos-modal-opt-title" style="color:#1E6FD9;">✏️ Crear mano de obra personalizada</div>'
+      +'<div class="cos-modal-opt-meta" style="color:#1E6FD9;">Solo para este costeo (no se agrega al catálogo)</div>'
+    +'</div>';
+    opciones = listado + customBtn;
   }
   else if(tipo==="indirecto"){
     titulo = "Agregar indirecto";
@@ -6774,6 +7135,7 @@ function _seleccionarMaterial(matId, sIdx){
   if(!m) return;
   const s = _ceCosteo.sistemas[sIdx];
   if(!s) return;
+  _ceSnapshot(true);
 
   // Si tiene rendimientos, pedir al usuario elegir cuál
   if(m.rendimientos && m.rendimientos.length > 1){
@@ -6826,6 +7188,7 @@ function _materialConRend(matId, sIdx, rendIdx){
   const m = _costeoMateriales.find(x=>x.id===matId);
   const s = _ceCosteo.sistemas[sIdx];
   if(!m || !s) return;
+  _ceSnapshot(true);
   const rend = m.rendimientos[rendIdx];
   const cantAuto = _calcularCantMaterial(s.cantidad||0, rend);
 
@@ -6850,6 +7213,7 @@ function _seleccionarMO(moId, sIdx){
   if(!mo) return;
   const s = _ceCosteo.sistemas[sIdx];
   if(!s) return;
+  _ceSnapshot(true);
 
   const utilSug = mo.utilSug || 80;
   s.partidas.push({
@@ -6869,6 +7233,7 @@ function _seleccionarMO(moId, sIdx){
 function _seleccionarIndirecto(tipo, sIdx){
   const s = _ceCosteo.sistemas[sIdx];
   if(!s) return;
+  _ceSnapshot(true);
   const ind = _costeoIndirectos || {};
   let desc="", costo=0, cant=1;
 
@@ -6894,6 +7259,201 @@ function _seleccionarIndirecto(tipo, sIdx){
   _renderSistemas();
 }
 
+// ═══════════════════════════════════════════════════════════════
+// ── MATERIAL PERSONALIZADO (solo para este costeo) ───────────
+// ═══════════════════════════════════════════════════════════════
+
+function _abrirFormMaterialCustom(sIdx){
+  const ov = document.createElement("div");
+  ov.className = "cos-modal-ov";
+  ov.onclick = (e)=>{ if(e.target===ov) ov.remove(); };
+
+  ov.innerHTML = '<div class="cos-modal" onclick="event.stopPropagation();">'
+    +'<div class="cos-modal-hdr">'
+      +'<div style="font-size:13px;font-weight:700;color:var(--navy);">✏️ Material personalizado</div>'
+      +'<button onclick="this.closest(\'.cos-modal-ov\').remove()" style="background:none;border:none;font-size:18px;color:var(--tx2);cursor:pointer;">✕</button>'
+    +'</div>'
+    +'<div class="cos-modal-body">'
+      +'<div style="font-size:10px;color:var(--tx2);margin-bottom:12px;padding:8px 10px;background:rgba(30,111,217,.05);border-left:3px solid #1E6FD9;border-radius:4px;">'
+        +'Este material se agrega <b>solo al costeo actual</b>. No afectará el catálogo global. La cantidad se calcula simple (cantidad × precio).'
+      +'</div>'
+      +'<div class="cos-label" style="margin-top:0;">Nombre del material *</div>'
+      +'<input id="cm-nombre" class="cos-input" placeholder="Ej: Sellador acrílico especial" style="margin-bottom:10px;">'
+      +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">'
+        +'<div><div class="cos-label">Precio por unidad *</div>'
+          +'<input id="cm-precio" class="cos-input" type="number" min="0" step="0.01" placeholder="0.00"></div>'
+        +'<div><div class="cos-label">Presentación *</div>'
+          +'<select id="cm-present" class="cos-input" style="background:#fff;">'
+            +['cubeta','galón','kit','pieza','m²','m.l.','m³','kg','lote','servicio','saco','litro'].map(u=>'<option value="'+u+'" style="color:#0B1F3A;background:#fff;">'+u+'</option>').join("")
+          +'</select></div>'
+      +'</div>'
+      +'<div class="cos-label">Cantidad inicial (editable después)</div>'
+      +'<input id="cm-cant" class="cos-input" type="number" min="0" step="any" value="1" style="margin-bottom:14px;">'
+      +'<div style="display:flex;gap:8px;">'
+        +'<button onclick="this.closest(\'.cos-modal-ov\').remove()" class="cos-btn-sm" style="flex:1;">Cancelar</button>'
+        +'<button onclick="_agregarMaterialCustom('+sIdx+')" style="flex:2;background:#1E6FD9;border:none;color:#fff;padding:10px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font);">Agregar al costeo →</button>'
+      +'</div>'
+    +'</div>'
+  +'</div>';
+  document.body.appendChild(ov);
+  setTimeout(()=>document.getElementById("cm-nombre")?.focus(), 100);
+}
+
+function _agregarMaterialCustom(sIdx){
+  const nombre = document.getElementById("cm-nombre").value.trim();
+  const precio = parseFloat(document.getElementById("cm-precio").value)||0;
+  const present = document.getElementById("cm-present").value;
+  const cant = parseFloat(document.getElementById("cm-cant").value)||1;
+
+  if(!nombre){ showToast("⚠️ Falta el nombre del material"); return; }
+  if(!precio){ showToast("⚠️ Falta el precio"); return; }
+
+  const s = _ceCosteo.sistemas[sIdx];
+  if(!s) return;
+  _ceSnapshot(true);
+
+  s.partidas.push({
+    tipo:"material",
+    matId: "custom_"+Date.now(),
+    rendIdx: -1,
+    rendNota: "",
+    descripcion: nombre,
+    cantidad: cant,
+    costoUnit: precio,
+    precioUnit: precio * 1.5,  // 50% util default
+    utilPct: 50,
+    autoCalc: false,  // custom no se recalcula
+    custom: true,
+    presentacion: present
+  });
+
+  document.querySelector(".cos-modal-ov")?.remove();
+  showToast("✓ "+nombre+" agregado al costeo");
+  _renderSistemas();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ── MO PERSONALIZADA (solo para este costeo) ────────────────
+// ═══════════════════════════════════════════════════════════════
+
+function _abrirFormMOCustom(sIdx){
+  const s = _ceCosteo.sistemas[sIdx];
+  const unidadSugerida = s?.unidad || "m²";
+
+  const ov = document.createElement("div");
+  ov.className = "cos-modal-ov";
+  ov.onclick = (e)=>{ if(e.target===ov) ov.remove(); };
+
+  ov.innerHTML = '<div class="cos-modal" onclick="event.stopPropagation();">'
+    +'<div class="cos-modal-hdr">'
+      +'<div style="font-size:13px;font-weight:700;color:var(--navy);">✏️ Mano de obra personalizada</div>'
+      +'<button onclick="this.closest(\'.cos-modal-ov\').remove()" style="background:none;border:none;font-size:18px;color:var(--tx2);cursor:pointer;">✕</button>'
+    +'</div>'
+    +'<div class="cos-modal-body">'
+      +'<div style="font-size:10px;color:var(--tx2);margin-bottom:12px;padding:8px 10px;background:rgba(30,111,217,.05);border-left:3px solid #1E6FD9;border-radius:4px;">'
+        +'Esta MO se agrega <b>solo al costeo actual</b>. No afectará el catálogo global.'
+      +'</div>'
+      +'<div class="cos-label" style="margin-top:0;">Nombre del servicio *</div>'
+      +'<input id="cmo-nombre" class="cos-input" placeholder="Ej: Curado especial nocturno" style="margin-bottom:10px;">'
+      +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px;">'
+        +'<div><div class="cos-label">Costo / unidad *</div>'
+          +'<input id="cmo-costo" class="cos-input" type="number" min="0" step="0.01" placeholder="0.00"></div>'
+        +'<div><div class="cos-label">Unidad</div>'
+          +'<select id="cmo-unidad" class="cos-input" style="background:#fff;">'
+            +['m²','m.l.','m³','día','hora','servicio','pieza','lote'].map(u=>'<option value="'+u+'"'+(u===unidadSugerida?" selected":"")+' style="color:#0B1F3A;background:#fff;">'+u+'</option>').join("")
+          +'</select></div>'
+        +'<div><div class="cos-label">% Util sug.</div>'
+          +'<input id="cmo-util" class="cos-input" type="number" min="0" max="300" step="1" value="80"></div>'
+      +'</div>'
+      +'<div style="display:flex;gap:8px;">'
+        +'<button onclick="this.closest(\'.cos-modal-ov\').remove()" class="cos-btn-sm" style="flex:1;">Cancelar</button>'
+        +'<button onclick="_agregarMOCustom('+sIdx+')" style="flex:2;background:#1E6FD9;border:none;color:#fff;padding:10px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font);">Agregar al costeo →</button>'
+      +'</div>'
+    +'</div>'
+  +'</div>';
+  document.body.appendChild(ov);
+  setTimeout(()=>document.getElementById("cmo-nombre")?.focus(), 100);
+}
+
+function _agregarMOCustom(sIdx){
+  const nombre = document.getElementById("cmo-nombre").value.trim();
+  const costo = parseFloat(document.getElementById("cmo-costo").value)||0;
+  const unidad = document.getElementById("cmo-unidad").value;
+  const util = parseFloat(document.getElementById("cmo-util").value)||80;
+
+  if(!nombre){ showToast("⚠️ Falta el nombre"); return; }
+  if(!costo){ showToast("⚠️ Falta el costo"); return; }
+
+  const s = _ceCosteo.sistemas[sIdx];
+  if(!s) return;
+  _ceSnapshot(true);
+
+  s.partidas.push({
+    tipo:"mo",
+    moId: "custom_"+Date.now(),
+    descripcion: nombre,
+    cantidad: s.cantidad || 1,  // usa cantidad del sistema
+    costoUnit: costo,
+    precioUnit: costo * (1 + util/100),
+    utilPct: util,
+    autoCalc: true,
+    custom: true,
+    unidad: unidad
+  });
+
+  document.querySelector(".cos-modal-ov")?.remove();
+  showToast("✓ "+nombre+" agregado al costeo");
+  _renderSistemas();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ── GUARDAR PARTIDA CUSTOM AL CATÁLOGO GLOBAL (solo admin) ──
+// ═══════════════════════════════════════════════════════════════
+
+async function _guardarPartidaAlCatalogo(sIdx, pIdx){
+  if(!window.isAdmin){ showToast("🔒 Solo administradores"); return; }
+  const s = _ceCosteo?.sistemas?.[sIdx];
+  const p = s?.partidas?.[pIdx];
+  if(!p || !p.custom){ showToast("⚠️ Esta partida no es personalizada"); return; }
+
+  const tipoStr = p.tipo==="mo" ? "mano de obra" : "material";
+  if(!confirm("¿Guardar \""+p.descripcion+"\" al catálogo global de "+tipoStr+"?\n\nEstará disponible para todos los costeos futuros.")) return;
+
+  try{
+    if(p.tipo==="material"){
+      const nuevo = {
+        id: "mat_"+Date.now(),
+        nombre: p.descripcion,
+        precio: p.costoUnit || 0,
+        presentacion: p.presentacion || "unidad",
+        rendimientos: []
+      };
+      await costeoMaterialesRef.doc(nuevo.id).set(nuevo);
+      // Re-vincular la partida al material recién guardado
+      p.matId = nuevo.id;
+      p.custom = false;
+      showToast("✓ Material guardado al catálogo global");
+    }
+    else if(p.tipo==="mo"){
+      const nuevo = {
+        id: "mo_"+Date.now(),
+        nombre: p.descripcion,
+        costoPorUnidad: p.costoUnit || 0,
+        unidad: p.unidad || "m²",
+        utilSug: p.utilPct || 80
+      };
+      await costeoMoRef.doc(nuevo.id).set(nuevo);
+      p.moId = nuevo.id;
+      p.custom = false;
+      showToast("✓ Mano de obra guardada al catálogo global");
+    }
+    _renderSistemas();
+  }catch(e){
+    console.error(e);
+    showToast("⚠️ Error: "+e.message);
+  }
+}
+
 // ── Aplicar kit (auto-agrega materiales + MO) ────────────────
 function aplicarKit(sIdx){
   const s = _ceCosteo.sistemas[sIdx];
@@ -6909,6 +7469,7 @@ function aplicarKit(sIdx){
   }
   if(s.partidas.length && !confirm("Ya hay partidas. ¿Reemplazar con el kit?\n\nSe borrarán las partidas actuales.")) return;
 
+  _ceSnapshot(true);
   s.partidas = [];
 
   // Agregar materiales con proporción
@@ -7441,6 +8002,7 @@ auth.onAuthStateChanged(async user => {
   if(user){
     currentUser = user;
     isAdmin = (user.uid === ADMIN_UID);
+    window.isAdmin = isAdmin;  // exponer para uso global
     // Cargar perfil desde Firestore
     try{
       const doc = await usersRef.doc(user.uid).get();
@@ -7535,6 +8097,7 @@ auth.onAuthStateChanged(async user => {
     currentUser = null;
     currentUserProfile = null;
     isAdmin = false;
+    window.isAdmin = false;
     // ⚠️ Si es vista pública del cliente (?obra=...) NO mostrar login
     const _isPublicView = new URLSearchParams(window.location.search).get("obra");
     if(_isPublicView){

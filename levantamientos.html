@@ -2246,11 +2246,54 @@ const db = firebase.firestore();
 // match /proyectos/{docId} { allow read: if true; allow write: if true; }
 const proyectosRef = db.collection("proyectos");
 
+// ── Generación de folio consecutivo por día (LEV-XXX-YYYYMMDD-NNN) ──
+async function _generarFolioLev(p){
+  // Si ya tiene folio con formato nuevo, lo respeta
+  if(p.folio && /^LEV-[A-Z0-9]+-\d{8}-\d{3}$/.test(p.folio)) return p.folio;
+
+  // Prefijo: si tiene p.prefijo lo usa; si no, lo deriva del cliente (primeras 3 letras)
+  var prefijo = (p.prefijo || "").toUpperCase().trim();
+  if(!prefijo){
+    prefijo = (p.cliente || "ROM").replace(/[^A-Za-z0-9]/g, "").substring(0,3).toUpperCase();
+    if(prefijo.length < 2) prefijo = "ROM";
+  }
+
+  // Fecha: usa p.fecha o la fecha actual
+  var fecha = p.fecha || new Date().toISOString().slice(0,10);
+  var fStr = fecha.replace(/-/g, "").substring(0,8);
+
+  // Consecutivo: busca en Firestore cuántos folios hay con el mismo base
+  var folioBase = "LEV-" + prefijo + "-" + fStr;
+  var n = 1;
+  try{
+    var snap = await proyectosRef.where("folioBase","==",folioBase).get();
+    n = snap.size + 1;
+  }catch(e){
+    console.warn("[LEV] No se pudo consultar folios previos, usando aleatorio:", e.message);
+    n = Math.floor(Math.random() * 900) + 100;
+  }
+  var folio = folioBase + "-" + String(n).padStart(3,"0");
+  p.folio = folio;
+  p.folioBase = folioBase;
+  return folio;
+}
+
+// Obtiene el folio (sincronía). Si no lo tiene, devuelve temporal hasta que se genere.
+function _getFolioLev(p){
+  if(p && p.folio && /^LEV-/.test(p.folio)) return p.folio;
+  // Retrocompatibilidad: derivar temporal del ID mientras se migra
+  return "LEV-TMP-" + (p?.id ? p.id.slice(-6).toUpperCase() : "000000");
+}
+
 function loadConfig(){try{const d=localStorage.getItem("romsa_cfg");if(d)S.config={...S.config,...JSON.parse(d)};}catch(e){}}
 function saveConfigLocal(){try{localStorage.setItem("romsa_cfg",JSON.stringify(S.config));}catch(e){}}
 
 async function saveProyecto(p){
   try{
+    // Generar folio si no lo tiene (LEV-XXX-YYYYMMDD-NNN)
+    if(!p.folio || !/^LEV-[A-Z0-9]+-\d{8}-\d{3}$/.test(p.folio)){
+      await _generarFolioLev(p);
+    }
     await proyectosRef.doc(p.id).set(JSON.parse(JSON.stringify(p)));
   }catch(e){console.error(e);showToast("⚠️ Error: "+e.message);}
 }
@@ -2346,7 +2389,7 @@ function load(){
 
 function _mostrarReporteCliente(p){
   activoId = p.id;
-  const folio = "AUD-"+(p.id?p.id.slice(-6):"000000").toUpperCase();
+  const folio = _getFolioLev(p);
   const mainEl = document.getElementById("main");
   mainEl.style.background = "#0A1628";
   mainEl.style.overflowY = "auto";
@@ -2704,7 +2747,7 @@ function renderHome(){
   const folioEl=document.getElementById("kpi-ultimo-folio");
   if(folioEl&&ps.length>0){
     const ultimo=ps[0]; // ya ordenados por ts desc
-    const folioStr="AUD-"+(ultimo.id?ultimo.id.slice(-6).toUpperCase():"000000");
+    const folioStr=_getFolioLev(ultimo);
     folioEl.textContent=folioStr;
   }
   const m2=ps.reduce((s,p)=>s+(p.area||0),0);
@@ -3400,11 +3443,14 @@ function actualizarScoreEnVivo(){
   if(urgEl)p.notas=Object.assign({},p.notas||{},{urgencia:urgEl.value});
   if(condEl)p.notas=Object.assign({},p.notas||{},{condicion:condEl.value,urgencia:urgEl?urgEl.value:""});
   var sd=calcularScore(p);
-  // Barra principal
-  var html='<div style="display:flex;align-items:center;gap:12px;padding:14px 16px;background:'+sd.colorLight+';border-radius:12px;border:1.5px solid '+sd.color+'33;margin-bottom:8px;">'
+  // Barra principal con botón info
+  var html='<div style="display:flex;align-items:center;gap:12px;padding:14px 16px;background:'+sd.colorLight+';border-radius:12px;border:1.5px solid '+sd.color+'33;margin-bottom:8px;position:relative;">'
     +'<div style="font-size:38px;font-weight:900;color:'+sd.color+';line-height:1;font-family:var(--mono);">'+sd.score+'</div>'
     +'<div style="flex:1;">'
-      +'<div style="font-size:14px;font-weight:700;color:'+sd.color+';">'+sd.emoji+' '+sd.nivel+'</div>'
+      +'<div style="font-size:14px;font-weight:700;color:'+sd.color+';display:flex;align-items:center;gap:6px;">'
+        +'<span>'+sd.emoji+' '+sd.nivel+'</span>'
+        +'<button onclick="abrirModalScoreInfo()" title="¿Cómo se calcula?" style="background:rgba(0,0,0,.08);border:none;color:'+sd.color+';font-size:11px;font-weight:700;width:18px;height:18px;border-radius:50%;cursor:pointer;font-family:var(--font);padding:0;line-height:1;display:inline-flex;align-items:center;justify-content:center;">ℹ</button>'
+      +'</div>'
       +'<div style="height:6px;background:rgba(0,0,0,.08);border-radius:10px;overflow:hidden;margin:4px 0;">'
         +'<div style="height:100%;width:'+sd.score+'%;background:'+sd.color+';border-radius:10px;transition:width .5s;"></div>'
       +'</div>'
@@ -3428,6 +3474,120 @@ function actualizarScoreEnVivo(){
   el.innerHTML=html;
 }
 
+// Modal informativo: explica cómo se calcula el Score
+function abrirModalScoreInfo(){
+  var p = getP();
+  var sd = p ? calcularScore(p) : null;
+  var ov = document.createElement("div");
+  ov.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:800;display:flex;align-items:center;justify-content:center;padding:16px;";
+  ov.onclick = function(e){ if(e.target===ov) ov.remove(); };
+
+  var detalleActual = "";
+  if(sd){
+    detalleActual = '<div style="background:#F3F4F6;border-radius:10px;padding:12px 14px;margin-bottom:14px;">'
+      +'<div style="font-size:9px;font-weight:700;color:#6B7280;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;">Desglose de tu Score actual: '+sd.score+'/100</div>'
+      +'<div style="font-family:ui-monospace,monospace;font-size:11px;line-height:1.7;color:#374151;">'
+        +'Base inicial:              <b style="color:#059669;">+100 pts</b><br>'
+        +sd.factores.map(function(f){
+          var col = f.pts===0?"#9CA3AF":"#DC2626";
+          var signo = f.pts===0?"":"−";
+          return '− '+f.label.padEnd(22," ").replace(/ /g,"&nbsp;")+' <b style="color:'+col+';">'+signo+(f.pts||0)+' pts</b>';
+        }).join("<br>")
+        +'<div style="border-top:1px solid #D1D5DB;margin-top:6px;padding-top:6px;"></div>'
+        +'<b>Score final:</b>             <b style="color:'+sd.color+';font-size:14px;">'+sd.score+' / 100</b>'
+      +'</div></div>';
+  }
+
+  ov.innerHTML = '<div onclick="event.stopPropagation();" style="background:#fff;max-width:520px;width:100%;max-height:90vh;overflow-y:auto;border-radius:14px;box-shadow:0 20px 50px rgba(0,0,0,.3);">'
+    +'<div style="padding:16px 18px;border-bottom:1px solid #E5E7EB;display:flex;align-items:center;justify-content:space-between;">'
+      +'<div>'
+        +'<div style="font-size:9px;font-weight:700;color:var(--blue);letter-spacing:1.5px;text-transform:uppercase;">Metodología</div>'
+        +'<div style="font-size:15px;font-weight:800;color:var(--tx);">¿Cómo se calcula el Score?</div>'
+      +'</div>'
+      +'<button onclick="this.closest(\'[onclick]\').parentElement.remove()" style="background:none;border:none;font-size:22px;color:#9CA3AF;cursor:pointer;line-height:1;">×</button>'
+    +'</div>'
+    +'<div style="padding:18px;">'
+
+      +'<p style="font-size:12px;color:#4B5563;line-height:1.6;margin:0 0 14px;">'
+        +'El Score es un <b>indicador objetivo de 0 a 100</b> que refleja el estado del piso industrial. '
+        +'Parte de <b>100 puntos</b> (piso perfecto) y se descuentan puntos según 4 factores medibles.'
+      +'</p>'
+
+      +detalleActual
+
+      +'<div style="font-size:9px;font-weight:700;color:var(--blue);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px;">Factores evaluados</div>'
+
+      // Factor 1
+      +'<div style="background:#F9FAFB;border-left:3px solid #60A5FA;border-radius:6px;padding:10px 12px;margin-bottom:8px;">'
+        +'<div style="font-size:12px;font-weight:700;color:var(--tx);margin-bottom:4px;">1. Condición visual <span style="color:#9CA3AF;font-weight:500;">(hasta −30 pts)</span></div>'
+        +'<div style="font-size:10.5px;color:#4B5563;line-height:1.5;">'
+          +'Evaluación visual directa del piso:<br>'
+          +'<span style="font-family:monospace;color:#059669;">• Bueno (sin daños): 0 pts</span><br>'
+          +'<span style="font-family:monospace;color:#D97706;">• Regular (desgaste superficial): −10 pts</span><br>'
+          +'<span style="font-family:monospace;color:#DC2626;">• Malo (grietas y daños): −22 pts</span><br>'
+          +'<span style="font-family:monospace;color:#7C3AED;">• Crítico (reparación urgente): −30 pts</span>'
+        +'</div>'
+      +'</div>'
+
+      // Factor 2
+      +'<div style="background:#F9FAFB;border-left:3px solid #F59E0B;border-radius:6px;padding:10px 12px;margin-bottom:8px;">'
+        +'<div style="font-size:12px;font-weight:700;color:var(--tx);margin-bottom:4px;">2. Severidad de daños <span style="color:#9CA3AF;font-weight:500;">(hasta −25 pts)</span></div>'
+        +'<div style="font-size:10.5px;color:#4B5563;line-height:1.5;">'
+          +'Suma ponderada de cada reparación detectada:<br>'
+          +'<span style="font-family:monospace;">• Leve: 0.5 pts &nbsp;&nbsp; • Moderada: 2 pts</span><br>'
+          +'<span style="font-family:monospace;">• Grave: 5 pts &nbsp;&nbsp;&nbsp; • Crítica: 9 pts</span><br>'
+          +'<i style="color:#6B7280;">Se limita al máximo de 25 pts aunque haya más daños.</i>'
+        +'</div>'
+      +'</div>'
+
+      // Factor 3
+      +'<div style="background:#F9FAFB;border-left:3px solid #EF4444;border-radius:6px;padding:10px 12px;margin-bottom:8px;">'
+        +'<div style="font-size:12px;font-weight:700;color:var(--tx);margin-bottom:4px;">3. Área afectada <span style="color:#9CA3AF;font-weight:500;">(hasta −25 pts)</span></div>'
+        +'<div style="font-size:10.5px;color:#4B5563;line-height:1.5;">'
+          +'Proporción del área dañada vs. área total, con escala no lineal:<br>'
+          +'<span style="font-family:monospace;">• 5% dañado → −5 pts</span><br>'
+          +'<span style="font-family:monospace;">• 20% dañado → −15 pts</span><br>'
+          +'<span style="font-family:monospace;">• 50%+ dañado → −25 pts</span>'
+        +'</div>'
+      +'</div>'
+
+      // Factor 4
+      +'<div style="background:#F9FAFB;border-left:3px solid #7C3AED;border-radius:6px;padding:10px 12px;margin-bottom:14px;">'
+        +'<div style="font-size:12px;font-weight:700;color:var(--tx);margin-bottom:4px;">4. Urgencia declarada <span style="color:#9CA3AF;font-weight:500;">(hasta −20 pts)</span></div>'
+        +'<div style="font-size:10.5px;color:#4B5563;line-height:1.5;">'
+          +'Urgencia de intervención evaluada en sitio:<br>'
+          +'<span style="font-family:monospace;color:#059669;">• Baja: 0 pts &nbsp;&nbsp;&nbsp;&nbsp; • Media: −7 pts</span><br>'
+          +'<span style="font-family:monospace;color:#DC2626;">• Alta: −15 pts &nbsp; • Crítica: −20 pts</span>'
+        +'</div>'
+      +'</div>'
+
+      +'<div style="font-size:9px;font-weight:700;color:var(--blue);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px;">Clasificación final</div>'
+      +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:14px;">'
+        +'<div style="padding:8px 10px;background:#D1FAE5;border-radius:6px;font-size:11px;"><b style="color:#059669;">🟢 Bueno</b> — 75 a 100</div>'
+        +'<div style="padding:8px 10px;background:#FEF3C7;border-radius:6px;font-size:11px;"><b style="color:#D97706;">🟡 Regular</b> — 55 a 74</div>'
+        +'<div style="padding:8px 10px;background:#FEE2E2;border-radius:6px;font-size:11px;"><b style="color:#DC2626;">🔴 Malo</b> — 35 a 54</div>'
+        +'<div style="padding:8px 10px;background:#EDE9FE;border-radius:6px;font-size:11px;"><b style="color:#7C3AED;">🚨 Crítico</b> — 0 a 34</div>'
+      +'</div>'
+
+      +'<div style="background:#EFF6FF;border:1px solid #BFDBFE;border-radius:8px;padding:10px 12px;">'
+        +'<div style="font-size:10.5px;color:#1E40AF;line-height:1.6;">'
+          +'<b>Para qué sirve el Score:</b><br>'
+          +'• Comunicar objetivamente al cliente el estado del piso<br>'
+          +'• Justificar la recomendación técnica (tipo de intervención y urgencia)<br>'
+          +'• Comparar pisos entre sí o antes/después de una intervención'
+        +'</div>'
+      +'</div>'
+
+    +'</div>'
+
+    +'<div style="padding:12px 18px;border-top:1px solid #E5E7EB;background:#F9FAFB;text-align:right;">'
+      +'<button onclick="this.closest(\'[onclick]\').parentElement.remove()" style="background:var(--blue);color:#fff;border:none;padding:9px 20px;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font);">Entendido</button>'
+    +'</div>'
+
+  +'</div>';
+  document.body.appendChild(ov);
+}
+
 function showPdf(){
   const p=getP();if(!p)return;
 
@@ -3448,7 +3608,7 @@ function showPdf(){
   // Logo blanco SVG directo del topbar
   const logoB64 = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiB3aWR0aD0iMTAwM3B4IiBoZWlnaHQ9IjEzM3B4IiB2aWV3Qm94PSIwIDAgMTAwMy4yNjY1NzI1MzgzODQ5IDEzMy4xMzU5NjY4NTE5NDk2NiI+CiAgICA8ZyBpZD0iMDE0MGQzMzEtZTZhOC00ZDFhLTllYjUtMjU4ZjU2NDFmMGZhIj4KPGcgc3R5bGU9IiI+CgkJPGcgaWQ9IjAxNDBkMzMxLWU2YTgtNGQxYS05ZWI1LTI1OGY1NjQxZjBmYS1jaGlsZC0wIj4KPHBhdGggc3R5bGU9InN0cm9rZTogbm9uZTsgc3Ryb2tlLW9wYWNpdHk6IDEuMDA7IHN0cm9rZS13aWR0aDogMDsgc3Ryb2tlLWRhc2hhcnJheTogbm9uZTsgc3Ryb2tlLWxpbmVjYXA6IGJ1dHQ7IHN0cm9rZS1kYXNob2Zmc2V0OiAwOyBzdHJva2UtbGluZWpvaW46IG1pdGVyOyBzdHJva2UtbWl0ZXJsaW1pdDogNDsgZmlsbDogd2hpdGU7IGZpbGwtb3BhY2l0eTogMS4wMDsgZmlsbC1ydWxlOiBub256ZXJvOyBvcGFjaXR5OiAxOyIgdHJhbnNmb3JtPSJtYXRyaXgoMC44Mzc0NDIgLTAuMDAwMDczIDAuMDAwMDczIDAuODM3ODAyIDUwMS42MzM1NzEgNjYuNTY4MDA4KSBtYXRyaXgoMSAwIDAgMSAwIDApICB0cmFuc2xhdGUoLTU5OSwgLTc5LjUzNDA5OSkiIGQ9Ik0gNjkyLjM4IDE1Ny4wOSBDIDY4OC41OCAxNTQuNzcgNjg3LjQ5IDE1Mi41MiA2NjIuNTAgOTUuMzEgQyA2NTIuMTIgNzEuNTUgNjQzLjMxIDUyLjMxIDY0Mi45MSA1Mi41NSBDIDY0MS43OSA1My4yNSA2MzcuNzEgNjcuNTQgNjE4LjgwIDEzNy4wMCBMIDYxMy40OSAxNTYuNTAgTCA2MDAuMjUgMTU2Ljc4IEMgNTkyLjk2IDE1Ni45MyA1ODcuMDAgMTU2LjcyIDU4Ny4wMCAxNTYuMzAgQyA1ODcuMDAgMTU1LjExIDYxOC4zMSA0Mi4wNCA2MjcuMTQgMTEuMzEgQyA2MjguMjkgNy4zNCA2MzMuMDAgMy4yOCA2MzcuNDMgMi40NSBDIDY0MS4wMCAxLjc4IDY0OC40NiA0LjQwIDY1MC42NSA3LjA5IEMgNjUxLjg3IDguNTkgNjYxLjUwIDI5LjkwIDY4NS41MiA4NC4yNCBDIDY5My43MiAxMDIuNzkgNzAwLjc2IDExNy42NCA3MDEuMTYgMTE3LjI0IEMgNzAyLjE2IDExNi4yNCA3MTEuNzYgOTUuMDkgNzI2LjAxIDYyLjUwIEMgNzQzLjI1IDIzLjA2IDc0OS45MSA4Ljc3IDc1Mi4xOCA2LjMzIEMgNzU3LjAxIDEuMTQgNzY0LjcwIDAuOTEgNzcwLjAxIDUuODAgQyA3NzMuMjIgOC43NiA3NzMuMTIgOC40MyA3OTQuMzYgODUuNTAgQyA4MDkuMjAgMTM5LjMwIDgxMy4wMCAxNTMuNTcgODEzLjAwIDE1NS40MCBDIDgxMy4wMCAxNTYuNzkgODExLjI2IDE1Ny4wMCA4MDAuMDAgMTU3LjAwIEMgNzkyLjg1IDE1Ny4wMCA3ODcuMDAgMTU2Ljc4IDc4Ny4wMCAxNTYuNTIgQyA3ODcuMDAgMTU1LjUyIDc2My44MiA3Mi4wNyA3NjAuODEgNjIuMjIgQyA3NTkuMDggNTYuNTYgNzU3LjMzIDUyLjI5IDc1Ni45MyA1Mi43MiBDIDc1Ni4yOSA1My40MCA3NDUuMTAgNzguNDYgNzI3Ljk5IDExNy41MCBDIDcxNi42MCAxNDMuNTAgNzEwLjM3IDE1NS40MSA3MDcuMjEgMTU3LjI1IEMgNzAzLjIzIDE1OS41NiA2OTYuMzEgMTU5LjQ5IDY5Mi4zOCAxNTcuMDkgWiBNIDIwOS4yNCA3OS43NSBMIDIwOS41MCAyLjUwIEwgMjY5LjAwIDIuNTAgQyAzMzYuMDIgMi41MCAzMzcuNjUgMi42MyAzNTAuMjQgOS4xOSBDIDM2Mi45MyAxNS43OSAzNzEuNDYgMjcuMjYgMzc0LjU2IDQxLjg4IEMgMzc2LjM5IDUwLjUyIDM3Ni4zNiA2Ny44NSAzNzQuNDkgNzUuNzYgQyAzNzEuMjggODkuNDEgMzYyLjc4IDEwMC42NCAzNTAuODcgMTA2Ljk5IEwgMzQ0Ljc2IDExMC4yNCBMIDM2Ny4zOCAxMzIuODggQyAzNzkuODIgMTQ1LjMzIDM5MC4wMCAxNTUuODUgMzkwLjAwIDE1Ni4yNiBDIDM5MC4wMCAxNTYuNjcgMzgxLjU2IDE1Ni45NyAzNzEuMjUgMTU2LjkzIEwgMzUyLjUwIDE1Ni44NiBMIDMzMy41MCAxMzUuNDggTCAzMTQuNTAgMTE0LjEwIEwgMjg1LjI1IDExNC4wNSBMIDI1Ni4wMCAxMTQuMDAgTCAyNTYuMDAgMTAyLjA5IEwgMjU2LjAwIDkwLjE4IEwgMjkzLjI1IDg5Ljg0IEMgMzI5Ljg5IDg5LjUxIDMzMC41OCA4OS40NiAzMzUuMjMgODcuMTcgQyAzNDAuNjcgODQuNDkgMzQ0LjQ0IDgwLjQxIDM0Ny4zOSA3NC4wMCBDIDM0OS4wNCA3MC40MSAzNDkuNDYgNjcuNDcgMzQ5LjQ4IDU5LjUwIEMgMzQ5LjUwIDUwLjUzIDM0OS4yMSA0OC45MSAzNDYuNjcgNDMuNzQgQyAzNDUuMTIgNDAuNTcgMzQyLjMyIDM2LjgyIDM0MC40NyAzNS40MSBDIDMzMy4zMyAyOS45NiAzMzEuMjUgMjkuNzQgMjgyLjI1IDI5LjI1IEwgMjM3LjAwIDI4Ljc5IEwgMjM3LjAwIDkyLjg5IEwgMjM3LjAwIDE1Ny4wMCBMIDIyMi45OSAxNTcuMDAgTCAyMDguOTkgMTU3LjAwIEwgMjA5LjI0IDc5Ljc1IFogTSA0NTYuMDAgMTU2LjAyIEMgNDQxLjk0IDE1My45NSA0MjcuNDMgMTQ1LjY1IDQxNS4zOSAxMzIuNzYgQyA0MDUuMTEgMTIxLjc2IDM5OS4zNCAxMDkuMTMgMzk2LjM5IDkxLjE1IEMgMzkzLjU4IDc0LjA2IDM5NS44OCA1OC4zMSA0MDMuNTYgNDIuMTEgQyA0MDcuNDIgMzMuOTUgNDA5LjI4IDMxLjQxIDQxNi44MyAyMy45NSBDIDQyNC4wNiAxNi44MSA0MjcuMjggMTQuNDYgNDM1LjA2IDEwLjY1IEMgNDUwLjA5IDMuMjcgNDUxLjk1IDMuMDAgNDg3Ljk2IDMuMDEgQyA1MDUuMzEgMy4wMSA1MjIuMDUgMy40MyA1MjUuMTYgMy45NCBDIDU0OS41OSA3Ljk0IDU3Mi4xNiAyOC4yMiA1ODAuMjMgNTMuNDIgQyA1ODIuNzEgNjEuMTUgNTgzLjczIDgzLjMyIDU4Mi4wOSA5My44NCBDIDU3OS42MiAxMDkuNzggNTcwLjQ3IDEyNi44MyA1NTguNTcgMTM3LjY5IEMgNTUwLjM3IDE0NS4xOCA1NDMuMTUgMTQ5LjQ4IDUzMi4yNiAxNTMuMzQgTCA1MjMuNTAgMTU2LjQ2IEwgNDkyLjUwIDE1Ni42NCBDIDQ3NS40NSAxNTYuNzQgNDU5LjAyIDE1Ni40NiA0NTYuMDAgMTU2LjAyIFogTSA1MTYuNDIgMTI4Ljk2IEMgNTM5Ljg3IDEyNS41NyA1NTYuMDAgMTA1LjQxIDU1Ni4wMCA3OS41MCBDIDU1Ni4wMCA2NC40MiA1NTAuOTggNTIuMTAgNTQwLjkyIDQyLjUwIEMgNTI4LjYxIDMwLjc3IDUxNy4wNiAyOC4yNyA0ODAuMjggMjkuMzkgQyA0NTcuODEgMzAuMDcgNDUzLjM5IDMxLjA3IDQ0My4yOCAzNy43MiBDIDQyMi4yOSA1MS41MyA0MTYuMDggODMuMzMgNDI5Ljc1IDEwNy4wMCBDIDQzNS40MCAxMTYuNzkgNDQ2Ljk0IDEyNS42MyA0NTguMDAgMTI4LjY0IEMgNDYzLjU5IDEzMC4xNiA1MDYuNDggMTMwLjQwIDUxNi40MiAxMjguOTYgWiBNIDgzMC4wMCAxNDMuNTAgTCA4MzAuMDAgMTMwLjAwIEwgODkyLjYyIDEzMC4wMCBMIDk1NS4yMyAxMzAuMDAgTCA5NjAuMDAgMTI2LjUwIEMgOTY2LjAxIDEyMi4wOSA5NjguNTAgMTE3LjIyIDk2OC40NyAxMDkuOTYgQyA5NjguNDMgMTAyLjYxIDk2NC42MSA5NS44OSA5NTguNzEgOTIuNzggQyA5NTQuNTkgOTAuNjAgOTUzLjUwIDkwLjU0IDkwOS4wMCA4OS45NSBDIDg2NS4yNCA4OS4zOCA4NjMuMjUgODkuMjcgODU3LjA4IDg3LjExIEMgODQxLjUxIDgxLjY3IDgzMS42NyA2OS43OCA4MjguNzggNTIuOTUgQyA4MjcuMzMgNDQuNDUgODI4Ljc0IDM0LjU2IDgzMi42NSAyNS44NCBDIDgzNi4wMiAxOC4zMyA4NDMuOTUgMTAuODIgODUyLjc2IDYuNzcgQyA4NTguOTAgMy45NSA4NjAuNzggMy42MSA4NzQuMDAgMi45MSBDIDg4MS45NyAyLjQ4IDkxMC40NCAyLjExIDkzNy4yNSAyLjA3IEwgOTg2LjAwIDIuMDAgTCA5ODYuMDAgMTUuNDAgTCA5ODYuMDAgMjguODAgTCA5MjguMjUgMjkuMjAgQyA4NjQuNjUgMjkuNjMgODY2LjE0IDI5LjQ5IDg2MC43MyAzNS45MSBDIDg1My41OCA0NC40MCA4NTUuMzIgNTcuODcgODY0LjMzIDYzLjg0IEwgODY4LjM1IDY2LjUwIEwgOTEzLjQzIDY3LjA5IEwgOTU4LjUwIDY3LjY5IEwgOTY2LjkyIDcwLjUzIEMgOTg0LjgxIDc2LjU4IDk5Mi4zOCA4Ny4zMiA5OTMuNjcgMTA4LjUwIEMgOTk0Ljg5IDEyOC42MiA5ODcuMjkgMTQzLjc1IDk3Mi4xMSAxNTEuNDUgQyA5NjEuMjAgMTU2Ljk3IDk2MC44MSAxNTcuMDAgODkyLjc5IDE1Ny4wMCBMIDgzMC4wMCAxNTcuMDAgTCA4MzAuMDAgMTQzLjUwIFogTSA5OTYuODAgMTUzLjc4IEMgMTAwMC45MyAxNDYuOTkgMTAyOS40NCA5OS4yMiAxMDQ5LjUwIDY1LjUwIEMgMTA3My44MSAyNC42MiAxMDg1LjU5IDYuMzcgMTA5MC4xNCAyLjU0IEMgMTA5Mi45NSAwLjE3IDEwOTQuMDQgLTAuMTQgMTA5Ny45NCAwLjMwIEMgMTEwMy43MyAwLjk1IDExMDQuNjYgMi4wNiAxMTE5Ljg0IDI2LjQ1IEMgMTEzMy4xMyA0Ny44MyAxMTk4LjAwIDE1NS43NiAxMTk4LjAwIDE1Ni41MiBDIDExOTguMDAgMTU2Ljc4IDExOTAuODEgMTU3LjAwIDExODIuMDMgMTU3LjAwIEwgMTE2Ni4wNiAxNTcuMDAgTCAxMTU0LjQ5IDEzNy41MCBMIDExNDIuOTIgMTE4LjAwIEwgMTEwNi45NiAxMTguMDAgQyAxMDg3LjE1IDExOC4wMCAxMDcxLjAwIDExNy42MSAxMDcxLjAwIDExNy4xMyBDIDEwNzEuMDAgMTE2LjY1IDEwNzMuNTUgMTExLjkyIDEwNzYuNjYgMTA2LjYzIEwgMTA4Mi4zMSA5Ny4wMCBMIDEwOTcuNDEgOTYuOTAgQyAxMTA1LjcxIDk2Ljg1IDExMTYuMjAgOTYuNTEgMTEyMC43MyA5Ni4xNSBMIDExMjguOTYgOTUuNTAgTCAxMTIyLjM4IDg0LjAwIEMgMTExMC45MSA2My45NCAxMDk2LjkxIDQxLjAwIDEwOTYuMTQgNDEuMDAgQyAxMDk0LjU0IDQxLjAwIDEwODQuMjkgNTcuNzYgMTA0NS42NyAxMjMuNTAgTCAxMDI2LjI5IDE1Ni41MCBMIDEwMTAuNTUgMTU2Ljc4IEwgOTk0LjgwIDE1Ny4wNSBMIDk5Ni44MCAxNTMuNzggWiBNIDAuMDAgMTM0LjAwIEwgMC4wMCAxMTUuMDAgTCA5NC4wMCAxMTUuMDAgTCAxODguMDAgMTE1LjAwIEwgMTg4LjAwIDEzNC4wMCBMIDE4OC4wMCAxNTMuMDAgTCA5NC4wMCAxNTMuMDAgTCAwLjAwIDE1My4wMCBMIDAuMDAgMTM0LjAwIFogTSAwLjAwIDc3Ljk5IEwgMC4wMCA1Ny45OSBMIDkzLjc1IDU4LjI0IEwgMTg3LjUwIDU4LjUwIEwgMTg3Ljc3IDc4LjI1IEwgMTg4LjA0IDk4LjAwIEwgOTQuMDIgOTguMDAgTCAwLjAwIDk4LjAwIEwgMC4wMCA3Ny45OSBaIE0gMC4wMCAyMS4wMCBMIDAuMDAgMi4wMCBMIDk0LjAwIDIuMDAgTCAxODguMDAgMi4wMCBMIDE4OC4wMCAyMS4wMCBMIDE4OC4wMCA0MC4wMCBMIDk0LjAwIDQwLjAwIEwgMC4wMCA0MC4wMCBMIDAuMDAgMjEuMDAgWiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48L3BhdGg+CjwvZz4KPC9nPgo8L2c+CgogIDwvc3ZnPg==";
   const fechaGen=new Date().toLocaleDateString("es-MX",{year:"numeric",month:"long",day:"numeric"});
-  const folio="AUD-"+(p.id?p.id.slice(-6):"000000").toUpperCase();
+  const folio=_getFolioLev(p);
 
   // Opciones usuario
   const levPageBreak = document.getElementById("lev-page-break")?.value || "estado";
@@ -4143,7 +4303,7 @@ function _showPdfMultiArea(p){
   const areas = p.areas||[];
   const logoB64 = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiB3aWR0aD0iMTAwM3B4IiBoZWlnaHQ9IjEzM3B4IiB2aWV3Qm94PSIwIDAgMTAwMy4yNjY1NzI1MzgzODQ5IDEzMy4xMzU5NjY4NTE5NDk2NiI+CiAgICA8ZyBpZD0iMDE0MGQzMzEtZTZhOC00ZDFhLTllYjUtMjU4ZjU2NDFmMGZhIj4KPGcgc3R5bGU9IiI+CgkJPGcgaWQ9IjAxNDBkMzMxLWU2YTgtNGQxYS05ZWI1LTI1OGY1NjQxZjBmYS1jaGlsZC0wIj4KPHBhdGggc3R5bGU9InN0cm9rZTogbm9uZTsgc3Ryb2tlLW9wYWNpdHk6IDEuMDA7IHN0cm9rZS13aWR0aDogMDsgc3Ryb2tlLWRhc2hhcnJheTogbm9uZTsgc3Ryb2tlLWxpbmVjYXA6IGJ1dHQ7IHN0cm9rZS1kYXNob2Zmc2V0OiAwOyBzdHJva2UtbGluZWpvaW46IG1pdGVyOyBzdHJva2UtbWl0ZXJsaW1pdDogNDsgZmlsbDogd2hpdGU7IGZpbGwtb3BhY2l0eTogMS4wMDsgZmlsbC1ydWxlOiBub256ZXJvOyBvcGFjaXR5OiAxOyIgdHJhbnNmb3JtPSJtYXRyaXgoMC44Mzc0NDIgLTAuMDAwMDczIDAuMDAwMDczIDAuODM3ODAyIDUwMS42MzM1NzEgNjYuNTY4MDA4KSBtYXRyaXgoMSAwIDAgMSAwIDApICB0cmFuc2xhdGUoLTU5OSwgLTc5LjUzNDA5OSkiIGQ9Ik0gNjkyLjM4IDE1Ny4wOSBDIDY4OC41OCAxNTQuNzcgNjg3LjQ5IDE1Mi41MiA2NjIuNTAgOTUuMzEgQyA2NTIuMTIgNzEuNTUgNjQzLjMxIDUyLjMxIDY0Mi45MSA1Mi41NSBDIDY0MS43OSA1My4yNSA2MzcuNzEgNjcuNTQgNjE4LjgwIDEzNy4wMCBMIDYxMy40OSAxNTYuNTAgTCA2MDAuMjUgMTU2Ljc4IEMgNTkyLjk2IDE1Ni45MyA1ODcuMDAgMTU2LjcyIDU4Ny4wMCAxNTYuMzAgQyA1ODcuMDAgMTU1LjExIDYxOC4zMSA0Mi4wNCA2MjcuMTQgMTEuMzEgQyA2MjguMjkgNy4zNCA2MzMuMDAgMy4yOCA2MzcuNDMgMi40NSBDIDY0MS4wMCAxLjc4IDY0OC40NiA0LjQwIDY1MC42NSA3LjA5IEMgNjUxLjg3IDguNTkgNjYxLjUwIDI5LjkwIDY4NS41MiA4NC4yNCBDIDY5My43MiAxMDIuNzkgNzAwLjc2IDExNy42NCA3MDEuMTYgMTE3LjI0IEMgNzAyLjE2IDExNi4yNCA3MTEuNzYgOTUuMDkgNzI2LjAxIDYyLjUwIEMgNzQzLjI1IDIzLjA2IDc0OS45MSA4Ljc3IDc1Mi4xOCA2LjMzIEMgNzU3LjAxIDEuMTQgNzY0LjcwIDAuOTEgNzcwLjAxIDUuODAgQyA3NzMuMjIgOC43NiA3NzMuMTIgOC40MyA3OTQuMzYgODUuNTAgQyA4MDkuMjAgMTM5LjMwIDgxMy4wMCAxNTMuNTcgODEzLjAwIDE1NS40MCBDIDgxMy4wMCAxNTYuNzkgODExLjI2IDE1Ny4wMCA4MDAuMDAgMTU3LjAwIEMgNzkyLjg1IDE1Ny4wMCA3ODcuMDAgMTU2Ljc4IDc4Ny4wMCAxNTYuNTIgQyA3ODcuMDAgMTU1LjUyIDc2My44MiA3Mi4wNyA3NjAuODEgNjIuMjIgQyA3NTkuMDggNTYuNTYgNzU3LjMzIDUyLjI5IDc1Ni45MyA1Mi43MiBDIDc1Ni4yOSA1My40MCA3NDUuMTAgNzguNDYgNzI3Ljk5IDExNy41MCBDIDcxNi42MCAxNDMuNTAgNzEwLjM3IDE1NS40MSA3MDcuMjEgMTU3LjI1IEMgNzAzLjIzIDE1OS41NiA2OTYuMzEgMTU5LjQ5IDY5Mi4zOCAxNTcuMDkgWiBNIDIwOS4yNCA3OS43NSBMIDIwOS41MCAyLjUwIEwgMjY5LjAwIDIuNTAgQyAzMzYuMDIgMi41MCAzMzcuNjUgMi42MyAzNTAuMjQgOS4xOSBDIDM2Mi45MyAxNS43OSAzNzEuNDYgMjcuMjYgMzc0LjU2IDQxLjg4IEMgMzc2LjM5IDUwLjUyIDM3Ni4zNiA2Ny44NSAzNzQuNDkgNzUuNzYgQyAzNzEuMjggODkuNDEgMzYyLjc4IDEwMC42NCAzNTAuODcgMTA2Ljk5IEwgMzQ0Ljc2IDExMC4yNCBMIDM2Ny4zOCAxMzIuODggQyAzNzkuODIgMTQ1LjMzIDM5MC4wMCAxNTUuODUgMzkwLjAwIDE1Ni4yNiBDIDM5MC4wMCAxNTYuNjcgMzgxLjU2IDE1Ni45NyAzNzEuMjUgMTU2LjkzIEwgMzUyLjUwIDE1Ni44NiBMIDMzMy41MCAxMzUuNDggTCAzMTQuNTAgMTE0LjEwIEwgMjg1LjI1IDExNC4wNSBMIDI1Ni4wMCAxMTQuMDAgTCAyNTYuMDAgMTAyLjA5IEwgMjU2LjAwIDkwLjE4IEwgMjkzLjI1IDg5Ljg0IEMgMzI5Ljg5IDg5LjUxIDMzMC41OCA4OS40NiAzMzUuMjMgODcuMTcgQyAzNDAuNjcgODQuNDkgMzQ0LjQ0IDgwLjQxIDM0Ny4zOSA3NC4wMCBDIDM0OS4wNCA3MC40MSAzNDkuNDYgNjcuNDcgMzQ5LjQ4IDU5LjUwIEMgMzQ5LjUwIDUwLjUzIDM0OS4yMSA0OC45MSAzNDYuNjcgNDMuNzQgQyAzNDUuMTIgNDAuNTcgMzQyLjMyIDM2LjgyIDM0MC40NyAzNS40MSBDIDMzMy4zMyAyOS45NiAzMzEuMjUgMjkuNzQgMjgyLjI1IDI5LjI1IEwgMjM3LjAwIDI4Ljc5IEwgMjM3LjAwIDkyLjg5IEwgMjM3LjAwIDE1Ny4wMCBMIDIyMi45OSAxNTcuMDAgTCAyMDguOTkgMTU3LjAwIEwgMjA5LjI0IDc5Ljc1IFogTSA0NTYuMDAgMTU2LjAyIEMgNDQxLjk0IDE1My45NSA0MjcuNDMgMTQ1LjY1IDQxNS4zOSAxMzIuNzYgQyA0MDUuMTEgMTIxLjc2IDM5OS4zNCAxMDkuMTMgMzk2LjM5IDkxLjE1IEMgMzkzLjU4IDc0LjA2IDM5NS44OCA1OC4zMSA0MDMuNTYgNDIuMTEgQyA0MDcuNDIgMzMuOTUgNDA5LjI4IDMxLjQxIDQxNi44MyAyMy45NSBDIDQyNC4wNiAxNi44MSA0MjcuMjggMTQuNDYgNDM1LjA2IDEwLjY1IEMgNDUwLjA5IDMuMjcgNDUxLjk1IDMuMDAgNDg3Ljk2IDMuMDEgQyA1MDUuMzEgMy4wMSA1MjIuMDUgMy40MyA1MjUuMTYgMy45NCBDIDU0OS41OSA3Ljk0IDU3Mi4xNiAyOC4yMiA1ODAuMjMgNTMuNDIgQyA1ODIuNzEgNjEuMTUgNTgzLjczIDgzLjMyIDU4Mi4wOSA5My44NCBDIDU3OS42MiAxMDkuNzggNTcwLjQ3IDEyNi44MyA1NTguNTcgMTM3LjY5IEMgNTUwLjM3IDE0NS4xOCA1NDMuMTUgMTQ5LjQ4IDUzMi4yNiAxNTMuMzQgTCA1MjMuNTAgMTU2LjQ2IEwgNDkyLjUwIDE1Ni42NCBDIDQ3NS40NSAxNTYuNzQgNDU5LjAyIDE1Ni40NiA0NTYuMDAgMTU2LjAyIFogTSA1MTYuNDIgMTI4Ljk2IEMgNTM5Ljg3IDEyNS41NyA1NTYuMDAgMTA1LjQxIDU1Ni4wMCA3OS41MCBDIDU1Ni4wMCA2NC40MiA1NTAuOTggNTIuMTAgNTQwLjkyIDQyLjUwIEMgNTI4LjYxIDMwLjc3IDUxNy4wNiAyOC4yNyA0ODAuMjggMjkuMzkgQyA0NTcuODEgMzAuMDcgNDUzLjM5IDMxLjA3IDQ0My4yOCAzNy43MiBDIDQyMi4yOSA1MS41MyA0MTYuMDggODMuMzMgNDI5Ljc1IDEwNy4wMCBDIDQzNS40MCAxMTYuNzkgNDQ2Ljk0IDEyNS42MyA0NTguMDAgMTI4LjY0IEMgNDYzLjU5IDEzMC4xNiA1MDYuNDggMTMwLjQwIDUxNi40MiAxMjguOTYgWiBNIDgzMC4wMCAxNDMuNTAgTCA4MzAuMDAgMTMwLjAwIEwgODkyLjYyIDEzMC4wMCBMIDk1NS4yMyAxMzAuMDAgTCA5NjAuMDAgMTI2LjUwIEMgOTY2LjAxIDEyMi4wOSA5NjguNTAgMTE3LjIyIDk2OC40NyAxMDkuOTYgQyA5NjguNDMgMTAyLjYxIDk2NC42MSA5NS44OSA5NTguNzEgOTIuNzggQyA5NTQuNTkgOTAuNjAgOTUzLjUwIDkwLjU0IDkwOS4wMCA4OS45NSBDIDg2NS4yNCA4OS4zOCA4NjMuMjUgODkuMjcgODU3LjA4IDg3LjExIEMgODQxLjUxIDgxLjY3IDgzMS42NyA2OS43OCA4MjguNzggNTIuOTUgQyA4MjcuMzMgNDQuNDUgODI4Ljc0IDM0LjU2IDgzMi42NSAyNS44NCBDIDgzNi4wMiAxOC4zMyA4NDMuOTUgMTAuODIgODUyLjc2IDYuNzcgQyA4NTguOTAgMy45NSA4NjAuNzggMy42MSA4NzQuMDAgMi45MSBDIDg4MS45NyAyLjQ4IDkxMC40NCAyLjExIDkzNy4yNSAyLjA3IEwgOTg2LjAwIDIuMDAgTCA5ODYuMDAgMTUuNDAgTCA5ODYuMDAgMjguODAgTCA5MjguMjUgMjkuMjAgQyA4NjQuNjUgMjkuNjMgODY2LjE0IDI5LjQ5IDg2MC43MyAzNS45MSBDIDg1My41OCA0NC40MCA4NTUuMzIgNTcuODcgODY0LjMzIDYzLjg0IEwgODY4LjM1IDY2LjUwIEwgOTEzLjQzIDY3LjA5IEwgOTU4LjUwIDY3LjY5IEwgOTY2LjkyIDcwLjUzIEMgOTg0LjgxIDc2LjU4IDk5Mi4zOCA4Ny4zMiA5OTMuNjcgMTA4LjUwIEMgOTk0Ljg5IDEyOC42MiA5ODcuMjkgMTQzLjc1IDk3Mi4xMSAxNTEuNDUgQyA5NjEuMjAgMTU2Ljk3IDk2MC44MSAxNTcuMDAgODkyLjc5IDE1Ny4wMCBMIDgzMC4wMCAxNTcuMDAgTCA4MzAuMDAgMTQzLjUwIFogTSA5OTYuODAgMTUzLjc4IEMgMTAwMC45MyAxNDYuOTkgMTAyOS40NCA5OS4yMiAxMDQ5LjUwIDY1LjUwIEMgMTA3My44MSAyNC42MiAxMDg1LjU5IDYuMzcgMTA5MC4xNCAyLjU0IEMgMTA5Mi45NSAwLjE3IDEwOTQuMDQgLTAuMTQgMTA5Ny45NCAwLjMwIEMgMTEwMy43MyAwLjk1IDExMDQuNjYgMi4wNiAxMTE5Ljg0IDI2LjQ1IEMgMTEzMy4xMyA0Ny44MyAxMTk4LjAwIDE1NS43NiAxMTk4LjAwIDE1Ni41MiBDIDExOTguMDAgMTU2Ljc4IDExOTAuODEgMTU3LjAwIDExODIuMDMgMTU3LjAwIEwgMTE2Ni4wNiAxNTcuMDAgTCAxMTU0LjQ5IDEzNy41MCBMIDExNDIuOTIgMTE4LjAwIEwgMTEwNi45NiAxMTguMDAgQyAxMDg3LjE1IDExOC4wMCAxMDcxLjAwIDExNy42MSAxMDcxLjAwIDExNy4xMyBDIDEwNzEuMDAgMTE2LjY1IDEwNzMuNTUgMTExLjkyIDEwNzYuNjYgMTA2LjYzIEwgMTA4Mi4zMSA5Ny4wMCBMIDEwOTcuNDEgOTYuOTAgQyAxMTA1LjcxIDk2Ljg1IDExMTYuMjAgOTYuNTEgMTEyMC43MyA5Ni4xNSBMIDExMjguOTYgOTUuNTAgTCAxMTIyLjM4IDg0LjAwIEMgMTExMC45MSA2My45NCAxMDk2LjkxIDQxLjAwIDEwOTYuMTQgNDEuMDAgQyAxMDk0LjU0IDQxLjAwIDEwODQuMjkgNTcuNzYgMTA0NS42NyAxMjMuNTAgTCAxMDI2LjI5IDE1Ni41MCBMIDEwMTAuNTUgMTU2Ljc4IEwgOTk0LjgwIDE1Ny4wNSBMIDk5Ni44MCAxNTMuNzggWiBNIDAuMDAgMTM0LjAwIEwgMC4wMCAxMTUuMDAgTCA5NC4wMCAxMTUuMDAgTCAxODguMDAgMTE1LjAwIEwgMTg4LjAwIDEzNC4wMCBMIDE4OC4wMCAxNTMuMDAgTCA5NC4wMCAxNTMuMDAgTCAwLjAwIDE1My4wMCBMIDAuMDAgMTM0LjAwIFogTSAwLjAwIDc3Ljk5IEwgMC4wMCA1Ny45OSBMIDkzLjc1IDU4LjI0IEwgMTg3LjUwIDU4LjUwIEwgMTg3Ljc3IDc4LjI1IEwgMTg4LjA0IDk4LjAwIEwgOTQuMDIgOTguMDAgTCAwLjAwIDk4LjAwIEwgMC4wMCA3Ny45OSBaIE0gMC4wMCAyMS4wMCBMIDAuMDAgMi4wMCBMIDk0LjAwIDIuMDAgTCAxODguMDAgMi4wMCBMIDE4OC4wMCAyMS4wMCBMIDE4OC4wMCA0MC4wMCBMIDk0LjAwIDQwLjAwIEwgMC4wMCA0MC4wMCBMIDAuMDAgMjEuMDAgWiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48L3BhdGg+CjwvZz4KPC9nPgo8L2c+CgogIDwvc3ZnPg==";
   const fechaGen = new Date().toLocaleDateString("es-MX",{year:"numeric",month:"long",day:"numeric"});
-  const folio = "AUD-"+(p.id?p.id.slice(-6):"000000").toUpperCase();
+  const folio = _getFolioLev(p);
   const inclOpts = {
     plano: document.getElementById("rpt-include-plano")?.checked??true,
     reps:  document.getElementById("rpt-include-reps")?.checked??true,
@@ -4271,7 +4431,7 @@ function imprimirPDF(){
     return;
   }
   const p2 = getP();
-  const folioNom = "AUD-"+((p2?.id||"000000").slice(-6).toUpperCase());
+  const folioNom = _getFolioLev(p2);
   const winTitle = "ROMSA - Auditoria Tecnica - " + folioNom;
 
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
