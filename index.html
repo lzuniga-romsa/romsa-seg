@@ -1772,38 +1772,72 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
 
         <!-- ④ CONDICIONES GENERALES -->
         <div class="card" style="margin-bottom:12px;padding:16px;">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:6px;">
             <div style="font-size:10px;font-weight:700;color:var(--tx2);letter-spacing:1px;text-transform:uppercase;">📄 Condiciones generales</div>
-            <button onclick="resetCondicionesCot()" style="background:none;border:none;color:var(--blue);font-size:10px;font-weight:600;cursor:pointer;font-family:var(--font);">↺ Restaurar</button>
+            <div style="display:flex;gap:8px;">
+              <button onclick="resetCondicionesCot()" style="background:none;border:none;color:var(--blue);font-size:10px;font-weight:600;cursor:pointer;font-family:var(--font);">↺ Restaurar todo</button>
+            </div>
           </div>
-          <div class="fg">
-            <label class="flabel">1. Precio del proyecto</label>
+
+          <!-- Cláusulas estándar (con botón eliminar cada una) -->
+          <div class="fg" id="fg-cot-precio-cond">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;">
+              <label class="flabel" style="margin:0;">1. Precio del proyecto</label>
+              <button onclick="eliminarClausulaStd('cot-precio-cond')" title="Eliminar esta cláusula" style="background:none;border:none;color:#EF4444;font-size:13px;cursor:pointer;padding:2px 6px;">✕</button>
+            </div>
             <textarea class="ftextarea" id="cot-precio-cond" style="min-height:52px;">El precio de la cotización está contemplado como paquete y cualquier modificación podría afectar el precio final.</textarea>
           </div>
-          <div class="fg">
-            <label class="flabel">2. Forma de pago</label>
+          <div class="fg" id="fg-cot-pago">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;">
+              <label class="flabel" style="margin:0;">2. Forma de pago</label>
+              <button onclick="eliminarClausulaStd('cot-pago')" title="Eliminar esta cláusula" style="background:none;border:none;color:#EF4444;font-size:13px;cursor:pointer;padding:2px 6px;">✕</button>
+            </div>
             <textarea class="ftextarea" id="cot-pago" style="min-height:72px;">El esquema de pago será 60% anticipo y 40% contra entrega de área finalizada y recepción de factura final. Los pagos deberán realizarse en las fechas estipuladas. En caso de retraso en el pago por parte del cliente, se generará un cargo moratorio equivalente al 0.03% del saldo pendiente por cada día natural de atraso.</textarea>
           </div>
-          <div class="fg">
-            <label class="flabel">3. Tiempo de ejecución</label>
+          <div class="fg" id="fg-cot-tiempo">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;">
+              <label class="flabel" style="margin:0;">3. Tiempo de ejecución</label>
+              <button onclick="eliminarClausulaStd('cot-tiempo')" title="Eliminar esta cláusula" style="background:none;border:none;color:#EF4444;font-size:13px;cursor:pointer;padding:2px 6px;">✕</button>
+            </div>
             <textarea class="ftextarea" id="cot-tiempo" style="min-height:72px;">El tiempo de ejecución está considerado para 2 días por cada 100 m², en área libre y continua. El área mínima por evento es de 100 m². Favor de considerar 2 semanas para entrega de materiales en planta, una vez recibido el anticipo, orden de compra y firma de contrato. Sujeto a disponibilidad de inventario.</textarea>
           </div>
-          <div class="fg">
-            <label class="flabel">4. Alcances y exclusiones</label>
+          <div class="fg" id="fg-cot-alcances">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;">
+              <label class="flabel" style="margin:0;">4. Alcances y exclusiones</label>
+              <button onclick="eliminarClausulaStd('cot-alcances')" title="Eliminar esta cláusula" style="background:none;border:none;color:#EF4444;font-size:13px;cursor:pointer;padding:2px 6px;">✕</button>
+            </div>
             <textarea class="ftextarea" id="cot-alcances" style="min-height:100px;">La propuesta se formula con base en la información proporcionada por el cliente y en las condiciones visibles del área al momento de la visita técnica. Cualquier condición no prevista, defecto oculto en la losa o requerimiento adicional (humedad ascendente, contaminantes químicos, variaciones en el sustrato, etc.) no está contemplado y será cotizado como trabajo adicional. El cliente deberá asegurar que las áreas estén libres de obstrucciones, humedad excesiva, filtraciones, aceites, grasas u otros contaminantes antes de la aplicación.</textarea>
           </div>
-          <div class="fg">
-            <label class="flabel">5. Limitación de responsabilidad</label>
+          <div class="fg" id="fg-cot-responsabilidad">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;">
+              <label class="flabel" style="margin:0;">5. Limitación de responsabilidad</label>
+              <button onclick="eliminarClausulaStd('cot-responsabilidad')" title="Eliminar esta cláusula" style="background:none;border:none;color:#EF4444;font-size:13px;cursor:pointer;padding:2px 6px;">✕</button>
+            </div>
             <textarea class="ftextarea" id="cot-responsabilidad" style="min-height:80px;">Nuestra responsabilidad se limita estrictamente al área aplicada bajo contrato y hasta por el monto total del valor de la obra. ROMSA Industrial no se hace responsable por fallas derivadas de: deficiencias estructurales de la losa, humedad ascendente no declarada, contaminación química del sustrato, movimientos sísmicos, sobrecargas no previstas, o mantenimiento inadecuado por parte del cliente.</textarea>
           </div>
-          <div class="fg">
-            <label class="flabel">6. Garantía</label>
+          <div class="fg" id="fg-cot-garantia">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;">
+              <label class="flabel" style="margin:0;">6. Garantía</label>
+              <button onclick="eliminarClausulaStd('cot-garantia')" title="Eliminar esta cláusula" style="background:none;border:none;color:#EF4444;font-size:13px;cursor:pointer;padding:2px 6px;">✕</button>
+            </div>
             <textarea class="ftextarea" id="cot-garantia" style="min-height:90px;">ROMSA Industrial otorga garantía por un periodo de doce (12) meses a partir de la fecha de entrega formal del área, que cubre exclusivamente defectos de aplicación atribuibles a ROMSA Industrial, bajo las siguientes condiciones: (a) El cliente debe dar aviso por escrito dentro de los 30 días naturales posteriores a la detección del defecto. (b) La garantía queda sin efecto en caso de: humedad ascendente, fallas en la losa base, uso inadecuado del recubrimiento, modificaciones realizadas por terceros, o falta de mantenimiento. (c) La garantía no aplica sobre áreas donde el cliente no haya cumplido con las condiciones previas de preparación.</textarea>
           </div>
-          <div class="fg">
-            <label class="flabel">7. Entrega y recepción</label>
+          <div class="fg" id="fg-cot-entrega">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;">
+              <label class="flabel" style="margin:0;">7. Entrega y recepción</label>
+              <button onclick="eliminarClausulaStd('cot-entrega')" title="Eliminar esta cláusula" style="background:none;border:none;color:#EF4444;font-size:13px;cursor:pointer;padding:2px 6px;">✕</button>
+            </div>
             <textarea class="ftextarea" id="cot-entrega" style="min-height:52px;">Al término de los trabajos, se realizará una entrega formal del área aplicada junto con la factura final. La recepción por parte del cliente confirmará la aceptación de los trabajos realizados.</textarea>
           </div>
+
+          <!-- Cláusulas personalizadas (agregadas por el usuario) -->
+          <div id="cot-clausulas-custom-wrap"></div>
+
+          <!-- Botón + Agregar cláusula -->
+          <div style="margin-top:10px;margin-bottom:14px;">
+            <button onclick="agregarClausulaCustom()" style="width:100%;background:rgba(30,111,217,.06);border:1px dashed rgba(30,111,217,.4);color:#1E6FD9;font-size:11px;font-weight:700;padding:10px;border-radius:8px;cursor:pointer;font-family:var(--font);">+ Agregar cláusula personalizada</button>
+          </div>
+
           <div class="fg">
             <label class="flabel">Nota adicional (opcional)</label>
             <textarea class="ftextarea" id="cot-nota" placeholder="Cualquier condición especial..." style="min-height:50px;"></textarea>
@@ -5040,15 +5074,89 @@ function subscribeCotizaciones(){
   });
 }
 
+// Mapa de los IDs estándar de cláusulas con sus textos default y títulos
+const COT_CLAUSULAS_STD = [
+  {id:"cot-precio-cond",    titulo:"Precio del proyecto",       texto:"El precio de la cotización está contemplado como paquete y cualquier modificación podría afectar el precio final."},
+  {id:"cot-pago",           titulo:"Forma de pago",             texto:"El esquema de pago será 60% anticipo y 40% contra entrega de área finalizada y recepción de factura final. Los pagos deberán realizarse en las fechas estipuladas. En caso de retraso en el pago por parte del cliente, se generará un cargo moratorio equivalente al 0.03% del saldo pendiente por cada día natural de atraso."},
+  {id:"cot-tiempo",         titulo:"Tiempo de ejecución",       texto:"El tiempo de ejecución está considerado para 2 días por cada 100 m², en área libre y continua. El área mínima por evento es de 100 m². Favor de considerar 2 semanas para entrega de materiales en planta, una vez recibido el anticipo, orden de compra y firma de contrato. Sujeto a disponibilidad de inventario."},
+  {id:"cot-alcances",       titulo:"Alcances y exclusiones",    texto:"La propuesta se formula con base en la información proporcionada por el cliente y en las condiciones visibles del área al momento de la visita técnica. Cualquier condición no prevista, defecto oculto en la losa o requerimiento adicional (humedad ascendente, contaminantes químicos, variaciones en el sustrato, etc.) no está contemplado y será cotizado como trabajo adicional. El cliente deberá asegurar que las áreas estén libres de obstrucciones, humedad excesiva, filtraciones, aceites, grasas u otros contaminantes antes de la aplicación."},
+  {id:"cot-responsabilidad",titulo:"Limitación de responsabilidad", texto:"Nuestra responsabilidad se limita estrictamente al área aplicada bajo contrato y hasta por el monto total del valor de la obra. ROMSA Industrial no se hace responsable por fallas derivadas de: deficiencias estructurales de la losa, humedad ascendente no declarada, contaminación química del sustrato, movimientos sísmicos, sobrecargas no previstas, o mantenimiento inadecuado por parte del cliente."},
+  {id:"cot-garantia",       titulo:"Garantía",                  texto:"ROMSA Industrial otorga garantía por un periodo de doce (12) meses a partir de la fecha de entrega formal del área, que cubre exclusivamente defectos de aplicación atribuibles a ROMSA Industrial, bajo las siguientes condiciones: (a) El cliente debe dar aviso por escrito dentro de los 30 días naturales posteriores a la detección del defecto. (b) La garantía queda sin efecto en caso de: humedad ascendente, fallas en la losa base, uso inadecuado del recubrimiento, modificaciones realizadas por terceros, o falta de mantenimiento. (c) La garantía no aplica sobre áreas donde el cliente no haya cumplido con las condiciones previas de preparación."},
+  {id:"cot-entrega",        titulo:"Entrega y recepción",       texto:"Al término de los trabajos, se realizará una entrega formal del área aplicada junto con la factura final. La recepción por parte del cliente confirmará la aceptación de los trabajos realizados."}
+];
+
+// Cláusulas eliminadas (set de IDs) y personalizadas (array dinámico)
+var _cotClausulasEliminadas = new Set();
+var _cotClausulasCustom = [];  // [{titulo, texto}]
+
 function resetCondicionesCot(){
-  document.getElementById("cot-precio-cond").value="El precio de la cotización está contemplado como paquete y cualquier modificación podría afectar el precio final.";
-  document.getElementById("cot-pago").value="El esquema de pago será 60% anticipo y 40% contra entrega de área finalizada y recepción de factura final. Los pagos deberán realizarse en las fechas estipuladas. En caso de retraso en el pago por parte del cliente, se generará un cargo moratorio equivalente al 0.03% del saldo pendiente por cada día natural de atraso.";
-  document.getElementById("cot-tiempo").value="El tiempo de ejecución está considerado para 2 días por cada 100 m², en área libre y continua. El área mínima por evento es de 100 m². Favor de considerar 2 semanas para entrega de materiales en planta, una vez recibido el anticipo, orden de compra y firma de contrato. Sujeto a disponibilidad de inventario.";
-  document.getElementById("cot-alcances").value="La propuesta se formula con base en la información proporcionada por el cliente y en las condiciones visibles del área al momento de la visita técnica. Cualquier condición no prevista, defecto oculto en la losa o requerimiento adicional (humedad ascendente, contaminantes químicos, variaciones en el sustrato, etc.) no está contemplado y será cotizado como trabajo adicional. El cliente deberá asegurar que las áreas estén libres de obstrucciones, humedad excesiva, filtraciones, aceites, grasas u otros contaminantes antes de la aplicación.";
-  document.getElementById("cot-responsabilidad").value="Nuestra responsabilidad se limita estrictamente al área aplicada bajo contrato y hasta por el monto total del valor de la obra. ROMSA Industrial no se hace responsable por fallas derivadas de: deficiencias estructurales de la losa, humedad ascendente no declarada, contaminación química del sustrato, movimientos sísmicos, sobrecargas no previstas, o mantenimiento inadecuado por parte del cliente.";
-  document.getElementById("cot-garantia").value="ROMSA Industrial otorga garantía por un periodo de doce (12) meses a partir de la fecha de entrega formal del área, que cubre exclusivamente defectos de aplicación atribuibles a ROMSA Industrial, bajo las siguientes condiciones: (a) El cliente debe dar aviso por escrito dentro de los 30 días naturales posteriores a la detección del defecto. (b) La garantía queda sin efecto en caso de: humedad ascendente, fallas en la losa base, uso inadecuado del recubrimiento, modificaciones realizadas por terceros, o falta de mantenimiento. (c) La garantía no aplica sobre áreas donde el cliente no haya cumplido con las condiciones previas de preparación.";
-  document.getElementById("cot-entrega").value="Al término de los trabajos, se realizará una entrega formal del área aplicada junto con la factura final. La recepción por parte del cliente confirmará la aceptación de los trabajos realizados.";
+  // Restaurar textos
+  COT_CLAUSULAS_STD.forEach(function(c){
+    var el = document.getElementById(c.id);
+    if(el) el.value = c.texto;
+  });
+  // Mostrar todas (quitar eliminadas)
+  _cotClausulasEliminadas = new Set();
+  COT_CLAUSULAS_STD.forEach(function(c){
+    var fg = document.getElementById("fg-"+c.id);
+    if(fg) fg.style.display = "";
+  });
+  // Quitar personalizadas
+  _cotClausulasCustom = [];
+  _renderClausulasCustom();
   showToast("↺ Condiciones restauradas");
+}
+
+// Ocultar (eliminar visualmente) una cláusula estándar
+function eliminarClausulaStd(id){
+  var std = COT_CLAUSULAS_STD.find(function(c){return c.id===id;});
+  var titulo = std ? std.titulo : id;
+  if(!confirm("¿Eliminar la cláusula \""+titulo+"\" de esta cotización?\n\n(Puedes restaurarla con el botón \"Restaurar todo\".)")) return;
+  _cotClausulasEliminadas.add(id);
+  var fg = document.getElementById("fg-"+id);
+  if(fg) fg.style.display = "none";
+  if(typeof _cotSnapshot==="function") _cotSnapshot(true);
+  showToast("Cláusula eliminada");
+}
+
+// Agregar una cláusula personalizada
+function agregarClausulaCustom(){
+  _cotClausulasCustom.push({titulo:"", texto:""});
+  if(typeof _cotSnapshot==="function") _cotSnapshot(true);
+  _renderClausulasCustom();
+  // Focus en el título de la nueva
+  setTimeout(function(){
+    var inputs = document.querySelectorAll(".cot-clausula-custom-titulo");
+    if(inputs.length){ inputs[inputs.length-1].focus(); }
+  }, 80);
+}
+
+function eliminarClausulaCustom(idx){
+  _cotClausulasCustom.splice(idx, 1);
+  if(typeof _cotSnapshot==="function") _cotSnapshot(true);
+  _renderClausulasCustom();
+}
+
+function updClausulaCustom(idx, campo, valor){
+  if(!_cotClausulasCustom[idx]) return;
+  _cotClausulasCustom[idx][campo] = valor;
+  if(typeof _cotSnapshot==="function") _cotSnapshot();
+}
+
+function _renderClausulasCustom(){
+  var wrap = document.getElementById("cot-clausulas-custom-wrap");
+  if(!wrap) return;
+  if(!_cotClausulasCustom.length){ wrap.innerHTML = ""; return; }
+  wrap.innerHTML = _cotClausulasCustom.map(function(c, i){
+    var num = COT_CLAUSULAS_STD.filter(function(s){return !_cotClausulasEliminadas.has(s.id);}).length + i + 1;
+    return '<div class="fg" style="border-left:3px solid #1E6FD9;padding-left:10px;background:rgba(30,111,217,.03);border-radius:4px;">'
+      +'<div style="display:flex;align-items:center;justify-content:space-between;gap:6px;">'
+        +'<label class="flabel" style="margin:0;">'+num+'. <input class="cot-clausula-custom-titulo" type="text" placeholder="Título (ej: Confidencialidad)" value="'+escapeHtml(c.titulo||"")+'" oninput="updClausulaCustom('+i+',\'titulo\',this.value)" style="background:transparent;border:none;border-bottom:1px dashed rgba(30,111,217,.4);font-size:11px;font-weight:700;color:var(--tx2);letter-spacing:1px;text-transform:uppercase;padding:2px 0;font-family:var(--font);width:260px;outline:none;"></label>'
+        +'<button onclick="eliminarClausulaCustom('+i+')" title="Eliminar esta cláusula" style="background:none;border:none;color:#EF4444;font-size:13px;cursor:pointer;padding:2px 6px;">✕</button>'
+      +'</div>'
+      +'<textarea class="ftextarea" placeholder="Texto de la cláusula..." oninput="updClausulaCustom('+i+',\'texto\',this.value)" style="min-height:72px;margin-top:6px;">'+escapeHtml(c.texto||"")+'</textarea>'
+    +'</div>';
+  }).join("");
 }
 
 function renderListaCot(){
@@ -5117,6 +5225,16 @@ function showNuevaCot(){
   }];
   renderPartidasCot();
   calcTotalesCot();
+  // Resetear cláusulas estándar + eliminar custom + mostrar todas las estándar
+  _cotClausulasEliminadas = new Set();
+  _cotClausulasCustom = [];
+  COT_CLAUSULAS_STD.forEach(function(std){
+    var fg = document.getElementById("fg-"+std.id);
+    if(fg) fg.style.display = "";
+    var el = document.getElementById(std.id);
+    if(el) el.value = std.texto;
+  });
+  _renderClausulasCustom();
   // Ocultar vínculo (es cotización nueva desde cero)
   var vincElN = document.getElementById("cot-vinculo-costeo");
   if(vincElN) vincElN.style.display = "none";
@@ -5146,7 +5264,21 @@ function abrirCot(id){
   document.getElementById("cot-pago").value=c.condPago||document.getElementById("cot-pago").value;
   document.getElementById("cot-tiempo").value=c.condTiempo||document.getElementById("cot-tiempo").value;
   document.getElementById("cot-alcances").value=c.condAlcances||document.getElementById("cot-alcances").value;
+  if(document.getElementById("cot-precio-cond")) document.getElementById("cot-precio-cond").value=c.condPrecioCond||document.getElementById("cot-precio-cond").value;
+  if(document.getElementById("cot-responsabilidad")) document.getElementById("cot-responsabilidad").value=c.condResponsabilidad||document.getElementById("cot-responsabilidad").value;
+  if(document.getElementById("cot-garantia")) document.getElementById("cot-garantia").value=c.condGarantia||document.getElementById("cot-garantia").value;
+  if(document.getElementById("cot-entrega")) document.getElementById("cot-entrega").value=c.condEntrega||document.getElementById("cot-entrega").value;
   document.getElementById("cot-nota").value=c.nota||"";
+
+  // Restaurar cláusulas eliminadas y personalizadas
+  _cotClausulasEliminadas = new Set(Array.isArray(c.clausulasEliminadas) ? c.clausulasEliminadas : []);
+  _cotClausulasCustom = Array.isArray(c.clausulasCustom) ? c.clausulasCustom.map(function(x){return {titulo:x.titulo||"", texto:x.texto||""};}) : [];
+  // Mostrar/ocultar cláusulas estándar según lista de eliminadas
+  COT_CLAUSULAS_STD.forEach(function(std){
+    var fg = document.getElementById("fg-"+std.id);
+    if(fg) fg.style.display = _cotClausulasEliminadas.has(std.id) ? "none" : "";
+  });
+  _renderClausulasCustom();
   if(document.getElementById("cot-romsa-tel")) document.getElementById("cot-romsa-tel").value=c.romsaTel||"686 138 3117";
   if(document.getElementById("cot-romsa-email")) document.getElementById("cot-romsa-email").value=c.romsaEmail||"ventas@romsaindustrial.com";
   if(document.getElementById("cot-romsa-web")) document.getElementById("cot-romsa-web").value=c.romsaWeb||"www.romsaindustrial.com";
@@ -5413,12 +5545,20 @@ async function guardarCot(){
     romsaWeb:document.getElementById("cot-romsa-web")?.value.trim()||"www.romsaindustrial.com",
     vigencia:document.getElementById("cot-vigencia")?.value||"30",
     condPrecioCond:document.getElementById("cot-precio-cond")?.value.trim()||"",
-    condPago:document.getElementById("cot-pago").value.trim(),
-    condTiempo:document.getElementById("cot-tiempo").value.trim(),
-    condAlcances:document.getElementById("cot-alcances").value.trim(),
+    condPago:document.getElementById("cot-pago")?.value.trim()||"",
+    condTiempo:document.getElementById("cot-tiempo")?.value.trim()||"",
+    condAlcances:document.getElementById("cot-alcances")?.value.trim()||"",
     condResponsabilidad:document.getElementById("cot-responsabilidad")?.value.trim()||"",
     condGarantia:document.getElementById("cot-garantia")?.value.trim()||"",
     condEntrega:document.getElementById("cot-entrega")?.value.trim()||"",
+    // Cláusulas eliminadas (para no renderizarlas en el PDF)
+    clausulasEliminadas: Array.from(_cotClausulasEliminadas||[]),
+    // Cláusulas personalizadas agregadas por el usuario
+    clausulasCustom: (_cotClausulasCustom||[]).filter(function(c){
+      return (c.titulo && c.titulo.trim()) || (c.texto && c.texto.trim());
+    }).map(function(c){
+      return {titulo: (c.titulo||"").trim(), texto:(c.texto||"").trim()};
+    }),
     partidas:_cotPartidas.map(function(p){
       return {
         servicio: p.servicio || "",
@@ -5489,6 +5629,7 @@ async function guardarYVerCot(){
     if(winRef) winRef.close();
   }
 }
+
 
 // ── Generar PDF cotización (fondo blanco profesional) ─────────────
 function generarPdfCot(cot){
@@ -5564,16 +5705,40 @@ function generarPdfCotEnVentana(cot, winRef){
 
   // Condiciones
   var _vigTxt = 'La presente propuesta tiene una vigencia de '+vigencia+' días naturales contados a partir de la fecha de emisión. Transcurrido dicho plazo, ROMSA Industrial se reserva el derecho de revisar los precios y condiciones ofertadas conforme a las variaciones de mercado en materiales, insumos y tipo de cambio. Para garantizar los precios aquí indicados, el cliente deberá aceptar formalmente la propuesta y emitir la orden de compra correspondiente dentro del periodo de vigencia.';
-  var conds=[
-    {n:'1. Precio del Proyecto',           v:cot.condPrecioCond    },
-    {n:'2. Forma de Pago',                 v:cot.condPago          },
-    {n:'3. Tiempo de Ejecución',           v:cot.condTiempo        },
-    {n:'4. Alcances y Exclusiones',        v:cot.condAlcances      },
-    {n:'5. Limitación de Responsabilidad', v:cot.condResponsabilidad},
-    {n:'6. Garantía',                      v:cot.condGarantia      },
-    {n:'7. Entrega y Recepción',           v:cot.condEntrega       },
-    {n:'8. Vigencia de la Propuesta',      v:_vigTxt               }
-  ].filter(function(c){return c.v&&c.v.trim();});
+
+  // Cláusulas estándar: lista cruda (el filtro de eliminadas ocurre después)
+  var eliminadas = (cot.clausulasEliminadas && Array.isArray(cot.clausulasEliminadas))
+    ? new Set(cot.clausulasEliminadas)
+    : new Set();
+
+  var condsRaw=[
+    {id:'cot-precio-cond',     t:'Precio del Proyecto',           v:cot.condPrecioCond    },
+    {id:'cot-pago',            t:'Forma de Pago',                 v:cot.condPago          },
+    {id:'cot-tiempo',          t:'Tiempo de Ejecución',           v:cot.condTiempo        },
+    {id:'cot-alcances',        t:'Alcances y Exclusiones',        v:cot.condAlcances      },
+    {id:'cot-responsabilidad', t:'Limitación de Responsabilidad', v:cot.condResponsabilidad},
+    {id:'cot-garantia',        t:'Garantía',                      v:cot.condGarantia      },
+    {id:'cot-entrega',         t:'Entrega y Recepción',           v:cot.condEntrega       }
+  ].filter(function(c){
+    return c.v && c.v.trim() && !eliminadas.has(c.id);
+  });
+
+  // Agregar cláusulas personalizadas al final
+  var clausulasCustom = Array.isArray(cot.clausulasCustom) ? cot.clausulasCustom : [];
+  clausulasCustom.forEach(function(cc){
+    var t = (cc.titulo||"").trim();
+    var v = (cc.texto ||"").trim();
+    if(!v) return;  // sin texto, ignorar
+    condsRaw.push({id:"custom", t: t || "Cláusula adicional", v: v});
+  });
+
+  // Siempre agregar al final la vigencia de la propuesta
+  condsRaw.push({id:'vigencia', t:'Vigencia de la Propuesta', v: _vigTxt});
+
+  // Renumerar dinámicamente (1., 2., 3., etc.)
+  var conds = condsRaw.map(function(c, i){
+    return {n:(i+1)+'. '+c.t, v:c.v};
+  });
 
   var condsHtml=conds.map(function(c){
     return '<div style="margin-bottom:18px;page-break-inside:avoid;">'
