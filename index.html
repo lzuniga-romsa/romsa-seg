@@ -734,7 +734,8 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
 .cos-sistema-title{flex:1;display:flex;align-items:center;gap:10px;}
 .cos-sistema-body{padding:12px 14px;}
 .cos-partidas-header{display:grid;grid-template-columns:80px 1fr 110px 110px 110px 110px 70px 40px;gap:8px;padding:8px 10px;background:var(--off);border-radius:6px;margin-bottom:6px;font-size:9px;font-weight:700;color:var(--tx2);letter-spacing:.6px;text-transform:uppercase;}
-.cos-partida{display:grid;grid-template-columns:80px 1fr 110px 110px 110px 110px 70px 40px;gap:8px;padding:6px 10px;align-items:center;font-size:11px;}
+.cos-partida{display:grid;grid-template-columns:80px 1fr 110px 110px 110px 110px 70px 40px;gap:8px;padding:6px 10px;align-items:center;font-size:11px;position:relative;}
+.cos-partida > div{position:relative;}
 .cos-partida:nth-child(even){background:var(--off2);}
 .cos-partida input{font-size:12px;padding:7px 8px;border:1px solid var(--g1);border-radius:4px;font-family:var(--font);width:100%;color:var(--navy);background:#fff;}
 .cos-partida input:focus{outline:none;border-color:#1E6FD9;box-shadow:0 0 0 2px rgba(30,111,217,.12);}
@@ -6949,7 +6950,7 @@ function _htmlSistema(s, idx){
         +'</div>'
         +'<div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">'
           +'<div><div style="font-size:8px;font-weight:700;color:rgba(255,255,255,.5);letter-spacing:1px;text-transform:uppercase;margin-bottom:2px;">Cant.</div>'
-            +'<input class="cos-input" style="background-color:rgba(255,255,255,.1);border-color:rgba(255,255,255,.2);color:#fff;width:80px;text-align:right;" type="number" min="0" step="any" value="'+(s.cantidad||"")+'" onchange="updSistema('+idx+',\'cantidad\',parseFloat(this.value)||0)">'
+            +'<input class="cos-input" style="background-color:rgba(255,255,255,.1);border-color:rgba(255,255,255,.2);color:#fff;width:80px;text-align:right;" type="text" inputmode="decimal" value="'+(s.cantidad||"")+'" onchange="updSistema('+idx+',\'cantidad\',_parseFormulaOValor(this.value,this))" onfocus="_highlightFormula(this)">'
           +'</div>'
           +'<div><div style="font-size:8px;font-weight:700;color:rgba(255,255,255,.5);letter-spacing:1px;text-transform:uppercase;margin-bottom:2px;">Unidad</div>'
             +'<select class="cos-input" style="background-color:rgba(255,255,255,.1);border-color:rgba(255,255,255,.2);color:#fff;width:80px;" onchange="updSistema('+idx+',\'unidad\',this.value)">'
@@ -7366,6 +7367,13 @@ function _highlightFormula(input){
     input.style.fontFamily = "";
     input.style.color = "";
   }, {once:true});
+  // Enter = confirmar (dispara change + blur + pasa al siguiente)
+  input.addEventListener("keydown", function(e){
+    if(e.key === "Enter"){
+      e.preventDefault();
+      input.blur();
+    }
+  }, {once:false});
   setTimeout(function(){ try{ input.select(); }catch(e){} }, 0);
 }
 
