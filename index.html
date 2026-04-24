@@ -744,6 +744,13 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
 .cos-input-pct{position:relative;}
 .cos-input-pct-sym{position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:11px;color:var(--tx2);font-weight:600;pointer-events:none;z-index:1;}
 .cos-input-pct input{padding-right:18px;}
+
+/* Atajos de margen (+30 +50 +80 +100) junto al Precio Unit */
+.cos-margin-shortcuts{position:absolute;left:0;right:0;top:calc(100% + 2px);display:flex;gap:2px;z-index:2;opacity:0;pointer-events:none;transition:opacity .15s;}
+.cos-input-money:focus-within .cos-margin-shortcuts,
+.cos-input-money:hover .cos-margin-shortcuts{opacity:1;pointer-events:auto;}
+.cos-margin-shortcuts button{flex:1;background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.3);color:#047857;font-size:9px;font-weight:700;padding:3px 0;border-radius:4px;cursor:pointer;font-family:var(--font);letter-spacing:.5px;transition:all .1s;}
+.cos-margin-shortcuts button:hover{background:#10B981;color:#fff;border-color:#10B981;}
 .cos-partida-name{font-size:11px;color:var(--navy);font-weight:500;padding:2px 0;}
 .cos-partida-tag{display:inline-block;font-size:7.5px;font-weight:700;padding:1px 5px;border-radius:3px;letter-spacing:.4px;text-transform:uppercase;margin-right:4px;vertical-align:middle;}
 .cos-tag-mo{background:#DBEAFE;color:#1E40AF;}
@@ -5187,7 +5194,7 @@ function renderListaCot(){
   el.innerHTML=cotizaciones.map(function(c){
     var total=parseFloat(c.granTotal||0);
     var fromCosteo = c.folioCosteoOrigen ? '<span class="badge" style="background:#EDE9FE;color:#5B21B6;border:1px solid #C4B5FD;">⚡ '+c.folioCosteoOrigen+'</span>' : '';
-    return '<div class="prow" onclick="abrirCot(\''+c.id+'\')">'+
+    return '<div class="prow" style="position:relative;" onclick="abrirCot(\''+c.id+'\')">'+
       '<div class="prow-bar" style="background:#7C3AED;"></div>'+
       '<div class="prow-body">'+
         '<div class="prow-name">'+c.empresa+'</div>'+
@@ -5198,9 +5205,51 @@ function renderListaCot(){
           fromCosteo+
         '</div>'+
       '</div>'+
+      '<button onclick="event.stopPropagation();eliminarCotizacion(\''+c.id+'\',\''+(c.folio||"sin folio").replace(/'/g,"\\'")+'\')" title="Eliminar cotización" style="background:none;border:none;color:#EF4444;font-size:16px;cursor:pointer;padding:8px 6px;align-self:center;border-radius:6px;transition:background .15s;" onmouseover="this.style.background=\'rgba(239,68,68,.08)\'" onmouseout="this.style.background=\'transparent\'">🗑️</button>'+
       '<div class="prow-arr">›</div>'+
     '</div>';
   }).join("");
+}
+
+// Eliminar cotización (requiere doble confirmación + solo admin o creador)
+async function eliminarCotizacion(id, folio){
+  var c = cotizaciones.find(function(x){return x.id===id;});
+  if(!c){ showToast("⚠️ Cotización no encontrada"); return; }
+
+  // Control: solo admin o el creador pueden eliminar
+  var userEmail = (currentUser && currentUser.email || "").toLowerCase();
+  var puedeEliminar = window.isAdmin || (c.creadoPor && c.creadoPor.toLowerCase() === userEmail);
+  if(!puedeEliminar){
+    alert("🔒 Solo el administrador o el creador original pueden eliminar esta cotización.");
+    return;
+  }
+
+  // Doble confirmación
+  if(!confirm("¿Eliminar permanentemente la cotización "+folio+"?\n\nCliente: "+(c.empresa||"")+"\nFecha: "+(c.fecha||"")+"\n\nEsta acción NO se puede deshacer.")) return;
+
+  var confirm2 = prompt('Para confirmar, escribe "ELIMINAR" (en mayúsculas):');
+  if(confirm2 !== "ELIMINAR"){
+    showToast("Eliminación cancelada");
+    return;
+  }
+
+  try{
+    if(cotRef) await cotRef.doc(id).delete();
+    showToast("🗑️ Cotización "+folio+" eliminada");
+
+    // Si hay costeo vinculado, limpiar la referencia
+    if(c.costeoIdOrigen && typeof costeoCosteosRef !== "undefined" && costeoCosteosRef){
+      try{
+        await costeoCosteosRef.doc(c.costeoIdOrigen).update({
+          folioCotizacionGenerada: null,
+          cotizacionIdGenerada: null
+        });
+      }catch(e){ console.warn("No se pudo limpiar vínculo en costeo:", e); }
+    }
+  }catch(e){
+    console.error("Error al eliminar cotización:", e);
+    showToast("⚠️ Error al eliminar: "+e.message);
+  }
 }
 
 // ── Abrir / nueva cotización ──────────────────────────────────────
@@ -5692,7 +5741,7 @@ function generarPdfCotEnVentana(cot, winRef){
     return '<tr>'
       +'<td style="padding:16px 20px;border-bottom:1px solid #EDF1F8;vertical-align:top;">'
           +'<div style="font-size:12px;font-weight:700;color:#0B1F3A;margin-bottom:5px;">'+(i+1)+'. '+p.servicio+'</div>'
-          +(p.desc?'<div style="font-size:11px;color:#4A5E7A;line-height:1.7;">'+p.desc+'</div>':'')
+          +(p.desc?'<div style="font-size:11px;color:#4A5E7A;line-height:1.7;white-space:pre-wrap;">'+p.desc+'</div>':'')
           +procHtml
         +'</td>'
       +'<td style="padding:16px 16px;border-bottom:1px solid #EDF1F8;text-align:center;vertical-align:top;white-space:nowrap;">'
@@ -6561,7 +6610,8 @@ function renderListaCosteos(){
     const fecha = c.fecha ? new Date(c.fecha).toLocaleDateString("es-MX") : "—";
     const margen = c.precioTotal ? (c.utilidadTotal/c.precioTotal*100) : 0;
     const colorMargen = margen>=30?"#10B981":(margen>=20?"#F59E0B":"#EF4444");
-    return '<div class="cos-card" style="cursor:pointer;" onclick="abrirCosteo(\''+c.id+'\')">'
+    const folioEsc = (c.folio||"sin folio").replace(/'/g,"\\'");
+    return '<div class="cos-card" style="cursor:pointer;position:relative;" onclick="abrirCosteo(\''+c.id+'\')">'
       +'<div class="cos-card-row">'
         +'<div style="flex:1;">'
           +'<div class="cos-card-title">'+escapeHtml(c.proyecto||"Sin nombre")+'</div>'
@@ -6571,9 +6621,50 @@ function renderListaCosteos(){
           +'<div style="font-size:14px;font-weight:800;color:var(--navy);">$'+((c.precioTotal||0).toLocaleString("es-MX",{maximumFractionDigits:0}))+'</div>'
           +'<div style="font-size:10px;font-weight:700;color:'+colorMargen+';">'+margen.toFixed(1)+'% margen</div>'
         +'</div>'
+        +'<button onclick="event.stopPropagation();eliminarCosteo(\''+c.id+'\',\''+folioEsc+'\')" title="Eliminar costeo" style="background:none;border:none;color:#EF4444;font-size:16px;cursor:pointer;padding:8px 6px;margin-left:8px;border-radius:6px;transition:background .15s;" onmouseover="this.style.background=\'rgba(239,68,68,.08)\'" onmouseout="this.style.background=\'transparent\'">🗑️</button>'
       +'</div>'
     +'</div>';
   }).join("");
+}
+
+// Eliminar costeo (requiere doble confirmación + solo admin o creador)
+async function eliminarCosteo(id, folio){
+  const c = _costeoCosteos.find(x=>x.id===id);
+  if(!c){ showToast("⚠️ Costeo no encontrado"); return; }
+
+  // Control: solo admin o el creador
+  const userEmail = (currentUser && currentUser.email || "").toLowerCase();
+  const puedeEliminar = window.isAdmin || (c.creadoPor && c.creadoPor.toLowerCase() === userEmail);
+  if(!puedeEliminar){
+    alert("🔒 Solo el administrador o el creador original pueden eliminar este costeo.");
+    return;
+  }
+
+  if(!confirm("¿Eliminar permanentemente el costeo "+folio+"?\n\nProyecto: "+(c.proyecto||"")+"\nCliente: "+(c.cliente||"")+"\n\nEsta acción NO se puede deshacer.")) return;
+
+  const confirm2 = prompt('Para confirmar, escribe "ELIMINAR" (en mayúsculas):');
+  if(confirm2 !== "ELIMINAR"){
+    showToast("Eliminación cancelada");
+    return;
+  }
+
+  try{
+    await costeoCosteosRef.doc(id).delete();
+    showToast("🗑️ Costeo "+folio+" eliminado");
+
+    // Si hay cotización vinculada, limpiar referencia
+    if(c.cotizacionIdGenerada && cotRef){
+      try{
+        await cotRef.doc(c.cotizacionIdGenerada).update({
+          folioCosteoOrigen: null,
+          costeoIdOrigen: null
+        });
+      }catch(e){ console.warn("No se pudo limpiar vínculo en cotización:", e); }
+    }
+  }catch(e){
+    console.error("Error al eliminar costeo:", e);
+    showToast("⚠️ Error al eliminar: "+e.message);
+  }
 }
 
 // ── EDITOR DE COSTEO ─────────────────────────────────────────
@@ -6931,16 +7022,18 @@ function _htmlPartida(sIdx, pIdx, p){
   }
 
   return '<div class="cos-partida">'
-    +'<div><input type="number" min="0" step="any" value="'+(p.cantidad||0)+'" data-sidx="'+sIdx+'" data-pidx="'+pIdx+'" data-campo="cantidad" class="cos-part-input" onchange="updPartida('+sIdx+','+pIdx+',\'cantidad\',parseFloat(this.value)||0)"></div>'
+    +'<div><input type="text" inputmode="decimal" value="'+(p.cantidad||0)+'" data-sidx="'+sIdx+'" data-pidx="'+pIdx+'" data-campo="cantidad" class="cos-part-input" onchange="updPartida('+sIdx+','+pIdx+',\'cantidad\',_parseFormulaOValor(this.value,this))" onfocus="_highlightFormula(this)"></div>'
     +'<div class="cos-partida-name">'+tag
       +'<span class="cos-partida-desc" onclick="_editarNombrePartida('+sIdx+','+pIdx+',this)" title="Click para editar" style="cursor:text;padding:2px 3px;border-radius:3px;transition:background .15s;">'+escapeHtml(p.descripcion||"")+'</span>'
       +rendBadge+badgeCustom+saveBtn
     +'</div>'
-    +'<div class="cos-input-money"><span class="cos-input-money-sym">$</span><input type="number" min="0" step="0.01" value="'+(p.costoUnit||0)+'" data-sidx="'+sIdx+'" data-pidx="'+pIdx+'" data-campo="costoUnit" class="cos-part-input" onchange="updPartida('+sIdx+','+pIdx+',\'costoUnit\',parseFloat(this.value)||0)"></div>'
-    +'<div class="cos-input-money"><span class="cos-input-money-sym">$</span><input type="number" min="0" step="0.01" value="'+(p.precioUnit||0)+'" data-sidx="'+sIdx+'" data-pidx="'+pIdx+'" data-campo="precioUnit" class="cos-part-input" onchange="updPartida('+sIdx+','+pIdx+',\'precioUnit\',parseFloat(this.value)||0)"></div>'
+    +'<div class="cos-input-money"><span class="cos-input-money-sym">$</span><input type="text" inputmode="decimal" value="'+(p.costoUnit||0)+'" data-sidx="'+sIdx+'" data-pidx="'+pIdx+'" data-campo="costoUnit" class="cos-part-input" onchange="updPartida('+sIdx+','+pIdx+',\'costoUnit\',_parseFormulaOValor(this.value,this))" onfocus="_highlightFormula(this)"></div>'
+    +'<div class="cos-input-money" style="position:relative;"><span class="cos-input-money-sym">$</span><input type="text" inputmode="decimal" value="'+(p.precioUnit||0)+'" data-sidx="'+sIdx+'" data-pidx="'+pIdx+'" data-campo="precioUnit" class="cos-part-input" onchange="onPrecioUnitChange('+sIdx+','+pIdx+',_parseFormulaOValor(this.value,this))" onfocus="_highlightFormula(this)">'
+      +'<div class="cos-margin-shortcuts"><button type="button" onclick="aplicarMargen('+sIdx+','+pIdx+',30)" title="+30% margen">+30</button><button type="button" onclick="aplicarMargen('+sIdx+','+pIdx+',50)" title="+50% margen">+50</button><button type="button" onclick="aplicarMargen('+sIdx+','+pIdx+',80)" title="+80% margen">+80</button><button type="button" onclick="aplicarMargen('+sIdx+','+pIdx+',100)" title="+100% margen">+100</button></div>'
+    +'</div>'
     +'<div class="cos-ct" data-sidx="'+sIdx+'" data-pidx="'+pIdx+'" style="font-size:11px;color:var(--tx2);text-align:right;font-variant-numeric:tabular-nums;padding:0 4px;">$'+_fmt(cTot)+'</div>'
     +'<div class="cos-pt" data-sidx="'+sIdx+'" data-pidx="'+pIdx+'" style="font-size:11px;color:var(--navy);font-weight:700;text-align:right;font-variant-numeric:tabular-nums;padding:0 4px;">$'+_fmt(pTot)+'</div>'
-    +'<div class="cos-input-pct"><input type="number" min="0" max="100" step="1" value="'+(p.utilPct||0)+'" data-sidx="'+sIdx+'" data-pidx="'+pIdx+'" data-campo="utilPct" class="cos-part-input-util" oninput="onUtilChange('+sIdx+','+pIdx+',parseFloat(this.value)||0)"><span class="cos-input-pct-sym">%</span></div>'
+    +'<div class="cos-input-pct"><input type="text" inputmode="decimal" value="'+(p.utilPct||0)+'" data-sidx="'+sIdx+'" data-pidx="'+pIdx+'" data-campo="utilPct" class="cos-part-input-util" onchange="onUtilChange('+sIdx+','+pIdx+',_parseFormulaOValor(this.value,this))" onfocus="_highlightFormula(this)"><span class="cos-input-pct-sym">%</span></div>'
     +'<div style="text-align:center;"><button onclick="eliminarPartida('+sIdx+','+pIdx+')" style="background:none;border:none;color:#EF4444;font-size:13px;cursor:pointer;padding:2px 4px;">✕</button></div>'
   +'</div>';
 }
@@ -7032,6 +7125,53 @@ function _aplicarRendimientoPartida(sIdx, pIdx, rendIdx){
 }
 
 function _fmt(n){ return (n||0).toLocaleString("es-MX",{minimumFractionDigits:2,maximumFractionDigits:2}); }
+
+// ── Evaluador seguro de fórmulas tipo Excel (=180*1.5, =(3524+100)/5, etc.) ──
+// No usa eval(). Parser manual que solo acepta: números, + - * / ( ) . espacios
+function _evaluarFormula(str){
+  if(typeof str !== "string") return NaN;
+  str = str.trim();
+  if(str.charAt(0) === "=") str = str.substring(1);
+  // Validación estricta: solo caracteres permitidos
+  if(!/^[\d+\-*/().,\s]+$/.test(str)) return NaN;
+  // Normalizar comas decimales a puntos
+  str = str.replace(/,/g, ".");
+  try{
+    // Uso Function (aislado del scope local) en vez de eval directo
+    var fn = new Function("return ("+str+");");
+    var r = fn();
+    if(typeof r !== "number" || !isFinite(r)) return NaN;
+    return r;
+  }catch(e){ return NaN; }
+}
+
+// Wrapper universal: si el valor empieza con "=", lo evalúa; si no, devuelve parseFloat
+// Muestra feedback visual en el input si la fórmula es inválida
+function _parseFormulaOValor(str, inputEl){
+  if(typeof str !== "string") return parseFloat(str) || 0;
+  var s = str.trim();
+  if(s.charAt(0) === "="){
+    var r = _evaluarFormula(s);
+    if(isNaN(r)){
+      // Fórmula inválida: animación roja + regresa 0
+      if(inputEl){
+        var prev = inputEl.style.background;
+        inputEl.style.background = "#FEE2E2";
+        inputEl.style.borderColor = "#DC2626";
+        setTimeout(function(){
+          inputEl.style.background = prev || "";
+          inputEl.style.borderColor = "";
+        }, 1200);
+      }
+      showToast("⚠️ Fórmula inválida");
+      return 0;
+    }
+    // Fórmula válida: reemplaza en el input con el resultado
+    if(inputEl) inputEl.value = r;
+    return r;
+  }
+  return parseFloat(s) || 0;
+}
 
 // ── Cálculo por sistema ───────────────────────────────────────
 function _calcSistema(s){
@@ -7163,6 +7303,70 @@ function onUtilChange(sIdx, pIdx, pct){
   _ceSnapshot();
   _actualizarTotalesSistema(sIdx);
   _actualizarResumenGlobal();
+}
+
+// Cuando cambias manualmente el Precio Unit, recalcula el % Util automáticamente
+function onPrecioUnitChange(sIdx, pIdx, precio){
+  const s = _ceCosteo.sistemas[sIdx];
+  if(!s || !s.partidas[pIdx]) return;
+  const p = s.partidas[pIdx];
+  p.precioUnit = precio;
+  if(p.costoUnit > 0){
+    p.utilPct = ((precio - p.costoUnit) / p.costoUnit) * 100;
+    p.utilPct = Math.round(p.utilPct * 10) / 10;
+  } else {
+    p.utilPct = 0;
+  }
+  const inpUtil = document.querySelector('input[data-sidx="'+sIdx+'"][data-pidx="'+pIdx+'"][data-campo="utilPct"]');
+  if(inpUtil) inpUtil.value = p.utilPct;
+  _ceSnapshot();
+  _actualizarTotalesSistema(sIdx);
+  _actualizarResumenGlobal();
+}
+
+// Atajo: aplicar margen % sobre el costo actual (botones +30 +50 +80 +100)
+function aplicarMargen(sIdx, pIdx, pct){
+  const s = _ceCosteo.sistemas[sIdx];
+  if(!s || !s.partidas[pIdx]) return;
+  const p = s.partidas[pIdx];
+  if(!p.costoUnit || p.costoUnit <= 0){
+    showToast("⚠️ Primero define el costo unitario");
+    return;
+  }
+  _ceSnapshot(true);
+  p.utilPct = pct;
+  p.precioUnit = p.costoUnit * (1 + pct/100);
+  const inpP = document.querySelector('input[data-sidx="'+sIdx+'"][data-pidx="'+pIdx+'"][data-campo="precioUnit"]');
+  if(inpP) inpP.value = p.precioUnit.toFixed(2);
+  const inpU = document.querySelector('input[data-sidx="'+sIdx+'"][data-pidx="'+pIdx+'"][data-campo="utilPct"]');
+  if(inpU) inpU.value = p.utilPct;
+  showToast("✓ +"+pct+"% aplicado");
+  _actualizarTotalesSistema(sIdx);
+  _actualizarResumenGlobal();
+}
+
+// Highlight visual cuando el input tiene una fórmula
+function _highlightFormula(input){
+  if(!input) return;
+  var check = function(){
+    if((input.value||"").trim().charAt(0) === "="){
+      input.style.background = "#FEF3C7";
+      input.style.fontFamily = "ui-monospace, 'Cascadia Code', Menlo, monospace";
+      input.style.color = "#92400E";
+    } else {
+      input.style.background = "";
+      input.style.fontFamily = "";
+      input.style.color = "";
+    }
+  };
+  check();
+  input.addEventListener("input", check);
+  input.addEventListener("blur", function(){
+    input.style.background = "";
+    input.style.fontFamily = "";
+    input.style.color = "";
+  }, {once:true});
+  setTimeout(function(){ try{ input.select(); }catch(e){} }, 0);
 }
 
 // Actualiza el bloque de totales de un sistema + las celdas de costo/precio total
