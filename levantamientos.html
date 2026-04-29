@@ -1143,6 +1143,15 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
 
 
 
+// ─── HELPERS BÁSICOS DE UI ────────────────────────
+function showToast(msg){
+  var t = document.getElementById("toast");
+  if(!t) return;
+  t.textContent = msg;
+  t.classList.add("show");
+  setTimeout(function(){ t.classList.remove("show"); }, 2800);
+}
+
 // ─── STATE ───────────────────────────────────────
 let S = {proyectos:[], config:{emp:"ROMSA Industrial",rep:"",tel:"",email:""}};
 let activoId = null;
@@ -1590,41 +1599,78 @@ function editarArea(areaId){
 }
 
 function confirmarArea(){
-  const p = getP(); if(!p) return;
-  const nom = document.getElementById("area-nombre").value.trim();
-  if(!nom){ showToast("⚠️ Ingresa el nombre del área"); return; }
-  const a = parseFloat(document.getElementById("area-ancho").value)||0;
-  const l = parseFloat(document.getElementById("area-largo").value)||0;
-  const tipo = document.getElementById("area-tipo").value;
-  if(!p.areas) p.areas = [];
-  if(_areaEditId){
-    // Editar existente
-    const idx = p.areas.findIndex(x=>x.id===_areaEditId);
-    if(idx>=0){
-      p.areas[idx].nombre = nom;
-      p.areas[idx].ancho = a;
-      p.areas[idx].largo = l;
-      p.areas[idx].area = parseFloat((a*l).toFixed(2));
-      p.areas[idx].tipo = tipo;
+  try{
+    const p = getP();
+    if(!p){
+      showToast("⚠️ No hay proyecto activo. Cierra y vuelve a abrir el levantamiento.");
+      console.error("[confirmarArea] getP() retornó null. activoId =", activoId);
+      return;
     }
-    showToast("✅ Área actualizada");
-  } else {
-    // Nueva área — estructura completa igual que el proyecto principal
-    const nuevaArea = {
-      id: "area_" + Date.now(),
-      nombre: nom, ancho: a, largo: l,
-      area: parseFloat((a*l).toFixed(2)),
-      tipo: tipo,
-      reparaciones: [], notas: {}, secciones: [],
-      fotos: [], baPairs: [], canvasEls: [],
-      planoImg: null
-    };
-    p.areas.push(nuevaArea);
-    showToast("✅ Área añadida — ábrela desde la lista para completarla");
+
+    const nomEl = document.getElementById("area-nombre");
+    const anchoEl = document.getElementById("area-ancho");
+    const largoEl = document.getElementById("area-largo");
+    const tipoEl = document.getElementById("area-tipo");
+
+    if(!nomEl || !anchoEl || !largoEl || !tipoEl){
+      showToast("⚠️ Error interno: campos del modal no encontrados");
+      console.error("[confirmarArea] DOM ids faltantes:", {nomEl, anchoEl, largoEl, tipoEl});
+      return;
+    }
+
+    const nom = (nomEl.value || "").trim();
+    if(!nom){ showToast("⚠️ Ingresa el nombre del área"); return; }
+
+    const a = parseFloat(anchoEl.value) || 0;
+    const l = parseFloat(largoEl.value) || 0;
+    const tipo = tipoEl.value || "Combinación de servicios";
+
+    if(!Array.isArray(p.areas)) p.areas = [];
+
+    if(_areaEditId){
+      // Editar existente
+      const idx = p.areas.findIndex(x=>x.id===_areaEditId);
+      if(idx>=0){
+        p.areas[idx].nombre = nom;
+        p.areas[idx].ancho = a;
+        p.areas[idx].largo = l;
+        p.areas[idx].area = parseFloat((a*l).toFixed(2));
+        p.areas[idx].tipo = tipo;
+      }
+      showToast("✅ Área actualizada");
+    } else {
+      // Nueva área — estructura completa con todos los campos del modelo V2
+      const nuevaArea = {
+        id: "area_" + Date.now() + "_" + Math.random().toString(36).slice(2,7),
+        nombre: nom,
+        ancho: a,
+        largo: l,
+        area: parseFloat((a*l).toFixed(2)),
+        tipo: tipo,
+        // Modelo V2 — campos por área
+        descripcion: "",
+        condicion: "",
+        servicioRecomendado: "",
+        recomendacionFinal: "",
+        fotos: [],
+        reparaciones: [],
+        // Compatibilidad con modelo viejo (no se usan pero existen por seguridad)
+        notas: {}, secciones: [], baPairs: [], canvasEls: [], planoImg: null
+      };
+      p.areas.push(nuevaArea);
+      console.log("[confirmarArea] Nueva área agregada:", nuevaArea.nombre, "Total áreas:", p.areas.length);
+      showToast("✅ Área añadida — toca la tarjeta para completarla");
+    }
+
+    _marcarCambiosPendientes();
+    save();
+    closeModal("modal-area");
+    renderAreas(p);
+
+  }catch(err){
+    console.error("[confirmarArea] Error inesperado:", err);
+    showToast("⚠️ Error al guardar: " + err.message);
   }
-  save();
-  closeModal("modal-area");
-  renderAreas(p);
 }
 
 function eliminarArea(areaId){
