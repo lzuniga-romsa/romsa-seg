@@ -2084,7 +2084,7 @@ function _htmlAreaReparaciones(a){
         ${totM2>0 ? `<div style="font-size:10.5px;color:#1E6FD9;font-weight:700;background:rgba(30,111,217,.08);padding:3px 9px;border-radius:5px;">Total: ${totM2.toFixed(2)} m²</div>` : ''}
       </div>
       <div>${lista}</div>
-      <button onclick="window._abrirModalNuevaRepArea && window._abrirModalNuevaRepArea()" type="button" style="width:100%;background:#1E6FD9;border:none;color:#fff;font-size:12px;font-weight:700;padding:11px;border-radius:8px;cursor:pointer;font-family:var(--font);margin-top:10px;">+ Agregar reparación</button>
+      <button onclick="(function(){console.log('[ROMSA] Click + Agregar reparación');if(typeof window._abrirModalNuevaRepArea !== 'function'){alert('Error: _abrirModalNuevaRepArea no existe.\\n\\nProbablemente caché. Cierra TODAS las pestañas y vuelve a abrir.');return;}window._abrirModalNuevaRepArea();})()" type="button" style="width:100%;background:#1E6FD9;border:none;color:#fff;font-size:12px;font-weight:700;padding:11px;border-radius:8px;cursor:pointer;font-family:var(--font);margin-top:10px;">+ Agregar reparación</button>
     </div>
   `;
 }
