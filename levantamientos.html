@@ -585,12 +585,14 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
     </div>
     <div class="det-tabs">
       <button class="dtab active" onclick="showDTab('plano',this)">📐 Plano</button>
+      <button class="dtab" onclick="showDTab('areas',this)">📋 Áreas</button>
+      <button class="dtab" onclick="showDTab('autor',this)">👤 Autor</button>
+      <button class="dtab" onclick="showDTab('reporte',this)">📄 Reporte</button>
+      <!-- Tabs viejos ocultos (modelo migrado a áreas):
       <button class="dtab" onclick="showDTab('reparaciones',this)">🔧 Reparaciones</button>
       <button class="dtab" onclick="showDTab('fotos',this)">📸 Fotos</button>
       <button class="dtab" onclick="showDTab('notas',this)">📝 Notas</button>
-      <button class="dtab" onclick="showDTab('autor',this)">👤 Autor</button>
-      <button class="dtab" onclick="showDTab('areas',this)">📋 Áreas</button>
-      <button class="dtab" onclick="showDTab('reporte',this)">📄 Reporte</button>
+      -->
     </div>
 
     <!-- PLANO -->
@@ -1862,36 +1864,322 @@ function _htmlAreaEstado(a){
   `;
 }
 
-// ── Tab: Fotos del área (PLACEHOLDER EN B-1) ──
+// ── Tab: Fotos del área (FUNCIONAL B-2) ──
 function _htmlAreaFotos(a){
-  const n = _areaContarFotos(a);
+  const fotos = Array.isArray(a.fotos) ? a.fotos : [];
+  const tagsHtml = fotos.length
+    ? fotos.map((f,i)=>`
+        <div class="fitem" style="position:relative;cursor:pointer;" onclick="verImg('${(f.src||"").replace(/'/g,"\\'")}')">
+          <img src="${f.src}">
+          <div class="fitem-ov"><span class="fitem-tag">${(f.cat||"").substring(0,14)}</span></div>
+          <button onclick="event.stopPropagation();_eliminarFotoArea(${i})" title="Eliminar foto" style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,.65);border:none;color:#fff;font-size:11px;cursor:pointer;width:24px;height:24px;border-radius:50%;line-height:1;display:flex;align-items:center;justify-content:center;">✕</button>
+        </div>`).join("")
+    : '';
+  const empty = !fotos.length
+    ? '<div style="grid-column:1/-1;text-align:center;padding:14px;font-size:11px;color:var(--tx2);background:rgba(0,0,0,.02);border-radius:8px;border:1px dashed var(--g1);">Sin fotos. Toca cámara o galería para agregar.</div>'
+    : '';
   return `
-    <div class="card" style="padding:14px;text-align:center;border:2px dashed var(--g1);">
-      <div style="font-size:36px;margin-bottom:6px;opacity:.4;">📷</div>
-      <div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:4px;">Fotos del área (${n})</div>
-      <div style="font-size:11px;color:var(--tx2);line-height:1.5;max-width:380px;margin:0 auto 14px;">
-        Aquí podrás subir fotos específicas de esta área (antes/después/durante).<br>
-        ${a._migrado ? "Tus fotos antiguas ya están migradas a esta sección." : "Esta funcionalidad estará disponible en la próxima actualización."}
+    <div class="card" style="padding:14px;margin-bottom:12px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
+        <div style="font-size:9.5px;font-weight:700;color:var(--tx2);letter-spacing:1.5px;text-transform:uppercase;">📷 Fotos del área (${fotos.length})</div>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <label style="font-size:10.5px;color:var(--tx2);font-weight:600;">Categoría:</label>
+          <select id="afoto-cat" class="fselect" style="padding:5px 10px;font-size:11px;width:auto;">
+            <option value="general">General</option>
+            <option value="antes">Antes</option>
+            <option value="durante">Durante</option>
+            <option value="despues">Después</option>
+            <option value="dano">Daño</option>
+            <option value="reparacion">Reparación</option>
+          </select>
+        </div>
       </div>
-      <button onclick="showToast('Próximamente — Sesión B-2')" style="background:var(--off);border:1px solid var(--g1);color:var(--tx2);font-size:11px;font-weight:600;padding:9px 18px;border-radius:8px;cursor:pointer;font-family:var(--font);">+ Agregar foto (próximamente)</button>
+
+      <input type="file" id="afoto-cam" accept="image/*" capture="environment" style="display:none" onchange="_handleAreaFoto(event)">
+      <input type="file" id="afoto-gal" accept="image/*" multiple style="display:none" onchange="_handleAreaFoto(event)">
+
+      <div class="fgrid" id="afoto-grid">${tagsHtml}${empty}</div>
+
+      <div style="display:flex;gap:8px;margin-top:12px;">
+        <button onclick="document.getElementById('afoto-cam').click()" style="flex:1;background:#1E6FD9;border:none;color:#fff;font-size:12px;font-weight:700;padding:11px;border-radius:8px;cursor:pointer;font-family:var(--font);">📷 Cámara</button>
+        <button onclick="document.getElementById('afoto-gal').click()" style="flex:1;background:var(--off);border:1px solid var(--g1);color:var(--navy);font-size:12px;font-weight:700;padding:11px;border-radius:8px;cursor:pointer;font-family:var(--font);">🖼 Galería</button>
+      </div>
     </div>
   `;
 }
 
-// ── Tab: Reparaciones del área (PLACEHOLDER EN B-1) ──
+// Subir una o más fotos al área activa
+function _handleAreaFoto(e){
+  const area = _getAreaActiva();
+  if(!area){ showToast("⚠️ Sin área activa"); return; }
+  if(!Array.isArray(area.fotos)) area.fotos = [];
+  const cat = document.getElementById("afoto-cat")?.value || "general";
+
+  const files = Array.from(e.target.files || []);
+  if(!files.length) return;
+
+  let pendientes = files.length;
+  files.forEach(f=>{
+    const reader = new FileReader();
+    reader.onload = ev=>{
+      area.fotos.push({
+        id: Date.now() + "_" + Math.random().toString(36).slice(2,7),
+        src: ev.target.result,
+        cat,
+        fecha: new Date().toLocaleDateString("es-MX")
+      });
+      pendientes--;
+      if(pendientes === 0){
+        _marcarCambiosPendientes();
+        save();
+        _renderAreaTab();
+        showToast("✓ "+files.length+" foto"+(files.length>1?"s":"")+" agregada"+(files.length>1?"s":""));
+      }
+    };
+    reader.readAsDataURL(f);
+  });
+  e.target.value = "";
+}
+
+function _eliminarFotoArea(idx){
+  const area = _getAreaActiva();
+  if(!area) return;
+  if(!confirm("¿Eliminar esta foto?")) return;
+  area.fotos.splice(idx, 1);
+  _marcarCambiosPendientes();
+  save();
+  _renderAreaTab();
+  showToast("Foto eliminada");
+}
+
+// ── Tab: Reparaciones del área (FUNCIONAL B-2) ──
 function _htmlAreaReparaciones(a){
-  const n = _areaContarReps(a);
-  return `
-    <div class="card" style="padding:14px;text-align:center;border:2px dashed var(--g1);">
-      <div style="font-size:36px;margin-bottom:6px;opacity:.4;">🔧</div>
-      <div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:4px;">Reparaciones del área (${n})</div>
-      <div style="font-size:11px;color:var(--tx2);line-height:1.5;max-width:380px;margin:0 auto 14px;">
-        Aquí podrás registrar reparaciones puntuales de esta área (grietas, baches, juntas).<br>
-        ${a._migrado ? "Tus reparaciones antiguas ya están migradas a esta sección." : "Esta funcionalidad estará disponible en la próxima actualización."}
+  const reps = Array.isArray(a.reparaciones) ? a.reparaciones : [];
+  const SEVCOLOR = {"Leve":"#10B981","Moderada":"#F59E0B","Grave":"#F97316","Crítica":"#EF4444"};
+  const totM2 = reps.reduce((s,r)=>s+(parseFloat(r.area)||0),0);
+
+  const lista = reps.length ? reps.map((r,i)=>{
+    const sevColor = SEVCOLOR[r.sev] || "#6B7280";
+    const fotosPreview = (r.fotos && r.fotos.length)
+      ? `<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:6px;">${r.fotos.slice(0,3).map(f=>`<img src="${f.src||f}" style="width:42px;height:42px;border-radius:5px;object-fit:cover;border:1px solid var(--g1);">`).join("")}${r.fotos.length>3?`<div style="width:42px;height:42px;border-radius:5px;background:rgba(0,0,0,.05);font-size:10px;display:flex;align-items:center;justify-content:center;color:var(--tx2);">+${r.fotos.length-3}</div>`:''}</div>`
+      : '';
+    return `
+      <div style="background:#fff;border:1px solid var(--g1);border-left:3px solid ${sevColor};border-radius:8px;padding:11px;margin-bottom:8px;">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">
+          <div style="flex:1;min-width:0;">
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px;">
+              <span style="font-size:10px;font-weight:800;color:var(--navy);background:var(--off);padding:2px 7px;border-radius:4px;letter-spacing:.5px;">#${r.num||(i+1)}</span>
+              <span style="font-size:9px;font-weight:700;background:${sevColor}22;color:${sevColor};padding:2px 7px;border-radius:4px;letter-spacing:.4px;text-transform:uppercase;">${r.sev||"—"}</span>
+              <span style="font-size:10.5px;font-weight:700;color:var(--navy);">${(r.tipo||"")}</span>
+            </div>
+            <div style="font-size:11px;color:var(--tx2);line-height:1.4;">${r.desc||"—"}</div>
+            <div style="font-size:10px;color:var(--tx3);margin-top:4px;">
+              ${r.largo||0}${r.unit||"m"} × ${r.ancho||0}${r.unit||"m"} · <b>${(r.area||0).toFixed(2)} m²</b>${r.prof?` · prof. ${r.prof}${r.unit||"m"}`:''}
+            </div>
+            ${fotosPreview}
+            ${r.notas ? `<div style="font-size:10px;color:var(--tx2);margin-top:5px;font-style:italic;">📝 ${r.notas}</div>` : ''}
+          </div>
+          <button onclick="_eliminarRepArea(${i})" title="Eliminar reparación" style="background:var(--red-dim);border:none;color:var(--red);font-size:13px;cursor:pointer;width:28px;height:28px;border-radius:6px;flex-shrink:0;">✕</button>
+        </div>
       </div>
-      <button onclick="showToast('Próximamente — Sesión B-2')" style="background:var(--off);border:1px solid var(--g1);color:var(--tx2);font-size:11px;font-weight:600;padding:9px 18px;border-radius:8px;cursor:pointer;font-family:var(--font);">+ Agregar reparación (próximamente)</button>
+    `;
+  }).join("") : '<div style="text-align:center;padding:18px;font-size:11px;color:var(--tx2);background:rgba(0,0,0,.02);border-radius:8px;border:1px dashed var(--g1);">Sin reparaciones registradas. Toca "+ Agregar" para empezar.</div>';
+
+  return `
+    <div class="card" style="padding:14px;margin-bottom:12px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:6px;">
+        <div style="font-size:9.5px;font-weight:700;color:var(--tx2);letter-spacing:1.5px;text-transform:uppercase;">🔧 Reparaciones (${reps.length})</div>
+        ${totM2>0 ? `<div style="font-size:10.5px;color:#1E6FD9;font-weight:700;background:rgba(30,111,217,.08);padding:3px 9px;border-radius:5px;">Total: ${totM2.toFixed(2)} m²</div>` : ''}
+      </div>
+      <div>${lista}</div>
+      <button onclick="_abrirModalNuevaRepArea()" style="width:100%;background:#1E6FD9;border:none;color:#fff;font-size:12px;font-weight:700;padding:11px;border-radius:8px;cursor:pointer;font-family:var(--font);margin-top:10px;">+ Agregar reparación</button>
     </div>
   `;
+}
+
+// Modal para registrar una nueva reparación dentro del área activa
+let _arepFotosTemp = [];
+let _arepUnit = "m";
+
+function _abrirModalNuevaRepArea(){
+  if(!_getAreaActiva()){ showToast("⚠️ Sin área activa"); return; }
+  _arepFotosTemp = [];
+  _arepUnit = "m";
+
+  const tipos = ["Grieta","Junta","Bache","Hueco","Desnivel","Fisura","Descascaramiento","Mancha","Otro"];
+  const sevs  = ["Leve","Moderada","Grave","Crítica"];
+  const tipoOpts = tipos.map(t=>'<option value="'+t+'">'+t+'</option>').join("");
+  const sevOpts  = sevs.map(s=>'<option value="'+s+'"'+(s==="Moderada"?' selected':'')+'>'+s+'</option>').join("");
+
+  const ov = document.createElement("div");
+  ov.className = "moverlay";
+  ov.id = "modal-arep";
+  ov.style.cssText = "display:flex;position:fixed;inset:0;background:rgba(11,31,58,.6);z-index:600;align-items:flex-end;justify-content:center;";
+  ov.onclick = (e)=>{ if(e.target===ov) _cerrarModalArep(); };
+
+  ov.innerHTML = `
+    <div style="background:#fff;width:100%;max-width:560px;max-height:92vh;border-radius:18px 18px 0 0;overflow-y:auto;display:flex;flex-direction:column;">
+      <div style="padding:14px 16px;border-bottom:1px solid var(--g1);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#fff;z-index:1;">
+        <div>
+          <div style="font-size:9px;color:var(--tx2);font-weight:700;letter-spacing:1.5px;text-transform:uppercase;">Nueva reparación</div>
+          <div style="font-size:14px;font-weight:800;color:var(--navy);">🔧 Registrar daño</div>
+        </div>
+        <button onclick="_cerrarModalArep()" style="background:none;border:none;font-size:22px;color:var(--tx2);cursor:pointer;">×</button>
+      </div>
+
+      <div style="padding:14px 16px;flex:1;">
+        <div class="fg">
+          <label class="flabel">Tipo de daño</label>
+          <select class="fselect" id="arep-tipo">${tipoOpts}</select>
+        </div>
+        <div class="fg">
+          <label class="flabel">Severidad</label>
+          <select class="fselect" id="arep-sev">${sevOpts}</select>
+        </div>
+        <div class="fg">
+          <label class="flabel">Descripción</label>
+          <textarea class="ftextarea" id="arep-desc" placeholder="Ej: Grieta longitudinal en zona de circulación..." style="min-height:50px;"></textarea>
+        </div>
+
+        <div style="font-size:9.5px;font-weight:700;color:var(--tx2);letter-spacing:1.5px;text-transform:uppercase;margin:8px 0;">Medidas</div>
+        <div style="display:flex;gap:6px;margin-bottom:10px;">
+          <button id="arep-um-m" onclick="_arepCambiarUnidad('m',this)" style="flex:1;background:#1E6FD9;color:#fff;border:none;font-size:11px;font-weight:700;padding:8px;border-radius:8px;cursor:pointer;font-family:var(--font);">Metros</button>
+          <button id="arep-um-in" onclick="_arepCambiarUnidad('in',this)" style="flex:1;background:var(--off);color:var(--tx2);border:1px solid var(--g1);font-size:11px;font-weight:600;padding:8px;border-radius:8px;cursor:pointer;font-family:var(--font);">Pulgadas</button>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+          <div class="fg" style="margin-bottom:0;"><label class="flabel">Largo</label><input class="finput" type="number" step="0.01" id="arep-largo" oninput="_arepCalcArea()"></div>
+          <div class="fg" style="margin-bottom:0;"><label class="flabel">Ancho</label><input class="finput" type="number" step="0.01" id="arep-ancho" oninput="_arepCalcArea()"></div>
+          <div class="fg" style="margin-bottom:0;"><label class="flabel">Profundidad</label><input class="finput" type="number" step="0.01" id="arep-prof"></div>
+        </div>
+        <div style="background:rgba(30,111,217,.08);border:1px solid rgba(30,111,217,.2);border-radius:8px;padding:9px;text-align:center;margin:10px 0;">
+          <div style="font-size:9px;color:#1E6FD9;font-weight:700;letter-spacing:1px;text-transform:uppercase;">Área de la reparación</div>
+          <div style="font-size:18px;font-weight:900;color:#1E6FD9;" id="arep-area-out">0.00 m²</div>
+        </div>
+
+        <div class="fg">
+          <label class="flabel">Notas adicionales (opcional)</label>
+          <textarea class="ftextarea" id="arep-notas" placeholder="Observaciones específicas..." style="min-height:40px;"></textarea>
+        </div>
+
+        <div style="font-size:9.5px;font-weight:700;color:var(--tx2);letter-spacing:1.5px;text-transform:uppercase;margin:8px 0;">Fotos del daño (opcional)</div>
+        <input type="file" id="arep-cam" accept="image/*" capture="environment" style="display:none" onchange="_arepHandleFoto(event)">
+        <input type="file" id="arep-gal" accept="image/*" multiple style="display:none" onchange="_arepHandleFoto(event)">
+        <div id="arep-fotos-prev" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;"></div>
+        <div style="display:flex;gap:6px;">
+          <button onclick="document.getElementById('arep-cam').click()" style="flex:1;background:var(--off);border:1px solid var(--g1);color:var(--navy);font-size:11px;font-weight:600;padding:9px;border-radius:8px;cursor:pointer;font-family:var(--font);">📷 Cámara</button>
+          <button onclick="document.getElementById('arep-gal').click()" style="flex:1;background:var(--off);border:1px solid var(--g1);color:var(--navy);font-size:11px;font-weight:600;padding:9px;border-radius:8px;cursor:pointer;font-family:var(--font);">🖼 Galería</button>
+        </div>
+      </div>
+
+      <div style="padding:12px 16px;border-top:1px solid var(--g1);display:flex;gap:8px;background:#fff;position:sticky;bottom:0;">
+        <button onclick="_cerrarModalArep()" style="flex:1;background:var(--off);border:1px solid var(--g1);color:var(--navy);font-size:12px;font-weight:700;padding:11px;border-radius:8px;cursor:pointer;font-family:var(--font);">Cancelar</button>
+        <button onclick="_guardarRepArea()" style="flex:2;background:#10B981;border:none;color:#fff;font-size:12px;font-weight:700;padding:11px;border-radius:8px;cursor:pointer;font-family:var(--font);">✓ Guardar reparación</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(ov);
+  setTimeout(()=>document.getElementById("arep-desc")?.focus(), 100);
+}
+
+function _cerrarModalArep(){
+  const m = document.getElementById("modal-arep");
+  if(m) m.remove();
+  _arepFotosTemp = [];
+}
+
+function _arepCambiarUnidad(u, btn){
+  _arepUnit = u;
+  // Toggle visual
+  document.getElementById("arep-um-m").style.background  = u==="m"  ? "#1E6FD9" : "var(--off)";
+  document.getElementById("arep-um-m").style.color       = u==="m"  ? "#fff" : "var(--tx2)";
+  document.getElementById("arep-um-m").style.border      = u==="m"  ? "none" : "1px solid var(--g1)";
+  document.getElementById("arep-um-m").style.fontWeight  = u==="m"  ? "700" : "600";
+  document.getElementById("arep-um-in").style.background = u==="in" ? "#1E6FD9" : "var(--off)";
+  document.getElementById("arep-um-in").style.color      = u==="in" ? "#fff" : "var(--tx2)";
+  document.getElementById("arep-um-in").style.border     = u==="in" ? "none" : "1px solid var(--g1)";
+  document.getElementById("arep-um-in").style.fontWeight = u==="in" ? "700" : "600";
+  _arepCalcArea();
+}
+
+function _arepCalcArea(){
+  const l = parseFloat(document.getElementById("arep-largo")?.value)||0;
+  const a = parseFloat(document.getElementById("arep-ancho")?.value)||0;
+  const m2 = _arepUnit==="in" ? (l*0.0254)*(a*0.0254) : l*a;
+  const out = document.getElementById("arep-area-out");
+  if(out) out.textContent = m2.toFixed(2)+" m²";
+}
+
+function _arepHandleFoto(e){
+  const files = Array.from(e.target.files || []);
+  if(!files.length) return;
+  files.forEach(f=>{
+    const r = new FileReader();
+    r.onload = ev => {
+      _arepFotosTemp.push({id: Date.now()+"_"+Math.random().toString(36).slice(2,5), src: ev.target.result});
+      _renderArepFotosPrev();
+    };
+    r.readAsDataURL(f);
+  });
+  e.target.value = "";
+}
+
+function _renderArepFotosPrev(){
+  const wrap = document.getElementById("arep-fotos-prev");
+  if(!wrap) return;
+  wrap.innerHTML = _arepFotosTemp.map((f,i)=>`
+    <div style="position:relative;width:60px;height:60px;border-radius:6px;overflow:hidden;border:1px solid var(--g1);">
+      <img src="${f.src}" style="width:100%;height:100%;object-fit:cover;">
+      <button onclick="_arepFotosTemp.splice(${i},1);_renderArepFotosPrev();" style="position:absolute;top:2px;right:2px;background:rgba(0,0,0,.7);border:none;color:#fff;font-size:10px;cursor:pointer;width:18px;height:18px;border-radius:50%;line-height:1;">✕</button>
+    </div>
+  `).join("");
+}
+
+function _guardarRepArea(){
+  const area = _getAreaActiva();
+  if(!area){ showToast("⚠️ Sin área activa"); return; }
+  if(!Array.isArray(area.reparaciones)) area.reparaciones = [];
+
+  const desc = document.getElementById("arep-desc").value.trim() || "Sin descripción";
+  const tipo = document.getElementById("arep-tipo").value;
+  const sev  = document.getElementById("arep-sev").value;
+  const l    = parseFloat(document.getElementById("arep-largo").value)||0;
+  const a    = parseFloat(document.getElementById("arep-ancho").value)||0;
+  const prof = parseFloat(document.getElementById("arep-prof").value)||0;
+  const notas= document.getElementById("arep-notas").value.trim();
+  const m2   = _arepUnit==="in" ? (l*0.0254)*(a*0.0254) : l*a;
+
+  if(!l || !a){ showToast("⚠️ Ingresa largo y ancho"); return; }
+
+  area.reparaciones.push({
+    id: Date.now(),
+    num: area.reparaciones.length + 1,
+    desc, tipo, sev,
+    largo: l, ancho: a, prof,
+    unit: _arepUnit,
+    area: parseFloat(m2.toFixed(4)),
+    fotos: [..._arepFotosTemp],
+    notas,
+    fecha: new Date().toLocaleDateString("es-MX")
+  });
+
+  _marcarCambiosPendientes();
+  save();
+  _cerrarModalArep();
+  _renderAreaTab();
+  showToast("✓ Reparación #"+area.reparaciones.length+" guardada");
+}
+
+function _eliminarRepArea(idx){
+  const area = _getAreaActiva();
+  if(!area) return;
+  if(!confirm("¿Eliminar esta reparación?")) return;
+  area.reparaciones.splice(idx, 1);
+  // Re-numerar
+  area.reparaciones.forEach((r,i)=>{ r.num = i+1; });
+  _marcarCambiosPendientes();
+  save();
+  _renderAreaTab();
+  showToast("Reparación eliminada");
 }
 
 // ── Helpers para actualizar campos del área activa y guardar ──
