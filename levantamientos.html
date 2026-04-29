@@ -1758,23 +1758,46 @@ function abrirAreaDetalle(areaId){
 let _areaDetalleActivaId = null;
 let _areaDetalleTab = "datos";
 
+// Exponer funciones al window al final de su definición para que onclick="..." inline las encuentre
+// (esto se ejecuta automáticamente al evaluar el script)
+
 // Entrar al detalle de un área (drill-down)
 function entrarAreaDetalle(areaId){
   const p = getP(); if(!p) return;
   const area = (p.areas||[]).find(a=>a.id===areaId);
   if(!area){ showToast("⚠️ Área no encontrada"); return; }
 
+  console.log("[ROMSA] Entrando a área:", area.nombre, "id:", areaId);
+
   _areaDetalleActivaId = areaId;
   _areaDetalleTab = "datos";
 
   // Header
-  document.getElementById("areadet-proyecto").textContent = (p.nombre || "Levantamiento").toUpperCase();
-  document.getElementById("areadet-nom").textContent = area.nombre || "Área";
+  const elProy = document.getElementById("areadet-proyecto");
+  const elNom = document.getElementById("areadet-nom");
+  if(elProy) elProy.textContent = (p.nombre || "Levantamiento").toUpperCase();
+  if(elNom) elNom.textContent = area.nombre || "Área";
 
-  // Cambiar pantalla
-  document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
-  document.getElementById("screen-area-detalle").classList.add("active");
-  document.getElementById("fab").style.display = "none";
+  // ── Cambiar pantalla ── FORZANDO que ninguna otra esté activa
+  document.querySelectorAll(".screen").forEach(s=>{
+    s.classList.remove("active");
+    s.style.display = "none";
+  });
+  const detalleScreen = document.getElementById("screen-area-detalle");
+  if(detalleScreen){
+    detalleScreen.classList.add("active");
+    detalleScreen.style.display = "block";
+  } else {
+    showToast("⚠️ Pantalla de área no encontrada en el DOM");
+    console.error("[ROMSA] No existe #screen-area-detalle en el DOM");
+    return;
+  }
+
+  // Ocultar también el FAB y el menú de navegación inferior
+  const fab = document.getElementById("fab");
+  if(fab) fab.style.display = "none";
+  const navbar = document.getElementById("navbar");
+  if(navbar) navbar.style.display = "none";
 
   // Restablecer tabs visualmente
   document.querySelectorAll("#areadet-tabs .atab").forEach(b=>{
@@ -1801,9 +1824,20 @@ function entrarAreaDetalle(areaId){
 
 function cerrarAreaDetalle(){
   _areaDetalleActivaId = null;
-  document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
-  document.getElementById("screen-proyecto").classList.add("active");
-  document.getElementById("fab").style.display = "none";
+  document.querySelectorAll(".screen").forEach(s=>{
+    s.classList.remove("active");
+    s.style.display = "none";
+  });
+  const screenP = document.getElementById("screen-proyecto");
+  if(screenP){
+    screenP.classList.add("active");
+    screenP.style.display = "block";
+  }
+  // Restaurar nav bar inferior
+  const navbar = document.getElementById("navbar");
+  if(navbar) navbar.style.display = "";
+  const fab = document.getElementById("fab");
+  if(fab) fab.style.display = "none";
   // Re-renderizar la lista de áreas (los contadores pueden haber cambiado)
   const p = getP();
   if(p) renderAreas(p);
@@ -1847,6 +1881,14 @@ function _renderAreaTab(){
     case "estado":  wrap.innerHTML = _htmlAreaEstado(area); break;
     case "fotos":   wrap.innerHTML = _htmlAreaFotos(area); break;
     case "reps":    wrap.innerHTML = _htmlAreaReparaciones(area); break;
+  }
+
+  // Hookear listeners después del render (más robusto que onclick inline)
+  if(_areaDetalleTab === "reps" && typeof _hookBotonRepArea === "function"){
+    setTimeout(_hookBotonRepArea, 0);
+  }
+  if(_areaDetalleTab === "fotos" && typeof _hookBotonesFotosArea === "function"){
+    setTimeout(_hookBotonesFotosArea, 0);
   }
 }
 
@@ -1948,12 +1990,15 @@ function _htmlAreaFotos(a){
       <div class="fgrid" id="afoto-grid">${tagsHtml}${empty}</div>
 
       <div style="display:flex;gap:8px;margin-top:12px;">
-        <button onclick="document.getElementById('afoto-cam').click()" style="flex:1;background:#1E6FD9;border:none;color:#fff;font-size:12px;font-weight:700;padding:11px;border-radius:8px;cursor:pointer;font-family:var(--font);">📷 Cámara</button>
-        <button onclick="document.getElementById('afoto-gal').click()" style="flex:1;background:var(--off);border:1px solid var(--g1);color:var(--navy);font-size:12px;font-weight:700;padding:11px;border-radius:8px;cursor:pointer;font-family:var(--font);">🖼 Galería</button>
+        <button onclick="document.getElementById('afoto-cam').click()" type="button" style="flex:1;background:#1E6FD9;border:none;color:#fff;font-size:12px;font-weight:700;padding:11px;border-radius:8px;cursor:pointer;font-family:var(--font);">📷 Cámara</button>
+        <button onclick="document.getElementById('afoto-gal').click()" type="button" style="flex:1;background:var(--off);border:1px solid var(--g1);color:var(--navy);font-size:12px;font-weight:700;padding:11px;border-radius:8px;cursor:pointer;font-family:var(--font);">🖼 Galería</button>
       </div>
     </div>
   `;
 }
+
+// Hook deprecado (dejado por compatibilidad — onclick directo más confiable)
+function _hookBotonesFotosArea(){ return; }
 
 // Subir una o más fotos al área activa
 function _handleAreaFoto(e){
@@ -2039,9 +2084,15 @@ function _htmlAreaReparaciones(a){
         ${totM2>0 ? `<div style="font-size:10.5px;color:#1E6FD9;font-weight:700;background:rgba(30,111,217,.08);padding:3px 9px;border-radius:5px;">Total: ${totM2.toFixed(2)} m²</div>` : ''}
       </div>
       <div>${lista}</div>
-      <button onclick="_abrirModalNuevaRepArea()" style="width:100%;background:#1E6FD9;border:none;color:#fff;font-size:12px;font-weight:700;padding:11px;border-radius:8px;cursor:pointer;font-family:var(--font);margin-top:10px;">+ Agregar reparación</button>
+      <button onclick="window._abrirModalNuevaRepArea && window._abrirModalNuevaRepArea()" type="button" style="width:100%;background:#1E6FD9;border:none;color:#fff;font-size:12px;font-weight:700;padding:11px;border-radius:8px;cursor:pointer;font-family:var(--font);margin-top:10px;">+ Agregar reparación</button>
     </div>
   `;
+}
+
+// Hook listener al botón después de renderizar (más robusto que onclick inline)
+function _hookBotonRepArea(){
+  // Ya no se usa, dejado por compatibilidad
+  return;
 }
 
 // Modal para registrar una nueva reparación dentro del área activa
@@ -4176,6 +4227,31 @@ ${bodyEl.innerHTML}
     win.onload = function(){ setTimeout(function(){ win.print(); }, 400); };
   }
 }
+
+// ═══════════════════════════════════════════════════════════════
+// EXPONER FUNCIONES AL WINDOW
+// (necesario para que onclick="..." inline las encuentre siempre)
+// ═══════════════════════════════════════════════════════════════
+[
+  // Drill-down de áreas
+  "entrarAreaDetalle","cerrarAreaDetalle","showAreaTab","eliminarAreaActual",
+  "_abrirModalNuevaRepArea","_cerrarModalArep","_arepCambiarUnidad","_arepCalcArea",
+  "_arepHandleFoto","_renderArepFotosPrev","_guardarRepArea","_eliminarRepArea",
+  "_handleAreaFoto","_eliminarFotoArea",
+  "_actualizarAreaCampo","_actualizarAreaMedida",
+  "_renderAreaTab","_getAreaActiva",
+  "_areaContarFotos","_areaContarReps",
+  // Helpers genéricos
+  "showToast","verImg",
+  // Migración
+  "_migrarProyectoSiNecesario",
+  // Existentes (por seguridad)
+  "agregarArea","confirmarArea","editarArea","eliminarArea","abrirAreaDetalle",
+  "renderAreas","getP","save"
+].forEach(function(fn){
+  try{ if(typeof eval(fn) === "function") window[fn] = eval(fn); }catch(e){}
+});
+console.log("[ROMSA] Funciones expuestas al window correctamente");
 </script>
 </body>
 </html>
