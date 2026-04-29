@@ -1015,6 +1015,34 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
     Admin
   </button>
 </nav>
+
+  <!-- ══ DETALLE DE ÁREA (drill-down dentro de un proyecto) ══ -->
+  <div id="screen-area-detalle" class="screen">
+    <!-- Breadcrumb / volver -->
+    <div style="position:sticky;top:0;background:#fff;border-bottom:1px solid var(--g1);padding:10px 14px;display:flex;align-items:center;gap:10px;z-index:5;">
+      <button onclick="cerrarAreaDetalle()" style="background:var(--off);border:1px solid var(--g1);color:var(--navy);font-size:11px;font-weight:700;padding:7px 12px;border-radius:8px;cursor:pointer;font-family:var(--font);flex-shrink:0;">← Áreas</button>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:9px;color:var(--tx2);text-transform:uppercase;letter-spacing:1.5px;font-weight:700;" id="areadet-proyecto">—</div>
+        <div style="font-size:14px;font-weight:800;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" id="areadet-nom">Área</div>
+      </div>
+      <button onclick="eliminarAreaActual()" title="Eliminar esta área" style="background:var(--red-dim);border:none;color:var(--red);font-size:14px;cursor:pointer;padding:7px 10px;border-radius:8px;flex-shrink:0;">🗑️</button>
+    </div>
+
+    <div style="padding:14px;max-width:760px;margin:0 auto;">
+
+      <!-- Tabs internas del área (sub-secciones) -->
+      <div id="areadet-tabs" style="display:flex;gap:4px;margin-bottom:14px;background:var(--off);border-radius:10px;padding:4px;overflow-x:auto;-webkit-overflow-scrolling:touch;">
+        <button class="atab atab-active" data-atab="datos" onclick="showAreaTab('datos',this)" style="flex:1;min-width:80px;background:#fff;border:none;color:var(--navy);font-size:11px;font-weight:700;padding:8px 10px;border-radius:8px;cursor:pointer;font-family:var(--font);box-shadow:0 1px 2px rgba(0,0,0,.05);">📐 Datos</button>
+        <button class="atab" data-atab="estado" onclick="showAreaTab('estado',this)" style="flex:1;min-width:80px;background:transparent;border:none;color:var(--tx2);font-size:11px;font-weight:600;padding:8px 10px;border-radius:8px;cursor:pointer;font-family:var(--font);">🔍 Estado</button>
+        <button class="atab" data-atab="fotos" onclick="showAreaTab('fotos',this)" style="flex:1;min-width:80px;background:transparent;border:none;color:var(--tx2);font-size:11px;font-weight:600;padding:8px 10px;border-radius:8px;cursor:pointer;font-family:var(--font);">📷 Fotos</button>
+        <button class="atab" data-atab="reps" onclick="showAreaTab('reps',this)" style="flex:1;min-width:80px;background:transparent;border:none;color:var(--tx2);font-size:11px;font-weight:600;padding:8px 10px;border-radius:8px;cursor:pointer;font-family:var(--font);">🔧 Reparaciones</button>
+      </div>
+
+      <!-- Contenido de cada sub-tab -->
+      <div id="areadet-content"></div>
+
+    </div>
+  </div>
 </div>
 
 <button class="fab" id="fab" onclick="showNuevo()">+</button>
@@ -1193,6 +1221,8 @@ async function saveProyecto(p){
 function subscribeProyectos(){
   proyectosRef.orderBy("ts","desc").onSnapshot(snap=>{
     S.proyectos=snap.docs.map(d=>d.data());
+    // Migración automática en memoria (no se persiste hasta el siguiente save)
+    S.proyectos.forEach(_migrarProyectoSiNecesario);
     // Siempre actualizar UI cuando llegan datos
     updateKpis();
     const a=document.querySelector(".screen.active");
@@ -1609,32 +1639,36 @@ function renderAreas(p){
   if(!el) return;
   const areas = p.areas||[];
   if(!areas.length){
-    el.innerHTML = '<div class="empty" style="padding:20px 0;"><div class="empty-ico">📋</div><div class="empty-ttl">Sin áreas adicionales</div><div class="empty-sub">Este proyecto tiene un área principal. Toca "+ Área" para añadir más.</div></div>';
+    el.innerHTML = '<div class="empty" style="padding:20px 0;"><div class="empty-ico">📋</div><div class="empty-ttl">Sin áreas medidas</div><div class="empty-sub">Toca "+ Área" para añadir la primera área de este levantamiento.</div></div>';
     return;
   }
   el.innerHTML = areas.map(a=>{
-    const reps = (a.reparaciones||[]).length;
+    const reps = _areaContarReps(a);
+    const fotos = _areaContarFotos(a);
     const score = _calcScoreArea(a);
     const scoreColor = score>=75?"#10B981":score>=55?"#F59E0B":"#EF4444";
-    return `<div style="background:#fff;border:1px solid var(--g1);border-radius:12px;padding:14px;">
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px;">
-        <div>
-          <div style="font-size:14px;font-weight:700;color:var(--navy);">${a.nombre}</div>
-          <div style="font-size:11px;color:var(--tx2);margin-top:2px;">${a.tipo} · ${(a.area||0).toFixed(1)} m²</div>
+    const tieneServicio = a.servicioRecomendado && a.servicioRecomendado.trim();
+    const migrado = a._migrado ? '<span style="font-size:8.5px;font-weight:700;background:#FEF3C7;color:#78350F;padding:2px 6px;border-radius:4px;letter-spacing:.4px;text-transform:uppercase;margin-left:6px;">migrado</span>' : '';
+    return `<div onclick="entrarAreaDetalle('${a.id}')" style="background:#fff;border:1px solid var(--g1);border-radius:12px;padding:14px;cursor:pointer;transition:transform .15s, box-shadow .15s, border-color .15s;" onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 4px 12px rgba(0,0,0,.06)';this.style.borderColor='#1E6FD9';" onmouseout="this.style.transform='';this.style.boxShadow='';this.style.borderColor='var(--g1)';">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px;gap:10px;">
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:14px;font-weight:700;color:var(--navy);display:flex;align-items:center;flex-wrap:wrap;gap:6px;">
+            ${a.nombre}${migrado}
+          </div>
+          <div style="font-size:11px;color:var(--tx2);margin-top:3px;">${a.tipo} · ${(a.area||0).toFixed(1)} m² · ${a.ancho||0}m × ${a.largo||0}m</div>
         </div>
-        <div style="text-align:right;">
-          <div style="font-size:18px;font-weight:900;color:${scoreColor};">${score}</div>
-          <div style="font-size:8px;color:var(--tx2);">score</div>
+        <div style="text-align:right;flex-shrink:0;">
+          <div style="font-size:18px;font-weight:900;color:${scoreColor};line-height:1;">${score}</div>
+          <div style="font-size:8px;color:var(--tx2);text-transform:uppercase;letter-spacing:.5px;">score</div>
         </div>
       </div>
-      <div style="display:flex;gap:6px;margin-bottom:10px;">
-        <span style="background:rgba(30,111,217,.08);color:#1E6FD9;font-size:10px;font-weight:600;padding:3px 8px;border-radius:6px;">${reps} reparaciones</span>
-        <span style="background:rgba(16,185,129,.08);color:#059669;font-size:10px;font-weight:600;padding:3px 8px;border-radius:6px;">${(a.area||0).toFixed(1)} m²</span>
-      </div>
-      <div style="display:flex;gap:6px;">
-        <button onclick="abrirAreaDetalle('${a.id}')" style="flex:2;background:#1E6FD9;border:none;color:#fff;font-size:11px;font-weight:700;padding:8px;border-radius:8px;cursor:pointer;font-family:var(--font);">✏️ Completar área</button>
-        <button onclick="editarArea('${a.id}')" style="flex:1;background:var(--off);border:1px solid var(--g1);color:var(--navy);font-size:11px;font-weight:600;padding:8px;border-radius:8px;cursor:pointer;font-family:var(--font);">Editar</button>
-        <button onclick="eliminarArea('${a.id}')" style="flex:1;background:var(--red-dim);border:none;color:var(--red);font-size:11px;font-weight:600;padding:8px;border-radius:8px;cursor:pointer;font-family:var(--font);">🗑️</button>
+      ${tieneServicio ? `<div style="font-size:10.5px;color:#1E6FD9;background:rgba(30,111,217,.06);padding:5px 8px;border-radius:6px;margin-bottom:8px;font-weight:600;">⚡ ${a.servicioRecomendado.length>60?a.servicioRecomendado.slice(0,57)+"...":a.servicioRecomendado}</div>` : ''}
+      <div style="display:flex;gap:8px;align-items:center;font-size:11px;color:var(--tx2);">
+        <span style="display:inline-flex;align-items:center;gap:3px;">📷 ${fotos}</span>
+        <span style="opacity:.4;">·</span>
+        <span style="display:inline-flex;align-items:center;gap:3px;">🔧 ${reps}</span>
+        ${a.descripcion ? '<span style="opacity:.4;">·</span><span style="display:inline-flex;align-items:center;gap:3px;">📝 desc.</span>' : ''}
+        <span style="margin-left:auto;font-size:18px;color:var(--g3);">›</span>
       </div>
     </div>`;
   }).join("");
@@ -1668,15 +1702,236 @@ function abrirAreaDetalle(areaId){
   showDTab("plano", document.querySelector(".dtab"));
 }
 
-// Override de getP() para soportar áreas — cuando hay área activa, retorna el área
-const _getP_original = getP;
-function getPAreaOProyecto(){
-  if(_areaActivaId){
-    const p = _getP_original();
-    if(!p) return null;
-    return (p.areas||[]).find(a=>a.id===_areaActivaId)||p;
+// ═══════════════════════════════════════════════════════════════
+// DRILL-DOWN: PANTALLA INDEPENDIENTE DEL ÁREA
+// ═══════════════════════════════════════════════════════════════
+
+let _areaDetalleActivaId = null;
+let _areaDetalleTab = "datos";
+
+// Entrar al detalle de un área (drill-down)
+function entrarAreaDetalle(areaId){
+  const p = getP(); if(!p) return;
+  const area = (p.areas||[]).find(a=>a.id===areaId);
+  if(!area){ showToast("⚠️ Área no encontrada"); return; }
+
+  _areaDetalleActivaId = areaId;
+  _areaDetalleTab = "datos";
+
+  // Header
+  document.getElementById("areadet-proyecto").textContent = (p.nombre || "Levantamiento").toUpperCase();
+  document.getElementById("areadet-nom").textContent = area.nombre || "Área";
+
+  // Cambiar pantalla
+  document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
+  document.getElementById("screen-area-detalle").classList.add("active");
+  document.getElementById("fab").style.display = "none";
+
+  // Restablecer tabs visualmente
+  document.querySelectorAll("#areadet-tabs .atab").forEach(b=>{
+    b.classList.remove("atab-active");
+    b.style.background = "transparent";
+    b.style.color = "var(--tx2)";
+    b.style.fontWeight = "600";
+    b.style.boxShadow = "";
+  });
+  const datosBtn = document.querySelector('#areadet-tabs .atab[data-atab="datos"]');
+  if(datosBtn){
+    datosBtn.classList.add("atab-active");
+    datosBtn.style.background = "#fff";
+    datosBtn.style.color = "var(--navy)";
+    datosBtn.style.fontWeight = "700";
+    datosBtn.style.boxShadow = "0 1px 2px rgba(0,0,0,.05)";
   }
-  return _getP_original();
+
+  // Renderizar contenido
+  _renderAreaTab();
+  // Scroll al inicio
+  window.scrollTo(0, 0);
+}
+
+function cerrarAreaDetalle(){
+  _areaDetalleActivaId = null;
+  document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
+  document.getElementById("screen-proyecto").classList.add("active");
+  document.getElementById("fab").style.display = "none";
+  // Re-renderizar la lista de áreas (los contadores pueden haber cambiado)
+  const p = getP();
+  if(p) renderAreas(p);
+}
+
+function showAreaTab(tab, btn){
+  _areaDetalleTab = tab;
+  // Reset visual de todos los botones
+  document.querySelectorAll("#areadet-tabs .atab").forEach(b=>{
+    b.classList.remove("atab-active");
+    b.style.background = "transparent";
+    b.style.color = "var(--tx2)";
+    b.style.fontWeight = "600";
+    b.style.boxShadow = "";
+  });
+  // Activar el botón seleccionado
+  if(btn){
+    btn.classList.add("atab-active");
+    btn.style.background = "#fff";
+    btn.style.color = "var(--navy)";
+    btn.style.fontWeight = "700";
+    btn.style.boxShadow = "0 1px 2px rgba(0,0,0,.05)";
+  }
+  _renderAreaTab();
+}
+
+function _getAreaActiva(){
+  if(!_areaDetalleActivaId) return null;
+  const p = getP(); if(!p) return null;
+  return (p.areas||[]).find(a=>a.id===_areaDetalleActivaId);
+}
+
+function _renderAreaTab(){
+  const wrap = document.getElementById("areadet-content");
+  if(!wrap) return;
+  const area = _getAreaActiva();
+  if(!area){ wrap.innerHTML = '<div style="text-align:center;padding:40px;color:var(--tx2);">Área no encontrada</div>'; return; }
+
+  switch(_areaDetalleTab){
+    case "datos":   wrap.innerHTML = _htmlAreaDatos(area); break;
+    case "estado":  wrap.innerHTML = _htmlAreaEstado(area); break;
+    case "fotos":   wrap.innerHTML = _htmlAreaFotos(area); break;
+    case "reps":    wrap.innerHTML = _htmlAreaReparaciones(area); break;
+  }
+}
+
+// ── Tab: Datos básicos del área (FUNCIONAL EN B-1) ──
+function _htmlAreaDatos(a){
+  const tipos = ["Epóxico","Uretano Cementicio","Pulido de Concreto","Reparaciones de Concreto","Sello de Juntas","Combinación de servicios"];
+  const tipoOpts = tipos.map(t=>'<option value="'+t+'"'+(a.tipo===t?' selected':'')+'>'+t+'</option>').join("");
+  return `
+    <div class="card" style="padding:14px;margin-bottom:12px;">
+      <div style="font-size:9.5px;font-weight:700;color:var(--tx2);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px;">📐 Medidas y tipo</div>
+      <div class="fg">
+        <label class="flabel">Nombre del área</label>
+        <input class="finput" id="adet-nombre" value="${(a.nombre||"").replace(/"/g,'&quot;')}" oninput="_actualizarAreaCampo('nombre',this.value)">
+      </div>
+      <div class="fg">
+        <label class="flabel">Tipo de servicio principal</label>
+        <select class="fselect" id="adet-tipo" onchange="_actualizarAreaCampo('tipo',this.value)">${tipoOpts}</select>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div class="fg">
+          <label class="flabel">Ancho (m)</label>
+          <input class="finput" type="number" step="0.01" id="adet-ancho" value="${a.ancho||0}" oninput="_actualizarAreaMedida()">
+        </div>
+        <div class="fg">
+          <label class="flabel">Largo (m)</label>
+          <input class="finput" type="number" step="0.01" id="adet-largo" value="${a.largo||0}" oninput="_actualizarAreaMedida()">
+        </div>
+      </div>
+      <div style="background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);border-radius:8px;padding:10px;text-align:center;">
+        <div style="font-size:9px;color:#059669;font-weight:700;letter-spacing:1px;text-transform:uppercase;">Área total</div>
+        <div style="font-size:22px;font-weight:900;color:#059669;" id="adet-m2-out">${(a.area||0).toFixed(2)} m²</div>
+      </div>
+    </div>
+
+    <div class="card" style="padding:14px;margin-bottom:12px;">
+      <div style="font-size:9.5px;font-weight:700;color:var(--tx2);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px;">📝 Descripción del área</div>
+      <textarea class="ftextarea" id="adet-desc" placeholder="Notas, observaciones específicas de esta área..." style="min-height:80px;" oninput="_actualizarAreaCampo('descripcion',this.value)">${(a.descripcion||"").replace(/</g,"&lt;")}</textarea>
+    </div>
+  `;
+}
+
+// ── Tab: Estado del piso de esta área (FUNCIONAL EN B-1) ──
+function _htmlAreaEstado(a){
+  const condiciones = ["", "Bueno — sin daños visibles", "Regular — desgaste superficial", "Malo — grietas y daños", "Crítico — requiere reparación urgente"];
+  const condOpts = condiciones.map(c=>'<option value="'+c+'"'+(a.condicion===c?' selected':'')+'>'+(c||"-- Seleccionar --")+'</option>').join("");
+  return `
+    <div class="card" style="padding:14px;margin-bottom:12px;">
+      <div style="font-size:9.5px;font-weight:700;color:var(--tx2);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px;">🔍 Estado del piso</div>
+      <div class="fg">
+        <label class="flabel">Condición visual</label>
+        <select class="fselect" id="adet-cond" onchange="_actualizarAreaCampo('condicion',this.value)">${condOpts}</select>
+      </div>
+      <div class="fg">
+        <label class="flabel">Servicio recomendado</label>
+        <textarea class="ftextarea" id="adet-serv" placeholder="Qué tratamiento sugieres aplicar a esta área..." style="min-height:70px;" oninput="_actualizarAreaCampo('servicioRecomendado',this.value)">${(a.servicioRecomendado||"").replace(/</g,"&lt;")}</textarea>
+      </div>
+      <div class="fg" style="margin-bottom:0;">
+        <label class="flabel">Recomendación final / próximos pasos</label>
+        <textarea class="ftextarea" id="adet-rec" placeholder="Conclusión específica para esta área (opcional)..." style="min-height:70px;" oninput="_actualizarAreaCampo('recomendacionFinal',this.value)">${(a.recomendacionFinal||"").replace(/</g,"&lt;")}</textarea>
+      </div>
+    </div>
+  `;
+}
+
+// ── Tab: Fotos del área (PLACEHOLDER EN B-1) ──
+function _htmlAreaFotos(a){
+  const n = _areaContarFotos(a);
+  return `
+    <div class="card" style="padding:14px;text-align:center;border:2px dashed var(--g1);">
+      <div style="font-size:36px;margin-bottom:6px;opacity:.4;">📷</div>
+      <div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:4px;">Fotos del área (${n})</div>
+      <div style="font-size:11px;color:var(--tx2);line-height:1.5;max-width:380px;margin:0 auto 14px;">
+        Aquí podrás subir fotos específicas de esta área (antes/después/durante).<br>
+        ${a._migrado ? "Tus fotos antiguas ya están migradas a esta sección." : "Esta funcionalidad estará disponible en la próxima actualización."}
+      </div>
+      <button onclick="showToast('Próximamente — Sesión B-2')" style="background:var(--off);border:1px solid var(--g1);color:var(--tx2);font-size:11px;font-weight:600;padding:9px 18px;border-radius:8px;cursor:pointer;font-family:var(--font);">+ Agregar foto (próximamente)</button>
+    </div>
+  `;
+}
+
+// ── Tab: Reparaciones del área (PLACEHOLDER EN B-1) ──
+function _htmlAreaReparaciones(a){
+  const n = _areaContarReps(a);
+  return `
+    <div class="card" style="padding:14px;text-align:center;border:2px dashed var(--g1);">
+      <div style="font-size:36px;margin-bottom:6px;opacity:.4;">🔧</div>
+      <div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:4px;">Reparaciones del área (${n})</div>
+      <div style="font-size:11px;color:var(--tx2);line-height:1.5;max-width:380px;margin:0 auto 14px;">
+        Aquí podrás registrar reparaciones puntuales de esta área (grietas, baches, juntas).<br>
+        ${a._migrado ? "Tus reparaciones antiguas ya están migradas a esta sección." : "Esta funcionalidad estará disponible en la próxima actualización."}
+      </div>
+      <button onclick="showToast('Próximamente — Sesión B-2')" style="background:var(--off);border:1px solid var(--g1);color:var(--tx2);font-size:11px;font-weight:600;padding:9px 18px;border-radius:8px;cursor:pointer;font-family:var(--font);">+ Agregar reparación (próximamente)</button>
+    </div>
+  `;
+}
+
+// ── Helpers para actualizar campos del área activa y guardar ──
+function _actualizarAreaCampo(campo, valor){
+  const area = _getAreaActiva();
+  if(!area) return;
+  area[campo] = valor;
+  _marcarCambiosPendientes();
+  // Re-render del header si cambia el nombre
+  if(campo === "nombre"){
+    document.getElementById("areadet-nom").textContent = valor || "Área";
+  }
+  // Debounced save
+  if(_actualizarAreaCampo._t) clearTimeout(_actualizarAreaCampo._t);
+  _actualizarAreaCampo._t = setTimeout(function(){ save(); }, 800);
+}
+
+function _actualizarAreaMedida(){
+  const area = _getAreaActiva();
+  if(!area) return;
+  const ancho = parseFloat(document.getElementById("adet-ancho").value)||0;
+  const largo = parseFloat(document.getElementById("adet-largo").value)||0;
+  area.ancho = ancho;
+  area.largo = largo;
+  area.area  = parseFloat((ancho*largo).toFixed(2));
+  document.getElementById("adet-m2-out").textContent = area.area.toFixed(2)+" m²";
+  _marcarCambiosPendientes();
+  if(_actualizarAreaMedida._t) clearTimeout(_actualizarAreaMedida._t);
+  _actualizarAreaMedida._t = setTimeout(function(){ save(); }, 800);
+}
+
+function eliminarAreaActual(){
+  const area = _getAreaActiva();
+  if(!area) return;
+  if(!confirm("¿Eliminar el área \""+area.nombre+"\"?\n\nSe perderán también sus fotos y reparaciones.\nEsta acción no se puede deshacer.")) return;
+  const p = getP();
+  p.areas = p.areas.filter(a=>a.id !== area.id);
+  save();
+  showToast("✓ Área eliminada");
+  cerrarAreaDetalle();
 }
 
 // ─── PROYECTOS ───────────────────────────────────
@@ -1732,6 +1987,10 @@ function clearNuevoForm(){
 function abrirProyecto(id,from="inicio"){
   activoId=id;backScreen=from;
   const p=getP();if(!p)return;
+
+  // ═══ MIGRACIÓN AUTOMÁTICA — Modelo viejo → Nuevo (segmentado por área) ═══
+  _migrarProyectoSiNecesario(p);
+
   document.getElementById("det-nom").textContent=p.nombre;
   document.getElementById("det-meta").textContent=(p.cliente||"—")+" · "+p.fecha+" "+( p.hora||"");
   document.getElementById("det-tipo").textContent=p.tipo;
@@ -1754,6 +2013,91 @@ function abrirProyecto(id,from="inicio"){
 }
 
 function getP(){return S.proyectos.find(p=>p.id===activoId);}
+
+// ═══════════════════════════════════════════════════════════════
+// MIGRACIÓN AUTOMÁTICA — Modelo viejo → Nuevo (segmentado por área)
+// ═══════════════════════════════════════════════════════════════
+// Detecta si un proyecto fue creado con el modelo viejo (fotos/reparaciones
+// a nivel proyecto) y mueve esos datos a una área "General" auto-creada.
+//
+// IDEMPOTENTE: si ya tiene marca v2 o ya tiene áreas con datos, no hace nada.
+// CONSERVADORA: NO borra los campos viejos del proyecto, solo los COPIA.
+//   Eso permite revertir si algo sale mal y mantiene compatibilidad.
+// ═══════════════════════════════════════════════════════════════
+
+function _migrarProyectoSiNecesario(p){
+  if(!p) return;
+  // Marca de versión: si ya está migrado, no hacer nada
+  if(p._modeloV === 2) return;
+
+  // Inicializar areas si no existen
+  if(!Array.isArray(p.areas)) p.areas = [];
+
+  // Asegurar que cada área existente tenga los nuevos campos (vacíos)
+  p.areas.forEach(function(a){
+    if(typeof a.descripcion === "undefined")         a.descripcion = "";
+    if(typeof a.condicion === "undefined")           a.condicion = "";
+    if(typeof a.servicioRecomendado === "undefined") a.servicioRecomendado = "";
+    if(typeof a.recomendacionFinal === "undefined")  a.recomendacionFinal = "";
+    if(!Array.isArray(a.fotos))                      a.fotos = [];
+    if(!Array.isArray(a.reparaciones))               a.reparaciones = [];
+  });
+
+  // Detectar si hay datos viejos a nivel proyecto que necesitan migrarse
+  var fotosViejas = Array.isArray(p.fotos) ? p.fotos.filter(function(f){
+    // Excluir fotos del plano si tuvieran cat="plano" (por seguridad — aunque debería estar en p.imagenPlano)
+    return f && f.src;
+  }) : [];
+  var repsViejas  = Array.isArray(p.reparaciones) ? p.reparaciones.slice() : [];
+  var notasViejas = (p.notas && typeof p.notas === "object") ? p.notas : null;
+  var descVieja   = (typeof p.descripcion === "string" && p.descripcion.trim()) ? p.descripcion : "";
+
+  var tieneDatosViejos = fotosViejas.length > 0
+                      || repsViejas.length > 0
+                      || (notasViejas && (notasViejas.condicion || notasViejas.servicio || notasViejas.tipoActual))
+                      || descVieja;
+
+  if(tieneDatosViejos){
+    // Buscar si ya existe un área "General" creada por migración previa parcial
+    var general = p.areas.find(function(a){ return a._migrado === true; });
+    if(!general){
+      // Crear área "General" con las medidas a nivel proyecto (si las hay)
+      general = {
+        id: "area_general_" + Date.now(),
+        nombre: "General",
+        ancho: p.ancho || 0,
+        largo: p.largo || 0,
+        area:  p.area  || 0,
+        tipo:  p.tipo  || "Combinación de servicios",
+        descripcion: descVieja,
+        condicion: notasViejas ? (notasViejas.condicion || "") : "",
+        servicioRecomendado: notasViejas ? (notasViejas.servicio || "") : "",
+        recomendacionFinal: "",
+        fotos: fotosViejas,
+        reparaciones: repsViejas,
+        _migrado: true   // marca para reconocerla como creada por migración
+      };
+      p.areas.unshift(general);  // queda como primera
+    } else {
+      // Área general ya existe (migración parcial previa) — completar campos faltantes
+      if(!general.descripcion && descVieja) general.descripcion = descVieja;
+      if(!general.fotos.length && fotosViejas.length) general.fotos = fotosViejas;
+      if(!general.reparaciones.length && repsViejas.length) general.reparaciones = repsViejas;
+    }
+    console.log("[MIGRACIÓN] Proyecto "+p.id+" migrado: "+fotosViejas.length+" fotos, "+repsViejas.length+" reparaciones movidas a área 'General'");
+  }
+
+  // Marcar como modelo V2 (no volverá a entrar a esta función)
+  p._modeloV = 2;
+}
+
+// Funciones helper para obtener contadores de un área
+function _areaContarFotos(a){
+  return Array.isArray(a.fotos) ? a.fotos.length : 0;
+}
+function _areaContarReps(a){
+  return Array.isArray(a.reparaciones) ? a.reparaciones.length : 0;
+}
 
 // ─── HOME ─────────────────────────────────────────
 function renderHome(){
