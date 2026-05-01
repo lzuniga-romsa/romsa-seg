@@ -1691,30 +1691,39 @@ body.in-costeo #app{
 
       <!-- ════ SUB-PESTAÑA: LISTA DE COTIZACIONES ════ -->
       <div id="cot-subtab-lista" class="cot-subtab-content" style="display:none;">
-        <!-- LISTA -->
         <div id="cot-lista-wrap" style="padding:16px;">
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px;">
-          <div style="background:#fff;border:1px solid var(--g1);border-radius:12px;padding:12px 10px;">
-            <div style="font-size:8px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Este mes</div>
-            <div id="cot-kpi-mes" style="font-size:24px;font-weight:900;color:#7C3AED;line-height:1;">0</div>
-            <div style="font-size:9px;color:var(--g3);margin-top:2px;">cotizaciones</div>
+
+          <!-- Buscador y filtros -->
+          <div style="background:#fff;border:1px solid var(--g1);border-radius:12px;padding:12px;margin-bottom:14px;">
+            <!-- Buscador -->
+            <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;">
+              <div style="flex:1;position:relative;">
+                <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:14px;opacity:.5;pointer-events:none;">🔍</span>
+                <input type="text" id="cot-buscador" placeholder="Buscar por empresa, folio o contacto..." oninput="onBuscarCot(this.value)" style="width:100%;padding:9px 10px 9px 32px;border:1px solid var(--g1);border-radius:8px;font-family:var(--font);font-size:11.5px;background:var(--off);">
+              </div>
+              <button onclick="limpiarFiltrosCot()" title="Limpiar filtros" style="background:var(--off);border:1px solid var(--g1);color:var(--tx2);font-size:10px;font-weight:700;padding:8px 11px;border-radius:8px;cursor:pointer;font-family:var(--font);white-space:nowrap;">↺ Limpiar</button>
+            </div>
+
+            <!-- Chips de filtro por estado -->
+            <div id="cot-filtros-chips" style="display:flex;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:2px;">
+              <button class="cot-chip cot-chip-active" data-filtro="todas" onclick="setFiltroCot('todas',this)" style="background:#7C3AED;border:none;color:#fff;font-size:10.5px;font-weight:700;padding:7px 12px;border-radius:18px;cursor:pointer;font-family:var(--font);white-space:nowrap;">Todas <span class="cot-chip-count">0</span></button>
+              <button class="cot-chip" data-filtro="pendiente" onclick="setFiltroCot('pendiente',this)" style="background:var(--off);border:1px solid var(--g1);color:var(--tx2);font-size:10.5px;font-weight:600;padding:7px 12px;border-radius:18px;cursor:pointer;font-family:var(--font);white-space:nowrap;">🟡 Pendientes <span class="cot-chip-count">0</span></button>
+              <button class="cot-chip" data-filtro="aceptada" onclick="setFiltroCot('aceptada',this)" style="background:var(--off);border:1px solid var(--g1);color:var(--tx2);font-size:10.5px;font-weight:600;padding:7px 12px;border-radius:18px;cursor:pointer;font-family:var(--font);white-space:nowrap;">🟢 Ganadas <span class="cot-chip-count">0</span></button>
+              <button class="cot-chip" data-filtro="en_obra" onclick="setFiltroCot('en_obra',this)" style="background:var(--off);border:1px solid var(--g1);color:var(--tx2);font-size:10.5px;font-weight:600;padding:7px 12px;border-radius:18px;cursor:pointer;font-family:var(--font);white-space:nowrap;">🔵 En obra <span class="cot-chip-count">0</span></button>
+              <button class="cot-chip" data-filtro="cerrada" onclick="setFiltroCot('cerrada',this)" style="background:var(--off);border:1px solid var(--g1);color:var(--tx2);font-size:10.5px;font-weight:600;padding:7px 12px;border-radius:18px;cursor:pointer;font-family:var(--font);white-space:nowrap;">⚫ Cerradas <span class="cot-chip-count">0</span></button>
+              <button class="cot-chip" data-filtro="rechazada" onclick="setFiltroCot('rechazada',this)" style="background:var(--off);border:1px solid var(--g1);color:var(--tx2);font-size:10.5px;font-weight:600;padding:7px 12px;border-radius:18px;cursor:pointer;font-family:var(--font);white-space:nowrap;">🔴 Perdidas <span class="cot-chip-count">0</span></button>
+              <button class="cot-chip" data-filtro="vencida" onclick="setFiltroCot('vencida',this)" style="background:var(--off);border:1px solid var(--g1);color:var(--tx2);font-size:10.5px;font-weight:600;padding:7px 12px;border-radius:18px;cursor:pointer;font-family:var(--font);white-space:nowrap;">⏳ Vencidas <span class="cot-chip-count">0</span></button>
+            </div>
           </div>
-          <div style="background:#fff;border:1px solid var(--g1);border-radius:12px;padding:12px 10px;">
-            <div style="font-size:8px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Total MXN</div>
-            <div id="cot-kpi-total" style="font-size:16px;font-weight:900;color:#0B1F3A;line-height:1;">$0</div>
-            <div id="cot-kpi-activas" style="font-size:9px;color:var(--g3);margin-top:2px;">0 activas</div>
-          </div>
-          <div style="background:#fff;border:1px solid var(--g1);border-radius:12px;padding:12px 10px;">
-            <div style="font-size:8px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Ganadas</div>
-            <div id="cot-kpi-ganadas" style="font-size:24px;font-weight:900;color:#10B981;line-height:1;">0</div>
-            <div style="font-size:9px;color:var(--g3);margin-top:2px;">cerradas</div>
+
+          <!-- Resumen del filtro activo -->
+          <div id="cot-filtro-resumen" style="font-size:10.5px;color:var(--tx2);margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;"></div>
+
+          <!-- Lista filtrada -->
+          <div id="lista-cotizaciones">
+            <div class="empty"><div class="empty-ico">📋</div><div class="empty-ttl">Sin cotizaciones</div><div class="empty-sub">Toca "+ Nueva" para crear tu primera cotización</div></div>
           </div>
         </div>
-        <div style="font-size:10px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">Mis cotizaciones</div>
-        <div id="lista-cotizaciones">
-          <div class="empty"><div class="empty-ico">📋</div><div class="empty-ttl">Sin cotizaciones</div><div class="empty-sub">Toca "+ Nueva" para crear tu primera cotización</div></div>
-        </div>
-      </div>
       </div><!-- /cot-subtab-lista -->
 
       <!-- ════ SUB-PESTAÑA: CATÁLOGO DE CONCEPTOS ════ -->
@@ -5929,47 +5938,138 @@ window.guardarConcepto = guardarConcepto;
 window.toggleActivoConcepto = toggleActivoConcepto;
 window.eliminarConcepto = eliminarConcepto;
 
+// ═══════════════════════════════════════════════════════════════
+// LISTA DE COTIZACIONES — CON FILTROS + BUSCADOR (Sesión 3)
+// ═══════════════════════════════════════════════════════════════
+
+let _cotFiltroActivo = "todas";
+let _cotBusqueda = "";
+
+const COT_ESTADO_LABELS = {
+  pendiente: {txt:"🟡 Pendiente", bg:"#FEF3C7", fg:"#92400E", border:"#FDE68A"},
+  aceptada:  {txt:"🟢 Aceptada",  bg:"#D1FAE5", fg:"#065F46", border:"#A7F3D0"},
+  rechazada: {txt:"🔴 Rechazada", bg:"#FEE2E2", fg:"#991B1B", border:"#FCA5A5"},
+  en_obra:   {txt:"🔵 En obra",   bg:"#DBEAFE", fg:"#1E40AF", border:"#93C5FD"},
+  cerrada:   {txt:"⚫ Cerrada",   bg:"#E5E7EB", fg:"#374151", border:"#D1D5DB"},
+  vencida:   {txt:"⏳ Vencida",   bg:"#FEE2E2", fg:"#7F1D1D", border:"#FCA5A5"}
+};
+
+function setFiltroCot(filtro, btnEl){
+  _cotFiltroActivo = filtro;
+  // Actualizar visual de chips
+  document.querySelectorAll(".cot-chip").forEach(function(b){
+    b.classList.remove("cot-chip-active");
+    b.style.background = "var(--off)";
+    b.style.color = "var(--tx2)";
+    b.style.fontWeight = "600";
+    b.style.border = "1px solid var(--g1)";
+  });
+  if(btnEl){
+    btnEl.classList.add("cot-chip-active");
+    btnEl.style.background = "#7C3AED";
+    btnEl.style.color = "#fff";
+    btnEl.style.fontWeight = "700";
+    btnEl.style.border = "none";
+  }
+  renderListaCot();
+}
+
+function onBuscarCot(val){
+  _cotBusqueda = (val||"").toLowerCase().trim();
+  renderListaCot();
+}
+
+function limpiarFiltrosCot(){
+  _cotFiltroActivo = "todas";
+  _cotBusqueda = "";
+  var inp = document.getElementById("cot-buscador");
+  if(inp) inp.value = "";
+  // Visual chips
+  document.querySelectorAll(".cot-chip").forEach(function(b){
+    b.classList.remove("cot-chip-active");
+    b.style.background = "var(--off)";
+    b.style.color = "var(--tx2)";
+    b.style.fontWeight = "600";
+    b.style.border = "1px solid var(--g1)";
+  });
+  var btnTodas = document.querySelector('.cot-chip[data-filtro="todas"]');
+  if(btnTodas){
+    btnTodas.classList.add("cot-chip-active");
+    btnTodas.style.background = "#7C3AED";
+    btnTodas.style.color = "#fff";
+    btnTodas.style.fontWeight = "700";
+    btnTodas.style.border = "none";
+  }
+  renderListaCot();
+}
+
+// Calcular contadores por estado para los chips
+function _actualizarConteosChips(){
+  var conteos = {todas: cotizaciones.length, pendiente:0, aceptada:0, rechazada:0, en_obra:0, cerrada:0, vencida:0};
+  cotizaciones.forEach(function(c){
+    var e = c.estado || "pendiente";
+    if(conteos[e] !== undefined) conteos[e]++;
+  });
+  Object.keys(conteos).forEach(function(k){
+    var btn = document.querySelector('.cot-chip[data-filtro="'+k+'"] .cot-chip-count');
+    if(btn) btn.textContent = conteos[k];
+  });
+}
+
 function renderListaCot(){
   var el=document.getElementById("lista-cotizaciones");
-  if(!el)return;
-  // KPIs cotizaciones
-  var ahora=new Date();
-  var mesActual=ahora.getMonth();
-  var anioActual=ahora.getFullYear();
-  var cotMes=cotizaciones.filter(function(c){
-    var d=new Date((c.fecha||"")+"T12:00:00");
-    return d.getMonth()===mesActual&&d.getFullYear()===anioActual;
-  }).length;
-  var totalSum=cotizaciones.reduce(function(s,c){return s+parseFloat(c.granTotal||0);},0);
-  var ganadas=cotizaciones.filter(function(c){return c.estado==="aceptada"||c.estado==="en_obra"||c.estado==="cerrada"||c.estado==="ganada";}).length;
-  var elMes=document.getElementById("cot-kpi-mes");
-  var elTot=document.getElementById("cot-kpi-total");
-  var elAct=document.getElementById("cot-kpi-activas");
-  var elGan=document.getElementById("cot-kpi-ganadas");
-  if(elMes) elMes.textContent=cotMes;
-  if(elTot) elTot.textContent="$"+fmtPeso(totalSum);
-  if(elAct) elAct.textContent=cotizaciones.length+" total";
-  if(elGan) elGan.textContent=ganadas;
+  if(!el) return;
+  _actualizarConteosChips();
+
   if(!cotizaciones.length){
     el.innerHTML='<div class="empty"><div class="empty-ico">📋</div><div class="empty-ttl">Sin cotizaciones</div><div class="empty-sub">Toca "+ Nueva" para crear tu primera cotización</div></div>';
+    var rs = document.getElementById("cot-filtro-resumen");
+    if(rs) rs.innerHTML = "";
     return;
   }
-  el.innerHTML=cotizaciones.map(function(c){
-    var total=parseFloat(c.granTotal||0);
-    var fromCosteo = c.folioCosteoOrigen ? '<span class="badge" style="background:#EDE9FE;color:#5B21B6;border:1px solid #C4B5FD;">⚡ '+c.folioCosteoOrigen+'</span>' : '';
-    // Badge de estado (default "pendiente")
+
+  // Filtrar
+  var filtradas = cotizaciones.filter(function(c){
     var estado = c.estado || "pendiente";
-    var estLabels = {
-      pendiente: {txt:"🟡 Pendiente", bg:"#FEF3C7", fg:"#92400E", border:"#FDE68A"},
-      aceptada:  {txt:"🟢 Aceptada",  bg:"#D1FAE5", fg:"#065F46", border:"#A7F3D0"},
-      rechazada: {txt:"🔴 Rechazada", bg:"#FEE2E2", fg:"#991B1B", border:"#FCA5A5"},
-      en_obra:   {txt:"🔵 En obra",   bg:"#DBEAFE", fg:"#1E40AF", border:"#93C5FD"},
-      cerrada:   {txt:"⚫ Cerrada",   bg:"#E5E7EB", fg:"#374151", border:"#D1D5DB"},
-      vencida:   {txt:"⏳ Vencida",   bg:"#FEE2E2", fg:"#7F1D1D", border:"#FCA5A5"}
-    };
-    var est = estLabels[estado] || estLabels.pendiente;
+    // Filtro por estado
+    if(_cotFiltroActivo !== "todas" && estado !== _cotFiltroActivo) return false;
+    // Búsqueda por texto
+    if(_cotBusqueda){
+      var hay = (c.empresa||"").toLowerCase().indexOf(_cotBusqueda) >= 0
+             || (c.folio||"").toLowerCase().indexOf(_cotBusqueda) >= 0
+             || (c.atencion||"").toLowerCase().indexOf(_cotBusqueda) >= 0;
+      if(!hay) return false;
+    }
+    return true;
+  });
+
+  // Resumen del filtro
+  var totalFiltrado = filtradas.reduce(function(s,c){return s+(parseFloat(c.granTotal)||0);}, 0);
+  var rsEl = document.getElementById("cot-filtro-resumen");
+  if(rsEl){
+    var labelFiltro = _cotFiltroActivo === "todas" ? "Todas las cotizaciones" : (COT_ESTADO_LABELS[_cotFiltroActivo]?.txt || "Filtradas");
+    rsEl.innerHTML = '<span><strong>'+filtradas.length+'</strong> de '+cotizaciones.length+' cotización'+(cotizaciones.length===1?"":"es")+(_cotBusqueda?' — búsqueda: "'+escapeHtml(_cotBusqueda)+'"':'')+'</span>'
+      +'<span style="font-weight:700;color:#7C3AED;">$'+fmtPeso(totalFiltrado)+'</span>';
+  }
+
+  if(!filtradas.length){
+    el.innerHTML='<div class="empty"><div class="empty-ico">🔎</div><div class="empty-ttl">Sin resultados</div><div class="empty-sub">Ajusta el filtro o la búsqueda</div></div>';
+    return;
+  }
+
+  // Ordenar por fecha descendente
+  filtradas.sort(function(a,b){
+    return new Date((b.fecha||"")+"T12:00:00") - new Date((a.fecha||"")+"T12:00:00");
+  });
+
+  el.innerHTML=filtradas.map(function(c){
+    var total=parseFloat(c.granTotal||0);
+    var fromCosteo = c.folioCosteoOrigen ? '<span class="badge" style="background:#EDE9FE;color:#5B21B6;border:1px solid #C4B5FD;">⚡ '+escapeHtml(c.folioCosteoOrigen)+'</span>' : '';
+    var estado = c.estado || "pendiente";
+    var est = COT_ESTADO_LABELS[estado] || COT_ESTADO_LABELS.pendiente;
     var estBadge = '<span class="badge" style="background:'+est.bg+';color:'+est.fg+';border:1px solid '+est.border+';font-weight:700;">'+est.txt+'</span>';
-    // Aviso "por vencer" — pendiente con más de (vigencia - 3) días
+
+    // Aviso por vencer
     var avisoVencer = "";
     if(estado === "pendiente" && c.fecha){
       try{
@@ -5984,24 +6084,118 @@ function renderListaCot(){
         }
       }catch(e){}
     }
+
     return '<div class="prow" style="position:relative;" onclick="abrirCot(\''+c.id+'\')">'+
       '<div class="prow-bar" style="background:#7C3AED;"></div>'+
       '<div class="prow-body">'+
-        '<div class="prow-name">'+c.empresa+'</div>'+
-        '<div class="prow-meta">'+c.atencion+' · '+c.fecha+'</div>'+
+        '<div class="prow-name">'+escapeHtml(c.empresa||"Sin empresa")+'</div>'+
+        '<div class="prow-meta">'+escapeHtml(c.atencion||"")+' · '+escapeHtml(c.fecha||"")+'</div>'+
         '<div style="display:flex;gap:5px;margin-top:5px;flex-wrap:wrap;">'+
           estBadge+
           avisoVencer+
-          '<span class="badge b-navy">'+c.folio+'</span>'+
+          '<span class="badge b-navy">'+escapeHtml(c.folio||"")+'</span>'+
           '<span class="badge b-green">$'+fmtPeso(total)+'</span>'+
           fromCosteo+
         '</div>'+
       '</div>'+
+      // Botón cambio rápido de estado
+      '<button onclick="event.stopPropagation();menuCambioEstadoCot(\''+c.id+'\',this)" title="Cambiar estado rápido" style="background:rgba(124,58,237,.06);border:1px solid rgba(124,58,237,.18);color:#7C3AED;font-size:14px;cursor:pointer;padding:8px 8px;align-self:center;border-radius:6px;transition:background .15s;margin-right:4px;">⚡</button>'+
       '<button onclick="event.stopPropagation();eliminarCotizacion(\''+c.id+'\',\''+(c.folio||"sin folio").replace(/'/g,"\\'")+'\')" title="Eliminar cotización" style="background:none;border:none;color:#EF4444;font-size:16px;cursor:pointer;padding:8px 6px;align-self:center;border-radius:6px;transition:background .15s;" onmouseover="this.style.background=\'rgba(239,68,68,.08)\'" onmouseout="this.style.background=\'transparent\'">🗑️</button>'+
       '<div class="prow-arr">›</div>'+
     '</div>';
   }).join("");
 }
+
+// Menú flotante para cambiar estado rápido sin abrir el editor
+function menuCambioEstadoCot(id, btnEl){
+  // Remover menú previo si existe
+  var prev = document.getElementById("cot-menu-estado");
+  if(prev) prev.remove();
+  var c = cotizaciones.find(function(x){return x.id===id;});
+  if(!c) return;
+  var actual = c.estado || "pendiente";
+
+  var ov = document.createElement("div");
+  ov.id = "cot-menu-estado";
+  ov.style.cssText = "position:fixed;inset:0;background:rgba(11,31,58,.45);z-index:600;display:flex;align-items:center;justify-content:center;padding:16px;";
+  ov.onclick = function(e){ if(e.target===ov) ov.remove(); };
+
+  var opciones = [
+    {key:"pendiente", lbl:"🟡 Pendiente — esperando respuesta"},
+    {key:"aceptada",  lbl:"🟢 Aceptada — cliente firmó"},
+    {key:"rechazada", lbl:"🔴 Rechazada — cliente rechazó"},
+    {key:"en_obra",   lbl:"🔵 En obra — trabajo en curso"},
+    {key:"cerrada",   lbl:"⚫ Cerrada — terminada y cobrada"},
+    {key:"vencida",   lbl:"⏳ Vencida — sin respuesta"}
+  ];
+
+  ov.innerHTML = ''
+    +'<div style="background:#fff;border-radius:14px;max-width:420px;width:100%;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.4);">'
+      +'<div style="padding:14px 16px;border-bottom:1px solid var(--g1);">'
+        +'<div style="font-size:9px;color:var(--tx2);font-weight:700;letter-spacing:1.5px;text-transform:uppercase;">Cambio rápido de estado</div>'
+        +'<div style="font-size:14px;font-weight:800;color:var(--navy);margin-top:2px;">'+escapeHtml(c.empresa||"")+'</div>'
+        +'<div style="font-size:10.5px;color:var(--tx2);">'+escapeHtml(c.folio||"")+' · $'+fmtPeso(parseFloat(c.granTotal)||0)+'</div>'
+      +'</div>'
+      +'<div style="padding:6px;">'
+        +opciones.map(function(o){
+          var sel = o.key === actual;
+          var l = COT_ESTADO_LABELS[o.key];
+          return '<button onclick="aplicarCambioEstadoCot(\''+c.id+'\',\''+o.key+'\')" '
+            +'style="width:100%;text-align:left;background:'+(sel?l.bg:"transparent")+';border:'+(sel?'2px solid '+l.border:'1px solid var(--g1)')+';color:'+(sel?l.fg:"var(--navy)")+';font-size:11.5px;font-weight:'+(sel?700:600)+';padding:10px 12px;border-radius:8px;cursor:pointer;font-family:var(--font);margin:3px 0;transition:background .12s;display:flex;align-items:center;justify-content:space-between;" '
+            +'onmouseover="if(!this.matches(\'.sel\')) this.style.background=\'var(--off)\'" '
+            +'onmouseout="if(!this.matches(\'.sel\')) this.style.background=\'transparent\'">'
+            +'<span>'+o.lbl+'</span>'
+            +(sel?'<span style="font-size:14px;">✓</span>':'')
+          +'</button>';
+        }).join("")
+      +'</div>'
+      +'<div style="padding:10px 14px;border-top:1px solid var(--g1);background:var(--off);">'
+        +'<button onclick="document.getElementById(\'cot-menu-estado\').remove()" style="width:100%;background:transparent;border:1px solid var(--g1);color:var(--tx2);font-size:11px;font-weight:700;padding:9px;border-radius:8px;cursor:pointer;font-family:var(--font);">Cancelar</button>'
+      +'</div>'
+    +'</div>';
+  document.body.appendChild(ov);
+}
+
+async function aplicarCambioEstadoCot(id, nuevoEstado){
+  var c = cotizaciones.find(function(x){return x.id===id;});
+  if(!c) return;
+  var menu = document.getElementById("cot-menu-estado");
+  if(menu) menu.remove();
+
+  // Si pasa a un estado terminal y no tiene fechaRespuesta, asignar hoy
+  var fechaRespuesta = c.fechaRespuesta || "";
+  if(!fechaRespuesta && (nuevoEstado === "aceptada" || nuevoEstado === "rechazada" || nuevoEstado === "en_obra" || nuevoEstado === "cerrada")){
+    fechaRespuesta = new Date().toISOString().slice(0,10);
+  }
+  // Si vuelve a pendiente, limpiar
+  if(nuevoEstado === "pendiente") fechaRespuesta = "";
+
+  try {
+    await db.collection("cotizaciones").doc(id).update({
+      estado: nuevoEstado,
+      fechaRespuesta: fechaRespuesta
+    });
+    // Actualizar memoria
+    c.estado = nuevoEstado;
+    c.fechaRespuesta = fechaRespuesta;
+    showToast("✓ Estado actualizado: "+(COT_ESTADO_LABELS[nuevoEstado]?.txt||nuevoEstado));
+    renderListaCot();
+    // Si el dashboard está visible, refrescarlo también
+    if(typeof renderCotDashboard === "function" && document.getElementById("cot-subtab-dashboard")?.style.display !== "none"){
+      renderCotDashboard();
+    }
+  } catch(err) {
+    console.error("Error cambiando estado:", err);
+    alert("Error al actualizar estado: "+err.message);
+  }
+}
+
+// Exponer al window
+window.setFiltroCot = setFiltroCot;
+window.onBuscarCot = onBuscarCot;
+window.limpiarFiltrosCot = limpiarFiltrosCot;
+window.menuCambioEstadoCot = menuCambioEstadoCot;
+window.aplicarCambioEstadoCot = aplicarCambioEstadoCot;
 
 // Eliminar cotización (requiere doble confirmación + solo admin o creador)
 async function eliminarCotizacion(id, folio){
