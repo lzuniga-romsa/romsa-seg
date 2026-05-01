@@ -1638,10 +1638,54 @@ body.in-costeo #app{
 
       <!-- ════ SUB-PESTAÑA: DASHBOARD ════ -->
       <div id="cot-subtab-dashboard" class="cot-subtab-content" style="padding:16px;">
-        <div style="text-align:center;padding:32px 16px;color:var(--tx2);">
-          <div style="font-size:48px;opacity:.4;margin-bottom:12px;">📊</div>
-          <div style="font-size:14px;font-weight:700;color:var(--navy);margin-bottom:6px;">Dashboard de cotizaciones</div>
-          <div style="font-size:11px;line-height:1.5;max-width:340px;margin:0 auto;">Métricas clave del mes, top clientes, tasa de cierre y cotizaciones por vencer.<br><br><strong style="color:#7C3AED;">Próximamente — Sesión 2B</strong></div>
+        <!-- Selector de mes -->
+        <div style="background:#fff;border:1px solid var(--g1);border-radius:12px;padding:12px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+          <div>
+            <div style="font-size:9px;font-weight:700;color:var(--tx2);letter-spacing:1.5px;text-transform:uppercase;">Período</div>
+            <div id="cot-dash-periodo-label" style="font-size:14px;font-weight:800;color:var(--navy);">Cargando…</div>
+          </div>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <button onclick="cambiarPeriodoDash(-1)" title="Mes anterior" style="background:var(--off);border:1px solid var(--g1);color:var(--navy);font-size:13px;font-weight:700;padding:7px 11px;border-radius:8px;cursor:pointer;font-family:var(--font);">‹</button>
+            <button onclick="periodoDashHoy()" title="Mes actual" style="background:rgba(124,58,237,.08);border:1px solid rgba(124,58,237,.25);color:#7C3AED;font-size:11px;font-weight:700;padding:7px 11px;border-radius:8px;cursor:pointer;font-family:var(--font);">Hoy</button>
+            <button onclick="cambiarPeriodoDash(1)" title="Mes siguiente" style="background:var(--off);border:1px solid var(--g1);color:var(--navy);font-size:13px;font-weight:700;padding:7px 11px;border-radius:8px;cursor:pointer;font-family:var(--font);">›</button>
+          </div>
+        </div>
+
+        <!-- Grid de 6 KPIs (3x2 desktop, 2x3 móvil) -->
+        <div id="cot-dash-grid" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));gap:10px;margin-bottom:14px;">
+          <!-- Las 6 tarjetas se renderizan dinámicamente -->
+        </div>
+
+        <!-- Top 5 clientes -->
+        <div class="card" style="padding:14px;margin-bottom:14px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+            <div>
+              <div style="font-size:9px;font-weight:700;color:var(--tx2);letter-spacing:1.5px;text-transform:uppercase;">Top clientes</div>
+              <div style="font-size:13px;font-weight:800;color:var(--navy);">🏆 Mayor monto cotizado</div>
+            </div>
+          </div>
+          <div id="cot-dash-top-clientes"></div>
+        </div>
+
+        <!-- Cotizaciones por vencer -->
+        <div class="card" style="padding:14px;margin-bottom:14px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+            <div>
+              <div style="font-size:9px;font-weight:700;color:#F59E0B;letter-spacing:1.5px;text-transform:uppercase;">Atención</div>
+              <div style="font-size:13px;font-weight:800;color:var(--navy);">⏳ Cotizaciones por vencer</div>
+              <div style="font-size:10.5px;color:var(--tx2);margin-top:2px;">Pendientes con vigencia próxima a expirar</div>
+            </div>
+          </div>
+          <div id="cot-dash-por-vencer"></div>
+        </div>
+
+        <!-- Embudo de estados -->
+        <div class="card" style="padding:14px;">
+          <div style="margin-bottom:12px;">
+            <div style="font-size:9px;font-weight:700;color:var(--tx2);letter-spacing:1.5px;text-transform:uppercase;">Pipeline</div>
+            <div style="font-size:13px;font-weight:800;color:var(--navy);">📊 Estados de cotizaciones (mes)</div>
+          </div>
+          <div id="cot-dash-pipeline"></div>
         </div>
       </div>
 
@@ -5281,6 +5325,295 @@ function _renderClausulasCustom(){
 }
 
 // ═══════════════════════════════════════════════════════════════
+// DASHBOARD COTIZACIONES (Sesión 2B)
+// ═══════════════════════════════════════════════════════════════
+
+let _cotDashPeriodo = (function(){
+  var d = new Date();
+  return {anio: d.getFullYear(), mes: d.getMonth()};
+})();
+
+function periodoDashHoy(){
+  var d = new Date();
+  _cotDashPeriodo = {anio: d.getFullYear(), mes: d.getMonth()};
+  renderCotDashboard();
+}
+
+function cambiarPeriodoDash(delta){
+  var m = _cotDashPeriodo.mes + delta;
+  var a = _cotDashPeriodo.anio;
+  if(m < 0){ m = 11; a--; }
+  if(m > 11){ m = 0; a++; }
+  _cotDashPeriodo = {anio: a, mes: m};
+  renderCotDashboard();
+}
+
+function _nombreMes(m){
+  return ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"][m] || "";
+}
+
+function _cotsDelPeriodo(p){
+  return cotizaciones.filter(function(c){
+    if(!c.fecha) return false;
+    try {
+      var d = new Date(c.fecha+"T12:00:00");
+      return d.getMonth() === p.mes && d.getFullYear() === p.anio;
+    } catch(e){ return false; }
+  });
+}
+
+function _cotsTodasHasta(p){
+  // Cotizaciones desde inicio hasta el último día del periodo (inclusive)
+  var fin = new Date(p.anio, p.mes+1, 0, 23, 59, 59);
+  return cotizaciones.filter(function(c){
+    if(!c.fecha) return false;
+    try {
+      var d = new Date(c.fecha+"T12:00:00");
+      return d.getTime() <= fin.getTime();
+    } catch(e){ return false; }
+  });
+}
+
+// Render principal del dashboard
+function renderCotDashboard(){
+  var label = document.getElementById("cot-dash-periodo-label");
+  if(label) label.textContent = _nombreMes(_cotDashPeriodo.mes).charAt(0).toUpperCase()+_nombreMes(_cotDashPeriodo.mes).slice(1)+" "+_cotDashPeriodo.anio;
+
+  var cotsMes = _cotsDelPeriodo(_cotDashPeriodo);
+
+  // ─── KPI 1: Monto total cotizado en el mes ───
+  var totalMes = cotsMes.reduce(function(s,c){return s+(parseFloat(c.granTotal)||0);},0);
+  // Comparativa con mes anterior
+  var pAnt = (function(){var m=_cotDashPeriodo.mes-1,a=_cotDashPeriodo.anio;if(m<0){m=11;a--;}return{anio:a,mes:m};})();
+  var totalMesAnt = _cotsDelPeriodo(pAnt).reduce(function(s,c){return s+(parseFloat(c.granTotal)||0);},0);
+  var deltaPct = totalMesAnt > 0 ? ((totalMes-totalMesAnt)/totalMesAnt)*100 : 0;
+  var deltaTxt = "";
+  if(totalMesAnt > 0){
+    deltaTxt = (deltaPct>=0?"↑ ":"↓ ")+Math.abs(deltaPct).toFixed(0)+"% vs mes anterior";
+  } else if(totalMes > 0){
+    deltaTxt = "Primer mes con datos";
+  }
+
+  // ─── KPI 2: % utilidad promedio (de cotizaciones del mes con costeo vinculado) ───
+  // Como no tenemos acceso directo a costeos aquí, estimamos desde p.precio vs el costo si hay costeo origen
+  // Por simplicidad en MVP: si hay costeoIdOrigen, usamos el cálculo estándar de utilidad de costeos
+  var utilProm = 0, utilCount = 0;
+  if(typeof costeos !== "undefined" && Array.isArray(costeos)){
+    cotsMes.forEach(function(c){
+      if(c.costeoIdOrigen){
+        var costeo = costeos.find(function(co){return co.id === c.costeoIdOrigen;});
+        if(costeo){
+          // Sumar utilidad % ponderada por sistema
+          var sistemas = Array.isArray(costeo.sistemas) ? costeo.sistemas : [];
+          if(sistemas.length){
+            var avg = sistemas.reduce(function(s,sis){return s+(parseFloat(sis.utilidad)||0);},0)/sistemas.length;
+            utilProm += avg;
+            utilCount++;
+          }
+        }
+      }
+    });
+    utilProm = utilCount > 0 ? (utilProm/utilCount) : 0;
+  }
+  var utilSubtxt = utilCount > 0 ? "Promedio en "+utilCount+" cotización"+(utilCount>1?"es":"")+" con costeo" : "Sin cotizaciones con costeo vinculado";
+
+  // ─── KPI 3: Tasa de cierre ───
+  // Definición: ganadas / (ganadas + perdidas) — ignora pendientes
+  var ganadas = cotsMes.filter(function(c){return c.estado==="aceptada"||c.estado==="en_obra"||c.estado==="cerrada"||c.estado==="ganada";}).length;
+  var perdidas = cotsMes.filter(function(c){return c.estado==="rechazada";}).length;
+  var pendientes = cotsMes.filter(function(c){return !c.estado || c.estado==="pendiente";}).length;
+  var vencidas = cotsMes.filter(function(c){return c.estado==="vencida";}).length;
+  var totalDecidido = ganadas+perdidas;
+  var tasaCierre = totalDecidido>0 ? (ganadas/totalDecidido)*100 : 0;
+  var tasaSubtxt = totalDecidido>0 ? ganadas+" ganadas / "+perdidas+" perdidas" : "Sin cotizaciones decididas aún";
+
+  // ─── KPI 4: Top 5 clientes (ya se renderizan abajo, aquí solo conteo) ───
+  // Lo necesitamos como KPI rápido: # de clientes únicos en el mes
+  var clientesUnicos = new Set();
+  cotsMes.forEach(function(c){if(c.empresa) clientesUnicos.add(c.empresa.trim().toLowerCase());});
+  var nClientes = clientesUnicos.size;
+
+  // ─── KPI 5: Cotizaciones por vencer ───
+  // Pendientes con < 3 días para vencer (de TODAS, no solo del mes)
+  var hoy = new Date(); hoy.setHours(12,0,0,0);
+  var porVencer = cotizaciones.filter(function(c){
+    if((c.estado||"pendiente") !== "pendiente") return false;
+    if(!c.fecha) return false;
+    try {
+      var dCot = new Date(c.fecha+"T12:00:00");
+      var diasTrans = Math.floor((hoy-dCot)/86400000);
+      var vig = parseInt(c.vigencia)||15;
+      var diasRest = vig - diasTrans;
+      return diasRest <= 3 && diasRest >= 0;
+    } catch(e){return false;}
+  });
+  var nPorVencer = porVencer.length;
+
+  // ─── KPI 6: Tiempo promedio de respuesta del cliente ───
+  // (solo cotizaciones que tienen fechaRespuesta)
+  var tiemposResp = [];
+  cotsMes.forEach(function(c){
+    if(c.fechaRespuesta && c.fecha){
+      try {
+        var d1 = new Date(c.fecha+"T12:00:00");
+        var d2 = new Date(c.fechaRespuesta+"T12:00:00");
+        var dias = Math.round((d2-d1)/86400000);
+        if(dias >= 0 && dias < 365) tiemposResp.push(dias);
+      } catch(e){}
+    }
+  });
+  var tiempoProm = tiemposResp.length ? Math.round(tiemposResp.reduce(function(a,b){return a+b;},0)/tiemposResp.length) : 0;
+  var tiempoSubtxt = tiemposResp.length ? "Basado en "+tiemposResp.length+" respuesta"+(tiemposResp.length>1?"s":"") : "Sin respuestas registradas";
+
+  // ─── Render del grid 3x2 ───
+  var grid = document.getElementById("cot-dash-grid");
+  if(grid){
+    grid.innerHTML = ''
+      // KPI 1 — Monto cotizado
+      +_kpiCard({
+        titulo:"Monto cotizado",
+        valor: "$"+fmtPeso(totalMes),
+        subtitulo: cotsMes.length+" cotización"+(cotsMes.length===1?"":"es")+(deltaTxt?" · "+deltaTxt:""),
+        color:"#7C3AED", icono:"💰"
+      })
+      // KPI 2 — Utilidad
+      +_kpiCard({
+        titulo:"Utilidad promedio",
+        valor: utilCount>0 ? utilProm.toFixed(1)+"%" : "—",
+        subtitulo: utilSubtxt,
+        color:"#10B981", icono:"📈"
+      })
+      // KPI 3 — Tasa de cierre
+      +_kpiCard({
+        titulo:"Tasa de cierre",
+        valor: totalDecidido>0 ? tasaCierre.toFixed(0)+"%" : "—",
+        subtitulo: tasaSubtxt,
+        color:"#1E6FD9", icono:"🎯"
+      })
+      // KPI 4 — Clientes
+      +_kpiCard({
+        titulo:"Clientes únicos",
+        valor: nClientes,
+        subtitulo: nClientes===1?"1 empresa cotizada":nClientes+" empresas cotizadas",
+        color:"#0EA5E9", icono:"🏢"
+      })
+      // KPI 5 — Por vencer
+      +_kpiCard({
+        titulo:"Por vencer",
+        valor: nPorVencer,
+        subtitulo: nPorVencer===0?"Sin alertas":"Cotizaciones próximas a expirar",
+        color:"#F59E0B", icono:"⏳"
+      })
+      // KPI 6 — Tiempo respuesta
+      +_kpiCard({
+        titulo:"Tiempo respuesta",
+        valor: tiemposResp.length>0 ? tiempoProm+" días" : "—",
+        subtitulo: tiempoSubtxt,
+        color:"#EC4899", icono:"⚡"
+      });
+  }
+
+  // ─── Top 5 clientes ───
+  var topMap = {};
+  cotsMes.forEach(function(c){
+    if(!c.empresa) return;
+    var k = c.empresa.trim();
+    if(!topMap[k]) topMap[k] = {empresa:k, total:0, count:0};
+    topMap[k].total += parseFloat(c.granTotal)||0;
+    topMap[k].count++;
+  });
+  var topArr = Object.values(topMap).sort(function(a,b){return b.total-a.total;}).slice(0,5);
+  var topWrap = document.getElementById("cot-dash-top-clientes");
+  if(topWrap){
+    if(!topArr.length){
+      topWrap.innerHTML = '<div style="text-align:center;padding:18px;font-size:11px;color:var(--tx2);">Sin cotizaciones en este período</div>';
+    } else {
+      var maxT = topArr[0].total || 1;
+      topWrap.innerHTML = topArr.map(function(t,i){
+        var pct = (t.total/maxT)*100;
+        var medalla = i===0?"🥇":(i===1?"🥈":(i===2?"🥉":"   "));
+        return '<div style="margin-bottom:8px;">'
+          +'<div style="display:flex;align-items:center;justify-content:space-between;font-size:11px;margin-bottom:4px;">'
+            +'<span style="font-weight:700;color:var(--navy);">'+medalla+' '+escapeHtml(t.empresa)+' <span style="color:var(--tx3);font-weight:500;font-size:10px;">('+t.count+' cot)</span></span>'
+            +'<span style="font-weight:800;color:#7C3AED;">$'+fmtPeso(t.total)+'</span>'
+          +'</div>'
+          +'<div style="height:6px;background:var(--off);border-radius:3px;overflow:hidden;">'
+            +'<div style="height:100%;width:'+pct+'%;background:linear-gradient(90deg,#7C3AED,#EC4899);"></div>'
+          +'</div>'
+        +'</div>';
+      }).join("");
+    }
+  }
+
+  // ─── Cotizaciones por vencer (lista) ───
+  var pvWrap = document.getElementById("cot-dash-por-vencer");
+  if(pvWrap){
+    if(!porVencer.length){
+      pvWrap.innerHTML = '<div style="text-align:center;padding:14px;font-size:11px;color:#10B981;font-weight:700;">✓ Sin alertas — todas las cotizaciones pendientes están dentro de su vigencia</div>';
+    } else {
+      pvWrap.innerHTML = porVencer.map(function(c){
+        var dCot = new Date(c.fecha+"T12:00:00");
+        var diasTrans = Math.floor((hoy-dCot)/86400000);
+        var vig = parseInt(c.vigencia)||15;
+        var diasRest = vig - diasTrans;
+        return '<div onclick="abrirCot(\''+c.id+'\')" style="cursor:pointer;background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.25);border-radius:8px;padding:10px;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">'
+          +'<div style="flex:1;min-width:0;">'
+            +'<div style="font-size:12px;font-weight:700;color:var(--navy);">'+escapeHtml(c.empresa||"Sin empresa")+'</div>'
+            +'<div style="font-size:10px;color:var(--tx2);">'+escapeHtml(c.folio||"")+' · '+escapeHtml(c.fecha||"")+'</div>'
+          +'</div>'
+          +'<div style="text-align:right;flex-shrink:0;">'
+            +'<div style="font-size:10px;font-weight:800;color:'+(diasRest<=1?"#DC2626":"#F59E0B")+';text-transform:uppercase;letter-spacing:.5px;">⏳ '+(diasRest===0?"Vence hoy":(diasRest+" día"+(diasRest>1?"s":"")))+'</div>'
+            +'<div style="font-size:11px;font-weight:700;color:#10B981;">$'+fmtPeso(parseFloat(c.granTotal)||0)+'</div>'
+          +'</div>'
+        +'</div>';
+      }).join("");
+    }
+  }
+
+  // ─── Pipeline (embudo de estados) ───
+  var pipeline = [
+    {key:"pendiente", lbl:"🟡 Pendiente", n:pendientes, color:"#F59E0B"},
+    {key:"aceptada", lbl:"🟢 Aceptadas", n:cotsMes.filter(function(c){return c.estado==="aceptada";}).length, color:"#10B981"},
+    {key:"en_obra", lbl:"🔵 En obra", n:cotsMes.filter(function(c){return c.estado==="en_obra";}).length, color:"#1E6FD9"},
+    {key:"cerrada", lbl:"⚫ Cerradas", n:cotsMes.filter(function(c){return c.estado==="cerrada";}).length, color:"#374151"},
+    {key:"rechazada", lbl:"🔴 Rechazadas", n:perdidas, color:"#EF4444"},
+    {key:"vencida", lbl:"⏳ Vencidas", n:vencidas, color:"#7F1D1D"}
+  ];
+  var maxN = Math.max(1, Math.max.apply(null, pipeline.map(function(p){return p.n;})));
+  var pipeWrap = document.getElementById("cot-dash-pipeline");
+  if(pipeWrap){
+    pipeWrap.innerHTML = pipeline.map(function(p){
+      var pct = (p.n/maxN)*100;
+      return '<div style="margin-bottom:6px;">'
+        +'<div style="display:flex;align-items:center;justify-content:space-between;font-size:11px;margin-bottom:3px;">'
+          +'<span style="font-weight:600;color:var(--navy);">'+p.lbl+'</span>'
+          +'<span style="font-weight:800;color:'+p.color+';">'+p.n+'</span>'
+        +'</div>'
+        +'<div style="height:8px;background:var(--off);border-radius:4px;overflow:hidden;">'
+          +'<div style="height:100%;width:'+(p.n>0?pct:0)+'%;background:'+p.color+';transition:width .3s;"></div>'
+        +'</div>'
+      +'</div>';
+    }).join("");
+  }
+}
+
+function _kpiCard(opts){
+  return '<div class="card" style="padding:14px;border-left:4px solid '+opts.color+';position:relative;overflow:hidden;">'
+    +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">'
+      +'<div style="font-size:9px;font-weight:700;color:var(--tx2);letter-spacing:1.5px;text-transform:uppercase;">'+opts.titulo+'</div>'
+      +'<div style="font-size:18px;opacity:.6;">'+opts.icono+'</div>'
+    +'</div>'
+    +'<div style="font-size:24px;font-weight:900;color:'+opts.color+';line-height:1.1;margin-bottom:4px;">'+opts.valor+'</div>'
+    +'<div style="font-size:10px;color:var(--tx2);line-height:1.3;">'+escapeHtml(opts.subtitulo)+'</div>'
+  +'</div>';
+}
+
+// Exponer al window
+window.cambiarPeriodoDash = cambiarPeriodoDash;
+window.periodoDashHoy = periodoDashHoy;
+window.renderCotDashboard = renderCotDashboard;
+
+// ═══════════════════════════════════════════════════════════════
 // SUB-PESTAÑAS DEL MÓDULO COTIZACIONES
 // ═══════════════════════════════════════════════════════════════
 
@@ -5317,6 +5650,8 @@ function showCotSubtab(tab, btnEl){
     renderListaCot();
   } else if(tab === "conceptos"){
     cargarCatalogoConceptos();
+  } else if(tab === "dashboard"){
+    if(typeof renderCotDashboard === "function") renderCotDashboard();
   }
 }
 
