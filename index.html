@@ -1714,7 +1714,8 @@ body.in-costeo #app{
             <div style="font-size:10px;font-weight:700;color:#7C3AED;letter-spacing:1px;text-transform:uppercase;">🔧 Conceptos</div>
             <div style="display:flex;gap:6px;flex-wrap:wrap;">
               <button id="cot-btn-cargar-costeo" onclick="abrirModalCargarCosteo()" style="display:none;background:rgba(124,58,237,.1);border:1px solid rgba(124,58,237,.25);color:#7C3AED;font-size:10px;font-weight:700;padding:6px 12px;border-radius:7px;cursor:pointer;font-family:var(--font);">⚡ Cargar desde Costeo</button>
-              <button onclick="addPartidaCot()" style="background:rgba(124,58,237,.1);border:1px solid rgba(124,58,237,.25);color:#7C3AED;font-size:10px;font-weight:700;padding:6px 12px;border-radius:7px;cursor:pointer;font-family:var(--font);">+ Agregar</button>
+              <button onclick="addPartidaCot()" style="background:rgba(124,58,237,.1);border:1px solid rgba(124,58,237,.25);color:#7C3AED;font-size:10px;font-weight:700;padding:6px 12px;border-radius:7px;cursor:pointer;font-family:var(--font);">+ Preset</button>
+              <button onclick="addPartidaCotPersonalizada()" title="Agregar concepto manual (título y descripción libres)" style="background:rgba(30,111,217,.1);border:1px solid rgba(30,111,217,.25);color:#1E6FD9;font-size:10px;font-weight:700;padding:6px 12px;border-radius:7px;cursor:pointer;font-family:var(--font);">+ ✏️ Personalizado</button>
             </div>
           </div>
           <!-- Indicador de vinculación con costeo -->
@@ -5503,6 +5504,28 @@ function addPartidaCot(){
   renderPartidasCot();
 }
 
+// Agregar concepto 100% personalizado (título y descripción manuales)
+function addPartidaCotPersonalizada(){
+  if(typeof _cotSnapshot==="function") _cotSnapshot(true);
+  _cotPartidaNextId=(_cotPartidas[_cotPartidas.length-1]?.id||0)+1;
+  _cotPartidas.push({
+    id: _cotPartidaNextId,
+    servicio: "__PERSONALIZADO__",
+    tituloCustom: "",
+    desc: "",
+    proc: "",
+    qty: 1,
+    unit: "lote",
+    precio: 0
+  });
+  renderPartidasCot();
+  // Foco automático en el campo título
+  setTimeout(function(){
+    var inp = document.getElementById("cot-p-titulo-"+_cotPartidaNextId);
+    if(inp) inp.focus();
+  }, 100);
+}
+
 function removePartidaCot(id){
   if(typeof _cotSnapshot==="function") _cotSnapshot(true);
   _cotPartidas=_cotPartidas.filter(function(p){return p.id!==id;});
@@ -5515,12 +5538,25 @@ function onServicioChange(id, val){
   if(!p)return;
   if(typeof _cotSnapshot==="function") _cotSnapshot(true);
   p.servicio=val;
-  var cat=CAT_SERVICIOS[val];
-  if(cat){p.desc=cat.desc;p.proc=cat.proc;}
-  var el=document.getElementById("cot-p-desc-"+id);
-  var el2=document.getElementById("cot-p-proc-"+id);
-  if(el)el.value=p.desc;
-  if(el2)el2.value=p.proc;
+  if(val === "__PERSONALIZADO__"){
+    // Concepto 100% manual — limpiar y dejar que el usuario llene desde cero
+    p.desc = "";
+    p.proc = "";
+    p.tituloCustom = p.tituloCustom || "";
+  } else {
+    // Servicio del catálogo — pre-llenar y quitar título personalizado
+    var cat=CAT_SERVICIOS[val];
+    if(cat){p.desc=cat.desc;p.proc=cat.proc;}
+    delete p.tituloCustom;
+  }
+  // Re-render completo para que el campo de título aparezca/desaparezca
+  renderPartidasCot();
+  if(val === "__PERSONALIZADO__"){
+    setTimeout(function(){
+      var inp = document.getElementById("cot-p-titulo-"+id);
+      if(inp) inp.focus();
+    }, 80);
+  }
 }
 
 function onPartidaField(id,field,val){
@@ -5561,19 +5597,36 @@ function renderPartidasCot(){
     var unitsOpts=UNITS.map(function(u){return '<option value="'+u+'"'+(u===(p.unit||"m²")?" selected":"")+'>'+u+'</option>';}).join("");
     var servicOpts=Object.keys(CAT_SERVICIOS).map(function(k){
       return '<option value="'+k+'"'+(k===p.servicio?" selected":"")+">"+k+"</option>";
-    }).join("")+'<option value="Otro"'+(p.servicio==="Otro"?" selected":"")+">Otro (especificar)</option>";
+    }).join("")
+      +'<option value="Otro"'+(p.servicio==="Otro"?" selected":"")+">Otro (especificar)</option>"
+      +'<option value="__PERSONALIZADO__"'+(p.servicio==="__PERSONALIZADO__"?" selected":"")+">✏️ Personalizado (título y descripción manual)</option>";
+    // Mostrar el campo de título personalizado solo si el servicio es __PERSONALIZADO__ O si tiene un tituloCustom (editado manualmente)
+    var esPersonalizado = p.servicio === "__PERSONALIZADO__";
+    var tieneTituloEditado = !esPersonalizado && p.tituloCustom && p.tituloCustom.trim() && p.tituloCustom !== p.servicio;
+    var mostrarTitulo = esPersonalizado || tieneTituloEditado;
+    var tituloVal = p.tituloCustom || (esPersonalizado ? "" : p.servicio || "");
     return '<div style="background:var(--off2);border:1px solid var(--g1);border-radius:12px;padding:12px;margin-bottom:10px;">'
       +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">'
         +'<div style="font-size:11px;font-weight:700;color:var(--navy);">Concepto '+(p.id)+'</div>'
-        +'<button onclick="removePartidaCot('+p.id+')" style="background:var(--red-dim);border:none;color:var(--red);font-size:10px;font-weight:600;padding:4px 8px;border-radius:6px;cursor:pointer;font-family:var(--font);">✕</button>'
+        +'<div style="display:flex;gap:6px;align-items:center;">'
+          +(!mostrarTitulo ? '<button onclick="_activarTituloCustom('+p.id+')" title="Editar título manualmente" style="background:rgba(30,111,217,.08);border:1px solid rgba(30,111,217,.2);color:#1E6FD9;font-size:9px;font-weight:700;padding:3px 7px;border-radius:5px;cursor:pointer;font-family:var(--font);">✏️ Editar título</button>' : '')
+          +'<button onclick="removePartidaCot('+p.id+')" style="background:var(--red-dim);border:none;color:var(--red);font-size:10px;font-weight:600;padding:4px 8px;border-radius:6px;cursor:pointer;font-family:var(--font);">✕</button>'
+        +'</div>'
       +'</div>'
       // Servicio
       +'<div class="fg" style="margin-bottom:8px;"><label class="flabel">Tipo de trabajo</label>'
         +'<select class="fselect" onchange="onServicioChange('+p.id+',this.value)">'+servicOpts+'</select>'
       +'</div>'
+      // Título personalizado (solo si está habilitado)
+      +(mostrarTitulo
+        ? '<div class="fg" style="margin-bottom:8px;"><label class="flabel">Título del concepto '+(esPersonalizado?'<span style="color:#EF4444;">*</span>':'<span style="font-weight:400;color:var(--tx3);font-size:9px;text-transform:none;letter-spacing:0;"> · editado manualmente</span>')+'</label>'
+          +'<input class="finput" id="cot-p-titulo-'+p.id+'" placeholder="'+(esPersonalizado?'Ej: Limpieza profunda y desengrasado':'Título del concepto')+'" value="'+tituloVal.replace(/"/g,"&quot;")+'" oninput="onPartidaField('+p.id+',&apos;tituloCustom&apos;,this.value)" style="font-weight:700;">'
+        +(!esPersonalizado ? '<div style="margin-top:4px;"><button onclick="_quitarTituloCustom('+p.id+')" style="background:none;border:none;color:var(--tx3);font-size:9px;cursor:pointer;font-family:var(--font);text-decoration:underline;padding:0;">↺ Restaurar título original</button></div>' : '')
+        +'</div>'
+        : '')
       // Descripción (editable, se pre-llena)
       +'<div class="fg" style="margin-bottom:8px;"><label class="flabel">Descripción (incluir en PDF)</label>'
-        +'<textarea class="ftextarea" id="cot-p-desc-'+p.id+'" rows="3" oninput="onPartidaField('+p.id+',&apos;desc&apos;,this.value)" style="min-height:70px;">'+((p.desc||"").replace(/</g,"&lt;"))+'</textarea>'
+        +'<textarea class="ftextarea" id="cot-p-desc-'+p.id+'" rows="3" oninput="onPartidaField('+p.id+',&apos;desc&apos;,this.value)" style="min-height:70px;" placeholder="'+(esPersonalizado?'Describe el trabajo a realizar...':'Descripción del concepto')+'">'+((p.desc||"").replace(/</g,"&lt;"))+'</textarea>'
       +'</div>'
       // Fila: Cantidad | Unidad | Precio unitario | = Total
       +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:6px;">'
@@ -5590,6 +5643,32 @@ function renderPartidasCot(){
       +'</div>'
     +'</div>';
   }).join("");
+}
+
+// Activar campo de título manual sobre un concepto pre-llenado (Opción C)
+function _activarTituloCustom(id){
+  var p = _cotPartidas.find(function(x){return x.id===id;});
+  if(!p) return;
+  if(typeof _cotSnapshot==="function") _cotSnapshot(true);
+  // Pre-llenar con el nombre actual del servicio
+  if(!p.tituloCustom || !p.tituloCustom.trim()){
+    p.tituloCustom = p.servicio || "";
+  }
+  renderPartidasCot();
+  // Foco automático en el nuevo input
+  setTimeout(function(){
+    var inp = document.getElementById("cot-p-titulo-"+id);
+    if(inp){ inp.focus(); inp.select(); }
+  }, 80);
+}
+
+// Quitar título personalizado y volver al original
+function _quitarTituloCustom(id){
+  var p = _cotPartidas.find(function(x){return x.id===id;});
+  if(!p) return;
+  if(typeof _cotSnapshot==="function") _cotSnapshot(true);
+  delete p.tituloCustom;
+  renderPartidasCot();
 }
 
 // ── Guardar cotización en Firestore ───────────────────────────────
@@ -5636,12 +5715,13 @@ async function guardarCot(){
     }),
     partidas:_cotPartidas.map(function(p){
       return {
-        servicio: p.servicio || "",
-        desc:     p.desc     || "",
-        proc:     p.proc     || "",
-        qty:      parseFloat(p.qty) || 0,
-        unit:     p.unit     || "m²",
-        precio:   parseFloat(p.precio) || 0
+        servicio:    p.servicio     || "",
+        tituloCustom: p.tituloCustom || "",
+        desc:        p.desc         || "",
+        proc:        p.proc         || "",
+        qty:         parseFloat(p.qty) || 0,
+        unit:        p.unit         || "m²",
+        precio:      parseFloat(p.precio) || 0
       };
     }),
     subtotal:tots.sub,iva:tots.iva,granTotal:tots.total,
@@ -5764,9 +5844,18 @@ function generarPdfCotEnVentana(cot, winRef){
           return '<div style="font-size:9.5px;color:#6B7FA3;line-height:1.7;padding:2px 0 2px 10px;border-left:2px solid #E2E8F2;">'+l.trim()+'</div>';
         }).join('')+'</div>';
     }
+    // Determinar el título de la partida: tituloCustom > servicio > "Sin título"
+    var tituloPartida;
+    if(p.tituloCustom && p.tituloCustom.trim()){
+      tituloPartida = p.tituloCustom.trim();
+    } else if(p.servicio === "__PERSONALIZADO__"){
+      tituloPartida = "Sin título";
+    } else {
+      tituloPartida = p.servicio || "Sin título";
+    }
     return '<tr>'
       +'<td style="padding:16px 20px;border-bottom:1px solid #EDF1F8;vertical-align:top;">'
-          +'<div style="font-size:12px;font-weight:700;color:#0B1F3A;margin-bottom:5px;">'+(i+1)+'. '+p.servicio+'</div>'
+          +'<div style="font-size:12px;font-weight:700;color:#0B1F3A;margin-bottom:5px;">'+(i+1)+'. '+tituloPartida+'</div>'
           +(p.desc?'<div style="font-size:11px;color:#4A5E7A;line-height:1.7;white-space:pre-wrap;">'+p.desc+'</div>':'')
           +procHtml
         +'</td>'
