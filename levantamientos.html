@@ -1050,6 +1050,8 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
 
 <button class="fab" id="fab" onclick="showNuevo()">+</button>
 <div id="toast"></div>
+<!-- Indicador de versión visible para diagnóstico (puedes quitarlo después) -->
+<div id="version-badge" style="position:fixed;top:4px;right:4px;background:#10B981;color:#fff;font-family:monospace;font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;z-index:9999;opacity:.8;pointer-events:none;">v28</div>
 
 <!-- MODAL NUEVO PROYECTO -->
 <div class="moverlay" id="modal-nuevo">
@@ -1143,7 +1145,7 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
 <script>
 
 // ─── HELPERS BÁSICOS DE UI ────────────────────────
-console.log("%c[ROMSA] Levantamientos v27 fix-showToast — 2026-04-28", "color:#10B981;font-weight:bold;font-size:13px;");
+console.log("%c[ROMSA] Levantamientos v28 — eval-fix + diag visible — 2026-05-01", "color:#10B981;font-weight:bold;font-size:14px;background:#111;padding:4px 8px;border-radius:4px;");
 
 function showToast(msg){
   var t = document.getElementById("toast");
@@ -2152,17 +2154,27 @@ function _hookBotonRepArea(){
 let _arepFotosTemp = [];
 let _arepUnit = "m";
 
-function _abrirModalNuevaRepArea(){
-  if(!_getAreaActiva()){ showToast("⚠️ Sin área activa"); return; }
-  _arepFotosTemp = [];
-  _arepUnit = "m";
+window._abrirModalNuevaRepArea = function(){
+  console.log("[ROMSA] _abrirModalNuevaRepArea llamada — iniciando modal");
+  try {
+    if(typeof _getAreaActiva !== "function"){
+      alert("Error: _getAreaActiva no está definida. Recarga la página con Ctrl+Shift+R.");
+      return;
+    }
+    if(!_getAreaActiva()){
+      if(typeof showToast === "function") showToast("⚠️ Sin área activa");
+      else alert("⚠️ Sin área activa");
+      return;
+    }
+    _arepFotosTemp = [];
+    _arepUnit = "m";
 
-  const tipos = ["Grieta","Junta","Bache","Hueco","Desnivel","Fisura","Descascaramiento","Mancha","Otro"];
-  const sevs  = ["Leve","Moderada","Grave","Crítica"];
-  const tipoOpts = tipos.map(t=>'<option value="'+t+'">'+t+'</option>').join("");
-  const sevOpts  = sevs.map(s=>'<option value="'+s+'"'+(s==="Moderada"?' selected':'')+'>'+s+'</option>').join("");
+    const tipos = ["Grieta","Junta","Bache","Hueco","Desnivel","Fisura","Descascaramiento","Mancha","Otro"];
+    const sevs  = ["Leve","Moderada","Grave","Crítica"];
+    const tipoOpts = tipos.map(t=>'<option value="'+t+'">'+t+'</option>').join("");
+    const sevOpts  = sevs.map(s=>'<option value="'+s+'"'+(s==="Moderada"?' selected':'')+'>'+s+'</option>').join("");
 
-  const ov = document.createElement("div");
+    const ov = document.createElement("div");
   ov.className = "moverlay";
   ov.id = "modal-arep";
   ov.style.cssText = "display:flex;position:fixed;inset:0;background:rgba(11,31,58,.6);z-index:600;align-items:flex-end;justify-content:center;";
@@ -2228,9 +2240,15 @@ function _abrirModalNuevaRepArea(){
       </div>
     </div>
   `;
-  document.body.appendChild(ov);
-  setTimeout(()=>document.getElementById("arep-desc")?.focus(), 100);
-}
+    document.body.appendChild(ov);
+    setTimeout(()=>document.getElementById("arep-desc")?.focus(), 100);
+    console.log("[ROMSA] Modal de reparación abierto correctamente");
+  } catch(err) {
+    console.error("[ROMSA] Error abriendo modal de reparación:", err);
+    alert("Error al abrir modal: " + err.message);
+  }
+};
+console.log("[ROMSA] window._abrirModalNuevaRepArea registrada:", typeof window._abrirModalNuevaRepArea);
 
 function _cerrarModalArep(){
   const m = document.getElementById("modal-arep");

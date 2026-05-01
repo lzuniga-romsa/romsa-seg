@@ -1624,11 +1624,31 @@ body.in-costeo #app{
       </button>
     </div>
 
+    <!-- SUB-PESTAÑAS DEL MÓDULO COTIZACIONES -->
+    <div id="cot-subtabs-bar" style="background:#fff;border-bottom:1px solid var(--g1);padding:0 12px;display:flex;gap:0;overflow-x:auto;-webkit-overflow-scrolling:touch;flex-shrink:0;">
+      <button class="cot-subtab cot-subtab-active" data-cottab="dashboard" onclick="showCotSubtab('dashboard',this)" style="background:transparent;border:none;color:#7C3AED;font-size:12px;font-weight:700;padding:13px 14px;cursor:pointer;font-family:var(--font);position:relative;white-space:nowrap;border-bottom:3px solid #7C3AED;">📊 Dashboard</button>
+      <button class="cot-subtab" data-cottab="lista" onclick="showCotSubtab('lista',this)" style="background:transparent;border:none;color:var(--tx2);font-size:12px;font-weight:600;padding:13px 14px;cursor:pointer;font-family:var(--font);position:relative;white-space:nowrap;border-bottom:3px solid transparent;">📋 Cotizaciones</button>
+      <button class="cot-subtab" data-cottab="conceptos" onclick="showCotSubtab('conceptos',this)" style="background:transparent;border:none;color:var(--tx2);font-size:12px;font-weight:600;padding:13px 14px;cursor:pointer;font-family:var(--font);position:relative;white-space:nowrap;border-bottom:3px solid transparent;">🔧 Conceptos</button>
+      <button class="cot-subtab" data-cottab="cuadrillas" onclick="showCotSubtab('cuadrillas',this)" style="background:transparent;border:none;color:var(--tx2);font-size:12px;font-weight:600;padding:13px 14px;cursor:pointer;font-family:var(--font);position:relative;white-space:nowrap;border-bottom:3px solid transparent;">👥 Cuadrillas</button>
+      <button class="cot-subtab" data-cottab="calendario" onclick="showCotSubtab('calendario',this)" style="background:transparent;border:none;color:var(--tx2);font-size:12px;font-weight:600;padding:13px 14px;cursor:pointer;font-family:var(--font);position:relative;white-space:nowrap;border-bottom:3px solid transparent;">📅 Calendario</button>
+    </div>
+
     <!-- CONTENIDO SCROLLABLE -->
     <div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;">
 
-      <!-- LISTA -->
-      <div id="cot-lista-wrap" style="padding:16px;">
+      <!-- ════ SUB-PESTAÑA: DASHBOARD ════ -->
+      <div id="cot-subtab-dashboard" class="cot-subtab-content" style="padding:16px;">
+        <div style="text-align:center;padding:32px 16px;color:var(--tx2);">
+          <div style="font-size:48px;opacity:.4;margin-bottom:12px;">📊</div>
+          <div style="font-size:14px;font-weight:700;color:var(--navy);margin-bottom:6px;">Dashboard de cotizaciones</div>
+          <div style="font-size:11px;line-height:1.5;max-width:340px;margin:0 auto;">Métricas clave del mes, top clientes, tasa de cierre y cotizaciones por vencer.<br><br><strong style="color:#7C3AED;">Próximamente — Sesión 2B</strong></div>
+        </div>
+      </div>
+
+      <!-- ════ SUB-PESTAÑA: LISTA DE COTIZACIONES ════ -->
+      <div id="cot-subtab-lista" class="cot-subtab-content" style="display:none;">
+        <!-- LISTA -->
+        <div id="cot-lista-wrap" style="padding:16px;">
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px;">
           <div style="background:#fff;border:1px solid var(--g1);border-radius:12px;padding:12px 10px;">
             <div style="font-size:8px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Este mes</div>
@@ -1651,8 +1671,41 @@ body.in-costeo #app{
           <div class="empty"><div class="empty-ico">📋</div><div class="empty-ttl">Sin cotizaciones</div><div class="empty-sub">Toca "+ Nueva" para crear tu primera cotización</div></div>
         </div>
       </div>
+      </div><!-- /cot-subtab-lista -->
 
-      <!-- FORMULARIO -->
+      <!-- ════ SUB-PESTAÑA: CATÁLOGO DE CONCEPTOS ════ -->
+      <div id="cot-subtab-conceptos" class="cot-subtab-content" style="display:none;padding:16px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
+          <div>
+            <div style="font-size:9px;font-weight:700;color:#7C3AED;letter-spacing:1.5px;text-transform:uppercase;">Catálogo maestro</div>
+            <div style="font-size:15px;font-weight:800;color:var(--navy);">🔧 Conceptos disponibles</div>
+            <div style="font-size:10.5px;color:var(--tx2);margin-top:2px;">Estos conceptos aparecerán en el dropdown al crear cotizaciones</div>
+          </div>
+          <button onclick="abrirEditorConcepto()" style="background:#7C3AED;border:none;color:#fff;font-size:12px;font-weight:700;padding:9px 14px;border-radius:8px;cursor:pointer;font-family:var(--font);">+ Nuevo concepto</button>
+        </div>
+        <div id="cot-cat-loading" style="text-align:center;padding:24px;color:var(--tx2);font-size:11px;">Cargando catálogo...</div>
+        <div id="cot-cat-lista" style="display:none;"></div>
+      </div>
+
+      <!-- ════ SUB-PESTAÑA: CUADRILLAS ════ -->
+      <div id="cot-subtab-cuadrillas" class="cot-subtab-content" style="display:none;padding:16px;">
+        <div style="text-align:center;padding:32px 16px;color:var(--tx2);">
+          <div style="font-size:48px;opacity:.4;margin-bottom:12px;">👥</div>
+          <div style="font-size:14px;font-weight:700;color:var(--navy);margin-bottom:6px;">Equipos / Cuadrillas</div>
+          <div style="font-size:11px;line-height:1.5;max-width:340px;margin:0 auto;">Crear cuadrillas con miembros y colores para asignarlas en el calendario.<br><br><strong style="color:#7C3AED;">Próximamente — Sesión 5</strong></div>
+        </div>
+      </div>
+
+      <!-- ════ SUB-PESTAÑA: CALENDARIO ════ -->
+      <div id="cot-subtab-calendario" class="cot-subtab-content" style="display:none;padding:16px;">
+        <div style="text-align:center;padding:32px 16px;color:var(--tx2);">
+          <div style="font-size:48px;opacity:.4;margin-bottom:12px;">📅</div>
+          <div style="font-size:14px;font-weight:700;color:var(--navy);margin-bottom:6px;">Calendario de obras</div>
+          <div style="font-size:11px;line-height:1.5;max-width:340px;margin:0 auto;">Vista mes/semana con bloques de obra agendados, color por cuadrilla.<br><br><strong style="color:#7C3AED;">Próximamente — Sesión 6</strong></div>
+        </div>
+      </div>
+
+      <!-- FORMULARIO (igual que antes — usable desde cualquier sub-pestaña) -->
       <div id="cot-form-wrap" style="display:none;flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;">
         <div style="padding:16px;">
 
@@ -2598,7 +2651,14 @@ function goScreen(n){
     if(isAdmin){ loadAdminUsers(); loadCheckinLog(); loadFirmas(); }
     else { goScreen("obras"); }
   }
-  if(n==="cotizaciones"){ renderListaCot(); }
+  if(n==="cotizaciones"){
+    renderListaCot();
+    // Default a sub-pestaña Dashboard al entrar (si existe la función)
+    if(typeof showCotSubtab === "function"){
+      var btnDash = document.querySelector('#cot-subtabs-bar .cot-subtab[data-cottab="dashboard"]');
+      if(btnDash) showCotSubtab("dashboard", btnDash);
+    }
+  }
   // Modo vista amplia para módulos de escritorio (Costeo y Cotizaciones)
   const _appEl = document.getElementById("app");
   if(_appEl){
@@ -5220,6 +5280,320 @@ function _renderClausulasCustom(){
   }).join("");
 }
 
+// ═══════════════════════════════════════════════════════════════
+// SUB-PESTAÑAS DEL MÓDULO COTIZACIONES
+// ═══════════════════════════════════════════════════════════════
+
+let _cotSubtabActiva = "dashboard";
+
+function showCotSubtab(tab, btnEl){
+  _cotSubtabActiva = tab;
+  // Ocultar formulario si está abierto (cambio de pestaña principal)
+  document.getElementById("cot-form-wrap").style.display = "none";
+  // Mostrar todos los wraps de sub-pestañas
+  document.querySelectorAll(".cot-subtab-content").forEach(function(el){
+    el.style.display = "none";
+  });
+  // Activar el seleccionado
+  var act = document.getElementById("cot-subtab-"+tab);
+  if(act) act.style.display = "block";
+
+  // Estilo de los botones
+  document.querySelectorAll(".cot-subtab").forEach(function(b){
+    b.classList.remove("cot-subtab-active");
+    b.style.color = "var(--tx2)";
+    b.style.fontWeight = "600";
+    b.style.borderBottom = "3px solid transparent";
+  });
+  if(btnEl){
+    btnEl.classList.add("cot-subtab-active");
+    btnEl.style.color = "#7C3AED";
+    btnEl.style.fontWeight = "700";
+    btnEl.style.borderBottom = "3px solid #7C3AED";
+  }
+
+  // Acciones específicas por pestaña
+  if(tab === "lista"){
+    renderListaCot();
+  } else if(tab === "conceptos"){
+    cargarCatalogoConceptos();
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CATÁLOGO DE CONCEPTOS — Firestore
+// ═══════════════════════════════════════════════════════════════
+
+// Conceptos default (los 7 originales) que se siembran si no existen en Firestore
+const COT_CONCEPTOS_DEFAULT = Object.keys(CAT_SERVICIOS).map(function(k){
+  return {
+    nombre: k,
+    descripcion: CAT_SERVICIOS[k].desc,
+    procedimiento: CAT_SERVICIOS[k].proc,
+    categoria: "Pisos",
+    unidad: "m²",
+    precioBase: 0,
+    activo: true,
+    esDefault: true
+  };
+});
+
+let _cotCatalogo = [];          // catálogo cargado de Firestore (en memoria)
+let _cotCatalogoCargado = false;
+let _cotConceptoEditId = null;   // id en edición
+
+// Carga el catálogo desde Firestore (con seeding la primera vez)
+async function cargarCatalogoConceptos(forzar){
+  var loading = document.getElementById("cot-cat-loading");
+  var lista = document.getElementById("cot-cat-lista");
+  if(_cotCatalogoCargado && !forzar){
+    if(loading) loading.style.display = "none";
+    if(lista) lista.style.display = "block";
+    renderCatalogoConceptos();
+    return;
+  }
+  if(loading) loading.style.display = "block";
+  if(lista) lista.style.display = "none";
+  try {
+    var ref = db.collection("cotizacion_catalogo_conceptos");
+    var snap = await ref.orderBy("nombre").get();
+    _cotCatalogo = snap.docs.map(function(d){
+      var data = d.data();
+      data.id = d.id;
+      return data;
+    });
+    // Si está vacío, sembrar con los 7 defaults
+    if(!_cotCatalogo.length){
+      console.log("[ROMSA] Sembrando catálogo de conceptos (primera vez)");
+      var batch = db.batch();
+      COT_CONCEPTOS_DEFAULT.forEach(function(c){
+        var docRef = ref.doc();
+        batch.set(docRef, Object.assign({}, c, {ts: Date.now()}));
+      });
+      await batch.commit();
+      // Recargar
+      var snap2 = await ref.orderBy("nombre").get();
+      _cotCatalogo = snap2.docs.map(function(d){
+        var data = d.data();
+        data.id = d.id;
+        return data;
+      });
+    }
+    _cotCatalogoCargado = true;
+    if(loading) loading.style.display = "none";
+    if(lista) lista.style.display = "block";
+    renderCatalogoConceptos();
+  } catch(err) {
+    console.error("[ROMSA] Error cargando catálogo:", err);
+    if(loading) loading.innerHTML = '<div style="color:#EF4444;">⚠️ Error al cargar: '+err.message+'</div>';
+  }
+}
+
+function renderCatalogoConceptos(){
+  var wrap = document.getElementById("cot-cat-lista");
+  if(!wrap) return;
+  if(!_cotCatalogo.length){
+    wrap.innerHTML = '<div class="empty"><div class="empty-ico">🔧</div><div class="empty-ttl">Sin conceptos</div><div class="empty-sub">Agrega tu primer concepto al catálogo</div></div>';
+    return;
+  }
+  // Agrupar por categoría
+  var porCat = {};
+  _cotCatalogo.forEach(function(c){
+    var cat = c.categoria || "Otros";
+    if(!porCat[cat]) porCat[cat] = [];
+    porCat[cat].push(c);
+  });
+  var html = "";
+  Object.keys(porCat).sort().forEach(function(cat){
+    html += '<div style="font-size:9px;font-weight:700;color:var(--tx2);letter-spacing:1.5px;text-transform:uppercase;margin:14px 0 8px;">'+cat+' ('+porCat[cat].length+')</div>';
+    porCat[cat].forEach(function(c){
+      var inactivo = c.activo === false;
+      var bgInactivo = inactivo ? 'opacity:.55;' : '';
+      var precioStr = c.precioBase > 0 ? '$'+fmtPeso(c.precioBase)+' / '+(c.unidad||'m²') : 'Sin precio base';
+      html += '<div class="card" style="padding:12px;margin-bottom:8px;'+bgInactivo+'border-left:3px solid '+(inactivo?'#9CA3AF':'#7C3AED')+';">'
+        +'<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">'
+          +'<div style="flex:1;min-width:0;">'
+            +'<div style="font-size:13px;font-weight:800;color:var(--navy);">'+escapeHtml(c.nombre||"Sin nombre")+(inactivo?' <span style="font-size:9px;background:#FEE2E2;color:#991B1B;padding:1px 6px;border-radius:4px;font-weight:700;margin-left:4px;">INACTIVO</span>':'')+'</div>'
+            +'<div style="font-size:10.5px;color:var(--tx2);margin:3px 0;line-height:1.4;">'+escapeHtml((c.descripcion||"").substring(0,140))+(c.descripcion && c.descripcion.length > 140 ? '...' : '')+'</div>'
+            +'<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;">'
+              +'<span class="badge" style="background:rgba(124,58,237,.08);color:#7C3AED;border:1px solid rgba(124,58,237,.2);">📐 '+(c.unidad||'m²')+'</span>'
+              +'<span class="badge" style="background:rgba(16,185,129,.08);color:#059669;border:1px solid rgba(16,185,129,.2);">💲 '+precioStr+'</span>'
+            +'</div>'
+          +'</div>'
+          +'<div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0;">'
+            +'<button onclick="abrirEditorConcepto(\''+c.id+'\')" title="Editar" style="background:rgba(30,111,217,.08);border:1px solid rgba(30,111,217,.2);color:#1E6FD9;font-size:11px;cursor:pointer;width:30px;height:30px;border-radius:6px;">✏️</button>'
+            +'<button onclick="toggleActivoConcepto(\''+c.id+'\')" title="'+(inactivo?'Activar':'Desactivar')+'" style="background:'+(inactivo?'rgba(16,185,129,.08)':'rgba(156,163,175,.1)')+';border:1px solid '+(inactivo?'rgba(16,185,129,.2)':'rgba(156,163,175,.25)')+';color:'+(inactivo?'#059669':'#6B7280')+';font-size:11px;cursor:pointer;width:30px;height:30px;border-radius:6px;">'+(inactivo?'▶':'⏸')+'</button>'
+            +'<button onclick="eliminarConcepto(\''+c.id+'\',\''+escapeHtml(c.nombre||"").replace(/'/g,"\\'")+'\')" title="Eliminar" style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);color:#EF4444;font-size:11px;cursor:pointer;width:30px;height:30px;border-radius:6px;">🗑</button>'
+          +'</div>'
+        +'</div>'
+      +'</div>';
+    });
+  });
+  wrap.innerHTML = html;
+}
+
+function escapeHtml(s){
+  return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+// Abrir modal de editor (sin id = nuevo, con id = editar)
+function abrirEditorConcepto(id){
+  _cotConceptoEditId = id || null;
+  var c = id ? _cotCatalogo.find(function(x){return x.id===id;}) : null;
+  var nombre = c ? c.nombre : "";
+  var desc   = c ? c.descripcion : "";
+  var proc   = c ? c.procedimiento : "";
+  var cat    = c ? (c.categoria||"Pisos") : "Pisos";
+  var unidad = c ? (c.unidad||"m²") : "m²";
+  var precio = c ? (c.precioBase||0) : 0;
+  var activo = c ? (c.activo !== false) : true;
+  var titulo = id ? "Editar concepto" : "Nuevo concepto";
+
+  var ov = document.createElement("div");
+  ov.id = "modal-concepto";
+  ov.style.cssText = "position:fixed;inset:0;background:rgba(11,31,58,.6);z-index:600;display:flex;align-items:flex-end;justify-content:center;";
+  ov.onclick = function(e){ if(e.target===ov) cerrarEditorConcepto(); };
+  var catOpts = ["Pisos","Reparaciones","Sello","Limpieza","Otros"].map(function(x){
+    return '<option value="'+x+'"'+(x===cat?' selected':'')+'>'+x+'</option>';
+  }).join("");
+  var unidadOpts = ["m²","ml","lote","pieza","servicio","kg","m³"].map(function(x){
+    return '<option value="'+x+'"'+(x===unidad?' selected':'')+'>'+x+'</option>';
+  }).join("");
+
+  ov.innerHTML = ''
+    +'<div style="background:#fff;width:100%;max-width:640px;max-height:92vh;border-radius:18px 18px 0 0;overflow-y:auto;display:flex;flex-direction:column;">'
+      +'<div style="padding:14px 18px;border-bottom:1px solid var(--g1);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#fff;z-index:1;">'
+        +'<div>'
+          +'<div style="font-size:9px;color:#7C3AED;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;">Catálogo</div>'
+          +'<div style="font-size:15px;font-weight:800;color:var(--navy);">🔧 '+titulo+'</div>'
+        +'</div>'
+        +'<button onclick="cerrarEditorConcepto()" style="background:none;border:none;font-size:22px;color:var(--tx2);cursor:pointer;">×</button>'
+      +'</div>'
+      +'<div style="padding:16px;flex:1;">'
+        +'<div class="fg"><label class="flabel">Nombre del concepto <span style="color:#EF4444;">*</span></label>'
+          +'<input class="finput" id="conc-nombre" placeholder="Ej: Epóxico 100% Sólidos" value="'+escapeHtml(nombre).replace(/"/g,"&quot;")+'" style="font-weight:700;">'
+        +'</div>'
+        +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">'
+          +'<div class="fg"><label class="flabel">Categoría</label><select class="fselect" id="conc-cat">'+catOpts+'</select></div>'
+          +'<div class="fg"><label class="flabel">Unidad</label><select class="fselect" id="conc-unidad">'+unidadOpts+'</select></div>'
+          +'<div class="fg"><label class="flabel">Precio base $</label><input class="finput" id="conc-precio" type="number" step="0.01" value="'+(precio||0)+'" placeholder="0.00"></div>'
+        +'</div>'
+        +'<div class="fg"><label class="flabel">Descripción (irá al PDF de la cotización)</label>'
+          +'<textarea class="ftextarea" id="conc-desc" rows="3" placeholder="Suministro y aplicación de..." style="min-height:80px;">'+escapeHtml(desc)+'</textarea>'
+        +'</div>'
+        +'<div class="fg"><label class="flabel">Procedimiento técnico (numerado, paso a paso)</label>'
+          +'<textarea class="ftextarea" id="conc-proc" rows="6" placeholder="1.- Preparación mecánica de la superficie&#10;2.- Limpieza y eliminación de polvo&#10;3.- Aplicación de imprimante..." style="min-height:140px;font-family:monospace;font-size:11px;">'+escapeHtml(proc)+'</textarea>'
+        +'</div>'
+        +'<div style="background:rgba(124,58,237,.04);border:1px solid rgba(124,58,237,.15);border-radius:8px;padding:10px;display:flex;align-items:center;gap:10px;margin-bottom:12px;">'
+          +'<input type="checkbox" id="conc-activo" '+(activo?'checked':'')+' style="width:18px;height:18px;cursor:pointer;">'
+          +'<label for="conc-activo" style="font-size:11px;color:var(--navy);cursor:pointer;flex:1;"><strong>Concepto activo</strong> — aparece en el dropdown al crear cotizaciones</label>'
+        +'</div>'
+      +'</div>'
+      +'<div style="padding:12px 18px;border-top:1px solid var(--g1);display:flex;gap:8px;background:#fff;position:sticky;bottom:0;">'
+        +'<button onclick="cerrarEditorConcepto()" style="flex:1;background:var(--off);border:1px solid var(--g1);color:var(--navy);font-size:12px;font-weight:700;padding:11px;border-radius:8px;cursor:pointer;font-family:var(--font);">Cancelar</button>'
+        +'<button onclick="guardarConcepto()" style="flex:2;background:#7C3AED;border:none;color:#fff;font-size:12px;font-weight:700;padding:11px;border-radius:8px;cursor:pointer;font-family:var(--font);">'+(id?'✓ Actualizar concepto':'✓ Crear concepto')+'</button>'
+      +'</div>'
+    +'</div>';
+
+  document.body.appendChild(ov);
+  setTimeout(function(){ document.getElementById("conc-nombre")?.focus(); }, 80);
+}
+
+function cerrarEditorConcepto(){
+  var m = document.getElementById("modal-concepto");
+  if(m) m.remove();
+  _cotConceptoEditId = null;
+}
+
+async function guardarConcepto(){
+  var nombre = (document.getElementById("conc-nombre")?.value || "").trim();
+  if(!nombre){ showToast("⚠️ Ingresa el nombre del concepto"); return; }
+  var data = {
+    nombre: nombre,
+    descripcion: (document.getElementById("conc-desc")?.value || "").trim(),
+    procedimiento: (document.getElementById("conc-proc")?.value || "").trim(),
+    categoria: document.getElementById("conc-cat")?.value || "Otros",
+    unidad: document.getElementById("conc-unidad")?.value || "m²",
+    precioBase: parseFloat(document.getElementById("conc-precio")?.value) || 0,
+    activo: document.getElementById("conc-activo")?.checked !== false,
+    ts: Date.now()
+  };
+  try {
+    var ref = db.collection("cotizacion_catalogo_conceptos");
+    if(_cotConceptoEditId){
+      // Actualizar existente
+      await ref.doc(_cotConceptoEditId).set(data, {merge: true});
+      // Refrescar memoria
+      var idx = _cotCatalogo.findIndex(function(c){return c.id===_cotConceptoEditId;});
+      if(idx>=0) _cotCatalogo[idx] = Object.assign({}, _cotCatalogo[idx], data);
+      showToast("✓ Concepto actualizado");
+    } else {
+      // Crear nuevo
+      var docRef = await ref.add(data);
+      data.id = docRef.id;
+      _cotCatalogo.push(data);
+      showToast("✓ Concepto agregado al catálogo");
+    }
+    // Re-sincronizar el catálogo en memoria con CAT_SERVICIOS para que aparezca en cotizaciones nuevas
+    _sincronizarCatServicios();
+    cerrarEditorConcepto();
+    renderCatalogoConceptos();
+  } catch(err) {
+    console.error("[ROMSA] Error guardando concepto:", err);
+    alert("Error al guardar: "+err.message);
+  }
+}
+
+async function toggleActivoConcepto(id){
+  var c = _cotCatalogo.find(function(x){return x.id===id;});
+  if(!c) return;
+  var nuevoActivo = c.activo === false ? true : false;
+  try {
+    await db.collection("cotizacion_catalogo_conceptos").doc(id).update({activo: nuevoActivo});
+    c.activo = nuevoActivo;
+    _sincronizarCatServicios();
+    renderCatalogoConceptos();
+    showToast(nuevoActivo ? "✓ Concepto activado" : "Concepto desactivado");
+  } catch(err) {
+    alert("Error: "+err.message);
+  }
+}
+
+async function eliminarConcepto(id, nombre){
+  if(!confirm('¿Eliminar permanentemente el concepto "'+nombre+'" del catálogo?\n\nEsto NO afecta a las cotizaciones que ya lo usaron.\nEsta acción no se puede deshacer.')) return;
+  try {
+    await db.collection("cotizacion_catalogo_conceptos").doc(id).delete();
+    _cotCatalogo = _cotCatalogo.filter(function(c){return c.id !== id;});
+    _sincronizarCatServicios();
+    renderCatalogoConceptos();
+    showToast("Concepto eliminado");
+  } catch(err) {
+    alert("Error: "+err.message);
+  }
+}
+
+// Re-sincroniza CAT_SERVICIOS (objeto que usa el dropdown del editor) con el catálogo de Firestore
+function _sincronizarCatServicios(){
+  // Limpiar y reconstruir
+  Object.keys(CAT_SERVICIOS).forEach(function(k){ delete CAT_SERVICIOS[k]; });
+  _cotCatalogo.forEach(function(c){
+    if(c.activo === false) return; // no mostrar inactivos
+    CAT_SERVICIOS[c.nombre] = {
+      desc: c.descripcion || "",
+      proc: c.procedimiento || ""
+    };
+  });
+}
+
+// Exponer al window
+window.showCotSubtab = showCotSubtab;
+window.cargarCatalogoConceptos = cargarCatalogoConceptos;
+window.abrirEditorConcepto = abrirEditorConcepto;
+window.cerrarEditorConcepto = cerrarEditorConcepto;
+window.guardarConcepto = guardarConcepto;
+window.toggleActivoConcepto = toggleActivoConcepto;
+window.eliminarConcepto = eliminarConcepto;
+
 function renderListaCot(){
   var el=document.getElementById("lista-cotizaciones");
   if(!el)return;
@@ -5232,7 +5606,7 @@ function renderListaCot(){
     return d.getMonth()===mesActual&&d.getFullYear()===anioActual;
   }).length;
   var totalSum=cotizaciones.reduce(function(s,c){return s+parseFloat(c.granTotal||0);},0);
-  var ganadas=cotizaciones.filter(function(c){return c.estado==="ganada"||c.estado==="cerrada";}).length;
+  var ganadas=cotizaciones.filter(function(c){return c.estado==="aceptada"||c.estado==="en_obra"||c.estado==="cerrada"||c.estado==="ganada";}).length;
   var elMes=document.getElementById("cot-kpi-mes");
   var elTot=document.getElementById("cot-kpi-total");
   var elAct=document.getElementById("cot-kpi-activas");
@@ -5376,14 +5750,19 @@ function showNuevaCot(){
   var vincElN = document.getElementById("cot-vinculo-costeo");
   if(vincElN) vincElN.style.display = "none";
   window._cotizacionCosteoOrigen = null;
-  document.getElementById("cot-lista-wrap").style.display="none";
+  // Ocultar TODAS las sub-pestañas y mostrar solo el form
+  document.querySelectorAll(".cot-subtab-content").forEach(function(el){ el.style.display = "none"; });
   document.getElementById("cot-form-wrap").style.display="block";
   if(typeof _cotResetHistorial==="function") _cotResetHistorial();
 }
 
 function cerrarFormCot(){
   document.getElementById("cot-form-wrap").style.display="none";
-  document.getElementById("cot-lista-wrap").style.display="block";
+  // Volver a la sub-pestaña que estuviera activa (default lista)
+  var tabActiva = _cotSubtabActiva || "lista";
+  var btn = document.querySelector('#cot-subtabs-bar .cot-subtab[data-cottab="'+tabActiva+'"]');
+  if(btn && typeof showCotSubtab === "function") showCotSubtab(tabActiva, btn);
+  else document.getElementById("cot-subtab-lista").style.display = "block";
 }
 
 function abrirCot(id){
@@ -5449,7 +5828,8 @@ function abrirCot(id){
   // Limpiar flag de origen (edición de cotización existente, no generación nueva)
   window._cotizacionCosteoOrigen = null;
 
-  document.getElementById("cot-lista-wrap").style.display="none";
+  // Ocultar TODAS las sub-pestañas y mostrar solo el form
+  document.querySelectorAll(".cot-subtab-content").forEach(function(el){ el.style.display = "none"; });
   document.getElementById("cot-form-wrap").style.display="block";
   if(typeof _cotResetHistorial==="function") _cotResetHistorial();
 }
@@ -8683,6 +9063,10 @@ auth.onAuthStateChanged(async user => {
     subscribeObras();
   subscribeCotizaciones();
     if(_tieneCosteo) subscribeCosteo();
+    // Pre-cargar catálogo de conceptos en background (para que CAT_SERVICIOS esté actualizado al crear cotización)
+    if(typeof cargarCatalogoConceptos === "function"){
+      cargarCatalogoConceptos().catch(function(e){ console.warn("[ROMSA] Catálogo no se pudo precargar:", e); });
+    }
     checkUrlParams();
     updateHoraCi();
 
