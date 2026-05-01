@@ -1883,12 +1883,65 @@ function _renderAreaTab(){
     case "reps":    wrap.innerHTML = _htmlAreaReparaciones(area); break;
   }
 
-  // Hookear listeners después del render (más robusto que onclick inline)
-  if(_areaDetalleTab === "reps" && typeof _hookBotonRepArea === "function"){
-    setTimeout(_hookBotonRepArea, 0);
+  // ── POST-RENDER: asignar listeners JS directamente (más robusto que onclick) ──
+  // Tab Reparaciones: botón "+ Agregar reparación"
+  if(_areaDetalleTab === "reps"){
+    const btn = document.getElementById("btn-agregar-rep-area");
+    if(btn){
+      btn.addEventListener("click", function(e){
+        e.preventDefault();
+        e.stopPropagation();
+        console.log("[ROMSA] Click + Agregar reparación detectado");
+        try{
+          if(typeof _abrirModalNuevaRepArea !== "function"){
+            alert("Error interno: la función _abrirModalNuevaRepArea no existe.\n\nProbablemente caché vieja. Cierra todas las pestañas y vuelve a abrir incógnito.");
+            return;
+          }
+          _abrirModalNuevaRepArea();
+        }catch(err){
+          console.error("[ROMSA] Error al abrir modal:", err);
+          alert("Error al abrir modal: " + err.message);
+        }
+      });
+    }
+    // Botones eliminar reparación de cada item
+    document.querySelectorAll('[data-act="elim-rep"]').forEach(b=>{
+      b.addEventListener("click", function(e){
+        e.preventDefault();
+        const idx = parseInt(this.dataset.idx);
+        if(!isNaN(idx)) _eliminarRepArea(idx);
+      });
+    });
   }
-  if(_areaDetalleTab === "fotos" && typeof _hookBotonesFotosArea === "function"){
-    setTimeout(_hookBotonesFotosArea, 0);
+  // Tab Fotos: botones cámara y galería
+  if(_areaDetalleTab === "fotos"){
+    const btnCam = document.getElementById("btn-afoto-cam");
+    const btnGal = document.getElementById("btn-afoto-gal");
+    const inpCam = document.getElementById("afoto-cam");
+    const inpGal = document.getElementById("afoto-gal");
+    if(btnCam && inpCam){
+      btnCam.addEventListener("click", function(e){
+        e.preventDefault();
+        console.log("[ROMSA] Click Cámara detectado");
+        inpCam.click();
+      });
+    }
+    if(btnGal && inpGal){
+      btnGal.addEventListener("click", function(e){
+        e.preventDefault();
+        console.log("[ROMSA] Click Galería detectado");
+        inpGal.click();
+      });
+    }
+    // Botones eliminar foto
+    document.querySelectorAll('[data-act="elim-foto"]').forEach(b=>{
+      b.addEventListener("click", function(e){
+        e.preventDefault();
+        e.stopPropagation();
+        const idx = parseInt(this.dataset.idx);
+        if(!isNaN(idx)) _eliminarFotoArea(idx);
+      });
+    });
   }
 }
 
@@ -1961,7 +2014,7 @@ function _htmlAreaFotos(a){
         <div class="fitem" style="position:relative;cursor:pointer;" onclick="verImg('${(f.src||"").replace(/'/g,"\\'")}')">
           <img src="${f.src}">
           <div class="fitem-ov"><span class="fitem-tag">${(f.cat||"").substring(0,14)}</span></div>
-          <button onclick="event.stopPropagation();_eliminarFotoArea(${i})" title="Eliminar foto" style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,.65);border:none;color:#fff;font-size:11px;cursor:pointer;width:24px;height:24px;border-radius:50%;line-height:1;display:flex;align-items:center;justify-content:center;">✕</button>
+          <button data-act="elim-foto" data-idx="${i}" title="Eliminar foto" style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,.65);border:none;color:#fff;font-size:11px;cursor:pointer;width:24px;height:24px;border-radius:50%;line-height:1;display:flex;align-items:center;justify-content:center;">✕</button>
         </div>`).join("")
     : '';
   const empty = !fotos.length
@@ -1990,8 +2043,8 @@ function _htmlAreaFotos(a){
       <div class="fgrid" id="afoto-grid">${tagsHtml}${empty}</div>
 
       <div style="display:flex;gap:8px;margin-top:12px;">
-        <button onclick="document.getElementById('afoto-cam').click()" type="button" style="flex:1;background:#1E6FD9;border:none;color:#fff;font-size:12px;font-weight:700;padding:11px;border-radius:8px;cursor:pointer;font-family:var(--font);">📷 Cámara</button>
-        <button onclick="document.getElementById('afoto-gal').click()" type="button" style="flex:1;background:var(--off);border:1px solid var(--g1);color:var(--navy);font-size:12px;font-weight:700;padding:11px;border-radius:8px;cursor:pointer;font-family:var(--font);">🖼 Galería</button>
+        <button id="btn-afoto-cam" type="button" style="flex:1;background:#1E6FD9;border:none;color:#fff;font-size:12px;font-weight:700;padding:11px;border-radius:8px;cursor:pointer;font-family:var(--font);">📷 Cámara</button>
+        <button id="btn-afoto-gal" type="button" style="flex:1;background:var(--off);border:1px solid var(--g1);color:var(--navy);font-size:12px;font-weight:700;padding:11px;border-radius:8px;cursor:pointer;font-family:var(--font);">🖼 Galería</button>
       </div>
     </div>
   `;
@@ -2071,7 +2124,7 @@ function _htmlAreaReparaciones(a){
             ${fotosPreview}
             ${r.notas ? `<div style="font-size:10px;color:var(--tx2);margin-top:5px;font-style:italic;">📝 ${r.notas}</div>` : ''}
           </div>
-          <button onclick="_eliminarRepArea(${i})" title="Eliminar reparación" style="background:var(--red-dim);border:none;color:var(--red);font-size:13px;cursor:pointer;width:28px;height:28px;border-radius:6px;flex-shrink:0;">✕</button>
+          <button data-act="elim-rep" data-idx="${i}" title="Eliminar reparación" style="background:var(--red-dim);border:none;color:var(--red);font-size:13px;cursor:pointer;width:28px;height:28px;border-radius:6px;flex-shrink:0;">✕</button>
         </div>
       </div>
     `;
@@ -2084,7 +2137,7 @@ function _htmlAreaReparaciones(a){
         ${totM2>0 ? `<div style="font-size:10.5px;color:#1E6FD9;font-weight:700;background:rgba(30,111,217,.08);padding:3px 9px;border-radius:5px;">Total: ${totM2.toFixed(2)} m²</div>` : ''}
       </div>
       <div>${lista}</div>
-      <button onclick="(function(){console.log('[ROMSA] Click + Agregar reparación');if(typeof window._abrirModalNuevaRepArea !== 'function'){alert('Error: _abrirModalNuevaRepArea no existe.\\n\\nProbablemente caché. Cierra TODAS las pestañas y vuelve a abrir.');return;}window._abrirModalNuevaRepArea();})()" type="button" style="width:100%;background:#1E6FD9;border:none;color:#fff;font-size:12px;font-weight:700;padding:11px;border-radius:8px;cursor:pointer;font-family:var(--font);margin-top:10px;">+ Agregar reparación</button>
+      <button id="btn-agregar-rep-area" type="button" style="width:100%;background:#1E6FD9;border:none;color:#fff;font-size:12px;font-weight:700;padding:11px;border-radius:8px;cursor:pointer;font-family:var(--font);margin-top:10px;">+ Agregar reparación</button>
     </div>
   `;
 }
@@ -2171,7 +2224,7 @@ function _abrirModalNuevaRepArea(){
 
       <div style="padding:12px 16px;border-top:1px solid var(--g1);display:flex;gap:8px;background:#fff;position:sticky;bottom:0;">
         <button onclick="_cerrarModalArep()" style="flex:1;background:var(--off);border:1px solid var(--g1);color:var(--navy);font-size:12px;font-weight:700;padding:11px;border-radius:8px;cursor:pointer;font-family:var(--font);">Cancelar</button>
-        <button onclick="_guardarRepArea()" style="flex:2;background:#10B981;border:none;color:#fff;font-size:12px;font-weight:700;padding:11px;border-radius:8px;cursor:pointer;font-family:var(--font);">✓ Guardar reparación</button>
+        <button onclick="(function(){console.log('[ROMSA] Click ✓ Guardar reparación');if(typeof window._guardarRepArea !== 'function'){alert('Error: _guardarRepArea no existe');return;}window._guardarRepArea();})()" style="flex:2;background:#10B981;border:none;color:#fff;font-size:12px;font-weight:700;padding:11px;border-radius:8px;cursor:pointer;font-family:var(--font);">✓ Guardar reparación</button>
       </div>
     </div>
   `;
@@ -2233,38 +2286,75 @@ function _renderArepFotosPrev(){
 }
 
 function _guardarRepArea(){
-  const area = _getAreaActiva();
-  if(!area){ showToast("⚠️ Sin área activa"); return; }
-  if(!Array.isArray(area.reparaciones)) area.reparaciones = [];
+  console.log("[ROMSA] _guardarRepArea iniciado");
+  try{
+    // Buscar el proyecto activo y el área activa de manera robusta (no usar referencias volátiles)
+    const p = getP();
+    if(!p){ alert("Error: no hay proyecto activo. Cierra y vuelve a abrir el levantamiento."); return; }
+    if(!_areaDetalleActivaId){ alert("Error: no hay área activa. Cierra el modal y entra a un área."); return; }
+    if(!Array.isArray(p.areas)) p.areas = [];
+    const areaIdx = p.areas.findIndex(x => x.id === _areaDetalleActivaId);
+    if(areaIdx < 0){ alert("Error: el área activa no está en el proyecto."); return; }
+    const area = p.areas[areaIdx];
+    if(!Array.isArray(area.reparaciones)) area.reparaciones = [];
 
-  const desc = document.getElementById("arep-desc").value.trim() || "Sin descripción";
-  const tipo = document.getElementById("arep-tipo").value;
-  const sev  = document.getElementById("arep-sev").value;
-  const l    = parseFloat(document.getElementById("arep-largo").value)||0;
-  const a    = parseFloat(document.getElementById("arep-ancho").value)||0;
-  const prof = parseFloat(document.getElementById("arep-prof").value)||0;
-  const notas= document.getElementById("arep-notas").value.trim();
-  const m2   = _arepUnit==="in" ? (l*0.0254)*(a*0.0254) : l*a;
+    // Leer campos
+    const desc = (document.getElementById("arep-desc")?.value || "").trim() || "Sin descripción";
+    const tipo = document.getElementById("arep-tipo")?.value || "Otro";
+    const sev  = document.getElementById("arep-sev")?.value || "Moderada";
+    const l    = parseFloat(document.getElementById("arep-largo")?.value)||0;
+    const a    = parseFloat(document.getElementById("arep-ancho")?.value)||0;
+    const prof = parseFloat(document.getElementById("arep-prof")?.value)||0;
+    const notas= (document.getElementById("arep-notas")?.value || "").trim();
+    const m2   = _arepUnit==="in" ? (l*0.0254)*(a*0.0254) : l*a;
 
-  if(!l || !a){ showToast("⚠️ Ingresa largo y ancho"); return; }
+    console.log("[ROMSA] Datos leidos:", {desc, tipo, sev, l, a, prof, m2, unit:_arepUnit});
 
-  area.reparaciones.push({
-    id: Date.now(),
-    num: area.reparaciones.length + 1,
-    desc, tipo, sev,
-    largo: l, ancho: a, prof,
-    unit: _arepUnit,
-    area: parseFloat(m2.toFixed(4)),
-    fotos: [..._arepFotosTemp],
-    notas,
-    fecha: new Date().toLocaleDateString("es-MX")
-  });
+    if(!l || !a){
+      alert("⚠️ Ingresa largo y ancho de la reparación");
+      return;
+    }
 
-  _marcarCambiosPendientes();
-  save();
-  _cerrarModalArep();
-  _renderAreaTab();
-  showToast("✓ Reparación #"+area.reparaciones.length+" guardada");
+    const nuevaRep = {
+      id: Date.now(),
+      num: area.reparaciones.length + 1,
+      desc, tipo, sev,
+      largo: l, ancho: a, prof,
+      unit: _arepUnit,
+      area: parseFloat(m2.toFixed(4)),
+      fotos: [..._arepFotosTemp],
+      notas,
+      fecha: new Date().toLocaleDateString("es-MX")
+    };
+
+    area.reparaciones.push(nuevaRep);
+    console.log("[ROMSA] Reparación agregada al área. Total ahora:", area.reparaciones.length);
+
+    // Asegurar persistencia
+    if(typeof _marcarCambiosPendientes === "function") _marcarCambiosPendientes();
+    if(typeof _backupLocalLev === "function") _backupLocalLev(p);
+
+    // Guardar en Firestore (await para confirmar)
+    if(typeof saveProyecto === "function"){
+      saveProyecto(p).then(() => {
+        console.log("[ROMSA] Guardado en Firestore exitoso");
+      }).catch(err => {
+        console.error("[ROMSA] Error guardando en Firestore:", err);
+        alert("Error guardando en Firestore: " + err.message + "\n\nLa reparación se guardó localmente como respaldo.");
+      });
+    } else if(typeof save === "function"){
+      save();
+    }
+
+    if(typeof _cerrarModalArep === "function") _cerrarModalArep();
+    if(typeof _renderAreaTab === "function") _renderAreaTab();
+    if(typeof showToast === "function") showToast("✓ Reparación #"+area.reparaciones.length+" guardada");
+    console.log("[ROMSA] _guardarRepArea completado");
+
+  }catch(err){
+    console.error("[ROMSA] Error en _guardarRepArea:", err);
+    alert("Error al guardar: " + err.message + "\n\nRevisa la consola (F12) para más detalles.");
+  }
 }
 
 function _eliminarRepArea(idx){
