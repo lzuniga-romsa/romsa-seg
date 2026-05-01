@@ -4322,26 +4322,41 @@ ${bodyEl.innerHTML}
 // EXPONER FUNCIONES AL WINDOW
 // (necesario para que onclick="..." inline las encuentre siempre)
 // ═══════════════════════════════════════════════════════════════
-[
+try {
   // Drill-down de áreas
-  "entrarAreaDetalle","cerrarAreaDetalle","showAreaTab","eliminarAreaActual",
-  "_abrirModalNuevaRepArea","_cerrarModalArep","_arepCambiarUnidad","_arepCalcArea",
-  "_arepHandleFoto","_renderArepFotosPrev","_guardarRepArea","_eliminarRepArea",
-  "_handleAreaFoto","_eliminarFotoArea",
-  "_actualizarAreaCampo","_actualizarAreaMedida",
-  "_renderAreaTab","_getAreaActiva",
-  "_areaContarFotos","_areaContarReps",
-  // Helpers genéricos
-  "showToast","verImg",
-  // Migración
-  "_migrarProyectoSiNecesario",
-  // Existentes (por seguridad)
-  "agregarArea","confirmarArea","editarArea","eliminarArea","abrirAreaDetalle",
-  "renderAreas","getP","save"
-].forEach(function(fn){
-  try{ if(typeof eval(fn) === "function") window[fn] = eval(fn); }catch(e){}
-});
-console.log("[ROMSA] Funciones expuestas al window correctamente");
+  if(typeof entrarAreaDetalle === "function") window.entrarAreaDetalle = entrarAreaDetalle;
+  if(typeof cerrarAreaDetalle === "function") window.cerrarAreaDetalle = cerrarAreaDetalle;
+  if(typeof showAreaTab === "function") window.showAreaTab = showAreaTab;
+  if(typeof eliminarAreaActual === "function") window.eliminarAreaActual = eliminarAreaActual;
+  if(typeof _abrirModalNuevaRepArea === "function") window._abrirModalNuevaRepArea = _abrirModalNuevaRepArea;
+  if(typeof _cerrarModalArep === "function") window._cerrarModalArep = _cerrarModalArep;
+  if(typeof _arepCambiarUnidad === "function") window._arepCambiarUnidad = _arepCambiarUnidad;
+  if(typeof _arepCalcArea === "function") window._arepCalcArea = _arepCalcArea;
+  if(typeof _arepHandleFoto === "function") window._arepHandleFoto = _arepHandleFoto;
+  if(typeof _renderArepFotosPrev === "function") window._renderArepFotosPrev = _renderArepFotosPrev;
+  if(typeof _guardarRepArea === "function") window._guardarRepArea = _guardarRepArea;
+  if(typeof _eliminarRepArea === "function") window._eliminarRepArea = _eliminarRepArea;
+  if(typeof _handleAreaFoto === "function") window._handleAreaFoto = _handleAreaFoto;
+  if(typeof _eliminarFotoArea === "function") window._eliminarFotoArea = _eliminarFotoArea;
+  if(typeof _actualizarAreaCampo === "function") window._actualizarAreaCampo = _actualizarAreaCampo;
+  if(typeof _actualizarAreaMedida === "function") window._actualizarAreaMedida = _actualizarAreaMedida;
+  if(typeof _renderAreaTab === "function") window._renderAreaTab = _renderAreaTab;
+  if(typeof _getAreaActiva === "function") window._getAreaActiva = _getAreaActiva;
+  if(typeof _areaContarFotos === "function") window._areaContarFotos = _areaContarFotos;
+  if(typeof _areaContarReps === "function") window._areaContarReps = _areaContarReps;
+  if(typeof showToast === "function") window.showToast = showToast;
+  if(typeof verImg === "function") window.verImg = verImg;
+  if(typeof _migrarProyectoSiNecesario === "function") window._migrarProyectoSiNecesario = _migrarProyectoSiNecesario;
+  if(typeof agregarArea === "function") window.agregarArea = agregarArea;
+  if(typeof confirmarArea === "function") window.confirmarArea = confirmarArea;
+  if(typeof renderAreas === "function") window.renderAreas = renderAreas;
+  if(typeof getP === "function") window.getP = getP;
+  if(typeof save === "function") window.save = save;
+  console.log("[ROMSA] Funciones expuestas al window correctamente");
+  console.log("[ROMSA] Verificación rápida — _abrirModalNuevaRepArea:", typeof window._abrirModalNuevaRepArea);
+} catch(err) {
+  console.error("[ROMSA] Error al exponer funciones:", err);
+}
 </script>
 </body>
 </html>

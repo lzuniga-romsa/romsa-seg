@@ -393,6 +393,7 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
 .vc-footer-btn.primary{background:var(--blue);border-color:var(--blue);box-shadow:0 2px 10px rgba(30,111,217,.35);}
 .vc-powered{text-align:center;font-size:10px;color:rgba(255,255,255,.15);padding:12px 0 calc(16px + var(--safe-bot));}
 @keyframes pulse-dot{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.5;transform:scale(.7);}}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.6;}}
 
 /* ── LEVANTAMIENTOS APP ── */
 /* ── APP SHELL ── */
@@ -1705,6 +1706,32 @@ body.in-costeo #app{
           <div class="fg">
             <label class="flabel">RFC (opcional)</label>
             <input class="finput" id="cot-rfc" placeholder="RFC del cliente" style="text-transform:uppercase;">
+          </div>
+
+          <!-- Estado de seguimiento de la cotización -->
+          <div style="background:linear-gradient(135deg, rgba(124,58,237,.04), rgba(30,111,217,.04));border:1px solid rgba(124,58,237,.15);border-radius:10px;padding:12px;margin-top:8px;">
+            <div style="font-size:9px;font-weight:700;color:#7C3AED;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;">📊 Estado de seguimiento</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+              <div class="fg" style="margin:0;">
+                <label class="flabel">Estado actual</label>
+                <select class="fselect" id="cot-estado" onchange="onEstadoCotChange(this.value)">
+                  <option value="pendiente">🟡 Pendiente — esperando respuesta</option>
+                  <option value="aceptada">🟢 Aceptada — cliente firmó</option>
+                  <option value="rechazada">🔴 Rechazada — cliente rechazó</option>
+                  <option value="en_obra">🔵 En obra — trabajo en curso</option>
+                  <option value="cerrada">⚫ Cerrada — terminada y cobrada</option>
+                  <option value="vencida">⏳ Vencida — sin respuesta tras vigencia</option>
+                </select>
+              </div>
+              <div class="fg" style="margin:0;">
+                <label class="flabel">Fecha de respuesta del cliente</label>
+                <input class="finput" id="cot-fecha-respuesta" type="date" placeholder="Cuando responda el cliente">
+              </div>
+            </div>
+            <div id="cot-motivo-rechazo-wrap" class="fg" style="margin:8px 0 0 0;display:none;">
+              <label class="flabel">Motivo del rechazo (opcional)</label>
+              <input class="finput" id="cot-motivo-rechazo" placeholder="Ej: Precio alto, eligió otra empresa, presupuesto insuficiente...">
+            </div>
           </div>
         </div>
 
@@ -5221,12 +5248,41 @@ function renderListaCot(){
   el.innerHTML=cotizaciones.map(function(c){
     var total=parseFloat(c.granTotal||0);
     var fromCosteo = c.folioCosteoOrigen ? '<span class="badge" style="background:#EDE9FE;color:#5B21B6;border:1px solid #C4B5FD;">⚡ '+c.folioCosteoOrigen+'</span>' : '';
+    // Badge de estado (default "pendiente")
+    var estado = c.estado || "pendiente";
+    var estLabels = {
+      pendiente: {txt:"🟡 Pendiente", bg:"#FEF3C7", fg:"#92400E", border:"#FDE68A"},
+      aceptada:  {txt:"🟢 Aceptada",  bg:"#D1FAE5", fg:"#065F46", border:"#A7F3D0"},
+      rechazada: {txt:"🔴 Rechazada", bg:"#FEE2E2", fg:"#991B1B", border:"#FCA5A5"},
+      en_obra:   {txt:"🔵 En obra",   bg:"#DBEAFE", fg:"#1E40AF", border:"#93C5FD"},
+      cerrada:   {txt:"⚫ Cerrada",   bg:"#E5E7EB", fg:"#374151", border:"#D1D5DB"},
+      vencida:   {txt:"⏳ Vencida",   bg:"#FEE2E2", fg:"#7F1D1D", border:"#FCA5A5"}
+    };
+    var est = estLabels[estado] || estLabels.pendiente;
+    var estBadge = '<span class="badge" style="background:'+est.bg+';color:'+est.fg+';border:1px solid '+est.border+';font-weight:700;">'+est.txt+'</span>';
+    // Aviso "por vencer" — pendiente con más de (vigencia - 3) días
+    var avisoVencer = "";
+    if(estado === "pendiente" && c.fecha){
+      try{
+        var dCot = new Date(c.fecha+"T12:00:00");
+        var diasTrans = Math.floor((Date.now()-dCot.getTime())/86400000);
+        var vigencia = parseInt(c.vigencia)||15;
+        var diasRest = vigencia - diasTrans;
+        if(diasRest <= 3 && diasRest >= 0){
+          avisoVencer = '<span class="badge" style="background:#FEF3C7;color:#92400E;border:1px solid #FBBF24;font-weight:700;animation:pulse 2s infinite;">⚠️ Vence en '+diasRest+'d</span>';
+        } else if(diasRest < 0){
+          avisoVencer = '<span class="badge" style="background:#FEE2E2;color:#991B1B;border:1px solid #FCA5A5;font-weight:700;">⏳ Vencida hace '+(-diasRest)+'d</span>';
+        }
+      }catch(e){}
+    }
     return '<div class="prow" style="position:relative;" onclick="abrirCot(\''+c.id+'\')">'+
       '<div class="prow-bar" style="background:#7C3AED;"></div>'+
       '<div class="prow-body">'+
         '<div class="prow-name">'+c.empresa+'</div>'+
         '<div class="prow-meta">'+c.atencion+' · '+c.fecha+'</div>'+
         '<div style="display:flex;gap:5px;margin-top:5px;flex-wrap:wrap;">'+
+          estBadge+
+          avisoVencer+
           '<span class="badge b-navy">'+c.folio+'</span>'+
           '<span class="badge b-green">$'+fmtPeso(total)+'</span>'+
           fromCosteo+
@@ -5291,6 +5347,11 @@ function showNuevaCot(){
   document.getElementById("cot-tel").value="";
   document.getElementById("cot-rfc").value="";
   document.getElementById("cot-nota").value="";
+  // Estado por default = pendiente (sin fecha de respuesta)
+  var elEst = document.getElementById("cot-estado"); if(elEst) elEst.value = "pendiente";
+  var elFR = document.getElementById("cot-fecha-respuesta"); if(elFR) elFR.value = "";
+  var elMR = document.getElementById("cot-motivo-rechazo"); if(elMR) elMR.value = "";
+  var elMRwrap = document.getElementById("cot-motivo-rechazo-wrap"); if(elMRwrap) elMRwrap.style.display = "none";
   // Partidas iniciales
   _cotPartidas=[{
     id:1,
@@ -5345,6 +5406,16 @@ function abrirCot(id){
   if(document.getElementById("cot-garantia")) document.getElementById("cot-garantia").value=c.condGarantia||document.getElementById("cot-garantia").value;
   if(document.getElementById("cot-entrega")) document.getElementById("cot-entrega").value=c.condEntrega||document.getElementById("cot-entrega").value;
   document.getElementById("cot-nota").value=c.nota||"";
+
+  // Restaurar estado de seguimiento (default "pendiente" si no tiene)
+  var elEst = document.getElementById("cot-estado");
+  if(elEst) elEst.value = c.estado || "pendiente";
+  var elFR = document.getElementById("cot-fecha-respuesta");
+  if(elFR) elFR.value = c.fechaRespuesta || "";
+  var elMR = document.getElementById("cot-motivo-rechazo");
+  if(elMR) elMR.value = c.motivoRechazo || "";
+  var elMRwrap = document.getElementById("cot-motivo-rechazo-wrap");
+  if(elMRwrap) elMRwrap.style.display = (c.estado === "rechazada") ? "block" : "none";
 
   // Restaurar cláusulas eliminadas y personalizadas
   _cotClausulasEliminadas = new Set(Array.isArray(c.clausulasEliminadas) ? c.clausulasEliminadas : []);
@@ -5568,6 +5639,23 @@ function onPartidaField(id,field,val){
   calcTotalesCot();
 }
 
+// Cambio de estado de cotización — muestra/oculta motivo de rechazo y sugiere fecha de respuesta
+function onEstadoCotChange(estado){
+  // Mostrar campo motivo solo si rechazada
+  var wrap = document.getElementById("cot-motivo-rechazo-wrap");
+  if(wrap) wrap.style.display = (estado === "rechazada") ? "block" : "none";
+  // Si pasa a un estado terminal (aceptada/rechazada/en_obra/cerrada) y no tiene fecha de respuesta, sugerir hoy
+  var elFR = document.getElementById("cot-fecha-respuesta");
+  if(elFR && !elFR.value && (estado === "aceptada" || estado === "rechazada" || estado === "en_obra" || estado === "cerrada")){
+    elFR.value = new Date().toISOString().slice(0,10);
+  }
+  // Si vuelve a pendiente, limpia la fecha de respuesta
+  if(estado === "pendiente" && elFR){
+    elFR.value = "";
+  }
+  if(typeof _cotSnapshot === "function") _cotSnapshot();
+}
+
 function calcTotalesCot(){
   var sub=_cotPartidas.reduce(function(s,p){return s+(p.qty||0)*(p.precio||0);},0);
   var iva=sub*0.08;
@@ -5725,6 +5813,10 @@ async function guardarCot(){
       };
     }),
     subtotal:tots.sub,iva:tots.iva,granTotal:tots.total,
+    // Estado de seguimiento (Sesión 1)
+    estado: (document.getElementById("cot-estado")?.value) || "pendiente",
+    fechaRespuesta: (document.getElementById("cot-fecha-respuesta")?.value) || "",
+    motivoRechazo: (document.getElementById("cot-motivo-rechazo")?.value || "").trim(),
     creadoPorUid:currentUser?.uid||"",
     creadoPor:currentUserProfile?.nombre||""
   };
@@ -8449,6 +8541,16 @@ const auth = firebase.auth();
 const usersRef = db.collection("usuarios");
 
 const ADMIN_UID = "OVsuuX8DsSdhLqXmK01gW2K8Rrh1";
+// Lista de admins por email (insensible a mayúsculas).
+// Cualquier usuario con uno de estos emails tiene permisos idénticos al admin principal.
+const ADMIN_EMAILS = [
+  "lzuniga@romsaindustrial.com",
+  "sroman@romsaindustrial.com"
+];
+function _esAdminPorEmail(email){
+  if(!email) return false;
+  return ADMIN_EMAILS.indexOf(email.toLowerCase().trim()) >= 0;
+}
 
 let currentUser = null;
 let currentUserProfile = null;
@@ -8492,7 +8594,8 @@ async function autoCheckinLogin(userProfile){
 auth.onAuthStateChanged(async user => {
   if(user){
     currentUser = user;
-    isAdmin = (user.uid === ADMIN_UID);
+    // Admin si: es el UID admin tradicional, o el email está en la lista de admins
+    isAdmin = (user.uid === ADMIN_UID) || _esAdminPorEmail(user.email);
     window.isAdmin = isAdmin;  // exponer para uso global
     // Cargar perfil desde Firestore
     try{
