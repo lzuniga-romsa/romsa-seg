@@ -1841,6 +1841,84 @@ body.in-costeo #app{
           </div>
         </div>
 
+        <!-- ── SEGUIMIENTO DE OBRA — solo visible si aceptada/en_obra/cerrada ── -->
+        <div id="cot-seguimiento-obra" class="card" style="margin-bottom:12px;padding:0;display:none;border:2px solid rgba(16,185,129,.3);overflow:hidden;">
+          <!-- Header con toggle -->
+          <div onclick="toggleSeguimientoObra()" style="background:linear-gradient(135deg,rgba(16,185,129,.06),rgba(30,111,217,.05));padding:14px 16px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--g1);">
+            <div>
+              <div style="font-size:9px;font-weight:700;color:#059669;letter-spacing:1.5px;text-transform:uppercase;">Seguimiento de obra</div>
+              <div style="font-size:14px;font-weight:800;color:var(--navy);">🛠️ Datos de ejecución</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span id="cot-segobra-badge" style="font-size:9.5px;font-weight:700;background:rgba(16,185,129,.1);color:#059669;padding:3px 8px;border-radius:5px;letter-spacing:.5px;">0 NOTAS</span>
+              <span id="cot-segobra-toggle" style="font-size:14px;color:var(--tx2);transition:transform .2s;">▼</span>
+            </div>
+          </div>
+
+          <div id="cot-segobra-body" style="padding:16px;display:block;">
+
+            <!-- Fechas de obra -->
+            <div style="font-size:9.5px;font-weight:700;color:var(--tx2);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;">📅 Fechas de obra</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;">
+              <div class="fg" style="margin:0;">
+                <label class="flabel">Fecha estimada inicio</label>
+                <input class="finput" type="date" id="cot-fecha-inicio-est">
+              </div>
+              <div class="fg" style="margin:0;">
+                <label class="flabel">Fecha estimada fin</label>
+                <input class="finput" type="date" id="cot-fecha-fin-est">
+              </div>
+              <div class="fg" style="margin:0;">
+                <label class="flabel">Fecha real inicio</label>
+                <input class="finput" type="date" id="cot-fecha-inicio-real">
+              </div>
+              <div class="fg" style="margin:0;">
+                <label class="flabel">Fecha real fin</label>
+                <input class="finput" type="date" id="cot-fecha-fin-real">
+              </div>
+            </div>
+
+            <!-- Responsable -->
+            <div style="font-size:9.5px;font-weight:700;color:var(--tx2);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;">👤 Responsable / Supervisor</div>
+            <div class="fg" style="margin-bottom:14px;">
+              <input class="finput" id="cot-responsable" placeholder="Ej: Sergio Román · Supervisor de obra">
+            </div>
+
+            <!-- Costo real vs estimado -->
+            <div style="font-size:9.5px;font-weight:700;color:var(--tx2);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;">💰 Costo real vs estimado</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+              <div class="fg" style="margin:0;">
+                <label class="flabel">Costo estimado $ (interno)</label>
+                <input class="finput" id="cot-costo-estimado" type="number" step="0.01" placeholder="0.00" oninput="recalcularUtilidadReal()">
+              </div>
+              <div class="fg" style="margin:0;">
+                <label class="flabel">Costo real $ (al cierre)</label>
+                <input class="finput" id="cot-costo-real" type="number" step="0.01" placeholder="0.00" oninput="recalcularUtilidadReal()">
+              </div>
+            </div>
+            <div id="cot-utilidad-real-box" style="background:rgba(16,185,129,.06);border:1px solid rgba(16,185,129,.2);border-radius:8px;padding:10px 12px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;">
+              <span style="font-size:10px;color:var(--tx2);">Utilidad real (precio - costo real):</span>
+              <span id="cot-utilidad-real-val" style="font-size:14px;font-weight:800;color:#059669;">—</span>
+            </div>
+
+            <!-- Notas de seguimiento -->
+            <div style="font-size:9.5px;font-weight:700;color:var(--tx2);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;">
+              <span>📝 Notas de seguimiento</span>
+              <button onclick="agregarNotaSeguimiento()" style="background:rgba(124,58,237,.08);border:1px solid rgba(124,58,237,.2);color:#7C3AED;font-size:10px;font-weight:700;padding:5px 10px;border-radius:6px;cursor:pointer;font-family:var(--font);">+ Nota</button>
+            </div>
+            <div id="cot-notas-seguimiento-lista" style="margin-bottom:14px;"></div>
+
+            <!-- Documentos adjuntos -->
+            <div style="font-size:9.5px;font-weight:700;color:var(--tx2);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;">
+              <span>📎 Documentos adjuntos</span>
+              <button onclick="document.getElementById('cot-docs-input').click()" style="background:rgba(30,111,217,.08);border:1px solid rgba(30,111,217,.2);color:#1E6FD9;font-size:10px;font-weight:700;padding:5px 10px;border-radius:6px;cursor:pointer;font-family:var(--font);">+ Subir</button>
+            </div>
+            <input type="file" id="cot-docs-input" multiple accept="image/*,.pdf" style="display:none" onchange="agregarDocumentos(event)">
+            <div id="cot-docs-lista" style="margin-bottom:8px;"></div>
+
+          </div>
+        </div>
+
         <!-- ② TABLA DE CONCEPTOS (lo central de la cotización) -->
         <div class="card" style="margin-bottom:12px;padding:16px;">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:6px;flex-wrap:wrap;">
@@ -6255,6 +6333,14 @@ function showNuevaCot(){
   var elFR = document.getElementById("cot-fecha-respuesta"); if(elFR) elFR.value = "";
   var elMR = document.getElementById("cot-motivo-rechazo"); if(elMR) elMR.value = "";
   var elMRwrap = document.getElementById("cot-motivo-rechazo-wrap"); if(elMRwrap) elMRwrap.style.display = "none";
+  // Limpiar campos de seguimiento de obra (Sesión 4)
+  ["cot-fecha-inicio-est","cot-fecha-fin-est","cot-fecha-inicio-real","cot-fecha-fin-real",
+   "cot-responsable","cot-costo-estimado","cot-costo-real"].forEach(function(id){
+    var el = document.getElementById(id); if(el) el.value = "";
+  });
+  _cotNotasSeguimiento = [];
+  _cotDocsSeguimiento = [];
+  var seg = document.getElementById("cot-seguimiento-obra"); if(seg) seg.style.display = "none";
   // Partidas iniciales
   _cotPartidas=[{
     id:1,
@@ -6324,6 +6410,34 @@ function abrirCot(id){
   if(elMR) elMR.value = c.motivoRechazo || "";
   var elMRwrap = document.getElementById("cot-motivo-rechazo-wrap");
   if(elMRwrap) elMRwrap.style.display = (c.estado === "rechazada") ? "block" : "none";
+
+  // Restaurar campos de seguimiento de obra (Sesión 4)
+  var setVal = function(id, val){ var el = document.getElementById(id); if(el) el.value = val || ""; };
+  setVal("cot-fecha-inicio-est",  c.fechaInicioEst);
+  setVal("cot-fecha-fin-est",     c.fechaFinEst);
+  setVal("cot-fecha-inicio-real", c.fechaInicioReal);
+  setVal("cot-fecha-fin-real",    c.fechaFinReal);
+  setVal("cot-responsable",       c.responsable);
+  setVal("cot-costo-estimado",    c.costoEstimado || "");
+  setVal("cot-costo-real",        c.costoReal || "");
+  _cotNotasSeguimiento = Array.isArray(c.notasSeguimiento) ? c.notasSeguimiento.slice() : [];
+  _cotDocsSeguimiento  = Array.isArray(c.documentos)       ? c.documentos.slice()       : [];
+  // Mostrar sección de seguimiento si el estado lo amerita
+  var seg = document.getElementById("cot-seguimiento-obra");
+  if(seg){
+    var mostrar = (c.estado === "aceptada" || c.estado === "en_obra" || c.estado === "cerrada");
+    seg.style.display = mostrar ? "block" : "none";
+    if(mostrar){
+      _renderNotasSeguimiento();
+      _renderDocsSeguimiento();
+      // dejar la sección abierta por default
+      var body = document.getElementById("cot-segobra-body");
+      if(body) body.style.display = "block";
+      var icono = document.getElementById("cot-segobra-toggle");
+      if(icono) icono.style.transform = "rotate(0deg)";
+      setTimeout(recalcularUtilidadReal, 100);
+    }
+  }
 
   // Restaurar cláusulas eliminadas y personalizadas
   _cotClausulasEliminadas = new Set(Array.isArray(c.clausulasEliminadas) ? c.clausulasEliminadas : []);
@@ -6562,8 +6676,212 @@ function onEstadoCotChange(estado){
   if(estado === "pendiente" && elFR){
     elFR.value = "";
   }
+  // Mostrar/ocultar sección "Seguimiento de obra" según el estado
+  var seg = document.getElementById("cot-seguimiento-obra");
+  if(seg){
+    var mostrar = (estado === "aceptada" || estado === "en_obra" || estado === "cerrada");
+    seg.style.display = mostrar ? "block" : "none";
+    if(mostrar){
+      // Auto-asignar fecha estimada inicio si no tiene (sugerir = fechaRespuesta + 7 días)
+      var elIni = document.getElementById("cot-fecha-inicio-est");
+      if(elIni && !elIni.value){
+        var base = elFR && elFR.value ? new Date(elFR.value+"T12:00:00") : new Date();
+        base.setDate(base.getDate()+7);
+        elIni.value = base.toISOString().slice(0,10);
+      }
+      recalcularUtilidadReal();
+      _renderNotasSeguimiento();
+      _renderDocsSeguimiento();
+    }
+  }
   if(typeof _cotSnapshot === "function") _cotSnapshot();
 }
+
+// ═══════════════════════════════════════════════════════════════
+// SEGUIMIENTO DE OBRA — datos extras para cotizaciones aceptadas
+// ═══════════════════════════════════════════════════════════════
+
+let _cotNotasSeguimiento = []; // [{id, ts, autor, texto}]
+let _cotDocsSeguimiento  = []; // [{id, ts, nombre, tipo, src(base64)}]
+
+function toggleSeguimientoObra(){
+  var body = document.getElementById("cot-segobra-body");
+  var icono = document.getElementById("cot-segobra-toggle");
+  if(!body) return;
+  var abierto = body.style.display !== "none";
+  body.style.display = abierto ? "none" : "block";
+  if(icono) icono.style.transform = abierto ? "rotate(-90deg)" : "rotate(0deg)";
+}
+
+function recalcularUtilidadReal(){
+  var precio = (function(){
+    var elTot = document.getElementById("cot-granTotal");
+    if(elTot) return parseFloat((elTot.textContent||"").replace(/[^\d.-]/g,""))||0;
+    return 0;
+  })();
+  var costoReal = parseFloat(document.getElementById("cot-costo-real")?.value)||0;
+  var costoEst  = parseFloat(document.getElementById("cot-costo-estimado")?.value)||0;
+  var box = document.getElementById("cot-utilidad-real-val");
+  if(!box) return;
+  if(costoReal > 0){
+    var utilReal = precio - costoReal;
+    var pctReal = precio > 0 ? (utilReal/precio)*100 : 0;
+    var color = utilReal >= 0 ? "#059669" : "#DC2626";
+    var deltaTxt = "";
+    if(costoEst > 0){
+      var delta = costoReal - costoEst;
+      var pctDelta = (delta/costoEst)*100;
+      deltaTxt = ' · <span style="font-size:10px;color:'+(delta>0?"#DC2626":"#059669")+';">'+(delta>=0?"↑ +":"↓ ")+'$'+fmtPeso(Math.abs(delta))+' vs estimado ('+(pctDelta>=0?"+":"")+pctDelta.toFixed(0)+'%)</span>';
+    }
+    box.innerHTML = '<span style="color:'+color+';">$'+fmtPeso(utilReal)+'</span> <span style="font-size:11px;color:'+color+';">('+pctReal.toFixed(1)+'%)</span>'+deltaTxt;
+  } else {
+    box.innerHTML = '—';
+  }
+  if(typeof _cotSnapshot === "function") _cotSnapshot();
+}
+
+function agregarNotaSeguimiento(){
+  var texto = prompt("Nueva nota de seguimiento:\n(visita, llamada, email, observación, etc.)");
+  if(!texto || !texto.trim()) return;
+  _cotNotasSeguimiento.push({
+    id: Date.now()+"_"+Math.random().toString(36).slice(2,6),
+    ts: Date.now(),
+    autor: currentUserProfile?.nombre || currentUser?.email || "—",
+    texto: texto.trim()
+  });
+  _renderNotasSeguimiento();
+  if(typeof _cotSnapshot === "function") _cotSnapshot();
+  showToast("✓ Nota agregada");
+}
+
+function eliminarNotaSeguimiento(id){
+  if(!confirm("¿Eliminar esta nota?")) return;
+  _cotNotasSeguimiento = _cotNotasSeguimiento.filter(function(n){return n.id !== id;});
+  _renderNotasSeguimiento();
+  if(typeof _cotSnapshot === "function") _cotSnapshot();
+}
+
+function _renderNotasSeguimiento(){
+  var wrap = document.getElementById("cot-notas-seguimiento-lista");
+  if(!wrap) return;
+  if(!_cotNotasSeguimiento.length){
+    wrap.innerHTML = '<div style="text-align:center;padding:14px;font-size:10.5px;color:var(--tx2);background:var(--off);border-radius:8px;border:1px dashed var(--g1);">Sin notas. Toca "+ Nota" para registrar visitas, llamadas o emails.</div>';
+  } else {
+    var ordenadas = [..._cotNotasSeguimiento].sort(function(a,b){return b.ts - a.ts;});
+    wrap.innerHTML = ordenadas.map(function(n){
+      var f = new Date(n.ts);
+      var fStr = f.toLocaleDateString("es-MX")+" "+f.toLocaleTimeString("es-MX",{hour:"2-digit",minute:"2-digit"});
+      return '<div style="background:#fff;border:1px solid var(--g1);border-left:3px solid #7C3AED;border-radius:8px;padding:10px;margin-bottom:6px;">'
+        +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;font-size:9.5px;color:var(--tx2);">'
+          +'<span><strong style="color:#7C3AED;">'+escapeHtml(n.autor)+'</strong> · '+fStr+'</span>'
+          +'<button onclick="eliminarNotaSeguimiento(\''+n.id+'\')" style="background:none;border:none;color:#EF4444;font-size:11px;cursor:pointer;padding:2px 5px;">✕</button>'
+        +'</div>'
+        +'<div style="font-size:11.5px;color:var(--navy);line-height:1.45;white-space:pre-wrap;">'+escapeHtml(n.texto)+'</div>'
+      +'</div>';
+    }).join("");
+  }
+  // Actualizar badge de notas
+  var badge = document.getElementById("cot-segobra-badge");
+  if(badge){
+    var nNotas = _cotNotasSeguimiento.length;
+    var nDocs = _cotDocsSeguimiento.length;
+    badge.textContent = nNotas+" NOTA"+(nNotas===1?"":"S")+" · "+nDocs+" DOC"+(nDocs===1?"":"S");
+  }
+}
+
+function agregarDocumentos(e){
+  var files = Array.from(e.target.files || []);
+  if(!files.length) return;
+  var pendientes = files.length;
+  files.forEach(function(f){
+    if(f.size > 5 * 1024 * 1024){
+      alert('"'+f.name+'" excede 5MB y no se puede subir.\nUsa archivos más ligeros o servicios externos.');
+      pendientes--;
+      if(pendientes === 0){ _renderDocsSeguimiento(); if(typeof _cotSnapshot === "function") _cotSnapshot(); }
+      return;
+    }
+    var reader = new FileReader();
+    reader.onload = function(ev){
+      _cotDocsSeguimiento.push({
+        id: Date.now()+"_"+Math.random().toString(36).slice(2,6),
+        ts: Date.now(),
+        nombre: f.name,
+        tipo: f.type,
+        size: f.size,
+        src: ev.target.result
+      });
+      pendientes--;
+      if(pendientes === 0){
+        _renderDocsSeguimiento();
+        if(typeof _cotSnapshot === "function") _cotSnapshot();
+        showToast("✓ "+files.length+" archivo"+(files.length===1?"":"s")+" subido"+(files.length===1?"":"s"));
+      }
+    };
+    reader.readAsDataURL(f);
+  });
+  e.target.value = "";
+}
+
+function eliminarDocumento(id){
+  if(!confirm("¿Eliminar este archivo adjunto?")) return;
+  _cotDocsSeguimiento = _cotDocsSeguimiento.filter(function(d){return d.id !== id;});
+  _renderDocsSeguimiento();
+  if(typeof _cotSnapshot === "function") _cotSnapshot();
+}
+
+function abrirDocumento(id){
+  var d = _cotDocsSeguimiento.find(function(x){return x.id===id;});
+  if(!d) return;
+  // Abrir en nueva ventana
+  var w = window.open("");
+  if(!w){ alert("Activa los popups para ver el documento"); return; }
+  if(d.tipo && d.tipo.indexOf("image/")===0){
+    w.document.write('<html><head><title>'+escapeHtml(d.nombre)+'</title></head><body style="margin:0;background:#000;display:flex;align-items:center;justify-content:center;min-height:100vh;"><img src="'+d.src+'" style="max-width:100%;max-height:100vh;"></body></html>');
+  } else {
+    // PDF u otro: usar embed
+    w.document.write('<html><head><title>'+escapeHtml(d.nombre)+'</title></head><body style="margin:0;"><embed src="'+d.src+'" type="'+d.tipo+'" width="100%" height="100%" style="height:100vh;"></body></html>');
+  }
+  w.document.close();
+}
+
+function _renderDocsSeguimiento(){
+  var wrap = document.getElementById("cot-docs-lista");
+  if(!wrap) return;
+  if(!_cotDocsSeguimiento.length){
+    wrap.innerHTML = '<div style="text-align:center;padding:14px;font-size:10.5px;color:var(--tx2);background:var(--off);border-radius:8px;border:1px dashed var(--g1);">Sin archivos. Toca "+ Subir" para agregar OC firmada, comprobantes, fotos, etc. (máx 5MB c/u)</div>';
+  } else {
+    wrap.innerHTML = _cotDocsSeguimiento.map(function(d){
+      var ico = d.tipo && d.tipo.indexOf("image/")===0 ? "🖼️" : (d.tipo === "application/pdf" ? "📄" : "📎");
+      var sizeKB = Math.round((d.size||0)/1024);
+      var f = new Date(d.ts);
+      var fStr = f.toLocaleDateString("es-MX");
+      return '<div style="background:#fff;border:1px solid var(--g1);border-radius:8px;padding:8px 10px;margin-bottom:5px;display:flex;align-items:center;gap:10px;">'
+        +'<div onclick="abrirDocumento(\''+d.id+'\')" style="font-size:24px;cursor:pointer;flex-shrink:0;">'+ico+'</div>'
+        +'<div onclick="abrirDocumento(\''+d.id+'\')" style="flex:1;min-width:0;cursor:pointer;">'
+          +'<div style="font-size:11.5px;font-weight:700;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+escapeHtml(d.nombre)+'</div>'
+          +'<div style="font-size:9.5px;color:var(--tx2);">'+sizeKB+' KB · '+fStr+'</div>'
+        +'</div>'
+        +'<button onclick="eliminarDocumento(\''+d.id+'\')" style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);color:#EF4444;font-size:11px;cursor:pointer;width:26px;height:26px;border-radius:5px;flex-shrink:0;">✕</button>'
+      +'</div>';
+    }).join("");
+  }
+  // Actualizar badge
+  var badge = document.getElementById("cot-segobra-badge");
+  if(badge){
+    var nNotas = _cotNotasSeguimiento.length;
+    var nDocs = _cotDocsSeguimiento.length;
+    badge.textContent = nNotas+" NOTA"+(nNotas===1?"":"S")+" · "+nDocs+" DOC"+(nDocs===1?"":"S");
+  }
+}
+
+// Exponer al window
+window.toggleSeguimientoObra = toggleSeguimientoObra;
+window.recalcularUtilidadReal = recalcularUtilidadReal;
+window.agregarNotaSeguimiento = agregarNotaSeguimiento;
+window.eliminarNotaSeguimiento = eliminarNotaSeguimiento;
+window.agregarDocumentos = agregarDocumentos;
+window.eliminarDocumento = eliminarDocumento;
+window.abrirDocumento = abrirDocumento;
 
 function calcTotalesCot(){
   var sub=_cotPartidas.reduce(function(s,p){return s+(p.qty||0)*(p.precio||0);},0);
@@ -6726,6 +7044,16 @@ async function guardarCot(){
     estado: (document.getElementById("cot-estado")?.value) || "pendiente",
     fechaRespuesta: (document.getElementById("cot-fecha-respuesta")?.value) || "",
     motivoRechazo: (document.getElementById("cot-motivo-rechazo")?.value || "").trim(),
+    // Seguimiento de obra (Sesión 4)
+    fechaInicioEst: (document.getElementById("cot-fecha-inicio-est")?.value) || "",
+    fechaFinEst:    (document.getElementById("cot-fecha-fin-est")?.value)    || "",
+    fechaInicioReal:(document.getElementById("cot-fecha-inicio-real")?.value)|| "",
+    fechaFinReal:   (document.getElementById("cot-fecha-fin-real")?.value)   || "",
+    responsable:    (document.getElementById("cot-responsable")?.value || "").trim(),
+    costoEstimado:  parseFloat(document.getElementById("cot-costo-estimado")?.value) || 0,
+    costoReal:      parseFloat(document.getElementById("cot-costo-real")?.value)     || 0,
+    notasSeguimiento: _cotNotasSeguimiento || [],
+    documentos:       _cotDocsSeguimiento  || [],
     creadoPorUid:currentUser?.uid||"",
     creadoPor:currentUserProfile?.nombre||""
   };
