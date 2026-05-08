@@ -1629,6 +1629,8 @@ body.in-costeo #app{
       <button class="cot-subtab cot-subtab-active" data-cottab="dashboard" onclick="showCotSubtab('dashboard',this)" style="background:transparent;border:none;color:#7C3AED;font-size:12px;font-weight:700;padding:13px 14px;cursor:pointer;font-family:var(--font);position:relative;white-space:nowrap;border-bottom:3px solid #7C3AED;">📊 Dashboard</button>
       <button class="cot-subtab" data-cottab="lista" onclick="showCotSubtab('lista',this)" style="background:transparent;border:none;color:var(--tx2);font-size:12px;font-weight:600;padding:13px 14px;cursor:pointer;font-family:var(--font);position:relative;white-space:nowrap;border-bottom:3px solid transparent;">📋 Cotizaciones</button>
       <button class="cot-subtab" data-cottab="conceptos" onclick="showCotSubtab('conceptos',this)" style="background:transparent;border:none;color:var(--tx2);font-size:12px;font-weight:600;padding:13px 14px;cursor:pointer;font-family:var(--font);position:relative;white-space:nowrap;border-bottom:3px solid transparent;">🔧 Conceptos</button>
+      <button class="cot-subtab" data-cottab="clientes" onclick="showCotSubtab('clientes',this)" style="background:transparent;border:none;color:var(--tx2);font-size:12px;font-weight:600;padding:13px 14px;cursor:pointer;font-family:var(--font);position:relative;white-space:nowrap;border-bottom:3px solid transparent;">🏢 Clientes</button>
+      <button class="cot-subtab" data-cottab="condiciones" onclick="showCotSubtab('condiciones',this)" style="background:transparent;border:none;color:var(--tx2);font-size:12px;font-weight:600;padding:13px 14px;cursor:pointer;font-family:var(--font);position:relative;white-space:nowrap;border-bottom:3px solid transparent;">📜 Condiciones</button>
       <button class="cot-subtab" data-cottab="cuadrillas" onclick="showCotSubtab('cuadrillas',this)" style="background:transparent;border:none;color:var(--tx2);font-size:12px;font-weight:600;padding:13px 14px;cursor:pointer;font-family:var(--font);position:relative;white-space:nowrap;border-bottom:3px solid transparent;">👥 Cuadrillas</button>
       <button class="cot-subtab" data-cottab="calendario" onclick="showCotSubtab('calendario',this)" style="background:transparent;border:none;color:var(--tx2);font-size:12px;font-weight:600;padding:13px 14px;cursor:pointer;font-family:var(--font);position:relative;white-space:nowrap;border-bottom:3px solid transparent;">📅 Calendario</button>
     </div>
@@ -1740,12 +1742,46 @@ body.in-costeo #app{
         <div id="cot-cat-lista" style="display:none;"></div>
       </div>
 
+      <!-- ════ SUB-PESTAÑA: CLIENTES ════ -->
+      <div id="cot-subtab-clientes" class="cot-subtab-content" style="display:none;padding:16px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
+          <div>
+            <div style="font-size:9px;font-weight:700;color:#7C3AED;letter-spacing:1.5px;text-transform:uppercase;">Directorio</div>
+            <div style="font-size:15px;font-weight:800;color:var(--navy);">🏢 Clientes</div>
+            <div style="font-size:10.5px;color:var(--tx2);margin-top:2px;">Empresa · Contacto · Historial de cotizaciones y costeos</div>
+          </div>
+          <div style="display:flex;gap:6px;">
+            <button id="btn-migrar-clientes" onclick="migrarClientesDeCotizaciones()" title="Importar clientes de cotizaciones existentes" style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.25);color:#D97706;font-size:10.5px;font-weight:700;padding:9px 12px;border-radius:8px;cursor:pointer;font-family:var(--font);display:none;">⚡ Importar de cotizaciones</button>
+            <button onclick="abrirEditorCliente()" style="background:#7C3AED;border:none;color:#fff;font-size:12px;font-weight:700;padding:9px 14px;border-radius:8px;cursor:pointer;font-family:var(--font);">+ Nuevo cliente</button>
+          </div>
+        </div>
+        <div style="margin-bottom:12px;">
+          <input type="text" id="cli-buscador" placeholder="🔍 Buscar por empresa, contacto, ciudad o RFC..." oninput="onBuscarCliente(this.value)" style="width:100%;padding:9px 12px;border:1px solid var(--g1);border-radius:8px;font-family:var(--font);font-size:11.5px;background:var(--off);">
+        </div>
+        <div id="cli-loading" style="text-align:center;padding:24px;color:var(--tx2);font-size:11px;">Cargando clientes...</div>
+        <div id="cli-lista" style="display:none;"></div>
+      </div>
+
+      <!-- ════ SUB-PESTAÑA: CONDICIONES (Plantillas) ════ -->
+      <div id="cot-subtab-condiciones" class="cot-subtab-content" style="display:none;padding:16px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
+          <div>
+            <div style="font-size:9px;font-weight:700;color:#7C3AED;letter-spacing:1.5px;text-transform:uppercase;">Plantillas</div>
+            <div style="font-size:15px;font-weight:800;color:var(--navy);">📜 Condiciones generales</div>
+            <div style="font-size:10.5px;color:var(--tx2);margin-top:2px;">Plantillas reusables que puedes aplicar al crear cotizaciones</div>
+          </div>
+          <button onclick="abrirEditorPlantilla()" style="background:#7C3AED;border:none;color:#fff;font-size:12px;font-weight:700;padding:9px 14px;border-radius:8px;cursor:pointer;font-family:var(--font);">+ Nueva plantilla</button>
+        </div>
+        <div id="cnd-loading" style="text-align:center;padding:24px;color:var(--tx2);font-size:11px;">Cargando plantillas...</div>
+        <div id="cnd-lista" style="display:none;"></div>
+      </div>
+
       <!-- ════ SUB-PESTAÑA: CUADRILLAS ════ -->
       <div id="cot-subtab-cuadrillas" class="cot-subtab-content" style="display:none;padding:16px;">
         <div style="text-align:center;padding:32px 16px;color:var(--tx2);">
           <div style="font-size:48px;opacity:.4;margin-bottom:12px;">👥</div>
           <div style="font-size:14px;font-weight:700;color:var(--navy);margin-bottom:6px;">Equipos / Cuadrillas</div>
-          <div style="font-size:11px;line-height:1.5;max-width:340px;margin:0 auto;">Crear cuadrillas con miembros y colores para asignarlas en el calendario.<br><br><strong style="color:#7C3AED;">Próximamente — Sesión 5</strong></div>
+          <div style="font-size:11px;line-height:1.5;max-width:340px;margin:0 auto;">Crear cuadrillas con miembros y colores para asignarlas en el calendario.<br><br><strong style="color:#7C3AED;">Próximamente — Sesión 9</strong></div>
         </div>
       </div>
 
@@ -1794,6 +1830,17 @@ body.in-costeo #app{
           <div class="fg">
             <label class="flabel">Atención — nombre del contacto <span class="req">*</span></label>
             <input class="finput" id="cot-atencion" placeholder="Ing. Juan Pérez">
+          </div>
+          <!-- Selector de cliente (Sesión 7) -->
+          <div class="fg">
+            <label class="flabel" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:4px;">
+              <span>🏢 Cliente del directorio (opcional)</span>
+              <button type="button" onclick="abrirEditorCliente()" style="background:none;border:none;color:#7C3AED;font-size:10px;font-weight:700;cursor:pointer;font-family:var(--font);padding:0;">+ Crear nuevo</button>
+            </label>
+            <select class="fselect" id="cot-cliente-id" onchange="onClienteCotChange(this.value)">
+              <option value="">— Cliente nuevo / sin vincular —</option>
+            </select>
+            <div style="font-size:9.5px;color:var(--tx2);margin-top:3px;">Vincula esta cotización a un cliente del directorio para auto-rellenar y ver historial</div>
           </div>
           <div class="fg">
             <label class="flabel">Empresa <span class="req">*</span></label>
@@ -2013,7 +2060,8 @@ body.in-costeo #app{
         <div class="card" style="margin-bottom:12px;padding:16px;">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:6px;">
             <div style="font-size:10px;font-weight:700;color:var(--tx2);letter-spacing:1px;text-transform:uppercase;">📄 Condiciones generales</div>
-            <div style="display:flex;gap:8px;">
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <button onclick="abrirSelectorPlantilla()" title="Aplicar una plantilla guardada" style="background:rgba(124,58,237,.08);border:1px solid rgba(124,58,237,.25);color:#7C3AED;font-size:10px;font-weight:700;padding:6px 10px;border-radius:6px;cursor:pointer;font-family:var(--font);">📜 Aplicar plantilla</button>
               <button onclick="resetCondicionesCot()" style="background:none;border:none;color:var(--blue);font-size:10px;font-weight:600;cursor:pointer;font-family:var(--font);">↺ Restaurar todo</button>
             </div>
           </div>
@@ -2112,7 +2160,12 @@ body.in-costeo #app{
   <div id="screen-costeo" class="screen" style="padding:0;overflow-y:auto;background:var(--off);">
 
     <!-- Header Hero -->
-    <div style="background:linear-gradient(135deg,#1B3F72,#0B1F3A);padding:16px 18px;border-bottom:1px solid rgba(255,255,255,.05);">
+    <div style="background:linear-gradient(135deg,#1B3F72,#0B1F3A);padding:16px 18px;border-bottom:1px solid rgba(255,255,255,.05);position:relative;">
+      <!-- Botones de navegación -->
+      <div style="display:flex;gap:6px;margin-bottom:10px;">
+        <button onclick="volverSelector()" title="Menú principal" style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:#fff;font-size:11px;font-weight:700;padding:6px 11px;border-radius:7px;cursor:pointer;font-family:var(--font);display:flex;align-items:center;gap:4px;">⌂ Menú</button>
+        <button onclick="goScreen('obras')" title="Volver a obras" style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:#fff;font-size:11px;font-weight:700;padding:6px 11px;border-radius:7px;cursor:pointer;font-family:var(--font);display:flex;align-items:center;gap:4px;">← Atrás</button>
+      </div>
       <div style="font-size:9px;font-weight:700;color:#60A5FA;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:3px;">Módulo interno · ROMSA</div>
       <div style="font-size:18px;font-weight:800;color:#fff;line-height:1.2;">Costeo de proyectos</div>
       <div style="font-size:10px;color:rgba(255,255,255,.5);margin-top:4px;">Análisis de costos · Materiales · Mano de obra · Utilidad</div>
@@ -2232,6 +2285,7 @@ body.in-costeo #app{
     <!-- Header con back + datos del proyecto -->
     <div style="background:linear-gradient(135deg,#1B3F72,#0B1F3A);padding:12px 16px;">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap;">
+        <button onclick="volverSelector()" title="Menú principal" style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:#fff;font-size:11px;font-weight:700;padding:6px 10px;border-radius:6px;cursor:pointer;font-family:var(--font);">⌂ Menú</button>
         <button onclick="cerrarEditorCosteo()" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);color:#fff;font-size:11px;font-weight:700;padding:6px 10px;border-radius:6px;cursor:pointer;font-family:var(--font);">← Volver</button>
         <!-- Botones Undo / Rehacer -->
         <button id="ce-btn-undo" onclick="ceDeshacer()" title="Deshacer (Ctrl+Z)" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);color:#fff;font-size:11px;font-weight:700;padding:6px 10px;border-radius:6px;cursor:pointer;font-family:var(--font);opacity:.35;pointer-events:none;display:flex;align-items:center;gap:5px;">
@@ -2249,12 +2303,34 @@ body.in-costeo #app{
 
     <!-- Datos del proyecto -->
     <div style="background:#fff;border-bottom:1px solid var(--g1);padding:14px 16px;">
+      <!-- Selector de cliente (Sesión 7) -->
+      <div style="margin-bottom:10px;">
+        <div class="cos-label" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:4px;">
+          <span>🏢 Cliente del directorio (opcional)</span>
+          <button type="button" onclick="abrirEditorCliente()" style="background:none;border:none;color:#7C3AED;font-size:10px;font-weight:700;cursor:pointer;font-family:var(--font);padding:0;">+ Crear nuevo</button>
+        </div>
+        <select class="cos-input" id="ce-cliente-id" onchange="onClienteCosteoIdChange(this.value)">
+          <option value="">— Cliente nuevo / sin vincular —</option>
+        </select>
+      </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px;">
         <div><div class="cos-label">Proyecto</div><input class="cos-input" id="ce-proyecto" placeholder="Ej: Planta ELM"></div>
-        <div><div class="cos-label">Cliente</div><input class="cos-input" id="ce-cliente" placeholder="Ej: ELM Aerospace"></div>
+        <div>
+          <div class="cos-label" style="display:flex;align-items:center;justify-content:space-between;">
+            <span>Cliente</span>
+            <span id="ce-prefijo-tag" style="font-size:8px;color:#7090B8;font-weight:700;background:rgba(96,165,250,.1);padding:1px 6px;border-radius:4px;letter-spacing:.5px;display:none;">PREFIJO: —</span>
+          </div>
+          <input class="cos-input" id="ce-cliente" placeholder="Ej: ELM Aerospace" oninput="onClienteCosteoChange(this.value)">
+        </div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
-        <div><div class="cos-label">Prefijo cliente</div><input class="cos-input" id="ce-prefijo" placeholder="ELM" maxlength="6" style="text-transform:uppercase;"></div>
+        <div>
+          <div class="cos-label" style="display:flex;align-items:center;justify-content:space-between;">
+            <span>Prefijo del folio</span>
+            <span style="font-size:8px;color:#7090B8;cursor:help;" title="Solo edita esto si quieres un prefijo distinto al sugerido">ⓘ</span>
+          </div>
+          <input class="cos-input" id="ce-prefijo" placeholder="ELM" maxlength="6" style="text-transform:uppercase;font-family:monospace;">
+        </div>
         <div><div class="cos-label">Fecha</div><input class="cos-input" id="ce-fecha" type="date"></div>
         <div><div class="cos-label">Atención a</div><input class="cos-input" id="ce-atencion" placeholder="Ing. ..."></div>
       </div>
@@ -5739,6 +5815,10 @@ function showCotSubtab(tab, btnEl){
     cargarCatalogoConceptos();
   } else if(tab === "dashboard"){
     if(typeof renderCotDashboard === "function") renderCotDashboard();
+  } else if(tab === "clientes"){
+    if(typeof cargarClientes === "function") cargarClientes();
+  } else if(tab === "condiciones"){
+    if(typeof cargarPlantillasCondiciones === "function") cargarPlantillasCondiciones();
   }
 }
 
@@ -6015,6 +6095,909 @@ window.cerrarEditorConcepto = cerrarEditorConcepto;
 window.guardarConcepto = guardarConcepto;
 window.toggleActivoConcepto = toggleActivoConcepto;
 window.eliminarConcepto = eliminarConcepto;
+
+// ═══════════════════════════════════════════════════════════════
+// PLANTILLAS DE CONDICIONES (Sesión 6)
+// ═══════════════════════════════════════════════════════════════
+
+// Plantilla "Default" inmutable con las 7 cláusulas estándar
+const PLANTILLA_DEFAULT = {
+  id: "__default__",
+  nombre: "Default — ROMSA estándar",
+  descripcion: "Las 7 cláusulas estándar que se usan en la mayoría de cotizaciones",
+  esDefault: true,
+  clausulas: (typeof COT_CLAUSULAS_STD !== "undefined" ? COT_CLAUSULAS_STD : []).slice()
+};
+
+let _plantillas = [];           // plantillas custom (de Firestore)
+let _plantillasCargadas = false;
+let _plantillaEditId = null;
+
+async function cargarPlantillasCondiciones(forzar){
+  var loading = document.getElementById("cnd-loading");
+  var lista = document.getElementById("cnd-lista");
+  if(_plantillasCargadas && !forzar){
+    if(loading) loading.style.display = "none";
+    if(lista) lista.style.display = "block";
+    renderPlantillasCondiciones();
+    return;
+  }
+  if(loading) loading.style.display = "block";
+  if(lista) lista.style.display = "none";
+  try {
+    var snap = await db.collection("cotizacion_plantillas_condiciones").orderBy("nombre").get();
+    _plantillas = snap.docs.map(function(d){
+      var data = d.data();
+      data.id = d.id;
+      return data;
+    });
+    _plantillasCargadas = true;
+    if(loading) loading.style.display = "none";
+    if(lista) lista.style.display = "block";
+    renderPlantillasCondiciones();
+  } catch(err) {
+    console.error("[ROMSA] Error cargando plantillas:", err);
+    if(loading) loading.innerHTML = '<div style="color:#EF4444;">⚠️ Error: '+err.message+'</div>';
+  }
+}
+
+function renderPlantillasCondiciones(){
+  var wrap = document.getElementById("cnd-lista");
+  if(!wrap) return;
+  // Construir lista: default primero, luego custom
+  var todas = [PLANTILLA_DEFAULT].concat(_plantillas);
+  var html = "";
+  todas.forEach(function(p){
+    var esDefault = p.esDefault;
+    var nClausulas = (p.clausulas||[]).length;
+    html += '<div class="card" style="padding:14px;margin-bottom:10px;border-left:3px solid '+(esDefault?'#1E6FD9':'#7C3AED')+';">'
+      +'<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:6px;flex-wrap:wrap;">'
+        +'<div style="flex:1;min-width:200px;">'
+          +'<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;flex-wrap:wrap;">'
+            +'<div style="font-size:13.5px;font-weight:800;color:var(--navy);">'+escapeHtml(p.nombre||"")+'</div>'
+            +(esDefault?'<span style="font-size:8.5px;background:rgba(30,111,217,.1);color:#1E6FD9;padding:2px 6px;border-radius:4px;font-weight:700;letter-spacing:.5px;">FIJA</span>':'')
+          +'</div>'
+          +'<div style="font-size:10.5px;color:var(--tx2);line-height:1.4;">'+escapeHtml(p.descripcion||"")+'</div>'
+          +'<div style="font-size:10px;color:#7C3AED;font-weight:700;margin-top:5px;">📜 '+nClausulas+' cláusula'+(nClausulas===1?"":"s")+'</div>'
+        +'</div>'
+        +'<div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0;">'
+          +'<button onclick="verPlantilla(\''+p.id+'\')" title="Ver cláusulas" style="background:rgba(30,111,217,.08);border:1px solid rgba(30,111,217,.2);color:#1E6FD9;font-size:11px;cursor:pointer;width:30px;height:30px;border-radius:6px;">👁</button>'
+          +(esDefault?'':'<button onclick="abrirEditorPlantilla(\''+p.id+'\')" title="Editar" style="background:rgba(30,111,217,.08);border:1px solid rgba(30,111,217,.2);color:#1E6FD9;font-size:11px;cursor:pointer;width:30px;height:30px;border-radius:6px;">✏️</button>')
+          +(esDefault?'':'<button onclick="eliminarPlantilla(\''+p.id+'\',\''+escapeHtml(p.nombre||"").replace(/\'/g,"\\\\\'")+'\')" title="Eliminar" style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);color:#EF4444;font-size:11px;cursor:pointer;width:30px;height:30px;border-radius:6px;">🗑</button>')
+        +'</div>'
+      +'</div>'
+    +'</div>';
+  });
+  wrap.innerHTML = html;
+}
+
+// Modal para ver una plantilla (read-only para Default, editable para custom)
+function verPlantilla(id){
+  var p = id === "__default__" ? PLANTILLA_DEFAULT : _plantillas.find(function(x){return x.id===id;});
+  if(!p) return;
+  var ov = document.createElement("div");
+  ov.id = "modal-ver-plantilla";
+  ov.style.cssText = "position:fixed;inset:0;background:rgba(11,31,58,.6);z-index:600;display:flex;align-items:flex-end;justify-content:center;";
+  ov.onclick = function(e){ if(e.target===ov) ov.remove(); };
+  var clausulas = (p.clausulas||[]).map(function(cl,i){
+    return '<div style="background:var(--off);border:1px solid var(--g1);border-radius:8px;padding:10px 12px;margin-bottom:6px;">'
+      +'<div style="font-size:11px;font-weight:700;color:#7C3AED;margin-bottom:4px;">'+(i+1)+'. '+escapeHtml(cl.titulo||"Sin título")+'</div>'
+      +'<div style="font-size:11px;color:var(--navy);line-height:1.45;white-space:pre-wrap;">'+escapeHtml(cl.texto||"")+'</div>'
+    +'</div>';
+  }).join("");
+  ov.innerHTML = '<div style="background:#fff;width:100%;max-width:640px;max-height:92vh;border-radius:18px 18px 0 0;overflow-y:auto;display:flex;flex-direction:column;">'
+    +'<div style="padding:14px 18px;border-bottom:1px solid var(--g1);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#fff;z-index:1;">'
+      +'<div>'
+        +'<div style="font-size:9px;color:#7C3AED;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;">Plantilla</div>'
+        +'<div style="font-size:14px;font-weight:800;color:var(--navy);">📜 '+escapeHtml(p.nombre||"")+'</div>'
+      +'</div>'
+      +'<button onclick="document.getElementById(\'modal-ver-plantilla\').remove()" style="background:none;border:none;font-size:22px;color:var(--tx2);cursor:pointer;">×</button>'
+    +'</div>'
+    +'<div style="padding:14px 18px;flex:1;">'+(clausulas||'<div style="text-align:center;padding:20px;color:var(--tx2);">Sin cláusulas</div>')+'</div>'
+    +'<div style="padding:12px 18px;border-top:1px solid var(--g1);background:#fff;position:sticky;bottom:0;">'
+      +'<button onclick="document.getElementById(\'modal-ver-plantilla\').remove()" style="width:100%;background:var(--off);border:1px solid var(--g1);color:var(--navy);font-size:12px;font-weight:700;padding:11px;border-radius:8px;cursor:pointer;font-family:var(--font);">Cerrar</button>'
+    +'</div>'
+  +'</div>';
+  document.body.appendChild(ov);
+}
+
+// Editor crear/editar plantilla
+function abrirEditorPlantilla(id){
+  _plantillaEditId = id || null;
+  var p = id ? _plantillas.find(function(x){return x.id===id;}) : null;
+  // Si es nueva, copiar las cláusulas default como punto de partida
+  var clausulas = p ? (p.clausulas||[]).slice() : (PLANTILLA_DEFAULT.clausulas||[]).map(function(c){return {titulo:c.titulo,texto:c.texto};});
+
+  var ov = document.createElement("div");
+  ov.id = "modal-plantilla";
+  ov.style.cssText = "position:fixed;inset:0;background:rgba(11,31,58,.6);z-index:600;display:flex;align-items:flex-end;justify-content:center;";
+  ov.onclick = function(e){ if(e.target===ov) cerrarEditorPlantilla(); };
+
+  ov.innerHTML = '<div style="background:#fff;width:100%;max-width:680px;max-height:94vh;border-radius:18px 18px 0 0;overflow-y:auto;display:flex;flex-direction:column;">'
+    +'<div style="padding:14px 18px;border-bottom:1px solid var(--g1);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#fff;z-index:1;">'
+      +'<div>'
+        +'<div style="font-size:9px;color:#7C3AED;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;">Plantilla</div>'
+        +'<div style="font-size:15px;font-weight:800;color:var(--navy);">📜 '+(id?'Editar plantilla':'Nueva plantilla')+'</div>'
+      +'</div>'
+      +'<button onclick="cerrarEditorPlantilla()" style="background:none;border:none;font-size:22px;color:var(--tx2);cursor:pointer;">×</button>'
+    +'</div>'
+    +'<div style="padding:16px;flex:1;">'
+      +'<div class="fg"><label class="flabel">Nombre de la plantilla <span style="color:#EF4444;">*</span></label>'
+        +'<input class="finput" id="pln-nombre" placeholder="Ej: Epóxico industrial / Pago anticipado / Obra fuera de Mexicali" value="'+escapeHtml(p?p.nombre:"").replace(/"/g,"&quot;")+'" style="font-weight:700;">'
+      +'</div>'
+      +'<div class="fg"><label class="flabel">Descripción breve (opcional)</label>'
+        +'<input class="finput" id="pln-desc" placeholder="Cuándo aplicar esta plantilla" value="'+escapeHtml(p?(p.descripcion||""):"").replace(/"/g,"&quot;")+'">'
+      +'</div>'
+      +'<div style="display:flex;align-items:center;justify-content:space-between;margin:14px 0 8px;">'
+        +'<div style="font-size:9.5px;font-weight:700;color:var(--tx2);letter-spacing:1.5px;text-transform:uppercase;">📋 Cláusulas</div>'
+        +'<button onclick="_plnAddClausula()" style="background:rgba(124,58,237,.08);border:1px solid rgba(124,58,237,.2);color:#7C3AED;font-size:10px;font-weight:700;padding:5px 10px;border-radius:6px;cursor:pointer;font-family:var(--font);">+ Cláusula</button>'
+      +'</div>'
+      +'<div id="pln-clausulas-wrap"></div>'
+    +'</div>'
+    +'<div style="padding:12px 18px;border-top:1px solid var(--g1);display:flex;gap:8px;background:#fff;position:sticky;bottom:0;">'
+      +'<button onclick="cerrarEditorPlantilla()" style="flex:1;background:var(--off);border:1px solid var(--g1);color:var(--navy);font-size:12px;font-weight:700;padding:11px;border-radius:8px;cursor:pointer;font-family:var(--font);">Cancelar</button>'
+      +'<button onclick="guardarPlantilla()" style="flex:2;background:#7C3AED;border:none;color:#fff;font-size:12px;font-weight:700;padding:11px;border-radius:8px;cursor:pointer;font-family:var(--font);">'+(id?'✓ Actualizar':'✓ Crear plantilla')+'</button>'
+    +'</div>'
+  +'</div>';
+  document.body.appendChild(ov);
+
+  // Estado de las cláusulas en edición
+  window._plnClausulas = clausulas;
+  _plnRenderClausulas();
+}
+
+function _plnRenderClausulas(){
+  var wrap = document.getElementById("pln-clausulas-wrap");
+  if(!wrap) return;
+  if(!window._plnClausulas || !window._plnClausulas.length){
+    wrap.innerHTML = '<div style="text-align:center;padding:14px;font-size:10.5px;color:var(--tx2);background:var(--off);border-radius:8px;border:1px dashed var(--g1);">Sin cláusulas. Toca "+ Cláusula" para agregar.</div>';
+    return;
+  }
+  wrap.innerHTML = window._plnClausulas.map(function(cl, i){
+    return '<div style="background:var(--off);border:1px solid var(--g1);border-radius:8px;padding:10px;margin-bottom:6px;">'
+      +'<div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:6px;">'
+        +'<div style="font-size:9px;color:#7C3AED;font-weight:700;letter-spacing:1px;">CLÁUSULA '+(i+1)+'</div>'
+        +'<div style="display:flex;gap:4px;">'
+          +'<button onclick="_plnMoverClausula('+i+',-1)" '+(i===0?'disabled style="opacity:.3;cursor:not-allowed;':'style="cursor:pointer;')+'background:none;border:1px solid var(--g1);color:var(--tx2);font-size:11px;width:24px;height:24px;border-radius:4px;">↑</button>'
+          +'<button onclick="_plnMoverClausula('+i+',1)" '+(i===window._plnClausulas.length-1?'disabled style="opacity:.3;cursor:not-allowed;':'style="cursor:pointer;')+'background:none;border:1px solid var(--g1);color:var(--tx2);font-size:11px;width:24px;height:24px;border-radius:4px;">↓</button>'
+          +'<button onclick="_plnEliminarClausula('+i+')" style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);color:#EF4444;font-size:11px;cursor:pointer;width:24px;height:24px;border-radius:4px;">✕</button>'
+        +'</div>'
+      +'</div>'
+      +'<input type="text" placeholder="Título de la cláusula" value="'+escapeHtml(cl.titulo||"").replace(/"/g,"&quot;")+'" oninput="_plnUpdateClausula('+i+',\'titulo\',this.value)" style="width:100%;padding:7px 9px;border:1px solid var(--g1);border-radius:6px;font-family:var(--font);font-size:11.5px;background:#fff;font-weight:700;margin-bottom:5px;">'
+      +'<textarea placeholder="Texto de la cláusula" oninput="_plnUpdateClausula('+i+',\'texto\',this.value)" style="width:100%;padding:7px 9px;border:1px solid var(--g1);border-radius:6px;font-family:var(--font);font-size:11px;background:#fff;min-height:60px;resize:vertical;">'+escapeHtml(cl.texto||"")+'</textarea>'
+    +'</div>';
+  }).join("");
+}
+
+function _plnUpdateClausula(i, campo, valor){
+  if(window._plnClausulas && window._plnClausulas[i]){
+    window._plnClausulas[i][campo] = valor;
+  }
+}
+
+function _plnAddClausula(){
+  if(!window._plnClausulas) window._plnClausulas = [];
+  window._plnClausulas.push({titulo:"", texto:""});
+  _plnRenderClausulas();
+}
+
+function _plnEliminarClausula(i){
+  if(!confirm("¿Eliminar esta cláusula?")) return;
+  window._plnClausulas.splice(i, 1);
+  _plnRenderClausulas();
+}
+
+function _plnMoverClausula(i, dir){
+  var n = i + dir;
+  if(n < 0 || n >= window._plnClausulas.length) return;
+  var tmp = window._plnClausulas[i];
+  window._plnClausulas[i] = window._plnClausulas[n];
+  window._plnClausulas[n] = tmp;
+  _plnRenderClausulas();
+}
+
+function cerrarEditorPlantilla(){
+  var m = document.getElementById("modal-plantilla");
+  if(m) m.remove();
+  _plantillaEditId = null;
+  window._plnClausulas = null;
+}
+
+async function guardarPlantilla(){
+  var nombre = (document.getElementById("pln-nombre")?.value || "").trim();
+  if(!nombre){ showToast("⚠️ Ingresa el nombre de la plantilla"); return; }
+  if(!window._plnClausulas || !window._plnClausulas.length){
+    if(!confirm("La plantilla no tiene cláusulas. ¿Guardar de todos modos?")) return;
+  }
+  // Filtrar cláusulas vacías
+  var clausulasLimpias = (window._plnClausulas||[]).filter(function(c){
+    return (c.titulo||"").trim() || (c.texto||"").trim();
+  }).map(function(c){
+    return {titulo:(c.titulo||"").trim(), texto:(c.texto||"").trim()};
+  });
+
+  var data = {
+    nombre: nombre,
+    descripcion: (document.getElementById("pln-desc")?.value || "").trim(),
+    clausulas: clausulasLimpias,
+    ts: Date.now()
+  };
+  try {
+    var ref = db.collection("cotizacion_plantillas_condiciones");
+    if(_plantillaEditId){
+      await ref.doc(_plantillaEditId).set(data, {merge:true});
+      var idx = _plantillas.findIndex(function(p){return p.id===_plantillaEditId;});
+      if(idx>=0) _plantillas[idx] = Object.assign({}, _plantillas[idx], data);
+      showToast("✓ Plantilla actualizada");
+    } else {
+      var docRef = await ref.add(data);
+      data.id = docRef.id;
+      _plantillas.push(data);
+      showToast("✓ Plantilla creada");
+    }
+    cerrarEditorPlantilla();
+    renderPlantillasCondiciones();
+  } catch(err) {
+    console.error("[ROMSA] Error guardando plantilla:", err);
+    alert("Error: "+err.message);
+  }
+}
+
+async function eliminarPlantilla(id, nombre){
+  if(!confirm('¿Eliminar la plantilla "'+nombre+'"?\n\nLas cotizaciones que la usaron NO se ven afectadas.')) return;
+  try {
+    await db.collection("cotizacion_plantillas_condiciones").doc(id).delete();
+    _plantillas = _plantillas.filter(function(p){return p.id !== id;});
+    renderPlantillasCondiciones();
+    showToast("Plantilla eliminada");
+  } catch(err) {
+    alert("Error: "+err.message);
+  }
+}
+
+// Aplica una plantilla a la cotización en edición — reemplaza cláusulas
+function abrirSelectorPlantilla(){
+  var todas = [PLANTILLA_DEFAULT].concat(_plantillas);
+  if(!todas.length){ alert("No hay plantillas disponibles"); return; }
+  var ov = document.createElement("div");
+  ov.id = "modal-sel-plantilla";
+  ov.style.cssText = "position:fixed;inset:0;background:rgba(11,31,58,.6);z-index:650;display:flex;align-items:center;justify-content:center;padding:16px;";
+  ov.onclick = function(e){ if(e.target===ov) ov.remove(); };
+  ov.innerHTML = '<div style="background:#fff;border-radius:14px;max-width:480px;width:100%;max-height:88vh;overflow:hidden;display:flex;flex-direction:column;">'
+    +'<div style="padding:14px 16px;border-bottom:1px solid var(--g1);">'
+      +'<div style="font-size:9px;color:#7C3AED;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;">Aplicar plantilla</div>'
+      +'<div style="font-size:14px;font-weight:800;color:var(--navy);">📜 Elige una plantilla</div>'
+      +'<div style="font-size:10.5px;color:var(--tx2);margin-top:2px;">⚠️ Reemplazará las cláusulas actuales</div>'
+    +'</div>'
+    +'<div style="padding:8px;overflow-y:auto;">'
+      +todas.map(function(p){
+        return '<button onclick="aplicarPlantillaACotizacion(\''+p.id+'\')" style="width:100%;text-align:left;background:transparent;border:1px solid var(--g1);font-family:var(--font);padding:10px 12px;border-radius:8px;cursor:pointer;margin:3px 0;display:block;" onmouseover="this.style.background=\'var(--off)\'" onmouseout="this.style.background=\'transparent\'">'
+          +'<div style="font-size:12px;font-weight:800;color:var(--navy);">📜 '+escapeHtml(p.nombre)+(p.esDefault?' <span style="font-size:8.5px;background:rgba(30,111,217,.1);color:#1E6FD9;padding:1px 5px;border-radius:3px;font-weight:700;">FIJA</span>':'')+'</div>'
+          +'<div style="font-size:10px;color:var(--tx2);margin-top:2px;">'+(p.clausulas||[]).length+' cláusula'+((p.clausulas||[]).length===1?"":"s")+(p.descripcion?' · '+escapeHtml(p.descripcion):"")+'</div>'
+        +'</button>';
+      }).join("")
+    +'</div>'
+    +'<div style="padding:10px 14px;border-top:1px solid var(--g1);background:var(--off);">'
+      +'<button onclick="document.getElementById(\'modal-sel-plantilla\').remove()" style="width:100%;background:transparent;border:1px solid var(--g1);color:var(--tx2);font-size:11px;font-weight:700;padding:9px;border-radius:8px;cursor:pointer;font-family:var(--font);">Cancelar</button>'
+    +'</div>'
+  +'</div>';
+  document.body.appendChild(ov);
+}
+
+function aplicarPlantillaACotizacion(plantillaId){
+  var p = plantillaId === "__default__" ? PLANTILLA_DEFAULT : _plantillas.find(function(x){return x.id===plantillaId;});
+  if(!p){ alert("Plantilla no encontrada"); return; }
+  var modal = document.getElementById("modal-sel-plantilla");
+  if(modal) modal.remove();
+  // Reemplazar cláusulas en la cotización en edición:
+  // 1) Marcar todas las STD existentes como eliminadas
+  if(typeof _cotClausulasEliminadas === "undefined") return;
+  _cotClausulasEliminadas = new Set();
+  if(typeof COT_CLAUSULAS_STD !== "undefined"){
+    COT_CLAUSULAS_STD.forEach(function(std){ _cotClausulasEliminadas.add(std.titulo); });
+  }
+  // 2) Convertir las cláusulas de la plantilla en custom
+  _cotClausulasCustom = (p.clausulas||[]).map(function(c){return {titulo:c.titulo||"", texto:c.texto||""};});
+  // 3) Si elige Default, restaurar (no usar como custom)
+  if(plantillaId === "__default__"){
+    _cotClausulasEliminadas = new Set();
+    _cotClausulasCustom = [];
+  }
+  if(typeof _renderClausulasEditor === "function") _renderClausulasEditor();
+  if(typeof showToast === "function") showToast("✓ Plantilla aplicada: "+p.nombre);
+  if(typeof _cotSnapshot === "function") _cotSnapshot();
+}
+
+// Exponer
+window.cargarPlantillasCondiciones = cargarPlantillasCondiciones;
+window.abrirEditorPlantilla = abrirEditorPlantilla;
+window.cerrarEditorPlantilla = cerrarEditorPlantilla;
+window.guardarPlantilla = guardarPlantilla;
+window.eliminarPlantilla = eliminarPlantilla;
+window.verPlantilla = verPlantilla;
+window._plnUpdateClausula = _plnUpdateClausula;
+window._plnAddClausula = _plnAddClausula;
+window._plnEliminarClausula = _plnEliminarClausula;
+window._plnMoverClausula = _plnMoverClausula;
+window.abrirSelectorPlantilla = abrirSelectorPlantilla;
+window.aplicarPlantillaACotizacion = aplicarPlantillaACotizacion;
+
+// ═══════════════════════════════════════════════════════════════
+// CLIENTES — Folder por cliente (Sesión 7)
+// ═══════════════════════════════════════════════════════════════
+
+let _clientes = [];
+let _clientesCargados = false;
+let _cliBusqueda = "";
+let _cliEditId = null;
+let _cliContactosTemp = []; // contactos adicionales en edición
+
+async function cargarClientes(forzar){
+  var loading = document.getElementById("cli-loading");
+  var lista = document.getElementById("cli-lista");
+  if(_clientesCargados && !forzar){
+    if(loading) loading.style.display = "none";
+    if(lista) lista.style.display = "block";
+    renderClientes();
+    return;
+  }
+  if(loading) loading.style.display = "block";
+  if(lista) lista.style.display = "none";
+  try {
+    var snap = await db.collection("clientes").orderBy("nombreEmpresa").get();
+    _clientes = snap.docs.map(function(d){
+      var data = d.data();
+      data.id = d.id;
+      return data;
+    });
+    _clientesCargados = true;
+    if(loading) loading.style.display = "none";
+    if(lista) lista.style.display = "block";
+    renderClientes();
+    _evaluarBotonMigracion();
+  } catch(err) {
+    console.error("[ROMSA] Error cargando clientes:", err);
+    if(loading) loading.innerHTML = '<div style="color:#EF4444;">⚠️ Error: '+err.message+'</div>';
+  }
+}
+
+function _evaluarBotonMigracion(){
+  // Mostrar botón "Importar de cotizaciones" si hay cotizaciones con empresas que no están en clientes
+  var btn = document.getElementById("btn-migrar-clientes");
+  if(!btn) return;
+  if(!cotizaciones || !cotizaciones.length){ btn.style.display = "none"; return; }
+  var empresasCot = new Set();
+  cotizaciones.forEach(function(c){ if(c.empresa) empresasCot.add(c.empresa.trim().toLowerCase()); });
+  var empresasCli = new Set();
+  _clientes.forEach(function(c){ if(c.nombreEmpresa) empresasCli.add(c.nombreEmpresa.trim().toLowerCase()); });
+  var faltantes = 0;
+  empresasCot.forEach(function(e){ if(!empresasCli.has(e)) faltantes++; });
+  btn.style.display = faltantes > 0 ? "inline-block" : "none";
+  if(faltantes > 0){
+    btn.innerHTML = "⚡ Importar "+faltantes+" cliente"+(faltantes===1?"":"s")+" de cotizaciones";
+  }
+}
+
+function onBuscarCliente(val){
+  _cliBusqueda = (val||"").toLowerCase().trim();
+  renderClientes();
+}
+
+function renderClientes(){
+  var wrap = document.getElementById("cli-lista");
+  if(!wrap) return;
+  if(!_clientes.length){
+    wrap.innerHTML = '<div class="empty"><div class="empty-ico">🏢</div><div class="empty-ttl">Sin clientes</div><div class="empty-sub">Crea tu primer cliente o importa de cotizaciones existentes</div></div>';
+    return;
+  }
+  var filtrados = _clientes;
+  if(_cliBusqueda){
+    filtrados = _clientes.filter(function(c){
+      return (c.nombreEmpresa||"").toLowerCase().indexOf(_cliBusqueda) >= 0
+          || (c.contactoNombre||"").toLowerCase().indexOf(_cliBusqueda) >= 0
+          || (c.ciudad||"").toLowerCase().indexOf(_cliBusqueda) >= 0
+          || (c.rfc||"").toLowerCase().indexOf(_cliBusqueda) >= 0
+          || (c.razonSocial||"").toLowerCase().indexOf(_cliBusqueda) >= 0;
+    });
+  }
+  if(!filtrados.length){
+    wrap.innerHTML = '<div class="empty"><div class="empty-ico">🔎</div><div class="empty-ttl">Sin resultados</div><div class="empty-sub">Ajusta tu búsqueda</div></div>';
+    return;
+  }
+  // Ordenar por nombre
+  filtrados.sort(function(a,b){return (a.nombreEmpresa||"").localeCompare(b.nombreEmpresa||"");});
+
+  var html = '<div style="font-size:10px;color:var(--tx2);margin-bottom:8px;"><strong>'+filtrados.length+'</strong> de '+_clientes.length+' cliente'+(_clientes.length===1?"":"s")+'</div>';
+  html += filtrados.map(function(c){
+    var inactivo = c.activo === false;
+    var nCotizaciones = cotizaciones.filter(function(co){
+      return _clienteCoincide(c, co.empresa) || co.clienteId === c.id;
+    }).length;
+    var nCosteos = (typeof costeos !== "undefined") ? costeos.filter(function(co){
+      return _clienteCoincide(c, co.cliente) || co.clienteId === c.id;
+    }).length : 0;
+    var tipoColor = {
+      "Industrial":"#1E6FD9","Comercial":"#10B981","Gobierno":"#7C3AED",
+      "Constructor":"#F59E0B","Particular":"#6B7280"
+    }[c.tipo] || "#7C3AED";
+    return '<div class="card" style="padding:14px;margin-bottom:10px;border-left:3px solid '+(inactivo?"#9CA3AF":tipoColor)+';'+(inactivo?'opacity:.6;':'')+'">'
+      +'<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap;">'
+        +'<div style="flex:1;min-width:200px;cursor:pointer;" onclick="abrirVistaCliente(\''+c.id+'\')">'
+          +'<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px;">'
+            +'<div style="font-size:14px;font-weight:800;color:var(--navy);">'+escapeHtml(c.nombreEmpresa||"Sin nombre")+'</div>'
+            +(c.prefijo?'<span style="font-size:8.5px;font-family:monospace;background:rgba(124,58,237,.1);color:#7C3AED;padding:1px 5px;border-radius:3px;font-weight:700;">'+escapeHtml(c.prefijo)+'</span>':'')
+            +(inactivo?'<span style="font-size:8.5px;background:#FEE2E2;color:#991B1B;padding:1px 5px;border-radius:3px;font-weight:700;">INACTIVO</span>':'')
+          +'</div>'
+          +'<div style="font-size:11px;color:var(--tx2);margin-bottom:4px;">'
+            +(c.contactoNombre?'👤 '+escapeHtml(c.contactoNombre):'')
+            +(c.ciudad?(c.contactoNombre?' · ':'')+'📍 '+escapeHtml(c.ciudad):'')
+          +'</div>'
+          +'<div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:5px;">'
+            +(c.tipo?'<span class="badge" style="background:'+tipoColor+'15;color:'+tipoColor+';border:1px solid '+tipoColor+'40;">'+escapeHtml(c.tipo)+'</span>':'')
+            +(nCotizaciones?'<span class="badge" style="background:rgba(124,58,237,.08);color:#7C3AED;border:1px solid rgba(124,58,237,.2);">📋 '+nCotizaciones+' cot</span>':'')
+            +(nCosteos?'<span class="badge" style="background:rgba(30,111,217,.08);color:#1E6FD9;border:1px solid rgba(30,111,217,.2);">📊 '+nCosteos+' cost</span>':'')
+          +'</div>'
+        +'</div>'
+        +'<div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0;">'
+          +'<button onclick="abrirEditorCliente(\''+c.id+'\')" title="Editar" style="background:rgba(30,111,217,.08);border:1px solid rgba(30,111,217,.2);color:#1E6FD9;font-size:11px;cursor:pointer;width:30px;height:30px;border-radius:6px;">✏️</button>'
+          +'<button onclick="toggleActivoCliente(\''+c.id+'\')" title="'+(inactivo?"Activar":"Desactivar")+'" style="background:'+(inactivo?'rgba(16,185,129,.08)':'rgba(156,163,175,.1)')+';border:1px solid '+(inactivo?'rgba(16,185,129,.2)':'rgba(156,163,175,.25)')+';color:'+(inactivo?'#059669':'#6B7280')+';font-size:11px;cursor:pointer;width:30px;height:30px;border-radius:6px;">'+(inactivo?'▶':'⏸')+'</button>'
+          +'<button onclick="eliminarCliente(\''+c.id+'\',\''+escapeHtml(c.nombreEmpresa||"").replace(/\'/g,"\\\\\'")+'\')" title="Eliminar" style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);color:#EF4444;font-size:11px;cursor:pointer;width:30px;height:30px;border-radius:6px;">🗑</button>'
+        +'</div>'
+      +'</div>'
+    +'</div>';
+  }).join("");
+  wrap.innerHTML = html;
+}
+
+// Helper: detecta si el nombre de la empresa coincide con un cliente (case-insensitive)
+function _clienteCoincide(cliente, empresaTxt){
+  if(!cliente || !empresaTxt) return false;
+  return (cliente.nombreEmpresa||"").trim().toLowerCase() === (empresaTxt||"").trim().toLowerCase();
+}
+
+// Editor crear/editar cliente
+function abrirEditorCliente(id){
+  _cliEditId = id || null;
+  var c = id ? _clientes.find(function(x){return x.id===id;}) : null;
+  _cliContactosTemp = c && Array.isArray(c.contactosAdicionales) ? c.contactosAdicionales.slice() : [];
+
+  var ov = document.createElement("div");
+  ov.id = "modal-cliente";
+  ov.style.cssText = "position:fixed;inset:0;background:rgba(11,31,58,.6);z-index:600;display:flex;align-items:flex-end;justify-content:center;";
+  ov.onclick = function(e){ if(e.target===ov) cerrarEditorCliente(); };
+  var get = function(k){ return c && c[k] ? escapeHtml(c[k]).replace(/"/g,"&quot;") : ""; };
+  var tipoOpts = ["Industrial","Comercial","Gobierno","Constructor","Particular"].map(function(t){
+    return '<option value="'+t+'"'+(c && c.tipo===t?' selected':'')+'>'+t+'</option>';
+  }).join("");
+
+  ov.innerHTML = '<div style="background:#fff;width:100%;max-width:680px;max-height:94vh;border-radius:18px 18px 0 0;overflow-y:auto;display:flex;flex-direction:column;">'
+    +'<div style="padding:14px 18px;border-bottom:1px solid var(--g1);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#fff;z-index:1;">'
+      +'<div>'
+        +'<div style="font-size:9px;color:#7C3AED;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;">Cliente</div>'
+        +'<div style="font-size:15px;font-weight:800;color:var(--navy);">🏢 '+(id?'Editar cliente':'Nuevo cliente')+'</div>'
+      +'</div>'
+      +'<button onclick="cerrarEditorCliente()" style="background:none;border:none;font-size:22px;color:var(--tx2);cursor:pointer;">×</button>'
+    +'</div>'
+    +'<div style="padding:16px;flex:1;">'
+      // SECCIÓN: Datos básicos
+      +'<div style="font-size:9.5px;font-weight:700;color:#7C3AED;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;">📌 Datos básicos</div>'
+      +'<div class="fg"><label class="flabel">Nombre de la empresa <span style="color:#EF4444;">*</span></label>'
+        +'<input class="finput" id="cli-nombre" placeholder="Ej: ELM Aerospace" value="'+get("nombreEmpresa")+'" style="font-weight:700;" oninput="onNombreClienteChange(this.value)">'
+      +'</div>'
+      +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">'
+        +'<div class="fg"><label class="flabel">Prefijo (3-5 letras para folios)</label>'
+          +'<input class="finput" id="cli-prefijo" placeholder="ELM" value="'+get("prefijo")+'" maxlength="6" style="text-transform:uppercase;font-family:monospace;">'
+        +'</div>'
+        +'<div class="fg"><label class="flabel">Tipo</label><select class="fselect" id="cli-tipo">'+tipoOpts+'</select></div>'
+      +'</div>'
+      +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">'
+        +'<div class="fg"><label class="flabel">Razón social (si difiere)</label><input class="finput" id="cli-razon" value="'+get("razonSocial")+'"></div>'
+        +'<div class="fg"><label class="flabel">RFC</label><input class="finput" id="cli-rfc" value="'+get("rfc")+'" style="text-transform:uppercase;"></div>'
+      +'</div>'
+
+      // SECCIÓN: Ubicación
+      +'<div style="font-size:9.5px;font-weight:700;color:#7C3AED;letter-spacing:1.5px;text-transform:uppercase;margin:14px 0 8px;">📍 Ubicación</div>'
+      +'<div class="fg"><label class="flabel">Dirección</label><input class="finput" id="cli-direccion" value="'+get("direccion")+'"></div>'
+      +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">'
+        +'<div class="fg"><label class="flabel">Ciudad <span style="color:#EF4444;">*</span></label><input class="finput" id="cli-ciudad" value="'+get("ciudad")+'" placeholder="Ej: Mexicali"></div>'
+        +'<div class="fg"><label class="flabel">Estado / País</label><input class="finput" id="cli-estado" value="'+get("estado")+'" placeholder="Ej: B.C., México"></div>'
+      +'</div>'
+
+      // SECCIÓN: Contacto principal
+      +'<div style="font-size:9.5px;font-weight:700;color:#7C3AED;letter-spacing:1.5px;text-transform:uppercase;margin:14px 0 8px;">👤 Contacto principal</div>'
+      +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">'
+        +'<div class="fg"><label class="flabel">Nombre <span style="color:#EF4444;">*</span></label><input class="finput" id="cli-cont-nombre" value="'+get("contactoNombre")+'" placeholder="Ing. ..."></div>'
+        +'<div class="fg"><label class="flabel">Puesto</label><input class="finput" id="cli-cont-puesto" value="'+get("contactoPuesto")+'" placeholder="Ej: Gerente de planta"></div>'
+      +'</div>'
+      +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">'
+        +'<div class="fg"><label class="flabel">Email</label><input class="finput" id="cli-cont-email" type="email" value="'+get("contactoEmail")+'"></div>'
+        +'<div class="fg"><label class="flabel">Teléfono</label><input class="finput" id="cli-cont-tel" value="'+get("contactoTel")+'"></div>'
+      +'</div>'
+      +'<div class="fg"><label class="flabel">Sitio web (opcional)</label><input class="finput" id="cli-web" value="'+get("web")+'" placeholder="https://"></div>'
+
+      // SECCIÓN: Contactos adicionales
+      +'<div style="display:flex;align-items:center;justify-content:space-between;margin:14px 0 8px;">'
+        +'<div style="font-size:9.5px;font-weight:700;color:#7C3AED;letter-spacing:1.5px;text-transform:uppercase;">👥 Contactos adicionales</div>'
+        +'<button onclick="_cliAddContactoExtra()" style="background:rgba(124,58,237,.08);border:1px solid rgba(124,58,237,.2);color:#7C3AED;font-size:10px;font-weight:700;padding:5px 10px;border-radius:6px;cursor:pointer;font-family:var(--font);">+ Contacto</button>'
+      +'</div>'
+      +'<div id="cli-contactos-extra-wrap"></div>'
+
+      // SECCIÓN: Notas
+      +'<div style="font-size:9.5px;font-weight:700;color:#7C3AED;letter-spacing:1.5px;text-transform:uppercase;margin:14px 0 8px;">📝 Notas internas</div>'
+      +'<div class="fg"><textarea class="ftextarea" id="cli-notas" rows="3" placeholder="Memorias, advertencias, etc.">'+escapeHtml(c?(c.notas||""):"")+'</textarea></div>'
+
+      // SECCIÓN: Activo
+      +'<div style="background:rgba(124,58,237,.04);border:1px solid rgba(124,58,237,.15);border-radius:8px;padding:10px;display:flex;align-items:center;gap:10px;margin-bottom:6px;">'
+        +'<input type="checkbox" id="cli-activo" '+(c && c.activo === false ? '' : 'checked')+' style="width:18px;height:18px;cursor:pointer;">'
+        +'<label for="cli-activo" style="font-size:11px;color:var(--navy);cursor:pointer;flex:1;"><strong>Cliente activo</strong> — aparece en dropdowns al crear cotizaciones/costeos</label>'
+      +'</div>'
+    +'</div>'
+    +'<div style="padding:12px 18px;border-top:1px solid var(--g1);display:flex;gap:8px;background:#fff;position:sticky;bottom:0;">'
+      +'<button onclick="cerrarEditorCliente()" style="flex:1;background:var(--off);border:1px solid var(--g1);color:var(--navy);font-size:12px;font-weight:700;padding:11px;border-radius:8px;cursor:pointer;font-family:var(--font);">Cancelar</button>'
+      +'<button onclick="guardarCliente()" style="flex:2;background:#7C3AED;border:none;color:#fff;font-size:12px;font-weight:700;padding:11px;border-radius:8px;cursor:pointer;font-family:var(--font);">'+(id?'✓ Actualizar':'✓ Crear cliente')+'</button>'
+    +'</div>'
+  +'</div>';
+  document.body.appendChild(ov);
+  _cliRenderContactosExtra();
+}
+
+function onNombreClienteChange(valor){
+  // Auto-derivar prefijo si está vacío
+  var elPref = document.getElementById("cli-prefijo");
+  if(elPref && !elPref.value){
+    elPref.value = _derivarPrefijo(valor);
+  }
+}
+
+function _cliRenderContactosExtra(){
+  var wrap = document.getElementById("cli-contactos-extra-wrap");
+  if(!wrap) return;
+  if(!_cliContactosTemp.length){
+    wrap.innerHTML = '<div style="text-align:center;padding:10px;font-size:10.5px;color:var(--tx2);background:var(--off);border-radius:6px;border:1px dashed var(--g1);">Sin contactos adicionales</div>';
+    return;
+  }
+  wrap.innerHTML = _cliContactosTemp.map(function(ct, i){
+    return '<div style="background:var(--off);border:1px solid var(--g1);border-radius:8px;padding:10px;margin-bottom:6px;">'
+      +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">'
+        +'<div style="font-size:9px;font-weight:700;color:#7C3AED;letter-spacing:.5px;">CONTACTO '+(i+2)+'</div>'
+        +'<button onclick="_cliEliminarContactoExtra('+i+')" style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);color:#EF4444;font-size:10px;cursor:pointer;width:24px;height:24px;border-radius:4px;">✕</button>'
+      +'</div>'
+      +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">'
+        +'<input type="text" placeholder="Nombre" value="'+escapeHtml(ct.nombre||"").replace(/"/g,"&quot;")+'" oninput="_cliUpdContactoExtra('+i+',\'nombre\',this.value)" style="padding:6px 8px;border:1px solid var(--g1);border-radius:5px;font-family:var(--font);font-size:11px;">'
+        +'<input type="text" placeholder="Puesto" value="'+escapeHtml(ct.puesto||"").replace(/"/g,"&quot;")+'" oninput="_cliUpdContactoExtra('+i+',\'puesto\',this.value)" style="padding:6px 8px;border:1px solid var(--g1);border-radius:5px;font-family:var(--font);font-size:11px;">'
+        +'<input type="text" placeholder="Email" value="'+escapeHtml(ct.email||"").replace(/"/g,"&quot;")+'" oninput="_cliUpdContactoExtra('+i+',\'email\',this.value)" style="padding:6px 8px;border:1px solid var(--g1);border-radius:5px;font-family:var(--font);font-size:11px;">'
+        +'<input type="text" placeholder="Teléfono" value="'+escapeHtml(ct.tel||"").replace(/"/g,"&quot;")+'" oninput="_cliUpdContactoExtra('+i+',\'tel\',this.value)" style="padding:6px 8px;border:1px solid var(--g1);border-radius:5px;font-family:var(--font);font-size:11px;">'
+      +'</div>'
+    +'</div>';
+  }).join("");
+}
+
+function _cliUpdContactoExtra(i, campo, val){
+  if(_cliContactosTemp[i]) _cliContactosTemp[i][campo] = val;
+}
+
+function _cliAddContactoExtra(){
+  _cliContactosTemp.push({nombre:"", puesto:"", email:"", tel:""});
+  _cliRenderContactosExtra();
+}
+
+function _cliEliminarContactoExtra(i){
+  _cliContactosTemp.splice(i,1);
+  _cliRenderContactosExtra();
+}
+
+function cerrarEditorCliente(){
+  var m = document.getElementById("modal-cliente");
+  if(m) m.remove();
+  _cliEditId = null;
+  _cliContactosTemp = [];
+}
+
+async function guardarCliente(){
+  var nombre = (document.getElementById("cli-nombre")?.value || "").trim();
+  var contactoNombre = (document.getElementById("cli-cont-nombre")?.value || "").trim();
+  var ciudad = (document.getElementById("cli-ciudad")?.value || "").trim();
+  if(!nombre){ showToast("⚠️ Falta nombre de empresa"); return; }
+  if(!contactoNombre){ showToast("⚠️ Falta nombre del contacto principal"); return; }
+  if(!ciudad){ showToast("⚠️ Falta ciudad"); return; }
+
+  var data = {
+    nombreEmpresa: nombre,
+    prefijo: ((document.getElementById("cli-prefijo")?.value)||"").toUpperCase().trim(),
+    tipo: document.getElementById("cli-tipo")?.value || "Industrial",
+    razonSocial: (document.getElementById("cli-razon")?.value || "").trim(),
+    rfc: ((document.getElementById("cli-rfc")?.value)||"").toUpperCase().trim(),
+    direccion: (document.getElementById("cli-direccion")?.value || "").trim(),
+    ciudad: ciudad,
+    estado: (document.getElementById("cli-estado")?.value || "").trim(),
+    contactoNombre: contactoNombre,
+    contactoPuesto: (document.getElementById("cli-cont-puesto")?.value || "").trim(),
+    contactoEmail: (document.getElementById("cli-cont-email")?.value || "").trim(),
+    contactoTel: (document.getElementById("cli-cont-tel")?.value || "").trim(),
+    web: (document.getElementById("cli-web")?.value || "").trim(),
+    contactosAdicionales: _cliContactosTemp.filter(function(ct){return (ct.nombre||"").trim();}),
+    notas: (document.getElementById("cli-notas")?.value || "").trim(),
+    activo: document.getElementById("cli-activo")?.checked !== false,
+    ts: Date.now()
+  };
+
+  try {
+    var ref = db.collection("clientes");
+    if(_cliEditId){
+      await ref.doc(_cliEditId).set(data, {merge:true});
+      var idx = _clientes.findIndex(function(x){return x.id===_cliEditId;});
+      if(idx>=0) _clientes[idx] = Object.assign({}, _clientes[idx], data);
+      showToast("✓ Cliente actualizado");
+    } else {
+      var docRef = await ref.add(data);
+      data.id = docRef.id;
+      _clientes.push(data);
+      showToast("✓ Cliente creado");
+    }
+    cerrarEditorCliente();
+    renderClientes();
+    _evaluarBotonMigracion();
+  } catch(err) {
+    console.error("[ROMSA] Error guardando cliente:", err);
+    alert("Error: "+err.message);
+  }
+}
+
+async function toggleActivoCliente(id){
+  var c = _clientes.find(function(x){return x.id===id;});
+  if(!c) return;
+  var nuevo = c.activo === false ? true : false;
+  try {
+    await db.collection("clientes").doc(id).update({activo:nuevo});
+    c.activo = nuevo;
+    renderClientes();
+    showToast(nuevo?"✓ Cliente activado":"Cliente desactivado");
+  } catch(err){ alert("Error: "+err.message); }
+}
+
+async function eliminarCliente(id, nombre){
+  if(!confirm('¿Eliminar el cliente "'+nombre+'"?\n\nLas cotizaciones y costeos asociados NO se eliminan, solo se desvinculan.')) return;
+  try {
+    await db.collection("clientes").doc(id).delete();
+    _clientes = _clientes.filter(function(c){return c.id !== id;});
+    renderClientes();
+    showToast("Cliente eliminado");
+  } catch(err){ alert("Error: "+err.message); }
+}
+
+// Vista detalle del cliente con historial
+function abrirVistaCliente(id){
+  var c = _clientes.find(function(x){return x.id===id;});
+  if(!c) return;
+  var cotsCli = cotizaciones.filter(function(co){
+    return _clienteCoincide(c, co.empresa) || co.clienteId === c.id;
+  }).sort(function(a,b){return new Date((b.fecha||"")+"T12:00:00") - new Date((a.fecha||"")+"T12:00:00");});
+  var costsCli = (typeof costeos !== "undefined") ? costeos.filter(function(co){
+    return _clienteCoincide(c, co.cliente) || co.clienteId === c.id;
+  }).sort(function(a,b){return new Date((b.fecha||"")+"T12:00:00") - new Date((a.fecha||"")+"T12:00:00");}) : [];
+
+  var totalCotizado = cotsCli.reduce(function(s,co){return s+(parseFloat(co.granTotal)||0);},0);
+  var ganadasCli = cotsCli.filter(function(co){return co.estado==="aceptada"||co.estado==="en_obra"||co.estado==="cerrada";}).length;
+
+  var ov = document.createElement("div");
+  ov.id = "modal-vista-cliente";
+  ov.style.cssText = "position:fixed;inset:0;background:rgba(11,31,58,.6);z-index:600;display:flex;align-items:flex-end;justify-content:center;";
+  ov.onclick = function(e){ if(e.target===ov) ov.remove(); };
+
+  var cotsHtml = cotsCli.length ? cotsCli.map(function(co){
+    var est = COT_ESTADO_LABELS[co.estado||"pendiente"] || COT_ESTADO_LABELS.pendiente;
+    return '<div style="background:#fff;border:1px solid var(--g1);border-left:3px solid #7C3AED;border-radius:8px;padding:10px;margin-bottom:5px;cursor:pointer;" onclick="document.getElementById(\'modal-vista-cliente\').remove();abrirCot(\''+co.id+'\')">'
+      +'<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;">'
+        +'<div style="flex:1;min-width:120px;">'
+          +'<div style="font-size:11.5px;font-weight:700;color:var(--navy);">'+escapeHtml(co.folio||"")+'</div>'
+          +'<div style="font-size:10px;color:var(--tx2);">'+escapeHtml(co.fecha||"")+'</div>'
+        +'</div>'
+        +'<span class="badge" style="background:'+est.bg+';color:'+est.fg+';border:1px solid '+est.border+';font-weight:700;">'+est.txt+'</span>'
+        +'<span style="font-size:11.5px;font-weight:700;color:#10B981;">$'+fmtPeso(parseFloat(co.granTotal)||0)+'</span>'
+      +'</div>'
+    +'</div>';
+  }).join("") : '<div style="text-align:center;padding:10px;color:var(--tx2);font-size:10.5px;">Sin cotizaciones</div>';
+
+  var costsHtml = costsCli.length ? costsCli.map(function(co){
+    return '<div style="background:#fff;border:1px solid var(--g1);border-left:3px solid #1E6FD9;border-radius:8px;padding:10px;margin-bottom:5px;cursor:pointer;" onclick="document.getElementById(\'modal-vista-cliente\').remove();abrirCosteo(\''+co.id+'\')">'
+      +'<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;">'
+        +'<div style="flex:1;min-width:120px;">'
+          +'<div style="font-size:11.5px;font-weight:700;color:var(--navy);">'+escapeHtml(co.folio||"Sin folio")+'</div>'
+          +'<div style="font-size:10px;color:var(--tx2);">'+escapeHtml(co.proyecto||co.fecha||"")+'</div>'
+        +'</div>'
+      +'</div>'
+    +'</div>';
+  }).join("") : '<div style="text-align:center;padding:10px;color:var(--tx2);font-size:10.5px;">Sin costeos</div>';
+
+  ov.innerHTML = '<div style="background:#fff;width:100%;max-width:680px;max-height:94vh;border-radius:18px 18px 0 0;overflow-y:auto;display:flex;flex-direction:column;">'
+    +'<div style="padding:14px 18px;border-bottom:1px solid var(--g1);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#fff;z-index:1;">'
+      +'<div>'
+        +'<div style="font-size:9px;color:#7C3AED;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;">Cliente</div>'
+        +'<div style="font-size:15px;font-weight:800;color:var(--navy);">🏢 '+escapeHtml(c.nombreEmpresa||"")+'</div>'
+        +(c.contactoNombre?'<div style="font-size:11px;color:var(--tx2);">👤 '+escapeHtml(c.contactoNombre)+(c.contactoPuesto?' · '+escapeHtml(c.contactoPuesto):'')+'</div>':'')
+      +'</div>'
+      +'<button onclick="document.getElementById(\'modal-vista-cliente\').remove()" style="background:none;border:none;font-size:22px;color:var(--tx2);cursor:pointer;">×</button>'
+    +'</div>'
+    +'<div style="padding:14px 18px;flex:1;">'
+      +'<div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(140px, 1fr));gap:8px;margin-bottom:14px;">'
+        +'<div style="background:rgba(124,58,237,.06);border:1px solid rgba(124,58,237,.2);border-radius:8px;padding:10px;">'
+          +'<div style="font-size:9px;color:#7C3AED;font-weight:700;letter-spacing:1px;">COTIZACIONES</div>'
+          +'<div style="font-size:18px;font-weight:900;color:#7C3AED;">'+cotsCli.length+'</div>'
+        +'</div>'
+        +'<div style="background:rgba(16,185,129,.06);border:1px solid rgba(16,185,129,.2);border-radius:8px;padding:10px;">'
+          +'<div style="font-size:9px;color:#059669;font-weight:700;letter-spacing:1px;">GANADAS</div>'
+          +'<div style="font-size:18px;font-weight:900;color:#059669;">'+ganadasCli+'</div>'
+        +'</div>'
+        +'<div style="background:rgba(30,111,217,.06);border:1px solid rgba(30,111,217,.2);border-radius:8px;padding:10px;">'
+          +'<div style="font-size:9px;color:#1E6FD9;font-weight:700;letter-spacing:1px;">TOTAL COTIZADO</div>'
+          +'<div style="font-size:14px;font-weight:900;color:#1E6FD9;">$'+fmtPeso(totalCotizado)+'</div>'
+        +'</div>'
+      +'</div>'
+
+      +(c.ciudad||c.direccion?'<div style="background:var(--off);border-radius:8px;padding:10px;margin-bottom:10px;font-size:11px;color:var(--navy);">📍 '+escapeHtml([c.direccion,c.ciudad,c.estado].filter(Boolean).join(", "))+'</div>':'')
+      +(c.contactoEmail||c.contactoTel?'<div style="background:var(--off);border-radius:8px;padding:10px;margin-bottom:14px;font-size:11px;color:var(--navy);">'+(c.contactoEmail?'✉️ '+escapeHtml(c.contactoEmail):'')+(c.contactoEmail&&c.contactoTel?' · ':'')+(c.contactoTel?'📞 '+escapeHtml(c.contactoTel):'')+'</div>':'')
+
+      +'<div style="font-size:9.5px;font-weight:700;color:var(--tx2);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px;">📋 Cotizaciones</div>'
+      +cotsHtml
+      +'<div style="font-size:9.5px;font-weight:700;color:var(--tx2);letter-spacing:1.5px;text-transform:uppercase;margin:14px 0 6px;">📊 Costeos</div>'
+      +costsHtml
+    +'</div>'
+    +'<div style="padding:12px 18px;border-top:1px solid var(--g1);display:flex;gap:8px;background:#fff;position:sticky;bottom:0;">'
+      +'<button onclick="document.getElementById(\'modal-vista-cliente\').remove();abrirEditorCliente(\''+c.id+'\')" style="flex:1;background:rgba(30,111,217,.1);border:1px solid rgba(30,111,217,.25);color:#1E6FD9;font-size:12px;font-weight:700;padding:11px;border-radius:8px;cursor:pointer;font-family:var(--font);">✏️ Editar</button>'
+      +'<button onclick="document.getElementById(\'modal-vista-cliente\').remove()" style="flex:1;background:var(--off);border:1px solid var(--g1);color:var(--navy);font-size:12px;font-weight:700;padding:11px;border-radius:8px;cursor:pointer;font-family:var(--font);">Cerrar</button>'
+    +'</div>'
+  +'</div>';
+  document.body.appendChild(ov);
+}
+
+// Migración: auto-crea clientes a partir de empresas únicas en cotizaciones existentes
+async function migrarClientesDeCotizaciones(){
+  if(!cotizaciones || !cotizaciones.length){
+    alert("No hay cotizaciones para importar");
+    return;
+  }
+  // Mapear empresas únicas con sus datos
+  var empresasMap = {};
+  cotizaciones.forEach(function(c){
+    if(!c.empresa) return;
+    var key = c.empresa.trim().toLowerCase();
+    if(!empresasMap[key]){
+      empresasMap[key] = {
+        nombreEmpresa: c.empresa.trim(),
+        contactoNombre: c.atencion || "",
+        ciudad: "Mexicali", // valor por defecto editable luego
+        prefijo: _derivarPrefijo(c.empresa),
+        tipo: "Industrial",
+        cotizaciones: []
+      };
+    }
+    empresasMap[key].cotizaciones.push(c.folio||c.id);
+  });
+  // Filtrar las que NO existan ya en _clientes
+  var existentes = new Set();
+  _clientes.forEach(function(c){ if(c.nombreEmpresa) existentes.add(c.nombreEmpresa.trim().toLowerCase()); });
+  var aMigrar = Object.values(empresasMap).filter(function(e){return !existentes.has(e.nombreEmpresa.toLowerCase());});
+
+  if(!aMigrar.length){
+    alert("Todas las empresas de tus cotizaciones ya están registradas como clientes");
+    return;
+  }
+
+  var conf = confirm("Se van a importar "+aMigrar.length+" cliente"+(aMigrar.length===1?"":"s")+" a partir de tus cotizaciones existentes:\n\n"+
+    aMigrar.slice(0,10).map(function(e){return "• "+e.nombreEmpresa+" ("+e.cotizaciones.length+" cot)";}).join("\n")+
+    (aMigrar.length>10?"\n... y "+(aMigrar.length-10)+" más":"")+
+    "\n\n¿Continuar?\n\nLuego puedes editar cada uno para completar datos faltantes (RFC, ciudad real, etc).");
+  if(!conf) return;
+
+  try {
+    var ref = db.collection("clientes");
+    var batch = db.batch();
+    var nuevos = [];
+    aMigrar.forEach(function(e){
+      var docRef = ref.doc();
+      var data = {
+        nombreEmpresa: e.nombreEmpresa,
+        prefijo: e.prefijo,
+        tipo: e.tipo,
+        contactoNombre: e.contactoNombre || "—",
+        ciudad: e.ciudad,
+        razonSocial: "", rfc: "", direccion: "", estado: "",
+        contactoPuesto: "", contactoEmail: "", contactoTel: "",
+        web: "", contactosAdicionales: [], notas: "Importado automáticamente desde cotizaciones existentes el "+new Date().toLocaleDateString("es-MX"),
+        activo: true, ts: Date.now()
+      };
+      batch.set(docRef, data);
+      data.id = docRef.id;
+      nuevos.push(data);
+    });
+    await batch.commit();
+    _clientes = _clientes.concat(nuevos);
+    renderClientes();
+    _evaluarBotonMigracion();
+    showToast("✓ "+aMigrar.length+" cliente"+(aMigrar.length===1?"":"s")+" importado"+(aMigrar.length===1?"":"s"));
+  } catch(err) {
+    console.error("[ROMSA] Error en migración:", err);
+    alert("Error en migración: "+err.message);
+  }
+}
+
+// Exponer
+window.cargarClientes = cargarClientes;
+window.onBuscarCliente = onBuscarCliente;
+window.abrirEditorCliente = abrirEditorCliente;
+window.cerrarEditorCliente = cerrarEditorCliente;
+window.guardarCliente = guardarCliente;
+window.toggleActivoCliente = toggleActivoCliente;
+window.eliminarCliente = eliminarCliente;
+window.abrirVistaCliente = abrirVistaCliente;
+window.migrarClientesDeCotizaciones = migrarClientesDeCotizaciones;
+window.onNombreClienteChange = onNombreClienteChange;
+window._cliUpdContactoExtra = _cliUpdContactoExtra;
+window._cliAddContactoExtra = _cliAddContactoExtra;
+window._cliEliminarContactoExtra = _cliEliminarContactoExtra;
+
+// ── Llenar dropdowns de cliente en cotización y costeo ──
+function _llenarDropdownClientes(selectId, valorActual){
+  var sel = document.getElementById(selectId);
+  if(!sel) return;
+  var activos = _clientes.filter(function(c){return c.activo !== false;}).sort(function(a,b){
+    return (a.nombreEmpresa||"").localeCompare(b.nombreEmpresa||"");
+  });
+  sel.innerHTML = '<option value="">— Cliente nuevo / sin vincular —</option>'
+    + activos.map(function(c){
+      var sel = (c.id === valorActual) ? ' selected' : '';
+      return '<option value="'+c.id+'"'+sel+'>'+escapeHtml(c.nombreEmpresa)+(c.ciudad?' · '+escapeHtml(c.ciudad):'')+'</option>';
+    }).join("");
+}
+
+// Cuando se elige un cliente en una COTIZACIÓN
+function onClienteCotChange(clienteId){
+  if(!clienteId){
+    // Volver a modo libre — no tocar campos
+    return;
+  }
+  var c = _clientes.find(function(x){return x.id===clienteId;});
+  if(!c) return;
+  // Auto-rellenar campos
+  var setIf = function(id, val){
+    var el = document.getElementById(id);
+    if(el && val) el.value = val;
+  };
+  setIf("cot-empresa", c.nombreEmpresa);
+  setIf("cot-atencion", c.contactoNombre);
+  setIf("cot-email", c.contactoEmail);
+  setIf("cot-tel", c.contactoTel);
+  setIf("cot-rfc", c.rfc);
+  if(typeof _cotSnapshot === "function") _cotSnapshot();
+  showToast("✓ Cliente cargado: "+c.nombreEmpresa);
+}
+
+// Cuando se elige un cliente en un COSTEO
+function onClienteCosteoIdChange(clienteId){
+  if(!clienteId) return;
+  var c = _clientes.find(function(x){return x.id===clienteId;});
+  if(!c || !_ceCosteo) return;
+  // Auto-rellenar
+  var elCli = document.getElementById("ce-cliente");
+  var elPref = document.getElementById("ce-prefijo");
+  var elAt = document.getElementById("ce-atencion");
+  if(elCli){ elCli.value = c.nombreEmpresa; _ceCosteo.cliente = c.nombreEmpresa; }
+  if(elPref && c.prefijo){ elPref.value = c.prefijo; _ceCosteo.prefijo = c.prefijo; }
+  if(elAt && c.contactoNombre && !elAt.value){ elAt.value = c.contactoNombre; _ceCosteo.atencion = c.contactoNombre; }
+  _ceCosteo.clienteId = clienteId;
+  // Actualizar el tag visual
+  var tag = document.getElementById("ce-prefijo-tag");
+  if(tag){
+    tag.style.display = "inline-block";
+    tag.textContent = "PREFIJO: " + (c.prefijo || _derivarPrefijo(c.nombreEmpresa) || "—");
+  }
+  if(typeof _ceSnapshot === "function") _ceSnapshot();
+  showToast("✓ Cliente cargado: "+c.nombreEmpresa);
+}
+
+window.onClienteCotChange = onClienteCotChange;
+window.onClienteCosteoIdChange = onClienteCosteoIdChange;
+window._llenarDropdownClientes = _llenarDropdownClientes;
 
 // ═══════════════════════════════════════════════════════════════
 // LISTA DE COTIZACIONES — CON FILTROS + BUSCADOR (Sesión 3)
@@ -6365,6 +7348,8 @@ function showNuevaCot(){
   var vincElN = document.getElementById("cot-vinculo-costeo");
   if(vincElN) vincElN.style.display = "none";
   window._cotizacionCosteoOrigen = null;
+  // Llenar dropdown de clientes
+  if(typeof _llenarDropdownClientes === "function") _llenarDropdownClientes("cot-cliente-id", "");
   // Ocultar TODAS las sub-pestañas y mostrar solo el form
   document.querySelectorAll(".cot-subtab-content").forEach(function(el){ el.style.display = "none"; });
   document.getElementById("cot-form-wrap").style.display="block";
@@ -6470,6 +7455,9 @@ function abrirCot(id){
   }
   // Limpiar flag de origen (edición de cotización existente, no generación nueva)
   window._cotizacionCosteoOrigen = null;
+
+  // Llenar dropdown de clientes con valor actual
+  if(typeof _llenarDropdownClientes === "function") _llenarDropdownClientes("cot-cliente-id", c.clienteId || "");
 
   // Ocultar TODAS las sub-pestañas y mostrar solo el form
   document.querySelectorAll(".cot-subtab-content").forEach(function(el){ el.style.display = "none"; });
@@ -7044,6 +8032,8 @@ async function guardarCot(){
     estado: (document.getElementById("cot-estado")?.value) || "pendiente",
     fechaRespuesta: (document.getElementById("cot-fecha-respuesta")?.value) || "",
     motivoRechazo: (document.getElementById("cot-motivo-rechazo")?.value || "").trim(),
+    // Vinculación con cliente (Sesión 7)
+    clienteId: (document.getElementById("cot-cliente-id")?.value) || "",
     // Seguimiento de obra (Sesión 4)
     fechaInicioEst: (document.getElementById("cot-fecha-inicio-est")?.value) || "",
     fechaFinEst:    (document.getElementById("cot-fecha-fin-est")?.value)    || "",
@@ -8291,6 +9281,60 @@ const COSTEO_KITS = {
 // Galones por cubeta (configurable por material si fuera necesario; default 5)
 const GALONES_POR_CUBETA = 5;
 
+// Auto-genera prefijo a partir del nombre del cliente y muestra tag visual
+function onClienteCosteoChange(valor){
+  if(!_ceCosteo) return;
+  _ceCosteo.cliente = valor || "";
+
+  // Auto-llenar prefijo solo si está vacío o coincide con el prefijo derivado anterior
+  var elPref = document.getElementById("ce-prefijo");
+  var prefAuto = _derivarPrefijo(valor);
+  if(elPref){
+    var prefActual = (elPref.value || "").toUpperCase().trim();
+    var prefAnterior = _derivarPrefijo(_ceClienteAnterior || "");
+    // Si el prefijo está vacío o coincide con el del cliente anterior (o sea, no fue editado manualmente), lo actualizo
+    if(!prefActual || prefActual === prefAnterior){
+      elPref.value = prefAuto;
+      _ceCosteo.prefijo = prefAuto;
+    }
+  }
+  _ceClienteAnterior = valor;
+
+  // Actualizar el tag visual
+  var tag = document.getElementById("ce-prefijo-tag");
+  if(tag){
+    if(valor && valor.trim()){
+      tag.style.display = "inline-block";
+      tag.textContent = "PREFIJO: " + (elPref?.value || prefAuto || "—");
+    } else {
+      tag.style.display = "none";
+    }
+  }
+  if(typeof _ceSnapshot === "function") _ceSnapshot();
+}
+
+// Deriva un prefijo de 3-5 letras del nombre completo del cliente
+function _derivarPrefijo(nombre){
+  if(!nombre) return "";
+  var s = String(nombre).trim().toUpperCase();
+  // Quitar palabras comunes y caracteres especiales
+  s = s.replace(/\b(SA|DE|CV|SRL|SAPI|SC|RL|S\.A\.|S\.A\.B\.|S\.R\.L\.|DEL|LA|EL|LOS|LAS)\b/g, "");
+  s = s.replace(/[^A-Z0-9 ]/g, "").replace(/\s+/g, " ").trim();
+  if(!s) return "";
+  // Si tiene varias palabras, tomar iniciales (hasta 5)
+  var palabras = s.split(" ").filter(function(w){return w.length;});
+  if(palabras.length >= 2){
+    var iniciales = palabras.map(function(w){return w[0];}).join("").substring(0,5);
+    if(iniciales.length >= 2) return iniciales;
+  }
+  // Si es una sola palabra, tomar las primeras 3-5 letras
+  return s.replace(/\s/g,"").substring(0, Math.min(5, Math.max(3, s.length)));
+}
+
+let _ceClienteAnterior = ""; // memoriza el cliente previo para detectar si el prefijo fue editado manualmente
+
+window.onClienteCosteoChange = onClienteCosteoChange;
+
 // ── Abrir editor (nuevo) ──────────────────────────────────────
 function nuevoCosteo(){
   const hoy = new Date();
@@ -8343,11 +9387,35 @@ function _renderEditorCosteo(){
   document.getElementById("ce-fecha").value = c.fecha || "";
   document.getElementById("ce-atencion").value = c.atencion || "";
 
+  // Llenar dropdown de cliente con el actual seleccionado (Sesión 7)
+  if(typeof _llenarDropdownClientes === "function") _llenarDropdownClientes("ce-cliente-id", c.clienteId || "");
+
+  // Activar el tag de prefijo si hay cliente
+  _ceClienteAnterior = c.cliente || "";
+  var tag = document.getElementById("ce-prefijo-tag");
+  if(tag){
+    if(c.cliente){
+      tag.style.display = "inline-block";
+      tag.textContent = "PREFIJO: " + (c.prefijo || _derivarPrefijo(c.cliente) || "—");
+    } else {
+      tag.style.display = "none";
+    }
+  }
+
   // Listeners para actualizar estado
   ["proyecto","cliente","prefijo","fecha","atencion"].forEach(f=>{
     const el = document.getElementById("ce-"+f);
     if(el){
-      el.oninput = ()=>{ _ceCosteo[f] = el.value; };
+      el.oninput = ()=>{
+        _ceCosteo[f] = el.value;
+        // Si edita el prefijo manualmente, actualiza el tag
+        if(f === "prefijo"){
+          var tag2 = document.getElementById("ce-prefijo-tag");
+          if(tag2 && _ceCosteo.cliente){
+            tag2.textContent = "PREFIJO: " + (el.value.toUpperCase() || _derivarPrefijo(_ceCosteo.cliente) || "—");
+          }
+        }
+      };
     }
   });
 
@@ -9393,6 +10461,7 @@ async function guardarCosteoActual(){
   _ceCosteo.prefijo  = (document.getElementById("ce-prefijo").value||"").toUpperCase().trim();
   _ceCosteo.fecha    = document.getElementById("ce-fecha").value;
   _ceCosteo.atencion = document.getElementById("ce-atencion").value.trim();
+  _ceCosteo.clienteId = document.getElementById("ce-cliente-id")?.value || "";
 
   if(!_ceCosteo.proyecto){ showToast("⚠️ Falta nombre del proyecto"); return; }
   if(!_ceCosteo.prefijo){  showToast("⚠️ Falta prefijo del cliente (ej: ELM)"); return; }
@@ -9923,6 +10992,13 @@ auth.onAuthStateChanged(async user => {
     // Pre-cargar catálogo de conceptos en background (para que CAT_SERVICIOS esté actualizado al crear cotización)
     if(typeof cargarCatalogoConceptos === "function"){
       cargarCatalogoConceptos().catch(function(e){ console.warn("[ROMSA] Catálogo no se pudo precargar:", e); });
+    }
+    // Pre-cargar clientes y plantillas en background (Sesión 6+7)
+    if(typeof cargarClientes === "function"){
+      cargarClientes().catch(function(e){ console.warn("[ROMSA] Clientes no se pudieron precargar:", e); });
+    }
+    if(typeof cargarPlantillasCondiciones === "function"){
+      cargarPlantillasCondiciones().catch(function(e){ console.warn("[ROMSA] Plantillas no se pudieron precargar:", e); });
     }
     checkUrlParams();
     updateHoraCi();
