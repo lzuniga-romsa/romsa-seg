@@ -8569,7 +8569,7 @@ function _inyectarPdf(htmlStr, title, winRef){
 }
 
 // ═══════════════════════════════════════════════════════════════
-// DESCARGAR COTIZACIÓN COMO POWERPOINT (Sesión 8)
+// DESCARGAR COTIZACIÓN COMO POWERPOINT (Sesión 8 — Diseño fiel al PDF)
 // ═══════════════════════════════════════════════════════════════
 
 // Wrapper: guardar + descargar PPT
@@ -8597,6 +8597,52 @@ function _cargarPptxLib(){
   });
 }
 
+// ── Convertir SVG a PNG (PptxGenJS no soporta SVG) ──
+function _svgADataUrlPng(svgDataUrl, width, height){
+  return new Promise(function(resolve, reject){
+    try {
+      var img = new Image();
+      img.onload = function(){
+        var canvas = document.createElement("canvas");
+        // Renderizar a alta resolución (3x para nitidez)
+        var scale = 3;
+        canvas.width = width * scale;
+        canvas.height = height * scale;
+        var ctx = canvas.getContext("2d");
+        ctx.scale(scale, scale);
+        // Fondo transparente, dibuja el SVG
+        ctx.drawImage(img, 0, 0, width, height);
+        try {
+          resolve(canvas.toDataURL("image/png"));
+        } catch(e){ reject(e); }
+      };
+      img.onerror = function(){ reject(new Error("No se pudo cargar el SVG")); };
+      img.src = svgDataUrl;
+    } catch(e){ reject(e); }
+  });
+}
+
+// ── Convertir logo SVG a PNG en variantes (azul para fondo claro, blanco para fondo oscuro) ──
+async function _ppt_obtenerLogos(){
+  var logoAzul = window._romsaLogoAzul || '';
+  var logoBlanco = window._romsaLogoBlanco || '';
+  var resultado = {azul: '', blanco: ''};
+
+  if(logoAzul){
+    try {
+      resultado.azul = await _svgADataUrlPng(logoAzul, 600, 80);
+    } catch(e){ console.warn("[PPT] No se pudo convertir logo azul:", e); }
+  }
+  if(logoBlanco){
+    try {
+      resultado.blanco = await _svgADataUrlPng(logoBlanco, 600, 80);
+    } catch(e){ console.warn("[PPT] No se pudo convertir logo blanco:", e); }
+  }
+  // Si solo hay azul y no blanco, usar azul como blanco (será visible)
+  if(!resultado.blanco && resultado.azul) resultado.blanco = resultado.azul;
+  return resultado;
+}
+
 // Función principal: generar y descargar el PPT
 async function descargarCotPPT(cot){
   if(!cot){ alert("Cotización vacía"); return; }
@@ -8609,21 +8655,23 @@ async function descargarCotPPT(cot){
     return;
   }
 
+  // Convertir logos SVG a PNG
+  var logos = await _ppt_obtenerLogos();
+
   // ── Datos ──
   var sub    = parseFloat(cot.subtotal  || 0);
   var iva    = parseFloat(cot.iva       || 0);
   var total  = parseFloat(cot.granTotal || 0);
   var partidas = cot.partidas || [];
 
-  // Lee opciones del PDF actual (mismas)
   var inclProc        = document.getElementById('cot-incl-proc')?.checked === true;
   var inclCondiciones = document.getElementById('cot-incl-condiciones')?.checked !== false;
+  var inclIntro       = document.getElementById('cot-incl-intro')?.checked !== false;
   var rTel   = document.getElementById('cot-romsa-tel')?.value  || cot.romsaTel  || '686 138 3117';
   var rEmail = document.getElementById('cot-romsa-email')?.value|| cot.romsaEmail|| 'ventas@romsaindustrial.com';
   var rWeb   = document.getElementById('cot-romsa-web')?.value  || cot.romsaWeb  || 'www.romsaindustrial.com';
   var vigencia = document.getElementById('cot-vigencia')?.value || cot.vigencia  || '30';
 
-  // Fecha
   var fechaFmt = '';
   try{ fechaFmt = new Date((cot.fecha||'')+'T12:00:00').toLocaleDateString('es-MX',{year:'numeric',month:'long',day:'numeric'}); }
   catch(e){ fechaFmt = cot.fecha||''; }
@@ -8652,35 +8700,38 @@ async function descargarCotPPT(cot){
   pptx.author = "ROMSA Industrial";
   pptx.company = "ROMSA Industrial";
 
-  // Colores ROMSA (igual que el PDF)
+  // Colores ROMSA exactos del PDF
   var COLOR = {
-    purple:   "7C3AED",
-    purpleD:  "5B21B6",
-    purpleL:  "EDE9FE",
-    navy:     "0B1F3A",
-    navyMid:  "1B3F72",
-    txtMain:  "0B1F3A",
-    txtSub:   "6B7FA3",
-    txtMute:  "9CA3AF",
-    bgLight:  "F7F8FB",
-    border:   "E2E8F2",
-    green:    "10B981",
-    white:    "FFFFFF"
+    navy:        "0B1F3A",
+    navyMid:     "0F2A5A",
+    navy2:       "1B3F72",
+    blue:        "1E6FD9",
+    blueLight:   "60A5FA",
+    txtMain:     "0B1F3A",
+    txtSec:      "4A5E7A",
+    txtMute:     "6B7FA3",
+    txtFaint:    "8A9AB8",
+    border:      "E2E8F2",
+    borderLight: "EDF1F8",
+    bgLight:     "F7F9FC",
+    bgZebra:     "FAFBFD",
+    white:       "FFFFFF",
+    success:     "10B981"
   };
 
-  // ─── SLIDE 1 — DATOS + PARTIDAS + TOTALES ───
-  _ppt_construirSlide1(pptx, cot, partidas, sub, iva, total, lugarFecha, vigencia, rTel, rEmail, rWeb, COLOR);
+  // ─── SLIDE 1 ───
+  _ppt_construirSlide1(pptx, cot, partidas, sub, iva, total, lugarFecha, vigencia, rTel, rEmail, rWeb, COLOR, logos, inclIntro);
 
-  // ─── SLIDE 2 — CONDICIONES + FIRMA ───
+  // ─── SLIDE 2 — CONDICIONES ───
   if(inclCondiciones){
-    _ppt_construirSlide2(pptx, cot, clausulasFinal, rTel, rEmail, rWeb, COLOR);
+    _ppt_construirSlide2(pptx, cot, clausulasFinal, rTel, rEmail, rWeb, COLOR, logos);
   }
 
-  // ─── SLIDES 3+ — PROCEDIMIENTO TÉCNICO (si toggle activo) ───
+  // ─── SLIDES — PROCEDIMIENTOS ───
   if(inclProc){
     var partidasConProc = partidas.filter(function(p){return p.proc && p.proc.trim();});
     if(partidasConProc.length){
-      _ppt_construirSlideProcedimientos(pptx, cot, partidasConProc, COLOR);
+      _ppt_construirSlideProcedimientos(pptx, cot, partidasConProc, COLOR, logos);
     }
   }
 
@@ -8690,243 +8741,301 @@ async function descargarCotPPT(cot){
   if(typeof showToast === "function") showToast("✓ PowerPoint descargado");
 }
 
-// SLIDE 1: portada + datos + partidas + totales
-function _ppt_construirSlide1(pptx, cot, partidas, sub, iva, total, lugarFecha, vigencia, rTel, rEmail, rWeb, COLOR){
+// ─── SLIDE 1: Hero + datos + tabla + totales ───
+function _ppt_construirSlide1(pptx, cot, partidas, sub, iva, total, lugarFecha, vigencia, rTel, rEmail, rWeb, COLOR, logos, inclIntro){
   var slide = pptx.addSlide();
   slide.background = {color: COLOR.white};
 
-  // Header púrpura — banner superior con logo
-  slide.addShape("rect", {x:0, y:0, w:13.333, h:0.85, fill:{color: COLOR.purple}});
+  // ════ HERO — Banner navy degradado superior ════
+  // PptxGenJS no soporta gradientes en shapes. Simulamos con dos rectángulos superpuestos.
+  slide.addShape("rect", {x:0, y:0, w:13.333, h:1.95, fill:{color: COLOR.navy}});
+  // Capa secundaria con leve transparencia para simular degradado (el navyMid es muy parecido)
+  slide.addShape("rect", {x:6.5, y:0, w:6.85, h:1.95, fill:{color: COLOR.navyMid, transparency: 30}});
 
-  // Logo ROMSA (izquierda) - usar logo blanco si está disponible
-  var logoB = window._romsaLogoBlanco || window._romsaLogoAzul || '';
-  if(logoB){
+  // Círculos decorativos (azul tenue)
+  slide.addShape("ellipse", {x:11.5, y:-0.6, w:2.5, h:2.5, fill:{color: COLOR.blue, transparency: 92}, line:{type:"none"}});
+  slide.addShape("ellipse", {x:9.5, y:1.0, w:1.7, h:1.7, fill:{color: COLOR.blue, transparency: 94}, line:{type:"none"}});
+  slide.addShape("ellipse", {x:-0.5, y:0.8, w:2.2, h:2.2, fill:{color: COLOR.blue, transparency: 95}, line:{type:"none"}});
+
+  // Logo centrado (PNG)
+  if(logos.blanco){
     try {
-      slide.addImage({data: logoB, x:0.35, y:0.13, w:1.6, h:0.6, sizing: {type:"contain", w:1.6, h:0.6}});
-    } catch(e){ console.warn("[PPT] No se pudo agregar logo:", e); }
+      slide.addImage({data: logos.blanco, x:5.6, y:0.45, w:2.13, h:0.45, sizing:{type:"contain", w:2.13, h:0.45}});
+    } catch(e){ console.warn("[PPT] Logo P1:", e); }
   } else {
-    slide.addText("ROMSA Industrial", {x:0.35, y:0.13, w:3, h:0.6, fontSize:20, bold:true, color: COLOR.white, fontFace:"Calibri"});
+    slide.addText("ROMSA", {x:5, y:0.4, w:3.3, h:0.6, fontSize:32, bold:true, color: COLOR.white, fontFace:"Calibri", align:"center", charSpacing:-1.5});
   }
 
-  // Folio + Fecha (derecha del header)
-  slide.addText("COTIZACIÓN", {x:9.5, y:0.13, w:3.6, h:0.25, fontSize:9, bold:true, color: COLOR.white, fontFace:"Calibri", align:"right", charSpacing:3});
-  slide.addText(cot.folio||"", {x:9.5, y:0.36, w:3.6, h:0.3, fontSize:14, bold:true, color: COLOR.white, fontFace:"Calibri", align:"right"});
-  slide.addText(lugarFecha, {x:9.5, y:0.6, w:3.6, h:0.2, fontSize:9, color:"E2E8F2", fontFace:"Calibri", align:"right"});
+  // Línea decorativa con texto "COTIZACIÓN TÉCNICA"
+  slide.addShape("line", {x:4.5, y:1.28, w:1.0, h:0, line:{color:"FFFFFF", width:0.5, transparency:80}});
+  slide.addText("COTIZACIÓN TÉCNICA", {x:5.5, y:1.18, w:2.33, h:0.22, fontSize:8, bold:true, color:"FFFFFF", fontFace:"Calibri", align:"center", charSpacing:6, transparency:55});
+  slide.addShape("line", {x:7.85, y:1.28, w:1.0, h:0, line:{color:"FFFFFF", width:0.5, transparency:80}});
 
-  // ── Datos del cliente (cuadro izquierdo) ──
-  slide.addText("DESTINATARIO", {x:0.4, y:1.05, w:6, h:0.22, fontSize:8, bold:true, color: COLOR.purple, fontFace:"Calibri", charSpacing:3});
-  slide.addText(cot.empresa || "", {x:0.4, y:1.27, w:6, h:0.32, fontSize:14, bold:true, color: COLOR.txtMain, fontFace:"Calibri"});
+  // ════ LÍNEA DEGRADADA (3 colores apilados) ════
+  slide.addShape("rect", {x:0, y:1.95, w:4.45, h:0.04, fill:{color: COLOR.navy}, line:{type:"none"}});
+  slide.addShape("rect", {x:4.45, y:1.95, w:4.45, h:0.04, fill:{color: COLOR.blue}, line:{type:"none"}});
+  slide.addShape("rect", {x:8.9, y:1.95, w:4.45, h:0.04, fill:{color: COLOR.navy2}, line:{type:"none"}});
+
+  // ════ FOLIO STRIP ════
+  slide.addShape("rect", {x:0, y:2.05, w:13.333, h:0.55, fill:{color: COLOR.white}, line:{type:"none"}});
+  slide.addShape("line", {x:0.5, y:2.6, w:12.33, h:0, line:{color: COLOR.borderLight, width:0.5}});
+  slide.addText(lugarFecha, {x:0.5, y:2.18, w:6, h:0.32, fontSize:11, color: COLOR.txtFaint, fontFace:"Calibri"});
+  slide.addText("FOLIO", {x:11, y:2.13, w:1.83, h:0.18, fontSize:7.5, bold:true, color:"B0BDD0", fontFace:"Calibri", align:"right", charSpacing:3});
+  slide.addText(cot.folio||"", {x:9.8, y:2.31, w:3.03, h:0.25, fontSize:13, bold:true, color: COLOR.navy2, fontFace:"Calibri", align:"right"});
+
+  // ════ DESTINATARIO ════
+  slide.addText("DIRIGIDO A", {x:0.5, y:2.78, w:5, h:0.18, fontSize:7.5, bold:true, color: COLOR.txtFaint, fontFace:"Calibri", charSpacing:4});
+  slide.addText(cot.empresa || "", {x:0.5, y:2.96, w:8, h:0.28, fontSize:13, bold:true, color: COLOR.navy, fontFace:"Calibri"});
   if(cot.atencion){
-    slide.addText("At'n: "+cot.atencion, {x:0.4, y:1.6, w:6, h:0.22, fontSize:10, color: COLOR.txtSub, fontFace:"Calibri"});
+    slide.addText("Attn: "+cot.atencion, {x:0.5, y:3.22, w:8, h:0.22, fontSize:10.5, color: COLOR.txtSec, fontFace:"Calibri"});
   }
   var contactoLineas = [];
   if(cot.email) contactoLineas.push(cot.email);
   if(cot.tel) contactoLineas.push(cot.tel);
   if(contactoLineas.length){
-    slide.addText(contactoLineas.join(" · "), {x:0.4, y:1.82, w:6, h:0.22, fontSize:9, color: COLOR.txtMute, fontFace:"Calibri"});
+    slide.addText(contactoLineas.join(" · "), {x:0.5, y:3.42, w:8, h:0.2, fontSize:9.5, color: COLOR.txtFaint, fontFace:"Calibri"});
   }
 
-  // ── Cuadro de proyecto (derecha) ──
-  slide.addShape("rect", {x:8.5, y:1.05, w:4.5, h:1.05, fill:{color: COLOR.purpleL}, line:{color: COLOR.purple, width:0.75}});
-  slide.addText("PROYECTO", {x:8.7, y:1.13, w:4.2, h:0.2, fontSize:7.5, bold:true, color: COLOR.purpleD, fontFace:"Calibri", charSpacing:3});
-  slide.addText(cot.proyecto || "Servicios industriales", {x:8.7, y:1.32, w:4.2, h:0.36, fontSize:11, bold:true, color: COLOR.purpleD, fontFace:"Calibri"});
-  slide.addText("Vigencia: "+vigencia+" días", {x:8.7, y:1.7, w:4.2, h:0.2, fontSize:9, color: COLOR.purple, fontFace:"Calibri", italic:true});
+  // ════ Cuadro de proyecto/vigencia (derecha) ════
+  slide.addShape("rect", {x:9.0, y:2.78, w:3.83, h:0.95, fill:{color: COLOR.bgLight}, line:{color: COLOR.border, width:0.5}});
+  slide.addText("VIGENCIA", {x:9.15, y:2.86, w:3.55, h:0.18, fontSize:7.5, bold:true, color: COLOR.txtFaint, fontFace:"Calibri", charSpacing:4});
+  slide.addText(vigencia+" días naturales", {x:9.15, y:3.04, w:3.55, h:0.3, fontSize:14, bold:true, color: COLOR.navy2, fontFace:"Calibri"});
+  slide.addText("a partir de la emisión", {x:9.15, y:3.36, w:3.55, h:0.22, fontSize:9, color: COLOR.txtMute, fontFace:"Calibri", italic:true});
 
-  // ── TABLA DE PARTIDAS ──
-  // Header de tabla
-  var yTabla = 2.35;
-  var tablaHeader = [
-    [
-      {text:"#", options:{bold:true, fontSize:9, color: COLOR.white, fill:{color: COLOR.navy}, align:"center", valign:"middle"}},
-      {text:"CONCEPTO", options:{bold:true, fontSize:9, color: COLOR.white, fill:{color: COLOR.navy}, align:"left", valign:"middle"}},
-      {text:"CANT.", options:{bold:true, fontSize:9, color: COLOR.white, fill:{color: COLOR.navy}, align:"center", valign:"middle"}},
-      {text:"UNID.", options:{bold:true, fontSize:9, color: COLOR.white, fill:{color: COLOR.navy}, align:"center", valign:"middle"}},
-      {text:"P. UNITARIO", options:{bold:true, fontSize:9, color: COLOR.white, fill:{color: COLOR.navy}, align:"right", valign:"middle"}},
-      {text:"SUBTOTAL", options:{bold:true, fontSize:9, color: COLOR.white, fill:{color: COLOR.navy}, align:"right", valign:"middle"}}
-    ]
+  // ════ Línea separadora ════
+  slide.addShape("line", {x:0.5, y:3.78, w:12.33, h:0, line:{color: COLOR.borderLight, width:0.5}});
+
+  // ════ INTRO (si activado) ════
+  var yTabla = 3.95;
+  if(inclIntro){
+    slide.addText("Por este medio, nos es grato presentar nuestra propuesta técnico-comercial para "+(cot.empresa||"")+". A continuación se detalla el alcance, especificaciones y condiciones del proyecto:",
+      {x:0.5, y:3.85, w:12.33, h:0.4, fontSize:10, color: COLOR.txtSec, fontFace:"Calibri", italic:true});
+    yTabla = 4.35;
+  }
+
+  // ════ TABLA DE PARTIDAS ════
+  var headerRow = [
+    {text:"DESCRIPCIÓN DEL SERVICIO", options:{bold:true, fontSize:8.5, color:"A0AEC8", fill:{color: COLOR.navy}, align:"left", valign:"middle", charSpacing:2}},
+    {text:"CANTIDAD", options:{bold:true, fontSize:8.5, color:"A0AEC8", fill:{color: COLOR.navy}, align:"center", valign:"middle", charSpacing:2}},
+    {text:"P. UNIT.", options:{bold:true, fontSize:8.5, color:"A0AEC8", fill:{color: COLOR.navy}, align:"right", valign:"middle", charSpacing:2}},
+    {text:"TOTAL", options:{bold:true, fontSize:8.5, color:"A0AEC8", fill:{color: COLOR.navy}, align:"right", valign:"middle", charSpacing:2}}
   ];
+
+  // Tamaño de fuente dinámico
+  var fontTabla = 10;
+  if(partidas.length > 6) fontTabla = 9;
+  if(partidas.length > 10) fontTabla = 8;
+  if(partidas.length > 14) fontTabla = 7.5;
 
   var filasTabla = partidas.map(function(p, i){
     var st = (parseFloat(p.qty)||0) * (parseFloat(p.precio)||0);
     var tituloP = (p.tituloCustom && p.tituloCustom.trim()) ? p.tituloCustom.trim() : (p.servicio || "Sin título");
-    var concepto = tituloP + (p.desc ? "\n" + p.desc : "");
-    var bgRow = (i%2===0) ? COLOR.white : COLOR.bgLight;
+    var bgRow = (i%2===0) ? COLOR.white : COLOR.bgZebra;
+
+    // Concepto: título en negrita + descripción debajo
+    var conceptoTexto = [
+      {text: tituloP+"\n", options:{bold:true, fontSize: fontTabla, color: COLOR.navy}}
+    ];
+    if(p.desc && p.desc.trim()){
+      conceptoTexto.push({text: p.desc.trim(), options:{fontSize: fontTabla-1, color: COLOR.txtSec, italic:false}});
+    }
+
     return [
-      {text: String(i+1), options:{fontSize:9, color: COLOR.txtMain, fill:{color: bgRow}, align:"center", valign:"middle", bold:true}},
-      {text: concepto, options:{fontSize:9, color: COLOR.txtMain, fill:{color: bgRow}, align:"left", valign:"middle"}},
-      {text: String(p.qty || 0), options:{fontSize:9, color: COLOR.txtMain, fill:{color: bgRow}, align:"center", valign:"middle"}},
-      {text: p.unit || "m²", options:{fontSize:9, color: COLOR.txtMain, fill:{color: bgRow}, align:"center", valign:"middle"}},
-      {text: "$"+fmtPeso(parseFloat(p.precio)||0), options:{fontSize:9, color: COLOR.txtMain, fill:{color: bgRow}, align:"right", valign:"middle"}},
-      {text: "$"+fmtPeso(st), options:{fontSize:9.5, color: COLOR.txtMain, fill:{color: bgRow}, align:"right", valign:"middle", bold:true}}
+      {text: conceptoTexto, options:{fill:{color: bgRow}, align:"left", valign:"middle", margin:[8,12,8,12]}},
+      {text: (parseFloat(p.qty)||0).toLocaleString('es-MX')+" "+(p.unit||""), options:{fontSize: fontTabla, color: COLOR.navy, fill:{color: bgRow}, align:"center", valign:"middle", bold:true}},
+      {text: "$"+fmtPeso(parseFloat(p.precio)||0), options:{fontSize: fontTabla-0.5, color: COLOR.txtSec, fill:{color: bgRow}, align:"right", valign:"middle"}},
+      {text: "$"+fmtPeso(st), options:{fontSize: fontTabla+1, color: COLOR.navy, fill:{color: bgRow}, align:"right", valign:"middle", bold:true}}
     ];
   });
 
-  var dataTabla = tablaHeader.concat(filasTabla);
+  var dataTabla = [headerRow].concat(filasTabla);
 
-  // Calcular tamaño de fuente dinámico (Opción C — híbrido inteligente)
-  var fontTabla = 9;
-  if(partidas.length > 8) fontTabla = 8;
-  if(partidas.length > 12) fontTabla = 7;
-
-  // Aplicar fuente dinámica a las filas
-  if(fontTabla < 9){
-    dataTabla.forEach(function(fila, idx){
-      if(idx === 0) return; // header se queda
-      fila.forEach(function(celda){ celda.options.fontSize = fontTabla; });
-    });
-  }
+  // Calcular altura de filas según cantidad
+  var rowHData = 0.55;
+  if(partidas.length > 6) rowHData = 0.48;
+  if(partidas.length > 10) rowHData = 0.4;
 
   slide.addTable(dataTabla, {
-    x: 0.4, y: yTabla, w: 12.5,
-    colW: [0.5, 6.2, 1.0, 1.0, 1.7, 2.1],
+    x: 0.5, y: yTabla, w: 12.33,
+    colW: [7.6, 1.7, 1.5, 1.53],
     border: {type:"solid", pt:0.5, color: COLOR.border},
-    rowH: 0.35
+    rowH: rowHData
   });
 
-  // ── Totales (cuadro derecho debajo de tabla) ──
-  // Calcular yTotales basado en cantidad de partidas (para no sobreponerse)
-  var yTot = Math.min(yTabla + 0.55 + (partidas.length * 0.42), 5.7);
+  // ════ TOTALES (cuadro derecho con gradiente simulado) ════
+  // Calcular Y de totales basado en partidas
+  var altoTabla = 0.45 + (partidas.length * rowHData);
+  var yTot = yTabla + altoTabla + 0.1;
+  if(yTot > 5.6) yTot = 5.6; // límite
+  var anchoBox = 3.6;
+  var xBox = 13.333 - 0.5 - anchoBox; // alineado a la derecha
 
-  slide.addShape("rect", {x:8.4, y:yTot, w:4.6, h:1.5, fill:{color: COLOR.bgLight}, line:{color: COLOR.border, width:0.5}});
+  // Subtotal
+  slide.addShape("rect", {x:xBox, y:yTot, w:anchoBox, h:0.34, fill:{color: COLOR.bgLight}, line:{color: COLOR.border, width:0.5}});
+  slide.addText("Subtotal", {x:xBox+0.15, y:yTot+0.06, w:1.5, h:0.22, fontSize:10.5, color: COLOR.txtMute, fontFace:"Calibri"});
+  slide.addText("$"+fmtPeso(sub), {x:xBox+1.6, y:yTot+0.06, w:anchoBox-1.75, h:0.22, fontSize:10.5, color: COLOR.navy, fontFace:"Calibri", align:"right", bold:true});
 
-  slide.addText("Subtotal:", {x:8.6, y:yTot+0.1, w:2, h:0.22, fontSize:10, color: COLOR.txtSub, fontFace:"Calibri"});
-  slide.addText("$"+fmtPeso(sub), {x:10.6, y:yTot+0.1, w:2.2, h:0.22, fontSize:10, color: COLOR.txtMain, fontFace:"Calibri", align:"right", bold:true});
+  // IVA
+  slide.addShape("rect", {x:xBox, y:yTot+0.34, w:anchoBox, h:0.34, fill:{color: COLOR.bgLight}, line:{color: COLOR.border, width:0.5}});
+  slide.addText("IVA 8%", {x:xBox+0.15, y:yTot+0.40, w:1.5, h:0.22, fontSize:10, color: COLOR.txtMute, fontFace:"Calibri"});
+  slide.addText("Región Fronteriza", {x:xBox+0.85, y:yTot+0.42, w:1.4, h:0.18, fontSize:7, color:"9AAAC4", fontFace:"Calibri", italic:true});
+  slide.addText("$"+fmtPeso(iva), {x:xBox+1.6, y:yTot+0.40, w:anchoBox-1.75, h:0.22, fontSize:10.5, color: COLOR.navy, fontFace:"Calibri", align:"right", bold:true});
 
-  slide.addText("IVA 8%:", {x:8.6, y:yTot+0.38, w:2, h:0.22, fontSize:10, color: COLOR.txtSub, fontFace:"Calibri"});
-  slide.addText("$"+fmtPeso(iva), {x:10.6, y:yTot+0.38, w:2.2, h:0.22, fontSize:10, color: COLOR.txtMain, fontFace:"Calibri", align:"right", bold:true});
+  // ════ GRAN TOTAL — bloque navy con gradiente simulado ════
+  var yTotal = yTot + 0.68;
+  slide.addShape("rect", {x:xBox, y:yTotal, w:anchoBox, h:0.85, fill:{color: COLOR.navy}, line:{type:"none"}});
+  // Capa secundaria para simular degradado
+  slide.addShape("rect", {x:xBox+anchoBox*0.5, y:yTotal, w:anchoBox*0.5, h:0.85, fill:{color: COLOR.navy2, transparency: 35}, line:{type:"none"}});
+  // Círculo decorativo
+  slide.addShape("ellipse", {x:xBox+anchoBox-0.6, y:yTotal-0.4, w:1.0, h:1.0, fill:{color: COLOR.blue, transparency: 88}, line:{type:"none"}});
 
-  slide.addShape("line", {x:8.6, y:yTot+0.7, w:4.2, h:0, line:{color: COLOR.border, width:1}});
+  slide.addText("GRAN TOTAL", {x:xBox+0.18, y:yTotal+0.08, w:2, h:0.18, fontSize:8, bold:true, color:"FFFFFF", fontFace:"Calibri", charSpacing:5, transparency:50});
+  slide.addText("$"+fmtPeso(total), {x:xBox+0.18, y:yTotal+0.28, w:anchoBox-0.4, h:0.5, fontSize:24, bold:true, color: COLOR.white, fontFace:"Calibri", charSpacing:-1});
+  slide.addText("MXN", {x:xBox+anchoBox-0.85, y:yTotal+0.51, w:0.6, h:0.25, fontSize:10.5, bold:true, color: COLOR.blueLight, fontFace:"Calibri", align:"right", charSpacing:2});
 
-  slide.addText("TOTAL:", {x:8.6, y:yTot+0.85, w:2, h:0.5, fontSize:14, bold:true, color: COLOR.purple, fontFace:"Calibri"});
-  slide.addText("$"+fmtPeso(total), {x:10.4, y:yTot+0.83, w:2.45, h:0.5, fontSize:18, bold:true, color: COLOR.purple, fontFace:"Calibri", align:"right"});
-
-  // ── Pie de página ──
-  slide.addShape("line", {x:0.4, y:7.0, w:12.5, h:0, line:{color: COLOR.border, width:0.75}});
-  slide.addText("ROMSA Industrial · " + rTel + " · " + rEmail + " · " + rWeb,
-    {x:0.4, y:7.1, w:9, h:0.25, fontSize:9, color: COLOR.txtSub, fontFace:"Calibri"});
-  slide.addText("Página 1 de "+(_ppt_estimarTotalSlides(cot)),
-    {x:11.5, y:7.1, w:1.4, h:0.25, fontSize:9, color: COLOR.txtMute, fontFace:"Calibri", align:"right"});
+  // ════ FOOTER ════
+  slide.addShape("line", {x:0.5, y:7.05, w:12.33, h:0, line:{color: COLOR.border, width:0.5}});
+  slide.addText("ROMSA Industrial · Especialistas en mantenimiento y recubrimientos industriales",
+    {x:0.5, y:7.12, w:8, h:0.2, fontSize:8.5, color: COLOR.txtMute, fontFace:"Calibri"});
+  slide.addText(rTel + " · " + rEmail + " · " + rWeb,
+    {x:0.5, y:7.3, w:8, h:0.2, fontSize:8.5, color: COLOR.txtMute, fontFace:"Calibri"});
+  slide.addText("Página 1", {x:11.83, y:7.2, w:1, h:0.22, fontSize:9, color: COLOR.txtMute, fontFace:"Calibri", align:"right"});
 }
 
-// SLIDE 2: condiciones generales
-function _ppt_construirSlide2(pptx, cot, clausulasFinal, rTel, rEmail, rWeb, COLOR){
+// ─── SLIDE 2: Condiciones generales ───
+function _ppt_construirSlide2(pptx, cot, clausulasFinal, rTel, rEmail, rWeb, COLOR, logos){
   var slide = pptx.addSlide();
   slide.background = {color: COLOR.white};
 
-  // Header púrpura
-  slide.addShape("rect", {x:0, y:0, w:13.333, h:0.85, fill:{color: COLOR.purple}});
-  var logoB = window._romsaLogoBlanco || window._romsaLogoAzul || '';
-  if(logoB){
-    try { slide.addImage({data: logoB, x:0.35, y:0.13, w:1.6, h:0.6, sizing:{type:"contain", w:1.6, h:0.6}}); }
-    catch(e){}
-  } else {
-    slide.addText("ROMSA Industrial", {x:0.35, y:0.13, w:3, h:0.6, fontSize:20, bold:true, color: COLOR.white, fontFace:"Calibri"});
-  }
-  slide.addText("CONDICIONES GENERALES", {x:9.5, y:0.13, w:3.6, h:0.25, fontSize:9, bold:true, color: COLOR.white, fontFace:"Calibri", align:"right", charSpacing:3});
-  slide.addText(cot.folio||"", {x:9.5, y:0.36, w:3.6, h:0.3, fontSize:13, bold:true, color: COLOR.white, fontFace:"Calibri", align:"right"});
+  // ════ HEADER NAVY (más bajo que el slide 1) ════
+  slide.addShape("rect", {x:0, y:0, w:13.333, h:1.0, fill:{color: COLOR.navy}});
+  slide.addShape("rect", {x:7, y:0, w:6.33, h:1.0, fill:{color: COLOR.navyMid, transparency: 30}});
+  slide.addShape("ellipse", {x:11.8, y:-0.4, w:1.6, h:1.6, fill:{color: COLOR.blue, transparency: 92}, line:{type:"none"}});
 
-  // Título
-  slide.addText("📜 Condiciones generales", {x:0.4, y:1.05, w:12.5, h:0.4, fontSize:18, bold:true, color: COLOR.purpleD, fontFace:"Calibri"});
+  // Título a la izquierda
+  slide.addText("COTIZACIÓN TÉCNICA", {x:0.5, y:0.18, w:6, h:0.2, fontSize:7.5, color:"FFFFFF", fontFace:"Calibri", charSpacing:5, transparency:55});
+  slide.addText("Condiciones Generales de Venta", {x:0.5, y:0.42, w:8, h:0.4, fontSize:14, bold:true, color: COLOR.white, fontFace:"Calibri"});
 
-  // Detectar si es necesario reducir tamaño de fuente o pasar a otra slide
+  // Folio derecha
+  slide.addText("FOLIO", {x:10.5, y:0.22, w:2.33, h:0.2, fontSize:7, bold:true, color:"FFFFFF", fontFace:"Calibri", align:"right", charSpacing:4, transparency:60});
+  slide.addText(cot.folio||"", {x:10.5, y:0.42, w:2.33, h:0.3, fontSize:11, bold:true, color: COLOR.white, fontFace:"Calibri", align:"right"});
+
+  // Línea degradada (3 segmentos)
+  slide.addShape("rect", {x:0, y:1.0, w:4.45, h:0.04, fill:{color: COLOR.navy}, line:{type:"none"}});
+  slide.addShape("rect", {x:4.45, y:1.0, w:4.45, h:0.04, fill:{color: COLOR.blue}, line:{type:"none"}});
+  slide.addShape("rect", {x:8.9, y:1.0, w:4.45, h:0.04, fill:{color: COLOR.navy2}, line:{type:"none"}});
+
+  // ════ Detectar tamaños dinámicos según contenido ════
   var totalChars = clausulasFinal.reduce(function(s,c){return s + (c.titulo||"").length + (c.texto||"").length;}, 0);
   var fontTitle = 11;
   var fontText  = 10;
   var espaciado = 0.18;
 
-  if(totalChars > 3000){ fontTitle = 10; fontText = 9; espaciado = 0.12; }
-  if(totalChars > 5000){ fontTitle = 9.5; fontText = 8.5; espaciado = 0.08; }
+  if(totalChars > 3500){ fontTitle = 10; fontText = 9; espaciado = 0.13; }
+  if(totalChars > 5500){ fontTitle = 9.5; fontText = 8.5; espaciado = 0.1; }
 
-  // Ir colocando las cláusulas — si se desborda, segunda slide auto
-  var yPos = 1.6;
-  var maxY = 6.6; // límite antes del pie
-  var clausulasSlide2 = [];
-  var clausulasSlide3 = [];
-  var enSlide2 = true;
+  // ════ Distribuir cláusulas en slides (con desborde automático) ════
+  var slidesClausulas = []; // array de arrays
+  var slideActual = [];
+  var yPos = 1.4;
+  var maxY = 6.6;
 
   for(var i=0; i<clausulasFinal.length; i++){
     var cl = clausulasFinal[i];
-    // Estimar altura: título 0.32 + texto en función de length
-    var nLineas = Math.max(1, Math.ceil((cl.texto||"").length / 130));
-    var altura = 0.32 + (nLineas * (fontText/72) * 1.4) + espaciado;
+    var nLineas = Math.max(1, Math.ceil((cl.texto||"").length / 145));
+    var altura = 0.32 + (nLineas * (fontText/72) * 1.45) + espaciado;
 
-    if(enSlide2 && yPos + altura > maxY){
-      enSlide2 = false;
+    if(yPos + altura > maxY && slideActual.length > 0){
+      // Guardar slide actual y empezar nuevo
+      slidesClausulas.push(slideActual);
+      slideActual = [];
+      yPos = 1.4;
     }
-
-    if(enSlide2){
-      clausulasSlide2.push({cl:cl, y:yPos, alt:altura, num:i+1});
-      yPos += altura;
-    } else {
-      clausulasSlide3.push({cl:cl, num:i+1, alt:altura});
-    }
+    slideActual.push({cl:cl, y:yPos, alt:altura, num:i+1});
+    yPos += altura;
   }
+  if(slideActual.length) slidesClausulas.push(slideActual);
 
-  // Renderizar cláusulas en slide 2
-  clausulasSlide2.forEach(function(item){
-    slide.addText(item.num+". "+(item.cl.titulo||""), {
-      x:0.4, y:item.y, w:12.5, h:0.28,
-      fontSize:fontTitle, bold:true, color: COLOR.purple, fontFace:"Calibri", charSpacing:1
+  // ════ Renderizar cada slide ════
+  slidesClausulas.forEach(function(items, slideIdx){
+    var s = (slideIdx === 0) ? slide : pptx.addSlide();
+
+    if(slideIdx > 0){
+      // Slide adicional: clonar header
+      s.background = {color: COLOR.white};
+      s.addShape("rect", {x:0, y:0, w:13.333, h:1.0, fill:{color: COLOR.navy}});
+      s.addShape("rect", {x:7, y:0, w:6.33, h:1.0, fill:{color: COLOR.navyMid, transparency: 30}});
+      s.addShape("ellipse", {x:11.8, y:-0.4, w:1.6, h:1.6, fill:{color: COLOR.blue, transparency: 92}, line:{type:"none"}});
+      s.addText("COTIZACIÓN TÉCNICA", {x:0.5, y:0.18, w:6, h:0.2, fontSize:7.5, color:"FFFFFF", fontFace:"Calibri", charSpacing:5, transparency:55});
+      s.addText("Condiciones Generales (cont.)", {x:0.5, y:0.42, w:8, h:0.4, fontSize:14, bold:true, color: COLOR.white, fontFace:"Calibri"});
+      s.addText("FOLIO", {x:10.5, y:0.22, w:2.33, h:0.2, fontSize:7, bold:true, color:"FFFFFF", fontFace:"Calibri", align:"right", charSpacing:4, transparency:60});
+      s.addText(cot.folio||"", {x:10.5, y:0.42, w:2.33, h:0.3, fontSize:11, bold:true, color: COLOR.white, fontFace:"Calibri", align:"right"});
+      s.addShape("rect", {x:0, y:1.0, w:4.45, h:0.04, fill:{color: COLOR.navy}, line:{type:"none"}});
+      s.addShape("rect", {x:4.45, y:1.0, w:4.45, h:0.04, fill:{color: COLOR.blue}, line:{type:"none"}});
+      s.addShape("rect", {x:8.9, y:1.0, w:4.45, h:0.04, fill:{color: COLOR.navy2}, line:{type:"none"}});
+    }
+
+    // Render cláusulas
+    items.forEach(function(item){
+      s.addText((item.num)+". "+(item.cl.titulo||""), {
+        x:0.6, y:item.y, w:12.13, h:0.28,
+        fontSize:fontTitle, bold:true, color: COLOR.blue, fontFace:"Calibri", charSpacing:1
+      });
+      s.addText(item.cl.texto||"", {
+        x:0.6, y:item.y+0.3, w:12.13, h: item.alt - 0.32,
+        fontSize:fontText, color: COLOR.txtMain, fontFace:"Calibri", valign:"top",
+        lineSpacingMultiple: 1.35
+      });
     });
-    slide.addText(item.cl.texto||"", {
-      x:0.4, y:item.y+0.3, w:12.5, h: item.alt - 0.32,
-      fontSize:fontText, color: COLOR.txtMain, fontFace:"Calibri", valign:"top"
-    });
+
+    // ════ Footer con firma ════
+    // Línea degradada superior
+    s.addShape("rect", {x:0.5, y:6.85, w:4.1, h:0.02, fill:{color: COLOR.navy}, line:{type:"none"}});
+    s.addShape("rect", {x:4.6, y:6.85, w:4.11, h:0.02, fill:{color: COLOR.blue}, line:{type:"none"}});
+    s.addShape("rect", {x:8.71, y:6.85, w:4.12, h:0.02, fill:{color: COLOR.navy2}, line:{type:"none"}});
+
+    // Logo + nombre (izquierda)
+    if(logos.azul){
+      try { s.addImage({data: logos.azul, x:0.5, y:6.95, w:1.2, h:0.32, sizing:{type:"contain", w:1.2, h:0.32}}); } catch(e){}
+    }
+    s.addText("ROMSA Industrial", {x:0.5, y:7.27, w:5, h:0.2, fontSize:9.5, bold:true, color: COLOR.blue, fontFace:"Calibri"});
+    s.addText("Especialistas en mantenimiento y recubrimientos industriales",
+      {x:0.5, y:7.46, w:7, h:0.18, fontSize:8.5, color: COLOR.txtFaint, fontFace:"Calibri"});
+
+    // Datos contacto (derecha)
+    s.addText("Mexicali, Baja California, México", {x:9, y:6.95, w:3.83, h:0.18, fontSize:8.5, color: COLOR.txtSec, fontFace:"Calibri", align:"right"});
+    s.addText(rTel, {x:9, y:7.13, w:3.83, h:0.18, fontSize:8.5, color: COLOR.txtSec, fontFace:"Calibri", align:"right"});
+    s.addText(rEmail, {x:9, y:7.31, w:3.83, h:0.18, fontSize:8.5, color: COLOR.blue, fontFace:"Calibri", align:"right"});
+    s.addText(rWeb, {x:9, y:7.49, w:3.83, h:0.18, fontSize:8.5, color: COLOR.txtSec, fontFace:"Calibri", align:"right"});
   });
-
-  // Pie de página
-  slide.addShape("line", {x:0.4, y:7.0, w:12.5, h:0, line:{color: COLOR.border, width:0.75}});
-  slide.addText("ROMSA Industrial · " + rTel + " · " + rEmail + " · " + rWeb,
-    {x:0.4, y:7.1, w:9, h:0.25, fontSize:9, color: COLOR.txtSub, fontFace:"Calibri"});
-
-  // Si hay desborde, slide 3 con resto
-  if(clausulasSlide3.length){
-    var slide3 = pptx.addSlide();
-    slide3.background = {color: COLOR.white};
-    slide3.addShape("rect", {x:0, y:0, w:13.333, h:0.85, fill:{color: COLOR.purple}});
-    if(logoB){
-      try { slide3.addImage({data: logoB, x:0.35, y:0.13, w:1.6, h:0.6, sizing:{type:"contain", w:1.6, h:0.6}}); } catch(e){}
-    }
-    slide3.addText("CONDICIONES (CONT.)", {x:9.5, y:0.13, w:3.6, h:0.25, fontSize:9, bold:true, color: COLOR.white, fontFace:"Calibri", align:"right", charSpacing:3});
-    slide3.addText(cot.folio||"", {x:9.5, y:0.36, w:3.6, h:0.3, fontSize:13, bold:true, color: COLOR.white, fontFace:"Calibri", align:"right"});
-    slide3.addText("📜 Condiciones generales (continuación)", {x:0.4, y:1.05, w:12.5, h:0.4, fontSize:16, bold:true, color: COLOR.purpleD, fontFace:"Calibri"});
-
-    var y3 = 1.6;
-    clausulasSlide3.forEach(function(item){
-      slide3.addText(item.num+". "+(item.cl.titulo||""), {
-        x:0.4, y:y3, w:12.5, h:0.28,
-        fontSize:fontTitle, bold:true, color: COLOR.purple, fontFace:"Calibri", charSpacing:1
-      });
-      slide3.addText(item.cl.texto||"", {
-        x:0.4, y:y3+0.3, w:12.5, h: item.alt - 0.32,
-        fontSize:fontText, color: COLOR.txtMain, fontFace:"Calibri", valign:"top"
-      });
-      y3 += item.alt;
-    });
-    slide3.addShape("line", {x:0.4, y:7.0, w:12.5, h:0, line:{color: COLOR.border, width:0.75}});
-    slide3.addText("ROMSA Industrial · " + rTel + " · " + rEmail + " · " + rWeb,
-      {x:0.4, y:7.1, w:9, h:0.25, fontSize:9, color: COLOR.txtSub, fontFace:"Calibri"});
-  }
 }
 
-// SLIDE de procedimientos técnicos (uno o varios slides según tamaño)
-function _ppt_construirSlideProcedimientos(pptx, cot, partidasConProc, COLOR){
+// ─── SLIDES de procedimiento técnico ───
+function _ppt_construirSlideProcedimientos(pptx, cot, partidasConProc, COLOR, logos){
   partidasConProc.forEach(function(p, idx){
     var slide = pptx.addSlide();
     slide.background = {color: COLOR.white};
-    slide.addShape("rect", {x:0, y:0, w:13.333, h:0.85, fill:{color: COLOR.purple}});
 
-    var logoB = window._romsaLogoBlanco || window._romsaLogoAzul || '';
-    if(logoB){
-      try { slide.addImage({data: logoB, x:0.35, y:0.13, w:1.6, h:0.6, sizing:{type:"contain", w:1.6, h:0.6}}); } catch(e){}
-    } else {
-      slide.addText("ROMSA Industrial", {x:0.35, y:0.13, w:3, h:0.6, fontSize:20, bold:true, color: COLOR.white, fontFace:"Calibri"});
-    }
-    slide.addText("PROCEDIMIENTO TÉCNICO", {x:9, y:0.13, w:4.1, h:0.25, fontSize:9, bold:true, color: COLOR.white, fontFace:"Calibri", align:"right", charSpacing:3});
-    slide.addText(cot.folio||"", {x:9, y:0.36, w:4.1, h:0.3, fontSize:13, bold:true, color: COLOR.white, fontFace:"Calibri", align:"right"});
+    // Header navy
+    slide.addShape("rect", {x:0, y:0, w:13.333, h:1.0, fill:{color: COLOR.navy}});
+    slide.addShape("rect", {x:7, y:0, w:6.33, h:1.0, fill:{color: COLOR.navyMid, transparency: 30}});
+    slide.addShape("ellipse", {x:11.8, y:-0.4, w:1.6, h:1.6, fill:{color: COLOR.blue, transparency: 92}, line:{type:"none"}});
+
+    slide.addText("COTIZACIÓN TÉCNICA", {x:0.5, y:0.18, w:6, h:0.2, fontSize:7.5, color:"FFFFFF", fontFace:"Calibri", charSpacing:5, transparency:55});
+    slide.addText("Procedimiento Técnico", {x:0.5, y:0.42, w:8, h:0.4, fontSize:14, bold:true, color: COLOR.white, fontFace:"Calibri"});
+    slide.addText("FOLIO", {x:10.5, y:0.22, w:2.33, h:0.2, fontSize:7, bold:true, color:"FFFFFF", fontFace:"Calibri", align:"right", charSpacing:4, transparency:60});
+    slide.addText(cot.folio||"", {x:10.5, y:0.42, w:2.33, h:0.3, fontSize:11, bold:true, color: COLOR.white, fontFace:"Calibri", align:"right"});
+
+    // Línea degradada
+    slide.addShape("rect", {x:0, y:1.0, w:4.45, h:0.04, fill:{color: COLOR.navy}, line:{type:"none"}});
+    slide.addShape("rect", {x:4.45, y:1.0, w:4.45, h:0.04, fill:{color: COLOR.blue}, line:{type:"none"}});
+    slide.addShape("rect", {x:8.9, y:1.0, w:4.45, h:0.04, fill:{color: COLOR.navy2}, line:{type:"none"}});
 
     var titulo = (p.tituloCustom && p.tituloCustom.trim()) ? p.tituloCustom.trim() : (p.servicio || "Concepto");
-    slide.addText("🔧 "+titulo, {x:0.4, y:1.05, w:12.5, h:0.45, fontSize:18, bold:true, color: COLOR.purpleD, fontFace:"Calibri"});
+    slide.addText(titulo, {x:0.5, y:1.3, w:12.33, h:0.4, fontSize:18, bold:true, color: COLOR.navy, fontFace:"Calibri"});
+
+    // Línea sutil bajo el título
+    slide.addShape("line", {x:0.5, y:1.78, w:2.5, h:0, line:{color: COLOR.blue, width:2}});
 
     var lineas = (p.proc||"").split('\n').filter(function(l){return l.trim();});
     var totalChars = lineas.join("").length;
@@ -8936,30 +9045,24 @@ function _ppt_construirSlideProcedimientos(pptx, cot, partidasConProc, COLOR){
 
     var procText = lineas.map(function(l){return l.trim();}).join("\n");
     slide.addText(procText, {
-      x:0.6, y:1.65, w:12.1, h:5.3,
+      x:0.6, y:2.0, w:12.13, h:4.85,
       fontSize:fontProc, color: COLOR.txtMain, fontFace:"Calibri", valign:"top",
-      paraSpaceAfter: 6, lineSpacingMultiple: 1.3
+      paraSpaceAfter: 8, lineSpacingMultiple: 1.4
     });
 
-    // Pie
-    slide.addShape("line", {x:0.4, y:7.0, w:12.5, h:0, line:{color: COLOR.border, width:0.75}});
-    slide.addText("ROMSA Industrial — Procedimiento técnico", {x:0.4, y:7.1, w:9, h:0.25, fontSize:9, color: COLOR.txtSub, fontFace:"Calibri", italic:true});
-    slide.addText((idx+1)+" de "+partidasConProc.length, {x:11.5, y:7.1, w:1.4, h:0.25, fontSize:9, color: COLOR.txtMute, fontFace:"Calibri", align:"right"});
-  });
-}
+    // Footer
+    slide.addShape("rect", {x:0.5, y:6.85, w:4.1, h:0.02, fill:{color: COLOR.navy}, line:{type:"none"}});
+    slide.addShape("rect", {x:4.6, y:6.85, w:4.11, h:0.02, fill:{color: COLOR.blue}, line:{type:"none"}});
+    slide.addShape("rect", {x:8.71, y:6.85, w:4.12, h:0.02, fill:{color: COLOR.navy2}, line:{type:"none"}});
 
-// Estimar total de slides para el footer (no es 100% exacto pero da referencia)
-function _ppt_estimarTotalSlides(cot){
-  var n = 1; // slide 1 siempre
-  var inclCondiciones = document.getElementById('cot-incl-condiciones')?.checked !== false;
-  var inclProc = document.getElementById('cot-incl-proc')?.checked === true;
-  if(inclCondiciones) n += 1;
-  if(inclProc){
-    var partidas = cot.partidas || [];
-    var conProc = partidas.filter(function(p){return p.proc && p.proc.trim();}).length;
-    n += conProc;
-  }
-  return n;
+    if(logos.azul){
+      try { slide.addImage({data: logos.azul, x:0.5, y:6.95, w:1.2, h:0.32, sizing:{type:"contain", w:1.2, h:0.32}}); } catch(e){}
+    }
+    slide.addText("ROMSA Industrial — Procedimiento técnico de aplicación", {x:0.5, y:7.27, w:7, h:0.18, fontSize:8.5, color: COLOR.txtFaint, fontFace:"Calibri", italic:true});
+
+    slide.addText("Procedimiento "+(idx+1)+" de "+partidasConProc.length, {x:9, y:7.1, w:3.83, h:0.2, fontSize:9, color: COLOR.txtSec, fontFace:"Calibri", align:"right"});
+    slide.addText(cot.folio||"", {x:9, y:7.32, w:3.83, h:0.2, fontSize:8, color: COLOR.txtFaint, fontFace:"Calibri", align:"right"});
+  });
 }
 
 // Exponer al window
