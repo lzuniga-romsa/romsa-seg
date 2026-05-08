@@ -1770,7 +1770,7 @@ body.in-costeo #app{
             <div style="font-size:15px;font-weight:800;color:var(--navy);">📜 Condiciones generales</div>
             <div style="font-size:10.5px;color:var(--tx2);margin-top:2px;">Plantillas reusables que puedes aplicar al crear cotizaciones</div>
           </div>
-          <button onclick="abrirEditorPlantilla()" style="background:#7C3AED;border:none;color:#fff;font-size:12px;font-weight:700;padding:9px 14px;border-radius:8px;cursor:pointer;font-family:var(--font);">+ Nueva plantilla</button>
+          <button onclick="if(typeof abrirEditorPlantilla==='function'){abrirEditorPlantilla()}else{alert('La función no se cargó. Limpia el cache (F12 → Application → Clear site data) y recarga.')}" style="background:#7C3AED;border:none;color:#fff;font-size:12px;font-weight:700;padding:9px 14px;border-radius:8px;cursor:pointer;font-family:var(--font);">+ Nueva plantilla</button>
         </div>
         <div id="cnd-loading" style="text-align:center;padding:24px;color:var(--tx2);font-size:11px;">Cargando plantillas...</div>
         <div id="cnd-lista" style="display:none;"></div>
@@ -1811,7 +1811,8 @@ body.in-costeo #app{
             <div id="cot-form-titulo" style="font-size:16px;font-weight:800;color:var(--navy);">Nueva cotización</div>
             <div id="cot-folio-badge" style="font-size:10px;color:var(--tx2);margin-top:1px;"></div>
           </div>
-          <button onclick="guardarYVerCot()" style="background:#7C3AED;border:none;color:#fff;font-size:11px;font-weight:700;padding:8px 16px;border-radius:9px;cursor:pointer;font-family:var(--font);">PDF →</button>
+          <button onclick="guardarYVerCot()" style="background:#7C3AED;border:none;color:#fff;font-size:11px;font-weight:700;padding:8px 16px;border-radius:9px;cursor:pointer;font-family:var(--font);">📄 PDF</button>
+          <button onclick="guardarYDescargarCotPPT()" title="Descargar como PowerPoint editable" style="background:#D97706;border:none;color:#fff;font-size:11px;font-weight:700;padding:8px 14px;border-radius:9px;cursor:pointer;font-family:var(--font);">📊 PPT</button>
         </div>
 
         <!-- ① ENCABEZADO DE CARTA (igual que tu PDF) -->
@@ -2142,7 +2143,10 @@ body.in-costeo #app{
 
         <!-- BOTONES -->
         <div style="display:flex;flex-direction:column;gap:8px;padding-bottom:32px;">
-          <button onclick="guardarYVerCot()" style="background:#7C3AED;border:none;color:#fff;font-size:14px;font-weight:700;padding:14px;border-radius:12px;cursor:pointer;font-family:var(--font);">📄 Guardar y generar PDF</button>
+          <div style="display:flex;gap:8px;">
+            <button onclick="guardarYVerCot()" style="flex:1;background:#7C3AED;border:none;color:#fff;font-size:14px;font-weight:700;padding:14px;border-radius:12px;cursor:pointer;font-family:var(--font);">📄 Descargar PDF</button>
+            <button onclick="guardarYDescargarCotPPT()" style="flex:1;background:#D97706;border:none;color:#fff;font-size:14px;font-weight:700;padding:14px;border-radius:12px;cursor:pointer;font-family:var(--font);">📊 Descargar PowerPoint</button>
+          </div>
           <div style="display:flex;gap:8px;">
             <button onclick="guardarCot()" style="flex:1;background:#fff;border:1px solid var(--g1);color:var(--navy);font-size:12px;font-weight:700;padding:12px;border-radius:10px;cursor:pointer;font-family:var(--font);">💾 Solo guardar</button>
             <button onclick="exportarCotExcel()" style="flex:1;background:#217346;border:none;color:#fff;font-size:12px;font-weight:700;padding:12px;border-radius:10px;cursor:pointer;font-family:var(--font);">📊 Excel</button>
@@ -6101,13 +6105,26 @@ window.eliminarConcepto = eliminarConcepto;
 // ═══════════════════════════════════════════════════════════════
 
 // Plantilla "Default" inmutable con las 7 cláusulas estándar
-const PLANTILLA_DEFAULT = {
-  id: "__default__",
-  nombre: "Default — ROMSA estándar",
-  descripcion: "Las 7 cláusulas estándar que se usan en la mayoría de cotizaciones",
-  esDefault: true,
-  clausulas: (typeof COT_CLAUSULAS_STD !== "undefined" ? COT_CLAUSULAS_STD : []).slice()
-};
+// Es función para asegurar que las cláusulas se construyen con datos frescos cada vez
+function _construirPlantillaDefault(){
+  var clausulas = [];
+  if(typeof COT_CLAUSULAS_STD !== "undefined" && Array.isArray(COT_CLAUSULAS_STD)){
+    COT_CLAUSULAS_STD.forEach(function(cl){
+      clausulas.push({titulo: cl.titulo || "", texto: cl.texto || ""});
+    });
+  }
+  return {
+    id: "__default__",
+    nombre: "Default — ROMSA estándar",
+    descripcion: "Las 7 cláusulas estándar que se usan en la mayoría de cotizaciones",
+    esDefault: true,
+    clausulas: clausulas
+  };
+}
+
+// Mantener PLANTILLA_DEFAULT como variable para compatibilidad (se reconstruye cada vez)
+function _getPlantillaDefault(){ return _construirPlantillaDefault(); }
+const PLANTILLA_DEFAULT = _construirPlantillaDefault();
 
 let _plantillas = [];           // plantillas custom (de Firestore)
 let _plantillasCargadas = false;
@@ -6203,10 +6220,14 @@ function verPlantilla(id){
 
 // Editor crear/editar plantilla
 function abrirEditorPlantilla(id){
-  _plantillaEditId = id || null;
-  var p = id ? _plantillas.find(function(x){return x.id===id;}) : null;
-  // Si es nueva, copiar las cláusulas default como punto de partida
-  var clausulas = p ? (p.clausulas||[]).slice() : (PLANTILLA_DEFAULT.clausulas||[]).map(function(c){return {titulo:c.titulo,texto:c.texto};});
+  console.log("[ROMSA] abrirEditorPlantilla llamada, id=", id);
+  try {
+    _plantillaEditId = id || null;
+    var p = id ? _plantillas.find(function(x){return x.id===id;}) : null;
+    // Si es nueva, copiar las cláusulas default como punto de partida
+    var clausulasDefault = (typeof COT_CLAUSULAS_STD !== "undefined" && COT_CLAUSULAS_STD) ? COT_CLAUSULAS_STD : [];
+    var clausulas = p ? (p.clausulas||[]).slice() : clausulasDefault.map(function(c){return {titulo:c.titulo||"",texto:c.texto||""};});
+    console.log("[ROMSA] Cláusulas iniciales:", clausulas.length);
 
   var ov = document.createElement("div");
   ov.id = "modal-plantilla";
@@ -6236,7 +6257,7 @@ function abrirEditorPlantilla(id){
     +'</div>'
     +'<div style="padding:12px 18px;border-top:1px solid var(--g1);display:flex;gap:8px;background:#fff;position:sticky;bottom:0;">'
       +'<button onclick="cerrarEditorPlantilla()" style="flex:1;background:var(--off);border:1px solid var(--g1);color:var(--navy);font-size:12px;font-weight:700;padding:11px;border-radius:8px;cursor:pointer;font-family:var(--font);">Cancelar</button>'
-      +'<button onclick="guardarPlantilla()" style="flex:2;background:#7C3AED;border:none;color:#fff;font-size:12px;font-weight:700;padding:11px;border-radius:8px;cursor:pointer;font-family:var(--font);">'+(id?'✓ Actualizar':'✓ Crear plantilla')+'</button>'
+      +'<button onclick="(function(){console.log(\'[ROMSA] Click en Crear/Actualizar plantilla\');if(typeof guardarPlantilla===\'function\'){guardarPlantilla()}else{alert(\'guardarPlantilla no existe. Recarga la página con Ctrl+Shift+R.\')}})()" style="flex:2;background:#7C3AED;border:none;color:#fff;font-size:12px;font-weight:700;padding:11px;border-radius:8px;cursor:pointer;font-family:var(--font);">'+(id?'✓ Actualizar':'✓ Crear plantilla')+'</button>'
     +'</div>'
   +'</div>';
   document.body.appendChild(ov);
@@ -6244,6 +6265,11 @@ function abrirEditorPlantilla(id){
   // Estado de las cláusulas en edición
   window._plnClausulas = clausulas;
   _plnRenderClausulas();
+  console.log("[ROMSA] Modal de plantilla creado correctamente");
+  } catch(err) {
+    console.error("[ROMSA] Error en abrirEditorPlantilla:", err);
+    alert("Error al abrir editor de plantilla: " + err.message + "\n\nMira la consola (F12) para más detalles.");
+  }
 }
 
 function _plnRenderClausulas(){
@@ -6304,42 +6330,60 @@ function cerrarEditorPlantilla(){
 }
 
 async function guardarPlantilla(){
-  var nombre = (document.getElementById("pln-nombre")?.value || "").trim();
-  if(!nombre){ showToast("⚠️ Ingresa el nombre de la plantilla"); return; }
-  if(!window._plnClausulas || !window._plnClausulas.length){
-    if(!confirm("La plantilla no tiene cláusulas. ¿Guardar de todos modos?")) return;
-  }
-  // Filtrar cláusulas vacías
-  var clausulasLimpias = (window._plnClausulas||[]).filter(function(c){
-    return (c.titulo||"").trim() || (c.texto||"").trim();
-  }).map(function(c){
-    return {titulo:(c.titulo||"").trim(), texto:(c.texto||"").trim()};
-  });
-
-  var data = {
-    nombre: nombre,
-    descripcion: (document.getElementById("pln-desc")?.value || "").trim(),
-    clausulas: clausulasLimpias,
-    ts: Date.now()
-  };
+  console.log("[ROMSA] guardarPlantilla: INICIO");
   try {
+    var nombre = (document.getElementById("pln-nombre")?.value || "").trim();
+    console.log("[ROMSA] Nombre:", nombre);
+    if(!nombre){
+      alert("⚠️ Falta el nombre de la plantilla.\nLlena el campo 'Nombre de la plantilla' arriba.");
+      return;
+    }
+    console.log("[ROMSA] Cláusulas en memoria:", window._plnClausulas?.length || 0);
+    if(!window._plnClausulas || !window._plnClausulas.length){
+      if(!confirm("La plantilla no tiene cláusulas. ¿Guardar de todos modos?")) return;
+    }
+    // Filtrar cláusulas vacías
+    var clausulasLimpias = (window._plnClausulas||[]).filter(function(c){
+      return (c.titulo||"").trim() || (c.texto||"").trim();
+    }).map(function(c){
+      return {titulo:(c.titulo||"").trim(), texto:(c.texto||"").trim()};
+    });
+    console.log("[ROMSA] Cláusulas limpias:", clausulasLimpias.length);
+
+    var data = {
+      nombre: nombre,
+      descripcion: (document.getElementById("pln-desc")?.value || "").trim(),
+      clausulas: clausulasLimpias,
+      ts: Date.now()
+    };
+    console.log("[ROMSA] Data a guardar:", data);
+
+    if(typeof db === "undefined" || !db){
+      alert("Error: la base de datos no está disponible. Recarga la página.");
+      return;
+    }
+
     var ref = db.collection("cotizacion_plantillas_condiciones");
+    console.log("[ROMSA] Llamando Firestore...");
     if(_plantillaEditId){
       await ref.doc(_plantillaEditId).set(data, {merge:true});
       var idx = _plantillas.findIndex(function(p){return p.id===_plantillaEditId;});
       if(idx>=0) _plantillas[idx] = Object.assign({}, _plantillas[idx], data);
-      showToast("✓ Plantilla actualizada");
+      if(typeof showToast === "function") showToast("✓ Plantilla actualizada");
+      else alert("✓ Plantilla actualizada");
     } else {
       var docRef = await ref.add(data);
       data.id = docRef.id;
       _plantillas.push(data);
-      showToast("✓ Plantilla creada");
+      if(typeof showToast === "function") showToast("✓ Plantilla creada");
+      else alert("✓ Plantilla creada");
     }
+    console.log("[ROMSA] Plantilla guardada OK");
     cerrarEditorPlantilla();
     renderPlantillasCondiciones();
   } catch(err) {
     console.error("[ROMSA] Error guardando plantilla:", err);
-    alert("Error: "+err.message);
+    alert("Error guardando plantilla:\n\n" + err.message + "\n\nProbablemente las reglas de Firestore para 'cotizacion_plantillas_condiciones' no están publicadas. Revisa Firebase Console → Firestore → Rules.");
   }
 }
 
@@ -6385,27 +6429,49 @@ function abrirSelectorPlantilla(){
 }
 
 function aplicarPlantillaACotizacion(plantillaId){
-  var p = plantillaId === "__default__" ? PLANTILLA_DEFAULT : _plantillas.find(function(x){return x.id===plantillaId;});
+  console.log("[ROMSA] aplicarPlantillaACotizacion id=", plantillaId);
+  var p = plantillaId === "__default__" ? _construirPlantillaDefault() : _plantillas.find(function(x){return x.id===plantillaId;});
   if(!p){ alert("Plantilla no encontrada"); return; }
   var modal = document.getElementById("modal-sel-plantilla");
   if(modal) modal.remove();
-  // Reemplazar cláusulas en la cotización en edición:
-  // 1) Marcar todas las STD existentes como eliminadas
-  if(typeof _cotClausulasEliminadas === "undefined") return;
-  _cotClausulasEliminadas = new Set();
-  if(typeof COT_CLAUSULAS_STD !== "undefined"){
-    COT_CLAUSULAS_STD.forEach(function(std){ _cotClausulasEliminadas.add(std.titulo); });
+
+  if(typeof _cotClausulasEliminadas === "undefined" || typeof COT_CLAUSULAS_STD === "undefined"){
+    alert("Error: el editor de cotización no está activo");
+    return;
   }
-  // 2) Convertir las cláusulas de la plantilla en custom
-  _cotClausulasCustom = (p.clausulas||[]).map(function(c){return {titulo:c.titulo||"", texto:c.texto||""};});
-  // 3) Si elige Default, restaurar (no usar como custom)
+
   if(plantillaId === "__default__"){
+    // ── Caso especial: aplicar plantilla DEFAULT ──
+    // Restaurar las 7 cláusulas estándar (hacer visibles) y restaurar textos originales
     _cotClausulasEliminadas = new Set();
+    COT_CLAUSULAS_STD.forEach(function(c){
+      var fg = document.getElementById("fg-"+c.id);
+      if(fg) fg.style.display = "";
+      var el = document.getElementById(c.id);
+      if(el) el.value = c.texto || "";
+    });
+    // Limpiar custom (Default no tiene custom)
     _cotClausulasCustom = [];
+    _renderClausulasCustom();
+  } else {
+    // ── Plantilla CUSTOM ──
+    // Estrategia: ocultar TODAS las cláusulas estándar (marcarlas eliminadas) y poner las de la plantilla como custom
+    _cotClausulasEliminadas = new Set();
+    COT_CLAUSULAS_STD.forEach(function(std){
+      _cotClausulasEliminadas.add(std.id);
+      var fg = document.getElementById("fg-"+std.id);
+      if(fg) fg.style.display = "none";
+    });
+    // Convertir las cláusulas de la plantilla en custom (ahora son las únicas visibles)
+    _cotClausulasCustom = (p.clausulas||[]).map(function(c){
+      return {titulo: c.titulo || "", texto: c.texto || ""};
+    });
+    _renderClausulasCustom();
   }
-  if(typeof _renderClausulasEditor === "function") _renderClausulasEditor();
+
   if(typeof showToast === "function") showToast("✓ Plantilla aplicada: "+p.nombre);
-  if(typeof _cotSnapshot === "function") _cotSnapshot();
+  if(typeof _cotSnapshot === "function") _cotSnapshot(true);
+  console.log("[ROMSA] Plantilla aplicada. Custom:", _cotClausulasCustom.length, "Eliminadas:", _cotClausulasEliminadas.size);
 }
 
 // Exponer
@@ -8501,6 +8567,404 @@ function _inyectarPdf(htmlStr, title, winRef){
     }, 800);
   }
 }
+
+// ═══════════════════════════════════════════════════════════════
+// DESCARGAR COTIZACIÓN COMO POWERPOINT (Sesión 8)
+// ═══════════════════════════════════════════════════════════════
+
+// Wrapper: guardar + descargar PPT
+async function guardarYDescargarCotPPT(){
+  console.log("[ROMSA] guardarYDescargarCotPPT INICIO");
+  try {
+    var cot = await guardarCot();
+    if(!cot){ console.warn("[ROMSA] guardarCot retornó null"); return; }
+    await descargarCotPPT(cot);
+  } catch(err) {
+    console.error("[ROMSA] Error guardar+ppt:", err);
+    alert("Error: "+err.message);
+  }
+}
+
+// Cargar PptxGenJS bajo demanda
+function _cargarPptxLib(){
+  return new Promise(function(resolve, reject){
+    if(typeof PptxGenJS !== "undefined"){ resolve(); return; }
+    var sc = document.createElement("script");
+    sc.src = "https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js";
+    sc.onload = function(){ resolve(); };
+    sc.onerror = function(){ reject(new Error("No se pudo cargar la librería PowerPoint. Revisa tu conexión.")); };
+    document.head.appendChild(sc);
+  });
+}
+
+// Función principal: generar y descargar el PPT
+async function descargarCotPPT(cot){
+  if(!cot){ alert("Cotización vacía"); return; }
+  if(typeof showToast === "function") showToast("⏳ Generando PowerPoint...");
+
+  try {
+    await _cargarPptxLib();
+  } catch(err) {
+    alert(err.message);
+    return;
+  }
+
+  // ── Datos ──
+  var sub    = parseFloat(cot.subtotal  || 0);
+  var iva    = parseFloat(cot.iva       || 0);
+  var total  = parseFloat(cot.granTotal || 0);
+  var partidas = cot.partidas || [];
+
+  // Lee opciones del PDF actual (mismas)
+  var inclProc        = document.getElementById('cot-incl-proc')?.checked === true;
+  var inclCondiciones = document.getElementById('cot-incl-condiciones')?.checked !== false;
+  var rTel   = document.getElementById('cot-romsa-tel')?.value  || cot.romsaTel  || '686 138 3117';
+  var rEmail = document.getElementById('cot-romsa-email')?.value|| cot.romsaEmail|| 'ventas@romsaindustrial.com';
+  var rWeb   = document.getElementById('cot-romsa-web')?.value  || cot.romsaWeb  || 'www.romsaindustrial.com';
+  var vigencia = document.getElementById('cot-vigencia')?.value || cot.vigencia  || '30';
+
+  // Fecha
+  var fechaFmt = '';
+  try{ fechaFmt = new Date((cot.fecha||'')+'T12:00:00').toLocaleDateString('es-MX',{year:'numeric',month:'long',day:'numeric'}); }
+  catch(e){ fechaFmt = cot.fecha||''; }
+  var lugarFecha = (cot.ciudad?cot.ciudad+', ':'')+fechaFmt;
+
+  // Cláusulas: estándar + custom (respetar eliminadas)
+  var clausulasFinal = [];
+  if(typeof COT_CLAUSULAS_STD !== "undefined"){
+    COT_CLAUSULAS_STD.forEach(function(std){
+      if(_cotClausulasEliminadas && _cotClausulasEliminadas.has(std.id)) return;
+      var el = document.getElementById(std.id);
+      var texto = el ? el.value : (std.texto || "");
+      clausulasFinal.push({titulo: std.titulo, texto: texto});
+    });
+  }
+  if(Array.isArray(_cotClausulasCustom)){
+    _cotClausulasCustom.forEach(function(c){
+      if(c && (c.titulo || c.texto)) clausulasFinal.push({titulo: c.titulo||"", texto: c.texto||""});
+    });
+  }
+
+  // ── Construir PPT ──
+  var pptx = new PptxGenJS();
+  pptx.layout = "LAYOUT_WIDE"; // 13.333 x 7.5 inches (16:9)
+  pptx.title = cot.folio || "Cotización ROMSA";
+  pptx.author = "ROMSA Industrial";
+  pptx.company = "ROMSA Industrial";
+
+  // Colores ROMSA (igual que el PDF)
+  var COLOR = {
+    purple:   "7C3AED",
+    purpleD:  "5B21B6",
+    purpleL:  "EDE9FE",
+    navy:     "0B1F3A",
+    navyMid:  "1B3F72",
+    txtMain:  "0B1F3A",
+    txtSub:   "6B7FA3",
+    txtMute:  "9CA3AF",
+    bgLight:  "F7F8FB",
+    border:   "E2E8F2",
+    green:    "10B981",
+    white:    "FFFFFF"
+  };
+
+  // ─── SLIDE 1 — DATOS + PARTIDAS + TOTALES ───
+  _ppt_construirSlide1(pptx, cot, partidas, sub, iva, total, lugarFecha, vigencia, rTel, rEmail, rWeb, COLOR);
+
+  // ─── SLIDE 2 — CONDICIONES + FIRMA ───
+  if(inclCondiciones){
+    _ppt_construirSlide2(pptx, cot, clausulasFinal, rTel, rEmail, rWeb, COLOR);
+  }
+
+  // ─── SLIDES 3+ — PROCEDIMIENTO TÉCNICO (si toggle activo) ───
+  if(inclProc){
+    var partidasConProc = partidas.filter(function(p){return p.proc && p.proc.trim();});
+    if(partidasConProc.length){
+      _ppt_construirSlideProcedimientos(pptx, cot, partidasConProc, COLOR);
+    }
+  }
+
+  // ── Descargar ──
+  var nombreArchivo = (cot.folio || "Cotizacion") + ".pptx";
+  await pptx.writeFile({fileName: nombreArchivo});
+  if(typeof showToast === "function") showToast("✓ PowerPoint descargado");
+}
+
+// SLIDE 1: portada + datos + partidas + totales
+function _ppt_construirSlide1(pptx, cot, partidas, sub, iva, total, lugarFecha, vigencia, rTel, rEmail, rWeb, COLOR){
+  var slide = pptx.addSlide();
+  slide.background = {color: COLOR.white};
+
+  // Header púrpura — banner superior con logo
+  slide.addShape("rect", {x:0, y:0, w:13.333, h:0.85, fill:{color: COLOR.purple}});
+
+  // Logo ROMSA (izquierda) - usar logo blanco si está disponible
+  var logoB = window._romsaLogoBlanco || window._romsaLogoAzul || '';
+  if(logoB){
+    try {
+      slide.addImage({data: logoB, x:0.35, y:0.13, w:1.6, h:0.6, sizing: {type:"contain", w:1.6, h:0.6}});
+    } catch(e){ console.warn("[PPT] No se pudo agregar logo:", e); }
+  } else {
+    slide.addText("ROMSA Industrial", {x:0.35, y:0.13, w:3, h:0.6, fontSize:20, bold:true, color: COLOR.white, fontFace:"Calibri"});
+  }
+
+  // Folio + Fecha (derecha del header)
+  slide.addText("COTIZACIÓN", {x:9.5, y:0.13, w:3.6, h:0.25, fontSize:9, bold:true, color: COLOR.white, fontFace:"Calibri", align:"right", charSpacing:3});
+  slide.addText(cot.folio||"", {x:9.5, y:0.36, w:3.6, h:0.3, fontSize:14, bold:true, color: COLOR.white, fontFace:"Calibri", align:"right"});
+  slide.addText(lugarFecha, {x:9.5, y:0.6, w:3.6, h:0.2, fontSize:9, color:"E2E8F2", fontFace:"Calibri", align:"right"});
+
+  // ── Datos del cliente (cuadro izquierdo) ──
+  slide.addText("DESTINATARIO", {x:0.4, y:1.05, w:6, h:0.22, fontSize:8, bold:true, color: COLOR.purple, fontFace:"Calibri", charSpacing:3});
+  slide.addText(cot.empresa || "", {x:0.4, y:1.27, w:6, h:0.32, fontSize:14, bold:true, color: COLOR.txtMain, fontFace:"Calibri"});
+  if(cot.atencion){
+    slide.addText("At'n: "+cot.atencion, {x:0.4, y:1.6, w:6, h:0.22, fontSize:10, color: COLOR.txtSub, fontFace:"Calibri"});
+  }
+  var contactoLineas = [];
+  if(cot.email) contactoLineas.push(cot.email);
+  if(cot.tel) contactoLineas.push(cot.tel);
+  if(contactoLineas.length){
+    slide.addText(contactoLineas.join(" · "), {x:0.4, y:1.82, w:6, h:0.22, fontSize:9, color: COLOR.txtMute, fontFace:"Calibri"});
+  }
+
+  // ── Cuadro de proyecto (derecha) ──
+  slide.addShape("rect", {x:8.5, y:1.05, w:4.5, h:1.05, fill:{color: COLOR.purpleL}, line:{color: COLOR.purple, width:0.75}});
+  slide.addText("PROYECTO", {x:8.7, y:1.13, w:4.2, h:0.2, fontSize:7.5, bold:true, color: COLOR.purpleD, fontFace:"Calibri", charSpacing:3});
+  slide.addText(cot.proyecto || "Servicios industriales", {x:8.7, y:1.32, w:4.2, h:0.36, fontSize:11, bold:true, color: COLOR.purpleD, fontFace:"Calibri"});
+  slide.addText("Vigencia: "+vigencia+" días", {x:8.7, y:1.7, w:4.2, h:0.2, fontSize:9, color: COLOR.purple, fontFace:"Calibri", italic:true});
+
+  // ── TABLA DE PARTIDAS ──
+  // Header de tabla
+  var yTabla = 2.35;
+  var tablaHeader = [
+    [
+      {text:"#", options:{bold:true, fontSize:9, color: COLOR.white, fill:{color: COLOR.navy}, align:"center", valign:"middle"}},
+      {text:"CONCEPTO", options:{bold:true, fontSize:9, color: COLOR.white, fill:{color: COLOR.navy}, align:"left", valign:"middle"}},
+      {text:"CANT.", options:{bold:true, fontSize:9, color: COLOR.white, fill:{color: COLOR.navy}, align:"center", valign:"middle"}},
+      {text:"UNID.", options:{bold:true, fontSize:9, color: COLOR.white, fill:{color: COLOR.navy}, align:"center", valign:"middle"}},
+      {text:"P. UNITARIO", options:{bold:true, fontSize:9, color: COLOR.white, fill:{color: COLOR.navy}, align:"right", valign:"middle"}},
+      {text:"SUBTOTAL", options:{bold:true, fontSize:9, color: COLOR.white, fill:{color: COLOR.navy}, align:"right", valign:"middle"}}
+    ]
+  ];
+
+  var filasTabla = partidas.map(function(p, i){
+    var st = (parseFloat(p.qty)||0) * (parseFloat(p.precio)||0);
+    var tituloP = (p.tituloCustom && p.tituloCustom.trim()) ? p.tituloCustom.trim() : (p.servicio || "Sin título");
+    var concepto = tituloP + (p.desc ? "\n" + p.desc : "");
+    var bgRow = (i%2===0) ? COLOR.white : COLOR.bgLight;
+    return [
+      {text: String(i+1), options:{fontSize:9, color: COLOR.txtMain, fill:{color: bgRow}, align:"center", valign:"middle", bold:true}},
+      {text: concepto, options:{fontSize:9, color: COLOR.txtMain, fill:{color: bgRow}, align:"left", valign:"middle"}},
+      {text: String(p.qty || 0), options:{fontSize:9, color: COLOR.txtMain, fill:{color: bgRow}, align:"center", valign:"middle"}},
+      {text: p.unit || "m²", options:{fontSize:9, color: COLOR.txtMain, fill:{color: bgRow}, align:"center", valign:"middle"}},
+      {text: "$"+fmtPeso(parseFloat(p.precio)||0), options:{fontSize:9, color: COLOR.txtMain, fill:{color: bgRow}, align:"right", valign:"middle"}},
+      {text: "$"+fmtPeso(st), options:{fontSize:9.5, color: COLOR.txtMain, fill:{color: bgRow}, align:"right", valign:"middle", bold:true}}
+    ];
+  });
+
+  var dataTabla = tablaHeader.concat(filasTabla);
+
+  // Calcular tamaño de fuente dinámico (Opción C — híbrido inteligente)
+  var fontTabla = 9;
+  if(partidas.length > 8) fontTabla = 8;
+  if(partidas.length > 12) fontTabla = 7;
+
+  // Aplicar fuente dinámica a las filas
+  if(fontTabla < 9){
+    dataTabla.forEach(function(fila, idx){
+      if(idx === 0) return; // header se queda
+      fila.forEach(function(celda){ celda.options.fontSize = fontTabla; });
+    });
+  }
+
+  slide.addTable(dataTabla, {
+    x: 0.4, y: yTabla, w: 12.5,
+    colW: [0.5, 6.2, 1.0, 1.0, 1.7, 2.1],
+    border: {type:"solid", pt:0.5, color: COLOR.border},
+    rowH: 0.35
+  });
+
+  // ── Totales (cuadro derecho debajo de tabla) ──
+  // Calcular yTotales basado en cantidad de partidas (para no sobreponerse)
+  var yTot = Math.min(yTabla + 0.55 + (partidas.length * 0.42), 5.7);
+
+  slide.addShape("rect", {x:8.4, y:yTot, w:4.6, h:1.5, fill:{color: COLOR.bgLight}, line:{color: COLOR.border, width:0.5}});
+
+  slide.addText("Subtotal:", {x:8.6, y:yTot+0.1, w:2, h:0.22, fontSize:10, color: COLOR.txtSub, fontFace:"Calibri"});
+  slide.addText("$"+fmtPeso(sub), {x:10.6, y:yTot+0.1, w:2.2, h:0.22, fontSize:10, color: COLOR.txtMain, fontFace:"Calibri", align:"right", bold:true});
+
+  slide.addText("IVA 8%:", {x:8.6, y:yTot+0.38, w:2, h:0.22, fontSize:10, color: COLOR.txtSub, fontFace:"Calibri"});
+  slide.addText("$"+fmtPeso(iva), {x:10.6, y:yTot+0.38, w:2.2, h:0.22, fontSize:10, color: COLOR.txtMain, fontFace:"Calibri", align:"right", bold:true});
+
+  slide.addShape("line", {x:8.6, y:yTot+0.7, w:4.2, h:0, line:{color: COLOR.border, width:1}});
+
+  slide.addText("TOTAL:", {x:8.6, y:yTot+0.85, w:2, h:0.5, fontSize:14, bold:true, color: COLOR.purple, fontFace:"Calibri"});
+  slide.addText("$"+fmtPeso(total), {x:10.4, y:yTot+0.83, w:2.45, h:0.5, fontSize:18, bold:true, color: COLOR.purple, fontFace:"Calibri", align:"right"});
+
+  // ── Pie de página ──
+  slide.addShape("line", {x:0.4, y:7.0, w:12.5, h:0, line:{color: COLOR.border, width:0.75}});
+  slide.addText("ROMSA Industrial · " + rTel + " · " + rEmail + " · " + rWeb,
+    {x:0.4, y:7.1, w:9, h:0.25, fontSize:9, color: COLOR.txtSub, fontFace:"Calibri"});
+  slide.addText("Página 1 de "+(_ppt_estimarTotalSlides(cot)),
+    {x:11.5, y:7.1, w:1.4, h:0.25, fontSize:9, color: COLOR.txtMute, fontFace:"Calibri", align:"right"});
+}
+
+// SLIDE 2: condiciones generales
+function _ppt_construirSlide2(pptx, cot, clausulasFinal, rTel, rEmail, rWeb, COLOR){
+  var slide = pptx.addSlide();
+  slide.background = {color: COLOR.white};
+
+  // Header púrpura
+  slide.addShape("rect", {x:0, y:0, w:13.333, h:0.85, fill:{color: COLOR.purple}});
+  var logoB = window._romsaLogoBlanco || window._romsaLogoAzul || '';
+  if(logoB){
+    try { slide.addImage({data: logoB, x:0.35, y:0.13, w:1.6, h:0.6, sizing:{type:"contain", w:1.6, h:0.6}}); }
+    catch(e){}
+  } else {
+    slide.addText("ROMSA Industrial", {x:0.35, y:0.13, w:3, h:0.6, fontSize:20, bold:true, color: COLOR.white, fontFace:"Calibri"});
+  }
+  slide.addText("CONDICIONES GENERALES", {x:9.5, y:0.13, w:3.6, h:0.25, fontSize:9, bold:true, color: COLOR.white, fontFace:"Calibri", align:"right", charSpacing:3});
+  slide.addText(cot.folio||"", {x:9.5, y:0.36, w:3.6, h:0.3, fontSize:13, bold:true, color: COLOR.white, fontFace:"Calibri", align:"right"});
+
+  // Título
+  slide.addText("📜 Condiciones generales", {x:0.4, y:1.05, w:12.5, h:0.4, fontSize:18, bold:true, color: COLOR.purpleD, fontFace:"Calibri"});
+
+  // Detectar si es necesario reducir tamaño de fuente o pasar a otra slide
+  var totalChars = clausulasFinal.reduce(function(s,c){return s + (c.titulo||"").length + (c.texto||"").length;}, 0);
+  var fontTitle = 11;
+  var fontText  = 10;
+  var espaciado = 0.18;
+
+  if(totalChars > 3000){ fontTitle = 10; fontText = 9; espaciado = 0.12; }
+  if(totalChars > 5000){ fontTitle = 9.5; fontText = 8.5; espaciado = 0.08; }
+
+  // Ir colocando las cláusulas — si se desborda, segunda slide auto
+  var yPos = 1.6;
+  var maxY = 6.6; // límite antes del pie
+  var clausulasSlide2 = [];
+  var clausulasSlide3 = [];
+  var enSlide2 = true;
+
+  for(var i=0; i<clausulasFinal.length; i++){
+    var cl = clausulasFinal[i];
+    // Estimar altura: título 0.32 + texto en función de length
+    var nLineas = Math.max(1, Math.ceil((cl.texto||"").length / 130));
+    var altura = 0.32 + (nLineas * (fontText/72) * 1.4) + espaciado;
+
+    if(enSlide2 && yPos + altura > maxY){
+      enSlide2 = false;
+    }
+
+    if(enSlide2){
+      clausulasSlide2.push({cl:cl, y:yPos, alt:altura, num:i+1});
+      yPos += altura;
+    } else {
+      clausulasSlide3.push({cl:cl, num:i+1, alt:altura});
+    }
+  }
+
+  // Renderizar cláusulas en slide 2
+  clausulasSlide2.forEach(function(item){
+    slide.addText(item.num+". "+(item.cl.titulo||""), {
+      x:0.4, y:item.y, w:12.5, h:0.28,
+      fontSize:fontTitle, bold:true, color: COLOR.purple, fontFace:"Calibri", charSpacing:1
+    });
+    slide.addText(item.cl.texto||"", {
+      x:0.4, y:item.y+0.3, w:12.5, h: item.alt - 0.32,
+      fontSize:fontText, color: COLOR.txtMain, fontFace:"Calibri", valign:"top"
+    });
+  });
+
+  // Pie de página
+  slide.addShape("line", {x:0.4, y:7.0, w:12.5, h:0, line:{color: COLOR.border, width:0.75}});
+  slide.addText("ROMSA Industrial · " + rTel + " · " + rEmail + " · " + rWeb,
+    {x:0.4, y:7.1, w:9, h:0.25, fontSize:9, color: COLOR.txtSub, fontFace:"Calibri"});
+
+  // Si hay desborde, slide 3 con resto
+  if(clausulasSlide3.length){
+    var slide3 = pptx.addSlide();
+    slide3.background = {color: COLOR.white};
+    slide3.addShape("rect", {x:0, y:0, w:13.333, h:0.85, fill:{color: COLOR.purple}});
+    if(logoB){
+      try { slide3.addImage({data: logoB, x:0.35, y:0.13, w:1.6, h:0.6, sizing:{type:"contain", w:1.6, h:0.6}}); } catch(e){}
+    }
+    slide3.addText("CONDICIONES (CONT.)", {x:9.5, y:0.13, w:3.6, h:0.25, fontSize:9, bold:true, color: COLOR.white, fontFace:"Calibri", align:"right", charSpacing:3});
+    slide3.addText(cot.folio||"", {x:9.5, y:0.36, w:3.6, h:0.3, fontSize:13, bold:true, color: COLOR.white, fontFace:"Calibri", align:"right"});
+    slide3.addText("📜 Condiciones generales (continuación)", {x:0.4, y:1.05, w:12.5, h:0.4, fontSize:16, bold:true, color: COLOR.purpleD, fontFace:"Calibri"});
+
+    var y3 = 1.6;
+    clausulasSlide3.forEach(function(item){
+      slide3.addText(item.num+". "+(item.cl.titulo||""), {
+        x:0.4, y:y3, w:12.5, h:0.28,
+        fontSize:fontTitle, bold:true, color: COLOR.purple, fontFace:"Calibri", charSpacing:1
+      });
+      slide3.addText(item.cl.texto||"", {
+        x:0.4, y:y3+0.3, w:12.5, h: item.alt - 0.32,
+        fontSize:fontText, color: COLOR.txtMain, fontFace:"Calibri", valign:"top"
+      });
+      y3 += item.alt;
+    });
+    slide3.addShape("line", {x:0.4, y:7.0, w:12.5, h:0, line:{color: COLOR.border, width:0.75}});
+    slide3.addText("ROMSA Industrial · " + rTel + " · " + rEmail + " · " + rWeb,
+      {x:0.4, y:7.1, w:9, h:0.25, fontSize:9, color: COLOR.txtSub, fontFace:"Calibri"});
+  }
+}
+
+// SLIDE de procedimientos técnicos (uno o varios slides según tamaño)
+function _ppt_construirSlideProcedimientos(pptx, cot, partidasConProc, COLOR){
+  partidasConProc.forEach(function(p, idx){
+    var slide = pptx.addSlide();
+    slide.background = {color: COLOR.white};
+    slide.addShape("rect", {x:0, y:0, w:13.333, h:0.85, fill:{color: COLOR.purple}});
+
+    var logoB = window._romsaLogoBlanco || window._romsaLogoAzul || '';
+    if(logoB){
+      try { slide.addImage({data: logoB, x:0.35, y:0.13, w:1.6, h:0.6, sizing:{type:"contain", w:1.6, h:0.6}}); } catch(e){}
+    } else {
+      slide.addText("ROMSA Industrial", {x:0.35, y:0.13, w:3, h:0.6, fontSize:20, bold:true, color: COLOR.white, fontFace:"Calibri"});
+    }
+    slide.addText("PROCEDIMIENTO TÉCNICO", {x:9, y:0.13, w:4.1, h:0.25, fontSize:9, bold:true, color: COLOR.white, fontFace:"Calibri", align:"right", charSpacing:3});
+    slide.addText(cot.folio||"", {x:9, y:0.36, w:4.1, h:0.3, fontSize:13, bold:true, color: COLOR.white, fontFace:"Calibri", align:"right"});
+
+    var titulo = (p.tituloCustom && p.tituloCustom.trim()) ? p.tituloCustom.trim() : (p.servicio || "Concepto");
+    slide.addText("🔧 "+titulo, {x:0.4, y:1.05, w:12.5, h:0.45, fontSize:18, bold:true, color: COLOR.purpleD, fontFace:"Calibri"});
+
+    var lineas = (p.proc||"").split('\n').filter(function(l){return l.trim();});
+    var totalChars = lineas.join("").length;
+    var fontProc = 11;
+    if(totalChars > 1500) fontProc = 10;
+    if(totalChars > 2500) fontProc = 9;
+
+    var procText = lineas.map(function(l){return l.trim();}).join("\n");
+    slide.addText(procText, {
+      x:0.6, y:1.65, w:12.1, h:5.3,
+      fontSize:fontProc, color: COLOR.txtMain, fontFace:"Calibri", valign:"top",
+      paraSpaceAfter: 6, lineSpacingMultiple: 1.3
+    });
+
+    // Pie
+    slide.addShape("line", {x:0.4, y:7.0, w:12.5, h:0, line:{color: COLOR.border, width:0.75}});
+    slide.addText("ROMSA Industrial — Procedimiento técnico", {x:0.4, y:7.1, w:9, h:0.25, fontSize:9, color: COLOR.txtSub, fontFace:"Calibri", italic:true});
+    slide.addText((idx+1)+" de "+partidasConProc.length, {x:11.5, y:7.1, w:1.4, h:0.25, fontSize:9, color: COLOR.txtMute, fontFace:"Calibri", align:"right"});
+  });
+}
+
+// Estimar total de slides para el footer (no es 100% exacto pero da referencia)
+function _ppt_estimarTotalSlides(cot){
+  var n = 1; // slide 1 siempre
+  var inclCondiciones = document.getElementById('cot-incl-condiciones')?.checked !== false;
+  var inclProc = document.getElementById('cot-incl-proc')?.checked === true;
+  if(inclCondiciones) n += 1;
+  if(inclProc){
+    var partidas = cot.partidas || [];
+    var conProc = partidas.filter(function(p){return p.proc && p.proc.trim();}).length;
+    n += conProc;
+  }
+  return n;
+}
+
+// Exponer al window
+window.guardarYDescargarCotPPT = guardarYDescargarCotPPT;
+window.descargarCotPPT = descargarCotPPT;
 
 // ── Exportar todas las cotizaciones a Excel ───────────────────────
 function exportarCotExcel(){
