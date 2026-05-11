@@ -1826,6 +1826,7 @@ body.in-costeo #app{
             <div id="cot-form-titulo" style="font-size:16px;font-weight:800;color:var(--navy);">Nueva cotización</div>
             <div id="cot-folio-badge" style="font-size:10px;color:var(--tx2);margin-top:1px;"></div>
           </div>
+          <button onclick="vistaPreviaPdfCot()" title="Ver cómo quedará el PDF antes de descargar" style="background:#0EA5E9;border:none;color:#fff;font-size:11px;font-weight:700;padding:8px 12px;border-radius:9px;cursor:pointer;font-family:var(--font);">👁 Vista previa</button>
           <button onclick="guardarYVerCot()" style="background:#7C3AED;border:none;color:#fff;font-size:11px;font-weight:700;padding:8px 16px;border-radius:9px;cursor:pointer;font-family:var(--font);">📄 PDF</button>
           <button onclick="guardarYDescargarCotPPT()" title="Descargar como PowerPoint editable" style="background:#D97706;border:none;color:#fff;font-size:11px;font-weight:700;padding:8px 14px;border-radius:9px;cursor:pointer;font-family:var(--font);">📊 PPT</button>
         </div>
@@ -2159,6 +2160,7 @@ body.in-costeo #app{
         <!-- BOTONES -->
         <div style="display:flex;flex-direction:column;gap:8px;padding-bottom:32px;">
           <div style="display:flex;gap:8px;">
+            <button onclick="vistaPreviaPdfCot()" style="flex:1;background:#0EA5E9;border:none;color:#fff;font-size:13px;font-weight:700;padding:13px;border-radius:12px;cursor:pointer;font-family:var(--font);">👁 Vista previa</button>
             <button onclick="guardarYVerCot()" style="flex:1;background:#7C3AED;border:none;color:#fff;font-size:14px;font-weight:700;padding:14px;border-radius:12px;cursor:pointer;font-family:var(--font);">📄 Descargar PDF</button>
             <button onclick="guardarYDescargarCotPPT()" style="flex:1;background:#D97706;border:none;color:#fff;font-size:14px;font-weight:700;padding:14px;border-radius:12px;cursor:pointer;font-family:var(--font);">📊 Descargar PowerPoint</button>
           </div>
@@ -8636,6 +8638,27 @@ function _sanitizarParaFirestore(obj){
   return out;
 }
 
+// ═══════════════════════════════════════════════════════════════
+// VISTA PREVIA DEL PDF (sin imprimir) — para revisar saltos antes
+// ═══════════════════════════════════════════════════════════════
+
+// Variante de _generarPdfConVentana que en lugar de imprimir, abre overlay con preview
+var _previewModoActivo = false;
+
+async function vistaPreviaPdfCot(){
+  if(typeof showToast === "function") showToast("⏳ Generando vista previa...");
+  var cot = await guardarCot();
+  if(!cot){ return; }
+  _previewModoActivo = true;
+  try {
+    _generarPdfConVentana(cot, null);
+  } finally {
+    _previewModoActivo = false;
+  }
+}
+
+window.vistaPreviaPdfCot = vistaPreviaPdfCot;
+
 async function guardarYVerCot(){
   // Abrir ventana SINCRÓNICAMENTE antes del await — único momento permitido
   var esIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)&&!window.MSStream;
@@ -9021,63 +9044,27 @@ function generarPdfCotEnVentana(cot, winRef){
     +secCondiciones
 
     +'</div>'// /doc
-    // ═══ Optimizador inteligente de saltos (Híbrido v2 — usa offsetTop real) ═══
+    // ═══ Confiamos en el CSS estricto + control manual (sin optimizador automático) ═══
+    // El intento de optimizador con offsetTop sobre-corregía: a veces movía cláusulas que el
+    // navegador ya había acomodado bien. El CSS page-break-inside:avoid + control ↕ manual son
+    // suficientes y predecibles.
     +'<script>'
     +'(function(){'
-    +'  var PAGE_PX = 1123;' // A4 a 96 DPI = 297mm × 3.78
-    +'  var EJECUTADO = false;'
-    +'  function dbg(msg){ try{console.log("[ROMSA PDF saltos] "+msg);}catch(e){} }'
-    +'  function optimizar(){'
-    +'    if(EJECUTADO) return; EJECUTADO = true;'
-    +'    var page2 = document.querySelector(".page2");'
-    +'    if(!page2){ dbg("no .page2 encontrada"); return; }'
-    +'    var page2Top = page2.offsetTop;'
+    +'  function dbg(msg){ try{console.log("[ROMSA PDF] "+msg);}catch(e){} }'
+    +'  function diagnostico(){'
     +'    var clausulas = document.querySelectorAll(".cot-clausula");'
-    +'    if(!clausulas.length){ dbg("sin cláusulas"); return; }'
-    +'    dbg("page2 inicia en Y="+page2Top+"px, "+clausulas.length+" cláusulas");'
-    // Recolectar info de cada cláusula
-    +'    var infos = [];'
-    +'    clausulas.forEach(function(cl){'
-    +'      var rect = cl.getBoundingClientRect();'
-    +'      var topAbs = cl.offsetTop;' // relative to offsetParent
-    // Buscar topAbs absoluto del documento sumando offsetParents
+    +'    if(!clausulas.length) return;'
+    +'    dbg(clausulas.length + " cláusulas en el documento. CSS page-break-inside:avoid activo.");'
+    +'    clausulas.forEach(function(cl, idx){'
     +'      var el = cl, topReal = 0;'
     +'      while(el){ topReal += el.offsetTop; el = el.offsetParent; }'
-    +'      infos.push({el:cl, top:topReal, alto:rect.height});'
+    +'      var alto = cl.getBoundingClientRect().height;'
+    +'      var tieneSaltoManual = cl.classList.contains("cot-clausula-salto");'
+    +'      dbg("Cláusula "+(idx+1)+": y="+Math.round(topReal)+"px, alto="+Math.round(alto)+"px"+(tieneSaltoManual?" [SALTO MANUAL]":""));'
     +'    });'
-    // Determinar la página de cada una y si causa hueco grande
-    +'    var ajustes = 0;'
-    +'    infos.forEach(function(info, idx){'
-    +'      if(idx === 0) return;' // primera no se toca
-    +'      var inicioPagina = Math.floor(info.top / PAGE_PX) * PAGE_PX;' // donde empezaría la página A4 actual de esta cláusula
-    +'      var finPagina = inicioPagina + PAGE_PX;'
-    +'      var inicioRelativo = info.top - inicioPagina;'
-    +'      var finRelativo = inicioRelativo + info.alto;'
-    +'      var seParte = finRelativo > PAGE_PX - 180;' // si su fin pasa del 84% antes del footer (margen para footer ~180px)
-    +'      var prevInfo = infos[idx-1];'
-    +'      var prevPagina = Math.floor(prevInfo.top / PAGE_PX);'
-    +'      var miPagina = Math.floor(info.top / PAGE_PX);'
-    +'      var espacioDesperdiciadoPrev = (prevPagina === miPagina - 1) ? ((prevPagina+1)*PAGE_PX - (prevInfo.top + prevInfo.alto)) : 0;'
-    // Si la cláusula NO se parte pero hay desperdicio enorme en la página anterior, está OK (el navegador la pasó porque no cabía)
-    // Lo PROBLEMÁTICO es cuando una cláusula SÍ se parte
-    +'      if(seParte){'
-    +'        dbg("Cláusula "+(idx+1)+" se parte (y="+Math.round(info.top)+" alto="+Math.round(info.alto)+"). Forzando salto antes.");'
-    +'        info.el.style.pageBreakBefore = "always";'
-    +'        info.el.style.breakBefore = "page";'
-    +'        ajustes++;'
-    +'      }'
-    +'    });'
-    +'    dbg("Ajustes hechos: "+ajustes);'
     +'  }'
-    // Ejecutar varias veces para garantizar que corra después del layout
-    +'  function ejecutar(){'
-    +'    if(document.readyState === "complete"){ optimizar(); }'
-    +'    else { document.addEventListener("DOMContentLoaded", optimizar); }'
-    +'  }'
-    +'  ejecutar();'
-    +'  window.addEventListener("load", function(){ EJECUTADO = false; optimizar(); });'
-    // Hook al evento beforeprint: última oportunidad de optimizar antes de imprimir
-    +'  window.addEventListener("beforeprint", function(){ EJECUTADO = false; optimizar(); });'
+    +'  if(document.readyState === "complete"){ diagnostico(); }'
+    +'  else { window.addEventListener("load", diagnostico); }'
     +'})();'
     +'<\/script>'
     +'<\/body><\/html>';
@@ -9089,6 +9076,12 @@ function generarPdfCotEnVentana(cot, winRef){
 function _inyectarPdf(htmlStr, title, winRef){
   var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
   var isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+
+  // ─── MODO VISTA PREVIA: overlay con iframe, NO imprime ───
+  if(_previewModoActivo){
+    _mostrarPreviewPdf(htmlStr, title);
+    return;
+  }
 
   if(isIOS || isSafari){
     // iOS/Mac Safari: iframe en la misma página
@@ -9109,29 +9102,122 @@ function _inyectarPdf(htmlStr, title, winRef){
     fr.onload = function(){
       setTimeout(function(){
         try{ fr.contentWindow.focus(); fr.contentWindow.print(); }catch(e){}
-      }, 1500);
+      }, 500);
     };
   } else if(winRef){
     // Chrome/Firefox con ventana ya abierta (síncrona desde el click)
     winRef.document.open();
     winRef.document.write(htmlStr);
     winRef.document.close();
-    winRef.onload = function(){ setTimeout(function(){ winRef.print(); }, 1500); };
+    winRef.onload = function(){ setTimeout(function(){ winRef.print(); }, 500); };
     // Si onload no dispara (documento ya cargado), imprimir directamente
     setTimeout(function(){
       try{ if(winRef && !winRef.closed) winRef.print(); }catch(e){}
-    }, 2000);
+    }, 900);
   } else {
     // Fallback: abrir nueva ventana
     var win2 = window.open('', '_blank');
     if(!win2){ showToast('⚠️ Permite ventanas emergentes'); return; }
     win2.document.write(htmlStr);
     win2.document.close();
-    win2.onload = function(){ setTimeout(function(){ win2.print(); }, 1500); };
+    win2.onload = function(){ setTimeout(function(){ win2.print(); }, 500); };
     setTimeout(function(){
       try{ if(win2 && !win2.closed) win2.print(); }catch(e){}
-    }, 2000);
+    }, 900);
   }
+}
+
+// ─── Vista previa visual del PDF (overlay con iframe simulando A4) ───
+function _mostrarPreviewPdf(htmlStr, title){
+  // Eliminar overlay previo
+  var oldOv = document.getElementById('_pdfPreviewOverlay');
+  if(oldOv) oldOv.remove();
+
+  var ov = document.createElement('div');
+  ov.id = '_pdfPreviewOverlay';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(11,31,58,.85);z-index:9998;display:flex;flex-direction:column;font-family:sans-serif;';
+
+  // Barra superior
+  var bar = document.createElement('div');
+  bar.style.cssText = 'background:#0B1F3A;color:#fff;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;border-bottom:2px solid #1E6FD9;';
+  bar.innerHTML = '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">'
+      +'<div style="font-size:11px;font-weight:700;letter-spacing:1.5px;color:#60A5FA;">👁 VISTA PREVIA</div>'
+      +'<div style="font-size:13px;font-weight:600;color:#fff;">'+escapeHtml(title||"Cotización")+'</div>'
+      +'<div style="font-size:10px;color:rgba(255,255,255,.5);">Tamaño A4 simulado · Los saltos reales pueden variar ligeramente</div>'
+    +'</div>'
+    +'<div style="display:flex;gap:8px;">'
+      +'<button id="_pdfPreviewImprimir" style="background:#7C3AED;border:none;color:#fff;padding:8px 16px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">📄 Descargar PDF</button>'
+      +'<button id="_pdfPreviewCerrar" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;padding:8px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">✕ Cerrar</button>'
+    +'</div>';
+  ov.appendChild(bar);
+
+  // Contenedor del iframe con scroll
+  var wrap = document.createElement('div');
+  wrap.style.cssText = 'flex:1;overflow:auto;padding:20px;background:#2A3142;display:flex;justify-content:center;';
+
+  // Marco que simula hojas de A4: ancho ~21cm = 794px a 96dpi
+  var marco = document.createElement('div');
+  marco.style.cssText = 'width:794px;max-width:100%;background:#fff;box-shadow:0 0 50px rgba(0,0,0,.5);position:relative;';
+
+  // Iframe sin srcdoc (más compatible)
+  var iframe = document.createElement('iframe');
+  iframe.style.cssText = 'width:100%;border:none;display:block;background:#fff;min-height:1123px;';
+  iframe.id = '_pdfPreviewFrame';
+  marco.appendChild(iframe);
+  wrap.appendChild(marco);
+  ov.appendChild(wrap);
+
+  // Banda inferior con tip
+  var tip = document.createElement('div');
+  tip.style.cssText = 'background:#0F2A5A;color:rgba(255,255,255,.7);padding:8px 16px;font-size:11px;text-align:center;border-top:1px solid #1B3F72;';
+  tip.innerHTML = '💡 Si una cláusula queda mal: cierra esta vista, ve a <strong style="color:#60A5FA;">📜 Condiciones</strong>, toca el botón <strong style="color:#F59E0B;">↕</strong> al lado de la cláusula que quieres mover a nueva página, y vuelve a abrir la vista previa.';
+  ov.appendChild(tip);
+
+  document.body.appendChild(ov);
+
+  // Cargar HTML en el iframe
+  iframe.onload = function(){
+    try {
+      // Ajustar alto del iframe al alto real del contenido
+      var doc = iframe.contentDocument || iframe.contentWindow.document;
+      var altoReal = doc.documentElement.scrollHeight;
+      iframe.style.height = altoReal + 'px';
+
+      // Dibujar líneas de corte de página A4 cada 1123px
+      var pageH = 1123; // A4 a 96 DPI
+      var nPages = Math.ceil(altoReal / pageH);
+      for(var i=1; i<nPages; i++){
+        var linea = document.createElement('div');
+        linea.style.cssText = 'position:absolute;left:-30px;right:-30px;top:'+(i*pageH)+'px;height:0;border-top:2px dashed #F59E0B;z-index:5;pointer-events:none;';
+        var etiqueta = document.createElement('div');
+        etiqueta.style.cssText = 'position:absolute;left:-30px;right:-30px;top:'+(i*pageH-12)+'px;text-align:center;color:#F59E0B;font-size:10px;font-weight:700;letter-spacing:2px;pointer-events:none;';
+        etiqueta.textContent = '↕ FIN PÁGINA ' + i + ' / INICIO PÁGINA ' + (i+1) + ' ↕';
+        marco.appendChild(linea);
+        marco.appendChild(etiqueta);
+      }
+    } catch(e){ console.warn("Preview ajuste:", e); }
+  };
+  iframe.contentDocument.open();
+  iframe.contentDocument.write(htmlStr);
+  iframe.contentDocument.close();
+
+  // Handlers
+  document.getElementById('_pdfPreviewCerrar').onclick = function(){ ov.remove(); };
+  document.getElementById('_pdfPreviewImprimir').onclick = function(){
+    try {
+      iframe.contentWindow.focus();
+      iframe.contentWindow.print();
+    } catch(e){
+      alert("No se pudo imprimir: " + e.message);
+    }
+  };
+  // ESC para cerrar
+  document.addEventListener('keydown', function escHandler(e){
+    if(e.key === 'Escape'){
+      var x = document.getElementById('_pdfPreviewOverlay');
+      if(x){ x.remove(); document.removeEventListener('keydown', escHandler); }
+    }
+  });
 }
 
 // ═══════════════════════════════════════════════════════════════
