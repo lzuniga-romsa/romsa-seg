@@ -2086,49 +2086,49 @@ body.in-costeo #app{
           <div class="fg" id="fg-cot-precio-cond">
             <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;">
               <label class="flabel" style="margin:0;">1. Precio del proyecto</label>
-              <button onclick="eliminarClausulaStd('cot-precio-cond')" title="Eliminar esta cláusula" style="background:none;border:none;color:#EF4444;font-size:13px;cursor:pointer;padding:2px 6px;">✕</button>
+              <div style="display:flex;gap:4px;align-items:center;"><button data-salto-id="cot-precio-cond" onclick="toggleSaltoClausulaStd('cot-precio-cond')" title="Forzar salto de página antes" style="background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);color:#92400E;font-size:11px;font-weight:700;cursor:pointer;padding:3px 8px;border-radius:5px;font-family:var(--font);">↕</button><button onclick="eliminarClausulaStd('cot-precio-cond')" title="Eliminar esta cláusula" style="background:none;border:none;color:#EF4444;font-size:13px;cursor:pointer;padding:2px 6px;">✕</button></div>
             </div>
             <textarea class="ftextarea" id="cot-precio-cond" style="min-height:52px;">El precio de la cotización está contemplado como paquete y cualquier modificación podría afectar el precio final.</textarea>
           </div>
           <div class="fg" id="fg-cot-pago">
             <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;">
               <label class="flabel" style="margin:0;">2. Forma de pago</label>
-              <button onclick="eliminarClausulaStd('cot-pago')" title="Eliminar esta cláusula" style="background:none;border:none;color:#EF4444;font-size:13px;cursor:pointer;padding:2px 6px;">✕</button>
+              <div style="display:flex;gap:4px;align-items:center;"><button data-salto-id="cot-pago" onclick="toggleSaltoClausulaStd('cot-pago')" title="Forzar salto de página antes" style="background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);color:#92400E;font-size:11px;font-weight:700;cursor:pointer;padding:3px 8px;border-radius:5px;font-family:var(--font);">↕</button><button onclick="eliminarClausulaStd('cot-pago')" title="Eliminar esta cláusula" style="background:none;border:none;color:#EF4444;font-size:13px;cursor:pointer;padding:2px 6px;">✕</button></div>
             </div>
             <textarea class="ftextarea" id="cot-pago" style="min-height:72px;">El esquema de pago será 60% anticipo y 40% contra entrega de área finalizada y recepción de factura final. Los pagos deberán realizarse en las fechas estipuladas. En caso de retraso en el pago por parte del cliente, se generará un cargo moratorio equivalente al 0.03% del saldo pendiente por cada día natural de atraso.</textarea>
           </div>
           <div class="fg" id="fg-cot-tiempo">
             <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;">
               <label class="flabel" style="margin:0;">3. Tiempo de ejecución</label>
-              <button onclick="eliminarClausulaStd('cot-tiempo')" title="Eliminar esta cláusula" style="background:none;border:none;color:#EF4444;font-size:13px;cursor:pointer;padding:2px 6px;">✕</button>
+              <div style="display:flex;gap:4px;align-items:center;"><button data-salto-id="cot-tiempo" onclick="toggleSaltoClausulaStd('cot-tiempo')" title="Forzar salto de página antes" style="background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);color:#92400E;font-size:11px;font-weight:700;cursor:pointer;padding:3px 8px;border-radius:5px;font-family:var(--font);">↕</button><button onclick="eliminarClausulaStd('cot-tiempo')" title="Eliminar esta cláusula" style="background:none;border:none;color:#EF4444;font-size:13px;cursor:pointer;padding:2px 6px;">✕</button></div>
             </div>
             <textarea class="ftextarea" id="cot-tiempo" style="min-height:72px;">El tiempo de ejecución está considerado para 2 días por cada 100 m², en área libre y continua. El área mínima por evento es de 100 m². Favor de considerar 2 semanas para entrega de materiales en planta, una vez recibido el anticipo, orden de compra y firma de contrato. Sujeto a disponibilidad de inventario.</textarea>
           </div>
           <div class="fg" id="fg-cot-alcances">
             <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;">
               <label class="flabel" style="margin:0;">4. Alcances y exclusiones</label>
-              <button onclick="eliminarClausulaStd('cot-alcances')" title="Eliminar esta cláusula" style="background:none;border:none;color:#EF4444;font-size:13px;cursor:pointer;padding:2px 6px;">✕</button>
+              <div style="display:flex;gap:4px;align-items:center;"><button data-salto-id="cot-alcances" onclick="toggleSaltoClausulaStd('cot-alcances')" title="Forzar salto de página antes" style="background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);color:#92400E;font-size:11px;font-weight:700;cursor:pointer;padding:3px 8px;border-radius:5px;font-family:var(--font);">↕</button><button onclick="eliminarClausulaStd('cot-alcances')" title="Eliminar esta cláusula" style="background:none;border:none;color:#EF4444;font-size:13px;cursor:pointer;padding:2px 6px;">✕</button></div>
             </div>
             <textarea class="ftextarea" id="cot-alcances" style="min-height:100px;">La propuesta se formula con base en la información proporcionada por el cliente y en las condiciones visibles del área al momento de la visita técnica. Cualquier condición no prevista, defecto oculto en la losa o requerimiento adicional (humedad ascendente, contaminantes químicos, variaciones en el sustrato, etc.) no está contemplado y será cotizado como trabajo adicional. El cliente deberá asegurar que las áreas estén libres de obstrucciones, humedad excesiva, filtraciones, aceites, grasas u otros contaminantes antes de la aplicación.</textarea>
           </div>
           <div class="fg" id="fg-cot-responsabilidad">
             <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;">
               <label class="flabel" style="margin:0;">5. Limitación de responsabilidad</label>
-              <button onclick="eliminarClausulaStd('cot-responsabilidad')" title="Eliminar esta cláusula" style="background:none;border:none;color:#EF4444;font-size:13px;cursor:pointer;padding:2px 6px;">✕</button>
+              <div style="display:flex;gap:4px;align-items:center;"><button data-salto-id="cot-responsabilidad" onclick="toggleSaltoClausulaStd('cot-responsabilidad')" title="Forzar salto de página antes" style="background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);color:#92400E;font-size:11px;font-weight:700;cursor:pointer;padding:3px 8px;border-radius:5px;font-family:var(--font);">↕</button><button onclick="eliminarClausulaStd('cot-responsabilidad')" title="Eliminar esta cláusula" style="background:none;border:none;color:#EF4444;font-size:13px;cursor:pointer;padding:2px 6px;">✕</button></div>
             </div>
             <textarea class="ftextarea" id="cot-responsabilidad" style="min-height:80px;">Nuestra responsabilidad se limita estrictamente al área aplicada bajo contrato y hasta por el monto total del valor de la obra. ROMSA Industrial no se hace responsable por fallas derivadas de: deficiencias estructurales de la losa, humedad ascendente no declarada, contaminación química del sustrato, movimientos sísmicos, sobrecargas no previstas, o mantenimiento inadecuado por parte del cliente.</textarea>
           </div>
           <div class="fg" id="fg-cot-garantia">
             <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;">
               <label class="flabel" style="margin:0;">6. Garantía</label>
-              <button onclick="eliminarClausulaStd('cot-garantia')" title="Eliminar esta cláusula" style="background:none;border:none;color:#EF4444;font-size:13px;cursor:pointer;padding:2px 6px;">✕</button>
+              <div style="display:flex;gap:4px;align-items:center;"><button data-salto-id="cot-garantia" onclick="toggleSaltoClausulaStd('cot-garantia')" title="Forzar salto de página antes" style="background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);color:#92400E;font-size:11px;font-weight:700;cursor:pointer;padding:3px 8px;border-radius:5px;font-family:var(--font);">↕</button><button onclick="eliminarClausulaStd('cot-garantia')" title="Eliminar esta cláusula" style="background:none;border:none;color:#EF4444;font-size:13px;cursor:pointer;padding:2px 6px;">✕</button></div>
             </div>
             <textarea class="ftextarea" id="cot-garantia" style="min-height:90px;">ROMSA Industrial otorga garantía por un periodo de doce (12) meses a partir de la fecha de entrega formal del área, que cubre exclusivamente defectos de aplicación atribuibles a ROMSA Industrial, bajo las siguientes condiciones: (a) El cliente debe dar aviso por escrito dentro de los 30 días naturales posteriores a la detección del defecto. (b) La garantía queda sin efecto en caso de: humedad ascendente, fallas en la losa base, uso inadecuado del recubrimiento, modificaciones realizadas por terceros, o falta de mantenimiento. (c) La garantía no aplica sobre áreas donde el cliente no haya cumplido con las condiciones previas de preparación.</textarea>
           </div>
           <div class="fg" id="fg-cot-entrega">
             <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;">
               <label class="flabel" style="margin:0;">7. Entrega y recepción</label>
-              <button onclick="eliminarClausulaStd('cot-entrega')" title="Eliminar esta cláusula" style="background:none;border:none;color:#EF4444;font-size:13px;cursor:pointer;padding:2px 6px;">✕</button>
+              <div style="display:flex;gap:4px;align-items:center;"><button data-salto-id="cot-entrega" onclick="toggleSaltoClausulaStd('cot-entrega')" title="Forzar salto de página antes" style="background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);color:#92400E;font-size:11px;font-weight:700;cursor:pointer;padding:3px 8px;border-radius:5px;font-family:var(--font);">↕</button><button onclick="eliminarClausulaStd('cot-entrega')" title="Eliminar esta cláusula" style="background:none;border:none;color:#EF4444;font-size:13px;cursor:pointer;padding:2px 6px;">✕</button></div>
             </div>
             <textarea class="ftextarea" id="cot-entrega" style="min-height:52px;">Al término de los trabajos, se realizará una entrega formal del área aplicada junto con la factura final. La recepción por parte del cliente confirmará la aceptación de los trabajos realizados.</textarea>
           </div>
@@ -5493,7 +5493,49 @@ const COT_CLAUSULAS_STD = [
 
 // Cláusulas eliminadas (set de IDs) y personalizadas (array dinámico)
 var _cotClausulasEliminadas = new Set();
-var _cotClausulasCustom = [];  // [{titulo, texto}]
+var _cotClausulasCustom = [];  // [{titulo, texto, saltoAntes}]
+var _cotClausulasSaltos = new Set();  // IDs de cláusulas estándar que tienen salto manual antes
+
+// Toggle salto manual en cláusula estándar
+function toggleSaltoClausulaStd(id){
+  if(_cotClausulasSaltos.has(id)){
+    _cotClausulasSaltos.delete(id);
+    if(typeof showToast === "function") showToast("Salto removido");
+  } else {
+    _cotClausulasSaltos.add(id);
+    if(typeof showToast === "function") showToast("↕ Salto agregado");
+  }
+  _refrescarBotonesSaltoStd();
+}
+
+// Actualizar visual de los botones de salto en cláusulas estándar
+function _refrescarBotonesSaltoStd(){
+  document.querySelectorAll("[data-salto-id]").forEach(function(btn){
+    var id = btn.dataset.saltoId;
+    var activo = _cotClausulasSaltos.has(id);
+    btn.style.background = activo ? "#F59E0B" : "rgba(245,158,11,.1)";
+    btn.style.borderColor = activo ? "#D97706" : "rgba(245,158,11,.3)";
+    btn.style.color = activo ? "#fff" : "#92400E";
+    btn.title = activo ? "Quitar salto de página" : "Forzar salto de página antes";
+    // Mostrar/ocultar banda informativa
+    var fg = document.getElementById("fg-"+id);
+    if(fg){
+      var banda = fg.querySelector(".cot-salto-banda");
+      if(activo && !banda){
+        var b = document.createElement("div");
+        b.className = "cot-salto-banda";
+        b.style.cssText = "background:#FEF3C7;border:1px dashed #F59E0B;color:#92400E;font-size:9.5px;font-weight:700;padding:5px 8px;border-radius:5px;margin-bottom:6px;letter-spacing:.5px;";
+        b.textContent = "↕ Esta cláusula empieza en nueva página";
+        fg.insertBefore(b, fg.firstChild);
+      } else if(!activo && banda){
+        banda.remove();
+      }
+    }
+  });
+}
+
+window.toggleSaltoClausulaStd = toggleSaltoClausulaStd;
+window._refrescarBotonesSaltoStd = _refrescarBotonesSaltoStd;
 
 function resetCondicionesCot(){
   // Restaurar textos
@@ -5503,6 +5545,7 @@ function resetCondicionesCot(){
   });
   // Mostrar todas (quitar eliminadas)
   _cotClausulasEliminadas = new Set();
+  _cotClausulasSaltos = new Set();
   COT_CLAUSULAS_STD.forEach(function(c){
     var fg = document.getElementById("fg-"+c.id);
     if(fg) fg.style.display = "";
@@ -5510,6 +5553,7 @@ function resetCondicionesCot(){
   // Quitar personalizadas
   _cotClausulasCustom = [];
   _renderClausulasCustom();
+  if(typeof _refrescarBotonesSaltoStd === "function") _refrescarBotonesSaltoStd();
   showToast("↺ Condiciones restauradas");
 }
 
@@ -6532,6 +6576,7 @@ function aplicarPlantillaACotizacion(plantillaId){
     // ── Caso especial: aplicar plantilla DEFAULT ──
     // Restaurar las 7 cláusulas estándar (hacer visibles) y restaurar textos originales
     _cotClausulasEliminadas = new Set();
+    _cotClausulasSaltos = new Set();
     COT_CLAUSULAS_STD.forEach(function(c){
       var fg = document.getElementById("fg-"+c.id);
       if(fg) fg.style.display = "";
@@ -6541,10 +6586,12 @@ function aplicarPlantillaACotizacion(plantillaId){
     // Limpiar custom (Default no tiene custom)
     _cotClausulasCustom = [];
     _renderClausulasCustom();
+    if(typeof _refrescarBotonesSaltoStd === "function") _refrescarBotonesSaltoStd();
   } else {
     // ── Plantilla CUSTOM ──
     // Estrategia: ocultar TODAS las cláusulas estándar (marcarlas eliminadas) y poner las de la plantilla como custom
     _cotClausulasEliminadas = new Set();
+    _cotClausulasSaltos = new Set();
     COT_CLAUSULAS_STD.forEach(function(std){
       _cotClausulasEliminadas.add(std.id);
       var fg = document.getElementById("fg-"+std.id);
@@ -7833,6 +7880,7 @@ function showNuevaCot(){
   calcTotalesCot();
   // Resetear cláusulas estándar + eliminar custom + mostrar todas las estándar
   _cotClausulasEliminadas = new Set();
+  _cotClausulasSaltos = new Set();
   _cotClausulasCustom = [];
   COT_CLAUSULAS_STD.forEach(function(std){
     var fg = document.getElementById("fg-"+std.id);
@@ -7841,6 +7889,7 @@ function showNuevaCot(){
     if(el) el.value = std.texto;
   });
   _renderClausulasCustom();
+  if(typeof _refrescarBotonesSaltoStd === "function") _refrescarBotonesSaltoStd();
   // Ocultar vínculo (es cotización nueva desde cero)
   var vincElN = document.getElementById("cot-vinculo-costeo");
   if(vincElN) vincElN.style.display = "none";
@@ -7923,6 +7972,7 @@ function abrirCot(id){
 
   // Restaurar cláusulas eliminadas y personalizadas
   _cotClausulasEliminadas = new Set(Array.isArray(c.clausulasEliminadas) ? c.clausulasEliminadas : []);
+  _cotClausulasSaltos = new Set(Array.isArray(c.clausulasSaltos) ? c.clausulasSaltos : []);
   _cotClausulasCustom = Array.isArray(c.clausulasCustom) ? c.clausulasCustom.map(function(x){return {titulo:x.titulo||"", texto:x.texto||"", saltoAntes: !!x.saltoAntes};}) : [];
   // Mostrar/ocultar cláusulas estándar según lista de eliminadas
   COT_CLAUSULAS_STD.forEach(function(std){
@@ -7930,6 +7980,7 @@ function abrirCot(id){
     if(fg) fg.style.display = _cotClausulasEliminadas.has(std.id) ? "none" : "";
   });
   _renderClausulasCustom();
+  if(typeof _refrescarBotonesSaltoStd === "function") setTimeout(_refrescarBotonesSaltoStd, 50);
   if(document.getElementById("cot-romsa-tel")) document.getElementById("cot-romsa-tel").value=c.romsaTel||"686 138 3117";
   if(document.getElementById("cot-romsa-email")) document.getElementById("cot-romsa-email").value=c.romsaEmail||"ventas@romsaindustrial.com";
   if(document.getElementById("cot-romsa-web")) document.getElementById("cot-romsa-web").value=c.romsaWeb||"www.romsaindustrial.com";
@@ -8507,6 +8558,7 @@ async function guardarCot(){
     condEntrega:document.getElementById("cot-entrega")?.value.trim()||"",
     // Cláusulas eliminadas (para no renderizarlas en el PDF)
     clausulasEliminadas: Array.from(_cotClausulasEliminadas||[]),
+    clausulasSaltos: Array.from(_cotClausulasSaltos||[]),
     // Cláusulas personalizadas agregadas por el usuario
     clausulasCustom: (_cotClausulasCustom||[]).filter(function(c){
       return (c.titulo && c.titulo.trim()) || (c.texto && c.texto.trim());
@@ -8690,6 +8742,9 @@ function generarPdfCotEnVentana(cot, winRef){
   var eliminadas = (cot.clausulasEliminadas && Array.isArray(cot.clausulasEliminadas))
     ? new Set(cot.clausulasEliminadas)
     : new Set();
+  var saltos = (cot.clausulasSaltos && Array.isArray(cot.clausulasSaltos))
+    ? new Set(cot.clausulasSaltos)
+    : new Set();
 
   var condsRaw=[
     {id:'cot-precio-cond',     t:'Precio del Proyecto',           v:cot.condPrecioCond    },
@@ -8701,6 +8756,10 @@ function generarPdfCotEnVentana(cot, winRef){
     {id:'cot-entrega',         t:'Entrega y Recepción',           v:cot.condEntrega       }
   ].filter(function(c){
     return c.v && c.v.trim() && !eliminadas.has(c.id);
+  }).map(function(c){
+    // Aplicar salto manual si está marcado
+    c.saltoAntes = saltos.has(c.id);
+    return c;
   });
 
   // Agregar cláusulas personalizadas al final
@@ -8720,13 +8779,16 @@ function generarPdfCotEnVentana(cot, winRef){
     return {n:(i+1)+'. '+c.t, v:c.v, saltoAntes: c.saltoAntes};
   });
 
-  var condsHtml=conds.map(function(c){
-    var brBefore = c.saltoAntes ? 'page-break-before:always !important;break-before:page !important;' : '';
-    return '<div class="cot-clausula" style="margin-bottom:18px;page-break-inside:avoid;break-inside:avoid;'+brBefore+'">'
-      +'<div style="font-size:9.5px;font-weight:800;color:#0B1F3A;text-transform:uppercase;letter-spacing:1px;margin-bottom:5px;">'+c.n+'</div>'
-      +'<div style="font-size:11px;color:#4A5E7A;line-height:1.8;white-space:pre-wrap;">'+c.v+'</div>'
-    +'</div>';
-  }).join('');
+  var condsHtml = '<div class="cot-clausulas-wrap">'
+    + conds.map(function(c, idx){
+      var brBefore = c.saltoAntes ? 'page-break-before:always !important;break-before:page !important;' : '';
+      var clase = c.saltoAntes ? 'cot-clausula cot-clausula-salto' : 'cot-clausula';
+      return '<div class="'+clase+'" data-idx="'+idx+'" style="'+brBefore+'">'
+        +'<div class="cot-clausula-titulo">'+c.n+'</div>'
+        +'<div class="cot-clausula-texto">'+c.v+'</div>'
+      +'</div>';
+    }).join('')
+    + '</div>';
 
   var notaHtml=cot.nota
     ?'<div style="background:#F0F4FC;border-left:3px solid #1E6FD9;padding:12px 16px;border-radius:0 8px 8px 0;margin-top:16px;font-size:11px;color:#4A5E7A;line-height:1.7;">'+cot.nota+'</div>'
@@ -8831,16 +8893,21 @@ function generarPdfCotEnVentana(cot, winRef){
     +'.page1{min-height:100vh;display:flex;flex-direction:column;}'
     +'.page2{min-height:100vh;display:flex;flex-direction:column;}'
     +'.page-break{page-break-before:always;break-before:page;}'
-    +'.cot-clausula{page-break-inside:avoid;break-inside:avoid;}'
-    +'.cot-clausula-mantener{page-break-inside:avoid;break-inside:avoid;page-break-after:avoid;break-after:avoid;}'
+    // ─── Cláusulas: CSS robusto para saltos de página ───
+    +'.cot-clausulas-wrap{display:block;}'
+    +'.cot-clausula{display:block;margin-bottom:18px;page-break-inside:avoid !important;break-inside:avoid !important;-webkit-column-break-inside:avoid;}'
+    +'.cot-clausula-titulo{font-size:9.5px;font-weight:800;color:#0B1F3A;text-transform:uppercase;letter-spacing:1px;margin-bottom:5px;page-break-after:avoid !important;break-after:avoid !important;}'
+    +'.cot-clausula-texto{font-size:11px;color:#4A5E7A;line-height:1.8;white-space:pre-wrap;orphans:3;widows:3;}'
+    +'.cot-clausula-salto{page-break-before:always !important;break-before:page !important;}'
     +'.cot-salto-aqui{page-break-before:always !important;break-before:page !important;display:block;height:0;}'
     +'@media print{'
     +'  @page{size:A4 portrait;margin:0;}'
     +'  html,body{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}'
-    +'  tr,.cond-item,.cot-clausula{page-break-inside:avoid !important;break-inside:avoid !important;}'
-    +'  .cot-clausula > div:first-child{page-break-after:avoid !important;break-after:avoid !important;}'
+    +'  tr,.cond-item{page-break-inside:avoid !important;break-inside:avoid !important;}'
+    +'  .cot-clausula{page-break-inside:avoid !important;break-inside:avoid !important;-webkit-region-break-inside:avoid;}'
+    +'  .cot-clausula-titulo{page-break-after:avoid !important;break-after:avoid !important;}'
+    +'  .cot-clausula-texto{orphans:3 !important; widows:3 !important;}'
     +'  h1,h2,h3,h4,h5,h6{page-break-after:avoid !important;break-after:avoid !important;}'
-    +'  p, .cot-clausula > div:last-child{orphans:3 !important; widows:3 !important;}'
     +'  img{page-break-inside:avoid !important; break-inside:avoid !important;}'
     +'  .pdf-footer-cot{page-break-inside:avoid !important;break-inside:avoid !important;}'
     +'}'
@@ -8954,49 +9021,63 @@ function generarPdfCotEnVentana(cot, winRef){
     +secCondiciones
 
     +'</div>'// /doc
-    // ═══ Script optimizador inteligente de saltos de página (Híbrido inteligente) ═══
+    // ═══ Optimizador inteligente de saltos (Híbrido v2 — usa offsetTop real) ═══
     +'<script>'
     +'(function(){'
-    +'  function optimizarSaltos(){'
-    +'    var pxPerMM = 96/25.4;'
-    +'    var pageHeightPx = 297 * pxPerMM;'
-    +'    var clausulas = document.querySelectorAll(".cot-clausula");'
-    +'    if(!clausulas.length) return;'
+    +'  var PAGE_PX = 1123;' // A4 a 96 DPI = 297mm × 3.78
+    +'  var EJECUTADO = false;'
+    +'  function dbg(msg){ try{console.log("[ROMSA PDF saltos] "+msg);}catch(e){} }'
+    +'  function optimizar(){'
+    +'    if(EJECUTADO) return; EJECUTADO = true;'
     +'    var page2 = document.querySelector(".page2");'
-    +'    if(!page2) return;'
-    +'    var headerH = 65; var paddingTop = 32; var footerH = 150; var marginSeguridad = 20;'
-    +'    var areaUtilPx = pageHeightPx - headerH - paddingTop - footerH - marginSeguridad;'
-    +'    var yActualEnPagina = 0; var paginaActual = 1;'
-    +'    clausulas.forEach(function(cl, idx){'
-    +'      var altura = cl.getBoundingClientRect().height;'
-    +'      var espacioRestante = areaUtilPx - yActualEnPagina;'
-    +'      var noCabeEntera = altura > espacioRestante;'
-    +'      var caeAlFinal = (yActualEnPagina + altura) > (areaUtilPx * 0.92);'
-    +'      var esUltima = (idx === clausulas.length - 1);'
-    +'      var siguiente = clausulas[idx+1];'
-    +'      var alturaSiguiente = siguiente ? siguiente.getBoundingClientRect().height : 0;'
-    +'      if(idx > 0 && noCabeEntera){'
-    +'        cl.style.pageBreakBefore = "always";'
-    +'        cl.style.breakBefore = "page";'
-    +'        yActualEnPagina = altura;'
-    +'        paginaActual++;'
-    +'      } else if(idx > 0 && caeAlFinal && !esUltima && (alturaSiguiente > espacioRestante - altura - 20)){'
-    +'        cl.style.pageBreakBefore = "always";'
-    +'        cl.style.breakBefore = "page";'
-    +'        yActualEnPagina = altura;'
-    +'        paginaActual++;'
-    +'      } else {'
-    +'        yActualEnPagina += altura + 18;'
+    +'    if(!page2){ dbg("no .page2 encontrada"); return; }'
+    +'    var page2Top = page2.offsetTop;'
+    +'    var clausulas = document.querySelectorAll(".cot-clausula");'
+    +'    if(!clausulas.length){ dbg("sin cláusulas"); return; }'
+    +'    dbg("page2 inicia en Y="+page2Top+"px, "+clausulas.length+" cláusulas");'
+    // Recolectar info de cada cláusula
+    +'    var infos = [];'
+    +'    clausulas.forEach(function(cl){'
+    +'      var rect = cl.getBoundingClientRect();'
+    +'      var topAbs = cl.offsetTop;' // relative to offsetParent
+    // Buscar topAbs absoluto del documento sumando offsetParents
+    +'      var el = cl, topReal = 0;'
+    +'      while(el){ topReal += el.offsetTop; el = el.offsetParent; }'
+    +'      infos.push({el:cl, top:topReal, alto:rect.height});'
+    +'    });'
+    // Determinar la página de cada una y si causa hueco grande
+    +'    var ajustes = 0;'
+    +'    infos.forEach(function(info, idx){'
+    +'      if(idx === 0) return;' // primera no se toca
+    +'      var inicioPagina = Math.floor(info.top / PAGE_PX) * PAGE_PX;' // donde empezaría la página A4 actual de esta cláusula
+    +'      var finPagina = inicioPagina + PAGE_PX;'
+    +'      var inicioRelativo = info.top - inicioPagina;'
+    +'      var finRelativo = inicioRelativo + info.alto;'
+    +'      var seParte = finRelativo > PAGE_PX - 180;' // si su fin pasa del 84% antes del footer (margen para footer ~180px)
+    +'      var prevInfo = infos[idx-1];'
+    +'      var prevPagina = Math.floor(prevInfo.top / PAGE_PX);'
+    +'      var miPagina = Math.floor(info.top / PAGE_PX);'
+    +'      var espacioDesperdiciadoPrev = (prevPagina === miPagina - 1) ? ((prevPagina+1)*PAGE_PX - (prevInfo.top + prevInfo.alto)) : 0;'
+    // Si la cláusula NO se parte pero hay desperdicio enorme en la página anterior, está OK (el navegador la pasó porque no cabía)
+    // Lo PROBLEMÁTICO es cuando una cláusula SÍ se parte
+    +'      if(seParte){'
+    +'        dbg("Cláusula "+(idx+1)+" se parte (y="+Math.round(info.top)+" alto="+Math.round(info.alto)+"). Forzando salto antes.");'
+    +'        info.el.style.pageBreakBefore = "always";'
+    +'        info.el.style.breakBefore = "page";'
+    +'        ajustes++;'
     +'      }'
     +'    });'
-    +'    console.log("[ROMSA PDF] Optimizador: "+clausulas.length+" cláusulas en "+paginaActual+" pág(s) de condiciones");'
+    +'    dbg("Ajustes hechos: "+ajustes);'
     +'  }'
-    +'  if(document.readyState === "complete" || document.readyState === "interactive"){'
-    +'    setTimeout(optimizarSaltos, 50);'
-    +'  } else {'
-    +'    document.addEventListener("DOMContentLoaded", function(){ setTimeout(optimizarSaltos, 50); });'
+    // Ejecutar varias veces para garantizar que corra después del layout
+    +'  function ejecutar(){'
+    +'    if(document.readyState === "complete"){ optimizar(); }'
+    +'    else { document.addEventListener("DOMContentLoaded", optimizar); }'
     +'  }'
-    +'  window.addEventListener("load", function(){ setTimeout(optimizarSaltos, 80); });'
+    +'  ejecutar();'
+    +'  window.addEventListener("load", function(){ EJECUTADO = false; optimizar(); });'
+    // Hook al evento beforeprint: última oportunidad de optimizar antes de imprimir
+    +'  window.addEventListener("beforeprint", function(){ EJECUTADO = false; optimizar(); });'
     +'})();'
     +'<\/script>'
     +'<\/body><\/html>';
@@ -9028,28 +9109,28 @@ function _inyectarPdf(htmlStr, title, winRef){
     fr.onload = function(){
       setTimeout(function(){
         try{ fr.contentWindow.focus(); fr.contentWindow.print(); }catch(e){}
-      }, 700);
+      }, 1500);
     };
   } else if(winRef){
     // Chrome/Firefox con ventana ya abierta (síncrona desde el click)
     winRef.document.open();
     winRef.document.write(htmlStr);
     winRef.document.close();
-    winRef.onload = function(){ setTimeout(function(){ winRef.print(); }, 800); };
+    winRef.onload = function(){ setTimeout(function(){ winRef.print(); }, 1500); };
     // Si onload no dispara (documento ya cargado), imprimir directamente
     setTimeout(function(){
       try{ if(winRef && !winRef.closed) winRef.print(); }catch(e){}
-    }, 1200);
+    }, 2000);
   } else {
     // Fallback: abrir nueva ventana
     var win2 = window.open('', '_blank');
     if(!win2){ showToast('⚠️ Permite ventanas emergentes'); return; }
     win2.document.write(htmlStr);
     win2.document.close();
-    win2.onload = function(){ setTimeout(function(){ win2.print(); }, 800); };
+    win2.onload = function(){ setTimeout(function(){ win2.print(); }, 1500); };
     setTimeout(function(){
       try{ if(win2 && !win2.closed) win2.print(); }catch(e){}
-    }, 1200);
+    }, 2000);
   }
 }
 
