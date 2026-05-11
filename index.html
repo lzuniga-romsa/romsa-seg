@@ -1778,20 +1778,35 @@ body.in-costeo #app{
 
       <!-- ════ SUB-PESTAÑA: CUADRILLAS ════ -->
       <div id="cot-subtab-cuadrillas" class="cot-subtab-content" style="display:none;padding:16px;">
-        <div style="text-align:center;padding:32px 16px;color:var(--tx2);">
-          <div style="font-size:48px;opacity:.4;margin-bottom:12px;">👥</div>
-          <div style="font-size:14px;font-weight:700;color:var(--navy);margin-bottom:6px;">Equipos / Cuadrillas</div>
-          <div style="font-size:11px;line-height:1.5;max-width:340px;margin:0 auto;">Crear cuadrillas con miembros y colores para asignarlas en el calendario.<br><br><strong style="color:#7C3AED;">Próximamente — Sesión 9</strong></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
+          <div>
+            <div style="font-size:9px;font-weight:700;color:#7C3AED;letter-spacing:1.5px;text-transform:uppercase;">Equipos de trabajo</div>
+            <div style="font-size:15px;font-weight:800;color:var(--navy);">👥 Cuadrillas</div>
+            <div style="font-size:10.5px;color:var(--tx2);margin-top:2px;">Equipos asignables a obras desde el calendario</div>
+          </div>
+          <button onclick="abrirEditorCuadrilla()" style="background:#7C3AED;border:none;color:#fff;font-size:12px;font-weight:700;padding:9px 14px;border-radius:8px;cursor:pointer;font-family:var(--font);">+ Nueva cuadrilla</button>
         </div>
+        <div id="cua-loading" style="text-align:center;padding:24px;color:var(--tx2);font-size:11px;">Cargando cuadrillas...</div>
+        <div id="cua-lista" style="display:none;"></div>
       </div>
 
       <!-- ════ SUB-PESTAÑA: CALENDARIO ════ -->
       <div id="cot-subtab-calendario" class="cot-subtab-content" style="display:none;padding:16px;">
-        <div style="text-align:center;padding:32px 16px;color:var(--tx2);">
-          <div style="font-size:48px;opacity:.4;margin-bottom:12px;">📅</div>
-          <div style="font-size:14px;font-weight:700;color:var(--navy);margin-bottom:6px;">Calendario de obras</div>
-          <div style="font-size:11px;line-height:1.5;max-width:340px;margin:0 auto;">Vista mes/semana con bloques de obra agendados, color por cuadrilla.<br><br><strong style="color:#7C3AED;">Próximamente — Sesión 6</strong></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
+          <div>
+            <div style="font-size:9px;font-weight:700;color:#7C3AED;letter-spacing:1.5px;text-transform:uppercase;">Programación</div>
+            <div style="font-size:15px;font-weight:800;color:var(--navy);">📅 Calendario de obras</div>
+            <div style="font-size:10.5px;color:var(--tx2);margin-top:2px;">Obras agendadas con cuadrilla asignada</div>
+          </div>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <button onclick="cambiarMesCalendario(-1)" style="background:var(--off);border:1px solid var(--g1);color:var(--navy);font-size:13px;font-weight:700;padding:7px 11px;border-radius:8px;cursor:pointer;font-family:var(--font);">‹</button>
+            <button onclick="calendarioHoy()" style="background:rgba(124,58,237,.08);border:1px solid rgba(124,58,237,.25);color:#7C3AED;font-size:11px;font-weight:700;padding:7px 11px;border-radius:8px;cursor:pointer;font-family:var(--font);">Hoy</button>
+            <button onclick="cambiarMesCalendario(1)" style="background:var(--off);border:1px solid var(--g1);color:var(--navy);font-size:13px;font-weight:700;padding:7px 11px;border-radius:8px;cursor:pointer;font-family:var(--font);">›</button>
+          </div>
         </div>
+        <div id="cal-titulo-mes" style="font-size:14px;font-weight:800;color:var(--navy);margin-bottom:10px;text-align:center;"></div>
+        <div id="cal-leyenda" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;"></div>
+        <div id="cal-grid" style="background:#fff;border:1px solid var(--g1);border-radius:10px;overflow:hidden;"></div>
       </div>
 
       <!-- FORMULARIO (igual que antes — usable desde cualquier sub-pestaña) -->
@@ -2376,6 +2391,65 @@ body.in-costeo #app{
         <div id="ce-vinculo-cot" style="display:none;margin-top:10px;padding:10px;background:#EDE9FE;border:1px solid #C4B5FD;border-left:3px solid #7C3AED;border-radius:8px;">
           <div style="font-size:8.5px;font-weight:700;color:#5B21B6;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:4px;">✓ Cotización vinculada</div>
           <div id="ce-vinculo-texto" style="font-size:11px;color:#4A5E7A;line-height:1.5;"></div>
+        </div>
+
+        <!-- ════ SECCIÓN: ANTICIPOS ════ -->
+        <div style="margin-top:14px;background:linear-gradient(135deg,#FFF7ED 0%,#FFEDD5 100%);border:1px solid #FDBA74;border-radius:10px;padding:12px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;margin-bottom:10px;">
+            <div>
+              <div style="font-size:9px;font-weight:700;color:#C2410C;letter-spacing:2px;text-transform:uppercase;">💰 Esquema de Anticipo</div>
+              <div style="font-size:10.5px;color:#9A3412;margin-top:1px;">Monto que recibirás al inicio del proyecto</div>
+            </div>
+          </div>
+
+          <!-- Porcentaje selector + monto -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
+            <div style="background:#fff;border:1px solid #FED7AA;border-radius:8px;padding:9px 10px;">
+              <div style="font-size:8px;font-weight:700;color:#9A3412;letter-spacing:1px;text-transform:uppercase;">Porcentaje</div>
+              <div style="display:flex;align-items:center;gap:4px;margin-top:4px;">
+                <input type="number" id="ce-anticipo-pct" min="0" max="100" step="5" value="60" oninput="ceCalcularAnticipo()" style="flex:1;font-size:18px;font-weight:900;color:#C2410C;border:none;outline:none;font-family:var(--font);width:60px;font-variant-numeric:tabular-nums;background:transparent;">
+                <span style="font-size:16px;font-weight:800;color:#C2410C;">%</span>
+              </div>
+            </div>
+            <div style="background:#fff;border:1px solid #FED7AA;border-radius:8px;padding:9px 10px;">
+              <div style="font-size:8px;font-weight:700;color:#9A3412;letter-spacing:1px;text-transform:uppercase;">Monto del Anticipo</div>
+              <div id="ce-anticipo-monto" style="font-size:18px;font-weight:900;color:#C2410C;margin-top:2px;font-variant-numeric:tabular-nums;">$0</div>
+            </div>
+          </div>
+
+          <!-- Presets rápidos -->
+          <div style="display:flex;gap:5px;margin-bottom:10px;flex-wrap:wrap;">
+            <button onclick="ceSetAnticipo(30)" style="flex:1;min-width:60px;background:#fff;border:1px solid #FED7AA;color:#C2410C;font-size:10px;font-weight:700;padding:6px 8px;border-radius:6px;cursor:pointer;font-family:var(--font);">30%</button>
+            <button onclick="ceSetAnticipo(40)" style="flex:1;min-width:60px;background:#fff;border:1px solid #FED7AA;color:#C2410C;font-size:10px;font-weight:700;padding:6px 8px;border-radius:6px;cursor:pointer;font-family:var(--font);">40%</button>
+            <button onclick="ceSetAnticipo(50)" style="flex:1;min-width:60px;background:#fff;border:1px solid #FED7AA;color:#C2410C;font-size:10px;font-weight:700;padding:6px 8px;border-radius:6px;cursor:pointer;font-family:var(--font);">50%</button>
+            <button onclick="ceSetAnticipo(60)" style="flex:1;min-width:60px;background:#F59E0B;border:1px solid #D97706;color:#fff;font-size:10px;font-weight:700;padding:6px 8px;border-radius:6px;cursor:pointer;font-family:var(--font);">60%</button>
+            <button onclick="ceSetAnticipo(70)" style="flex:1;min-width:60px;background:#fff;border:1px solid #FED7AA;color:#C2410C;font-size:10px;font-weight:700;padding:6px 8px;border-radius:6px;cursor:pointer;font-family:var(--font);">70%</button>
+            <button onclick="ceSetAnticipo(100)" style="flex:1;min-width:60px;background:#fff;border:1px solid #FED7AA;color:#C2410C;font-size:10px;font-weight:700;padding:6px 8px;border-radius:6px;cursor:pointer;font-family:var(--font);">100%</button>
+          </div>
+
+          <!-- Desglose -->
+          <div style="background:#fff;border-radius:8px;padding:10px;border:1px solid #FED7AA;">
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;font-size:11px;">
+              <span style="color:var(--tx2);">Precio total cotización</span>
+              <span id="ce-anticipo-total" style="font-weight:800;color:var(--navy);font-variant-numeric:tabular-nums;">$0</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;font-size:11px;border-top:1px dashed #FED7AA;margin-top:3px;">
+              <span style="color:var(--tx2);">↓ Anticipo (<span id="ce-anticipo-pct-display">60</span>%)</span>
+              <span id="ce-anticipo-monto-2" style="font-weight:800;color:#10B981;font-variant-numeric:tabular-nums;">$0</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;font-size:11px;border-top:1px dashed #FED7AA;margin-top:3px;">
+              <span style="color:var(--tx2);">Saldo a cobrar al final</span>
+              <span id="ce-anticipo-saldo" style="font-weight:800;color:#1E6FD9;font-variant-numeric:tabular-nums;">$0</span>
+            </div>
+          </div>
+
+          <!-- Análisis de cobertura de costos -->
+          <div id="ce-anticipo-analisis" style="margin-top:10px;padding:9px 10px;border-radius:7px;font-size:10px;line-height:1.5;display:none;"></div>
+
+          <!-- Nota opcional -->
+          <div style="margin-top:8px;">
+            <textarea id="ce-anticipo-nota" placeholder="Ej: Anticipo contra orden de compra, saldo contra entrega final de obra" oninput="ceGuardarAnticipoLocal()" style="width:100%;background:#fff;border:1px solid #FED7AA;border-radius:6px;font-family:var(--font);font-size:10.5px;padding:8px;color:var(--navy);outline:none;resize:vertical;min-height:50px;"></textarea>
+          </div>
         </div>
 
         <!-- Acciones finales -->
@@ -5481,15 +5555,29 @@ function _renderClausulasCustom(){
   if(!_cotClausulasCustom.length){ wrap.innerHTML = ""; return; }
   wrap.innerHTML = _cotClausulasCustom.map(function(c, i){
     var num = COT_CLAUSULAS_STD.filter(function(s){return !_cotClausulasEliminadas.has(s.id);}).length + i + 1;
-    return '<div class="fg" style="border-left:3px solid #1E6FD9;padding-left:10px;background:rgba(30,111,217,.03);border-radius:4px;">'
-      +'<div style="display:flex;align-items:center;justify-content:space-between;gap:6px;">'
+    var saltoActivo = !!c.saltoAntes;
+    return '<div class="fg" style="border-left:3px solid '+(saltoActivo?'#F59E0B':'#1E6FD9')+';padding-left:10px;background:rgba('+(saltoActivo?'245,158,11':'30,111,217')+',.03);border-radius:4px;">'
+      +(saltoActivo?'<div style="background:#FEF3C7;border:1px dashed #F59E0B;color:#92400E;font-size:9.5px;font-weight:700;padding:5px 8px;border-radius:5px;margin-bottom:6px;letter-spacing:.5px;">↕ Esta cláusula empieza en nueva página</div>':'')
+      +'<div style="display:flex;align-items:center;justify-content:space-between;gap:6px;flex-wrap:wrap;">'
         +'<label class="flabel" style="margin:0;">'+num+'. <input class="cot-clausula-custom-titulo" type="text" placeholder="Título (ej: Confidencialidad)" value="'+escapeHtml(c.titulo||"")+'" oninput="updClausulaCustom('+i+',\'titulo\',this.value)" style="background:transparent;border:none;border-bottom:1px dashed rgba(30,111,217,.4);font-size:11px;font-weight:700;color:var(--tx2);letter-spacing:1px;text-transform:uppercase;padding:2px 0;font-family:var(--font);width:260px;outline:none;"></label>'
-        +'<button onclick="eliminarClausulaCustom('+i+')" title="Eliminar esta cláusula" style="background:none;border:none;color:#EF4444;font-size:13px;cursor:pointer;padding:2px 6px;">✕</button>'
+        +'<div style="display:flex;gap:4px;align-items:center;">'
+          +'<button onclick="toggleSaltoClausula('+i+')" title="'+(saltoActivo?'Quitar salto de página':'Forzar salto de página antes de esta cláusula')+'" style="background:'+(saltoActivo?'#F59E0B':'rgba(245,158,11,.1)')+';border:1px solid '+(saltoActivo?'#F59E0B':'rgba(245,158,11,.3)')+';color:'+(saltoActivo?'#fff':'#92400E')+';font-size:11px;font-weight:700;cursor:pointer;padding:4px 9px;border-radius:5px;font-family:var(--font);">↕</button>'
+          +'<button onclick="eliminarClausulaCustom('+i+')" title="Eliminar esta cláusula" style="background:none;border:none;color:#EF4444;font-size:13px;cursor:pointer;padding:2px 6px;">✕</button>'
+        +'</div>'
       +'</div>'
       +'<textarea class="ftextarea" placeholder="Texto de la cláusula..." oninput="updClausulaCustom('+i+',\'texto\',this.value)" style="min-height:72px;margin-top:6px;">'+escapeHtml(c.texto||"")+'</textarea>'
     +'</div>';
   }).join("");
 }
+
+// Toggle salto de página antes de una cláusula custom
+function toggleSaltoClausula(i){
+  if(!_cotClausulasCustom[i]) return;
+  _cotClausulasCustom[i].saltoAntes = !_cotClausulasCustom[i].saltoAntes;
+  _renderClausulasCustom();
+  if(typeof showToast==="function") showToast(_cotClausulasCustom[i].saltoAntes ? "↕ Salto agregado" : "Salto removido");
+}
+window.toggleSaltoClausula = toggleSaltoClausula;
 
 // ═══════════════════════════════════════════════════════════════
 // DASHBOARD COTIZACIONES (Sesión 2B)
@@ -7066,8 +7154,351 @@ window.onClienteCosteoIdChange = onClienteCosteoIdChange;
 window._llenarDropdownClientes = _llenarDropdownClientes;
 
 // ═══════════════════════════════════════════════════════════════
-// LISTA DE COTIZACIONES — CON FILTROS + BUSCADOR (Sesión 3)
+// CUADRILLAS — CRUD funcional (Sesión 9)
 // ═══════════════════════════════════════════════════════════════
+
+let _cuadrillas = [];
+let _cuadrillasCargadas = false;
+let _cuaEditId = null;
+let _cuaMiembrosTemp = [];
+
+const COLORES_CUADRILLA = [
+  {hex:"#7C3AED", n:"Púrpura"}, {hex:"#1E6FD9", n:"Azul"},
+  {hex:"#10B981", n:"Verde"}, {hex:"#F59E0B", n:"Naranja"},
+  {hex:"#EF4444", n:"Rojo"}, {hex:"#EC4899", n:"Rosa"},
+  {hex:"#0EA5E9", n:"Cielo"}, {hex:"#8B5CF6", n:"Violeta"},
+  {hex:"#14B8A6", n:"Turquesa"}, {hex:"#F97316", n:"Naranja oscuro"}
+];
+
+async function cargarCuadrillas(forzar){
+  var loading = document.getElementById("cua-loading");
+  var lista = document.getElementById("cua-lista");
+  if(_cuadrillasCargadas && !forzar){
+    if(loading) loading.style.display = "none";
+    if(lista) lista.style.display = "block";
+    renderCuadrillas();
+    return;
+  }
+  if(loading) loading.style.display = "block";
+  if(lista) lista.style.display = "none";
+  try {
+    var snap = await db.collection("cotizacion_cuadrillas").orderBy("nombre").get();
+    _cuadrillas = snap.docs.map(function(d){
+      var data = d.data();
+      data.id = d.id;
+      return data;
+    });
+    _cuadrillasCargadas = true;
+    if(loading) loading.style.display = "none";
+    if(lista) lista.style.display = "block";
+    renderCuadrillas();
+  } catch(err) {
+    console.error("[ROMSA] Error cargando cuadrillas:", err);
+    if(loading) loading.innerHTML = '<div style="color:#EF4444;">⚠️ Error: '+err.message+'</div>';
+  }
+}
+
+function renderCuadrillas(){
+  var wrap = document.getElementById("cua-lista");
+  if(!wrap) return;
+  if(!_cuadrillas.length){
+    wrap.innerHTML = '<div class="empty"><div class="empty-ico">👥</div><div class="empty-ttl">Sin cuadrillas</div><div class="empty-sub">Crea tu primera cuadrilla para asignar a obras</div></div>';
+    return;
+  }
+  var ordenadas = _cuadrillas.slice().sort(function(a,b){return (a.nombre||"").localeCompare(b.nombre||"");});
+  var obrasAsignadas = {};
+  cotizaciones.forEach(function(c){
+    if(c.cuadrillaId){
+      if(!obrasAsignadas[c.cuadrillaId]) obrasAsignadas[c.cuadrillaId] = [];
+      obrasAsignadas[c.cuadrillaId].push(c);
+    }
+  });
+  wrap.innerHTML = ordenadas.map(function(cu){
+    var miembros = Array.isArray(cu.miembros) ? cu.miembros : [];
+    var inactivo = cu.activo === false;
+    var nObras = (obrasAsignadas[cu.id] || []).length;
+    var color = cu.color || "#7C3AED";
+    return '<div class="card" style="padding:14px;margin-bottom:10px;border-left:5px solid '+color+';'+(inactivo?'opacity:.55;':'')+'">'
+      +'<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap;">'
+        +'<div style="flex:1;min-width:200px;">'
+          +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap;">'
+            +'<div style="width:14px;height:14px;border-radius:4px;background:'+color+';"></div>'
+            +'<div style="font-size:14px;font-weight:800;color:var(--navy);">'+escapeHtml(cu.nombre||"Sin nombre")+'</div>'
+            +(inactivo?'<span style="font-size:8.5px;background:#FEE2E2;color:#991B1B;padding:1px 5px;border-radius:3px;font-weight:700;">INACTIVA</span>':'')
+          +'</div>'
+          +(cu.lider?'<div style="font-size:11px;color:var(--tx2);margin-bottom:4px;">👤 Líder: <strong>'+escapeHtml(cu.lider)+'</strong></div>':'')
+          +'<div style="font-size:10.5px;color:var(--tx2);">'+miembros.length+' miembro'+(miembros.length===1?"":"s")+(nObras?' · '+nObras+' obra'+(nObras===1?"":"s")+' asignada'+(nObras===1?"":"s"):"")+'</div>'
+          +(miembros.length?'<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;">'
+            +miembros.slice(0,5).map(function(m){return '<span class="badge" style="background:rgba(124,58,237,.06);color:#7C3AED;border:1px solid rgba(124,58,237,.2);font-size:9px;">'+escapeHtml(m)+'</span>';}).join("")
+            +(miembros.length>5?'<span class="badge" style="background:var(--off);color:var(--tx2);font-size:9px;">+'+(miembros.length-5)+' más</span>':'')
+          +'</div>':'')
+        +'</div>'
+        +'<div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0;">'
+          +'<button onclick="abrirEditorCuadrilla(\''+cu.id+'\')" title="Editar" style="background:rgba(30,111,217,.08);border:1px solid rgba(30,111,217,.2);color:#1E6FD9;font-size:11px;cursor:pointer;width:30px;height:30px;border-radius:6px;">✏️</button>'
+          +'<button onclick="toggleActivoCuadrilla(\''+cu.id+'\')" title="'+(inactivo?"Activar":"Desactivar")+'" style="background:'+(inactivo?'rgba(16,185,129,.08)':'rgba(156,163,175,.1)')+';border:1px solid '+(inactivo?'rgba(16,185,129,.2)':'rgba(156,163,175,.25)')+';color:'+(inactivo?'#059669':'#6B7280')+';font-size:11px;cursor:pointer;width:30px;height:30px;border-radius:6px;">'+(inactivo?'▶':'⏸')+'</button>'
+          +'<button onclick="eliminarCuadrilla(\''+cu.id+'\',\''+escapeHtml(cu.nombre||"").replace(/\'/g,"\\\\\'")+'\')" title="Eliminar" style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);color:#EF4444;font-size:11px;cursor:pointer;width:30px;height:30px;border-radius:6px;">🗑</button>'
+        +'</div>'
+      +'</div>'
+    +'</div>';
+  }).join("");
+}
+
+function abrirEditorCuadrilla(id){
+  _cuaEditId = id || null;
+  var cu = id ? _cuadrillas.find(function(x){return x.id===id;}) : null;
+  _cuaMiembrosTemp = cu && Array.isArray(cu.miembros) ? cu.miembros.slice() : [];
+  var ov = document.createElement("div");
+  ov.id = "modal-cuadrilla";
+  ov.style.cssText = "position:fixed;inset:0;background:rgba(11,31,58,.6);z-index:600;display:flex;align-items:flex-end;justify-content:center;";
+  ov.onclick = function(e){ if(e.target===ov) cerrarEditorCuadrilla(); };
+  var colorActual = cu?(cu.color||"#7C3AED"):"#7C3AED";
+  var coloresHtml = COLORES_CUADRILLA.map(function(c){
+    var sel = c.hex === colorActual;
+    return '<button type="button" onclick="seleccionarColorCuadrilla(\''+c.hex+'\')" data-color="'+c.hex+'" title="'+c.n+'" style="width:36px;height:36px;border-radius:8px;background:'+c.hex+';cursor:pointer;border:'+(sel?'3px solid #0B1F3A':'2px solid transparent')+';position:relative;">'
+      +(sel?'<span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:900;">✓</span>':'')
+    +'</button>';
+  }).join("");
+  ov.innerHTML = '<div style="background:#fff;width:100%;max-width:600px;max-height:92vh;border-radius:18px 18px 0 0;overflow-y:auto;display:flex;flex-direction:column;">'
+    +'<div style="padding:14px 18px;border-bottom:1px solid var(--g1);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#fff;z-index:1;">'
+      +'<div><div style="font-size:9px;color:#7C3AED;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;">Cuadrilla</div>'
+      +'<div style="font-size:15px;font-weight:800;color:var(--navy);">👥 '+(id?'Editar cuadrilla':'Nueva cuadrilla')+'</div></div>'
+      +'<button onclick="cerrarEditorCuadrilla()" style="background:none;border:none;font-size:22px;color:var(--tx2);cursor:pointer;">×</button>'
+    +'</div>'
+    +'<div style="padding:16px;flex:1;">'
+      +'<div class="fg"><label class="flabel">Nombre de la cuadrilla <span style="color:#EF4444;">*</span></label>'
+        +'<input class="finput" id="cua-nombre" placeholder="Ej: Cuadrilla A · Pisos epóxicos" value="'+(cu?escapeHtml(cu.nombre||"").replace(/"/g,"&quot;"):"")+'" style="font-weight:700;"></div>'
+      +'<div class="fg"><label class="flabel">Líder de cuadrilla (opcional)</label>'
+        +'<input class="finput" id="cua-lider" placeholder="Ej: Juan Pérez" value="'+(cu?escapeHtml(cu.lider||"").replace(/"/g,"&quot;"):"")+'"></div>'
+      +'<div class="fg"><label class="flabel">Color identificador</label>'
+        +'<div style="display:flex;gap:8px;flex-wrap:wrap;padding:8px 0;" id="cua-colores">'+coloresHtml+'</div>'
+        +'<input type="hidden" id="cua-color" value="'+colorActual+'"></div>'
+      +'<div style="display:flex;align-items:center;justify-content:space-between;margin:14px 0 8px;">'
+        +'<div style="font-size:9.5px;font-weight:700;color:#7C3AED;letter-spacing:1.5px;text-transform:uppercase;">👷 Miembros</div>'
+        +'<button onclick="_cuaAddMiembro()" style="background:rgba(124,58,237,.08);border:1px solid rgba(124,58,237,.2);color:#7C3AED;font-size:10px;font-weight:700;padding:5px 10px;border-radius:6px;cursor:pointer;font-family:var(--font);">+ Miembro</button>'
+      +'</div>'
+      +'<div id="cua-miembros-wrap"></div>'
+      +'<div style="background:rgba(124,58,237,.04);border:1px solid rgba(124,58,237,.15);border-radius:8px;padding:10px;display:flex;align-items:center;gap:10px;margin-top:14px;">'
+        +'<input type="checkbox" id="cua-activa" '+(cu && cu.activo === false ? '' : 'checked')+' style="width:18px;height:18px;cursor:pointer;">'
+        +'<label for="cua-activa" style="font-size:11px;color:var(--navy);cursor:pointer;flex:1;"><strong>Cuadrilla activa</strong> — disponible para asignar a obras</label></div>'
+    +'</div>'
+    +'<div style="padding:12px 18px;border-top:1px solid var(--g1);display:flex;gap:8px;background:#fff;position:sticky;bottom:0;">'
+      +'<button onclick="cerrarEditorCuadrilla()" style="flex:1;background:var(--off);border:1px solid var(--g1);color:var(--navy);font-size:12px;font-weight:700;padding:11px;border-radius:8px;cursor:pointer;font-family:var(--font);">Cancelar</button>'
+      +'<button onclick="guardarCuadrilla()" style="flex:2;background:#7C3AED;border:none;color:#fff;font-size:12px;font-weight:700;padding:11px;border-radius:8px;cursor:pointer;font-family:var(--font);">'+(id?'✓ Actualizar':'✓ Crear cuadrilla')+'</button>'
+    +'</div>'
+  +'</div>';
+  document.body.appendChild(ov);
+  _cuaRenderMiembros();
+}
+
+function seleccionarColorCuadrilla(hex){
+  document.getElementById("cua-color").value = hex;
+  document.querySelectorAll("#cua-colores button").forEach(function(b){
+    var sel = b.dataset.color === hex;
+    b.style.border = sel ? "3px solid #0B1F3A" : "2px solid transparent";
+    b.innerHTML = sel ? '<span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:900;">✓</span>' : '';
+  });
+}
+
+function _cuaRenderMiembros(){
+  var wrap = document.getElementById("cua-miembros-wrap");
+  if(!wrap) return;
+  if(!_cuaMiembrosTemp.length){
+    wrap.innerHTML = '<div style="text-align:center;padding:14px;font-size:10.5px;color:var(--tx2);background:var(--off);border-radius:8px;border:1px dashed var(--g1);">Sin miembros. Toca "+ Miembro" para agregar.</div>';
+    return;
+  }
+  wrap.innerHTML = _cuaMiembrosTemp.map(function(m, i){
+    return '<div style="display:flex;align-items:center;gap:6px;margin-bottom:5px;">'
+      +'<input type="text" placeholder="Nombre del miembro" value="'+escapeHtml(m||"").replace(/"/g,"&quot;")+'" oninput="_cuaUpdMiembro('+i+',this.value)" style="flex:1;padding:8px 10px;border:1px solid var(--g1);border-radius:6px;font-family:var(--font);font-size:11.5px;background:#fff;">'
+      +'<button onclick="_cuaEliminarMiembro('+i+')" style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);color:#EF4444;font-size:11px;cursor:pointer;width:30px;height:30px;border-radius:6px;flex-shrink:0;">✕</button>'
+    +'</div>';
+  }).join("");
+}
+
+function _cuaUpdMiembro(i, val){ if(_cuaMiembrosTemp[i] !== undefined) _cuaMiembrosTemp[i] = val; }
+function _cuaAddMiembro(){ _cuaMiembrosTemp.push(""); _cuaRenderMiembros(); }
+function _cuaEliminarMiembro(i){ _cuaMiembrosTemp.splice(i, 1); _cuaRenderMiembros(); }
+
+function cerrarEditorCuadrilla(){
+  var m = document.getElementById("modal-cuadrilla");
+  if(m) m.remove();
+  _cuaEditId = null;
+  _cuaMiembrosTemp = [];
+}
+
+async function guardarCuadrilla(){
+  var nombre = (document.getElementById("cua-nombre")?.value || "").trim();
+  if(!nombre){ alert("⚠️ Falta el nombre de la cuadrilla"); return; }
+  var data = {
+    nombre: nombre,
+    lider: (document.getElementById("cua-lider")?.value || "").trim(),
+    color: document.getElementById("cua-color")?.value || "#7C3AED",
+    miembros: _cuaMiembrosTemp.filter(function(m){return (m||"").trim();}).map(function(m){return m.trim();}),
+    activo: document.getElementById("cua-activa")?.checked !== false,
+    ts: Date.now()
+  };
+  try {
+    var ref = db.collection("cotizacion_cuadrillas");
+    if(_cuaEditId){
+      await ref.doc(_cuaEditId).set(data, {merge:true});
+      var idx = _cuadrillas.findIndex(function(x){return x.id===_cuaEditId;});
+      if(idx>=0) _cuadrillas[idx] = Object.assign({}, _cuadrillas[idx], data);
+      showToast("✓ Cuadrilla actualizada");
+    } else {
+      var docRef = await ref.add(data);
+      data.id = docRef.id;
+      _cuadrillas.push(data);
+      showToast("✓ Cuadrilla creada");
+    }
+    cerrarEditorCuadrilla();
+    renderCuadrillas();
+  } catch(err) {
+    console.error("[ROMSA] Error:", err);
+    alert("Error: "+err.message);
+  }
+}
+
+async function toggleActivoCuadrilla(id){
+  var cu = _cuadrillas.find(function(x){return x.id===id;});
+  if(!cu) return;
+  var nuevo = cu.activo === false ? true : false;
+  try {
+    await db.collection("cotizacion_cuadrillas").doc(id).update({activo:nuevo});
+    cu.activo = nuevo;
+    renderCuadrillas();
+    showToast(nuevo?"✓ Cuadrilla activada":"Cuadrilla desactivada");
+  } catch(err){ alert("Error: "+err.message); }
+}
+
+async function eliminarCuadrilla(id, nombre){
+  if(!confirm('¿Eliminar la cuadrilla "'+nombre+'"?\n\nLas obras asignadas a ella perderán la asignación pero NO se eliminan.')) return;
+  try {
+    await db.collection("cotizacion_cuadrillas").doc(id).delete();
+    _cuadrillas = _cuadrillas.filter(function(c){return c.id !== id;});
+    renderCuadrillas();
+    showToast("Cuadrilla eliminada");
+  } catch(err){ alert("Error: "+err.message); }
+}
+
+window.cargarCuadrillas = cargarCuadrillas;
+window.abrirEditorCuadrilla = abrirEditorCuadrilla;
+window.cerrarEditorCuadrilla = cerrarEditorCuadrilla;
+window.guardarCuadrilla = guardarCuadrilla;
+window.toggleActivoCuadrilla = toggleActivoCuadrilla;
+window.eliminarCuadrilla = eliminarCuadrilla;
+window.seleccionarColorCuadrilla = seleccionarColorCuadrilla;
+window._cuaUpdMiembro = _cuaUpdMiembro;
+window._cuaAddMiembro = _cuaAddMiembro;
+window._cuaEliminarMiembro = _cuaEliminarMiembro;
+
+// ═══════════════════════════════════════════════════════════════
+// CALENDARIO DE OBRAS (Sesión 10)
+// ═══════════════════════════════════════════════════════════════
+
+let _calMes = (function(){
+  var d = new Date();
+  return {anio: d.getFullYear(), mes: d.getMonth()};
+})();
+
+function calendarioHoy(){
+  var d = new Date();
+  _calMes = {anio: d.getFullYear(), mes: d.getMonth()};
+  renderCalendario();
+}
+
+function cambiarMesCalendario(delta){
+  var m = _calMes.mes + delta;
+  var a = _calMes.anio;
+  if(m < 0){ m = 11; a--; }
+  if(m > 11){ m = 0; a++; }
+  _calMes = {anio: a, mes: m};
+  renderCalendario();
+}
+
+function renderCalendario(){
+  if(!_cuadrillasCargadas && typeof cargarCuadrillas === "function"){
+    cargarCuadrillas().then(function(){ renderCalendario(); });
+    return;
+  }
+  var titulo = document.getElementById("cal-titulo-mes");
+  var leyenda = document.getElementById("cal-leyenda");
+  var grid = document.getElementById("cal-grid");
+  if(!titulo || !grid) return;
+  var meses = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+  titulo.textContent = meses[_calMes.mes] + " " + _calMes.anio;
+  var primerDiaMes = new Date(_calMes.anio, _calMes.mes, 1);
+  var ultimoDiaMes = new Date(_calMes.anio, _calMes.mes+1, 0);
+  var firstDay = primerDiaMes.getDay();
+  var diasEnMes = ultimoDiaMes.getDate();
+  var obras = cotizaciones.filter(function(c){
+    var estados = ["aceptada","en_obra","cerrada"];
+    if(estados.indexOf(c.estado) < 0) return false;
+    if(!c.fechaInicioEst && !c.fechaInicioReal) return false;
+    return true;
+  }).map(function(c){
+    var inicio = c.fechaInicioReal || c.fechaInicioEst;
+    var fin = c.fechaFinReal || c.fechaFinEst || inicio;
+    return {
+      cot: c,
+      inicio: new Date(inicio + "T12:00:00"),
+      fin: new Date(fin + "T12:00:00"),
+      cuadrilla: _cuadrillas.find(function(cu){return cu.id === c.cuadrillaId;})
+    };
+  });
+  var cuadsUsadas = {};
+  obras.forEach(function(o){
+    if(o.fin >= primerDiaMes && o.inicio <= ultimoDiaMes){
+      if(o.cuadrilla){
+        cuadsUsadas[o.cuadrilla.id] = o.cuadrilla;
+      } else {
+        cuadsUsadas["__sin__"] = {nombre:"Sin cuadrilla asignada", color:"#9CA3AF"};
+      }
+    }
+  });
+  if(leyenda){
+    var keys = Object.keys(cuadsUsadas);
+    if(keys.length){
+      leyenda.innerHTML = keys.map(function(k){
+        var c = cuadsUsadas[k];
+        return '<div style="display:flex;align-items:center;gap:5px;font-size:10px;color:var(--tx2);"><div style="width:12px;height:12px;border-radius:3px;background:'+(c.color||"#9CA3AF")+';"></div>'+escapeHtml(c.nombre||"")+'</div>';
+      }).join("");
+    } else {
+      leyenda.innerHTML = '<div style="font-size:10px;color:var(--tx2);font-style:italic;">No hay obras programadas en este mes</div>';
+    }
+  }
+  var diasSem = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
+  var html = '<div style="display:grid;grid-template-columns:repeat(7, 1fr);background:var(--off);">'
+    + diasSem.map(function(d){return '<div style="padding:8px 4px;text-align:center;font-size:9px;font-weight:700;color:var(--tx2);letter-spacing:1.5px;text-transform:uppercase;border-right:1px solid var(--g1);border-bottom:1px solid var(--g1);">'+d+'</div>';}).join("")
+  + '</div>';
+  html += '<div style="display:grid;grid-template-columns:repeat(7, 1fr);">';
+  for(var i=0; i<firstDay; i++){
+    html += '<div style="min-height:88px;background:#FAFBFD;border-right:1px solid var(--g1);border-bottom:1px solid var(--g1);"></div>';
+  }
+  var hoy = new Date();
+  var hoyStr = hoy.toISOString().slice(0,10);
+  for(var d=1; d<=diasEnMes; d++){
+    var fecha = new Date(_calMes.anio, _calMes.mes, d, 12, 0, 0);
+    var fechaStr = _calMes.anio + "-" + String(_calMes.mes+1).padStart(2,"0") + "-" + String(d).padStart(2,"0");
+    var esHoy = fechaStr === hoyStr;
+    var obrasDelDia = obras.filter(function(o){
+      return o.inicio <= fecha && o.fin >= fecha;
+    });
+    html += '<div style="min-height:88px;padding:4px;border-right:1px solid var(--g1);border-bottom:1px solid var(--g1);background:'+(esHoy?'rgba(124,58,237,.04)':'#fff')+';position:relative;">'
+      +'<div style="font-size:11px;font-weight:'+(esHoy?'800':'700')+';color:'+(esHoy?'#7C3AED':'var(--navy)')+';margin-bottom:3px;">'+d+(esHoy?' <span style="font-size:7px;background:#7C3AED;color:#fff;padding:1px 5px;border-radius:3px;font-weight:700;letter-spacing:1px;vertical-align:middle;">HOY</span>':'')+'</div>'
+      +obrasDelDia.slice(0,3).map(function(o){
+        var color = o.cuadrilla?o.cuadrilla.color:"#9CA3AF";
+        var label = (o.cot.empresa || "Obra").substring(0, 18);
+        return '<div onclick="event.stopPropagation();abrirCot(\''+o.cot.id+'\')" style="cursor:pointer;background:'+color+';color:#fff;font-size:8.5px;font-weight:700;padding:3px 5px;border-radius:3px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="'+escapeHtml(o.cot.empresa||"")+' — '+escapeHtml(o.cot.folio||"")+'">'+escapeHtml(label)+'</div>';
+      }).join("")
+      +(obrasDelDia.length>3?'<div style="font-size:8px;color:var(--tx2);font-weight:700;">+'+(obrasDelDia.length-3)+' más</div>':'')
+    +'</div>';
+  }
+  html += '</div>';
+  grid.innerHTML = html;
+}
+
+window.cambiarMesCalendario = cambiarMesCalendario;
+window.calendarioHoy = calendarioHoy;
+window.renderCalendario = renderCalendario;
 
 let _cotFiltroActivo = "todas";
 let _cotBusqueda = "";
@@ -7492,7 +7923,7 @@ function abrirCot(id){
 
   // Restaurar cláusulas eliminadas y personalizadas
   _cotClausulasEliminadas = new Set(Array.isArray(c.clausulasEliminadas) ? c.clausulasEliminadas : []);
-  _cotClausulasCustom = Array.isArray(c.clausulasCustom) ? c.clausulasCustom.map(function(x){return {titulo:x.titulo||"", texto:x.texto||""};}) : [];
+  _cotClausulasCustom = Array.isArray(c.clausulasCustom) ? c.clausulasCustom.map(function(x){return {titulo:x.titulo||"", texto:x.texto||"", saltoAntes: !!x.saltoAntes};}) : [];
   // Mostrar/ocultar cláusulas estándar según lista de eliminadas
   COT_CLAUSULAS_STD.forEach(function(std){
     var fg = document.getElementById("fg-"+std.id);
@@ -8080,7 +8511,7 @@ async function guardarCot(){
     clausulasCustom: (_cotClausulasCustom||[]).filter(function(c){
       return (c.titulo && c.titulo.trim()) || (c.texto && c.texto.trim());
     }).map(function(c){
-      return {titulo: (c.titulo||"").trim(), texto:(c.texto||"").trim()};
+      return {titulo: (c.titulo||"").trim(), texto:(c.texto||"").trim(), saltoAntes: !!c.saltoAntes};
     }),
     partidas:_cotPartidas.map(function(p){
       return {
@@ -8278,7 +8709,7 @@ function generarPdfCotEnVentana(cot, winRef){
     var t = (cc.titulo||"").trim();
     var v = (cc.texto ||"").trim();
     if(!v) return;  // sin texto, ignorar
-    condsRaw.push({id:"custom", t: t || "Cláusula adicional", v: v});
+    condsRaw.push({id:"custom", t: t || "Cláusula adicional", v: v, saltoAntes: !!cc.saltoAntes});
   });
 
   // Siempre agregar al final la vigencia de la propuesta
@@ -8286,11 +8717,12 @@ function generarPdfCotEnVentana(cot, winRef){
 
   // Renumerar dinámicamente (1., 2., 3., etc.)
   var conds = condsRaw.map(function(c, i){
-    return {n:(i+1)+'. '+c.t, v:c.v};
+    return {n:(i+1)+'. '+c.t, v:c.v, saltoAntes: c.saltoAntes};
   });
 
   var condsHtml=conds.map(function(c){
-    return '<div style="margin-bottom:18px;page-break-inside:avoid;">'
+    var brBefore = c.saltoAntes ? 'page-break-before:always !important;break-before:page !important;' : '';
+    return '<div class="cot-clausula" style="margin-bottom:18px;page-break-inside:avoid;break-inside:avoid;'+brBefore+'">'
       +'<div style="font-size:9.5px;font-weight:800;color:#0B1F3A;text-transform:uppercase;letter-spacing:1px;margin-bottom:5px;">'+c.n+'</div>'
       +'<div style="font-size:11px;color:#4A5E7A;line-height:1.8;white-space:pre-wrap;">'+c.v+'</div>'
     +'</div>';
@@ -8399,10 +8831,18 @@ function generarPdfCotEnVentana(cot, winRef){
     +'.page1{min-height:100vh;display:flex;flex-direction:column;}'
     +'.page2{min-height:100vh;display:flex;flex-direction:column;}'
     +'.page-break{page-break-before:always;break-before:page;}'
+    +'.cot-clausula{page-break-inside:avoid;break-inside:avoid;}'
+    +'.cot-clausula-mantener{page-break-inside:avoid;break-inside:avoid;page-break-after:avoid;break-after:avoid;}'
+    +'.cot-salto-aqui{page-break-before:always !important;break-before:page !important;display:block;height:0;}'
     +'@media print{'
     +'  @page{size:A4 portrait;margin:0;}'
     +'  html,body{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}'
-    +'  tr,.cond-item{page-break-inside:avoid;}'
+    +'  tr,.cond-item,.cot-clausula{page-break-inside:avoid !important;break-inside:avoid !important;}'
+    +'  .cot-clausula > div:first-child{page-break-after:avoid !important;break-after:avoid !important;}'
+    +'  h1,h2,h3,h4,h5,h6{page-break-after:avoid !important;break-after:avoid !important;}'
+    +'  p, .cot-clausula > div:last-child{orphans:3 !important; widows:3 !important;}'
+    +'  img{page-break-inside:avoid !important; break-inside:avoid !important;}'
+    +'  .pdf-footer-cot{page-break-inside:avoid !important;break-inside:avoid !important;}'
     +'}'
     +'</style>'
     +'</head><body><div class="doc">'
@@ -8514,6 +8954,51 @@ function generarPdfCotEnVentana(cot, winRef){
     +secCondiciones
 
     +'</div>'// /doc
+    // ═══ Script optimizador inteligente de saltos de página (Híbrido inteligente) ═══
+    +'<script>'
+    +'(function(){'
+    +'  function optimizarSaltos(){'
+    +'    var pxPerMM = 96/25.4;'
+    +'    var pageHeightPx = 297 * pxPerMM;'
+    +'    var clausulas = document.querySelectorAll(".cot-clausula");'
+    +'    if(!clausulas.length) return;'
+    +'    var page2 = document.querySelector(".page2");'
+    +'    if(!page2) return;'
+    +'    var headerH = 65; var paddingTop = 32; var footerH = 150; var marginSeguridad = 20;'
+    +'    var areaUtilPx = pageHeightPx - headerH - paddingTop - footerH - marginSeguridad;'
+    +'    var yActualEnPagina = 0; var paginaActual = 1;'
+    +'    clausulas.forEach(function(cl, idx){'
+    +'      var altura = cl.getBoundingClientRect().height;'
+    +'      var espacioRestante = areaUtilPx - yActualEnPagina;'
+    +'      var noCabeEntera = altura > espacioRestante;'
+    +'      var caeAlFinal = (yActualEnPagina + altura) > (areaUtilPx * 0.92);'
+    +'      var esUltima = (idx === clausulas.length - 1);'
+    +'      var siguiente = clausulas[idx+1];'
+    +'      var alturaSiguiente = siguiente ? siguiente.getBoundingClientRect().height : 0;'
+    +'      if(idx > 0 && noCabeEntera){'
+    +'        cl.style.pageBreakBefore = "always";'
+    +'        cl.style.breakBefore = "page";'
+    +'        yActualEnPagina = altura;'
+    +'        paginaActual++;'
+    +'      } else if(idx > 0 && caeAlFinal && !esUltima && (alturaSiguiente > espacioRestante - altura - 20)){'
+    +'        cl.style.pageBreakBefore = "always";'
+    +'        cl.style.breakBefore = "page";'
+    +'        yActualEnPagina = altura;'
+    +'        paginaActual++;'
+    +'      } else {'
+    +'        yActualEnPagina += altura + 18;'
+    +'      }'
+    +'    });'
+    +'    console.log("[ROMSA PDF] Optimizador: "+clausulas.length+" cláusulas en "+paginaActual+" pág(s) de condiciones");'
+    +'  }'
+    +'  if(document.readyState === "complete" || document.readyState === "interactive"){'
+    +'    setTimeout(optimizarSaltos, 50);'
+    +'  } else {'
+    +'    document.addEventListener("DOMContentLoaded", function(){ setTimeout(optimizarSaltos, 50); });'
+    +'  }'
+    +'  window.addEventListener("load", function(){ setTimeout(optimizarSaltos, 80); });'
+    +'})();'
+    +'<\/script>'
     +'<\/body><\/html>';
   _inyectarPdf(_pdfHtml, title, winRef);
 }
@@ -8550,21 +9035,21 @@ function _inyectarPdf(htmlStr, title, winRef){
     winRef.document.open();
     winRef.document.write(htmlStr);
     winRef.document.close();
-    winRef.onload = function(){ setTimeout(function(){ winRef.print(); }, 400); };
+    winRef.onload = function(){ setTimeout(function(){ winRef.print(); }, 800); };
     // Si onload no dispara (documento ya cargado), imprimir directamente
     setTimeout(function(){
       try{ if(winRef && !winRef.closed) winRef.print(); }catch(e){}
-    }, 800);
+    }, 1200);
   } else {
     // Fallback: abrir nueva ventana
     var win2 = window.open('', '_blank');
     if(!win2){ showToast('⚠️ Permite ventanas emergentes'); return; }
     win2.document.write(htmlStr);
     win2.document.close();
-    win2.onload = function(){ setTimeout(function(){ win2.print(); }, 400); };
+    win2.onload = function(){ setTimeout(function(){ win2.print(); }, 800); };
     setTimeout(function(){
       try{ if(win2 && !win2.closed) win2.print(); }catch(e){}
-    }, 800);
+    }, 1200);
   }
 }
 
@@ -8703,7 +9188,9 @@ async function descargarCotPPT(cot){
 
   // ── Construir PPT ──
   var pptx = new PptxGenJS();
-  pptx.layout = "LAYOUT_WIDE"; // 13.333 x 7.5 inches (16:9)
+  // Layout Carta vertical (mismo formato que el PDF)
+  pptx.defineLayout({name:"CARTA_VERTICAL", width:8.5, height:11});
+  pptx.layout = "CARTA_VERTICAL";
   pptx.title = cot.folio || "Cotización ROMSA";
   pptx.author = "ROMSA Industrial";
   pptx.company = "ROMSA Industrial";
@@ -8749,77 +9236,76 @@ async function descargarCotPPT(cot){
   if(typeof showToast === "function") showToast("✓ PowerPoint descargado");
 }
 
-// ─── SLIDE 1: Hero + datos + tabla + totales ───
+// ─── SLIDE 1: Hero + datos + tabla + totales (CARTA VERTICAL 8.5 x 11) ───
 function _ppt_construirSlide1(pptx, cot, partidas, sub, iva, total, lugarFecha, vigencia, rTel, rEmail, rWeb, COLOR, logos, inclIntro){
   var slide = pptx.addSlide();
   slide.background = {color: COLOR.white};
 
-  // ════ HERO — Banner navy degradado superior ════
-  // PptxGenJS no soporta gradientes en shapes. Simulamos con dos rectángulos superpuestos.
-  slide.addShape("rect", {x:0, y:0, w:13.333, h:1.95, fill:{color: COLOR.navy}});
-  // Capa secundaria con leve transparencia para simular degradado (el navyMid es muy parecido)
-  slide.addShape("rect", {x:6.5, y:0, w:6.85, h:1.95, fill:{color: COLOR.navyMid, transparency: 30}});
+  // ════ HERO — Banner navy degradado superior (alto: 1.7") ════
+  slide.addShape("rect", {x:0, y:0, w:8.5, h:1.7, fill:{color: COLOR.navy}});
+  slide.addShape("rect", {x:4.25, y:0, w:4.25, h:1.7, fill:{color: COLOR.navyMid, transparency: 30}});
 
-  // Círculos decorativos (azul tenue)
-  slide.addShape("ellipse", {x:11.5, y:-0.6, w:2.5, h:2.5, fill:{color: COLOR.blue, transparency: 92}, line:{type:"none"}});
-  slide.addShape("ellipse", {x:9.5, y:1.0, w:1.7, h:1.7, fill:{color: COLOR.blue, transparency: 94}, line:{type:"none"}});
-  slide.addShape("ellipse", {x:-0.5, y:0.8, w:2.2, h:2.2, fill:{color: COLOR.blue, transparency: 95}, line:{type:"none"}});
+  // Círculos decorativos
+  slide.addShape("ellipse", {x:7.0, y:-0.5, w:2.2, h:2.2, fill:{color: COLOR.blue, transparency: 92}, line:{type:"none"}});
+  slide.addShape("ellipse", {x:5.5, y:0.9, w:1.5, h:1.5, fill:{color: COLOR.blue, transparency: 94}, line:{type:"none"}});
+  slide.addShape("ellipse", {x:-0.6, y:0.6, w:2.0, h:2.0, fill:{color: COLOR.blue, transparency: 95}, line:{type:"none"}});
 
-  // Logo centrado (PNG) — proporción exacta 7.54:1 del logo original (1003x133)
+  // Logo centrado — proporción 7.54:1 (h:0.4 x w:3.0)
   if(logos.blanco){
     try {
-      // Logo: altura 0.4" × ancho 3.0" (proporción 7.5:1 — casi exacta del original)
-      slide.addImage({data: logos.blanco, x:5.17, y:0.5, w:3.0, h:0.4});
+      slide.addImage({data: logos.blanco, x:2.75, y:0.4, w:3.0, h:0.4});
     } catch(e){ console.warn("[PPT] Logo P1:", e); }
   } else {
-    slide.addText("ROMSA", {x:5, y:0.4, w:3.3, h:0.6, fontSize:32, bold:true, color: COLOR.white, fontFace:"Calibri", align:"center", charSpacing:-1.5});
+    slide.addText("ROMSA", {x:2.5, y:0.35, w:3.5, h:0.5, fontSize:30, bold:true, color: COLOR.white, fontFace:"Calibri", align:"center", charSpacing:-1.5});
   }
 
   // Línea decorativa con texto "COTIZACIÓN TÉCNICA"
-  slide.addShape("line", {x:4.5, y:1.28, w:1.0, h:0, line:{color:"FFFFFF", width:0.5, transparency:80}});
-  slide.addText("COTIZACIÓN TÉCNICA", {x:5.5, y:1.18, w:2.33, h:0.22, fontSize:8, bold:true, color:"FFFFFF", fontFace:"Calibri", align:"center", charSpacing:6, transparency:55});
-  slide.addShape("line", {x:7.85, y:1.28, w:1.0, h:0, line:{color:"FFFFFF", width:0.5, transparency:80}});
+  slide.addShape("line", {x:2.0, y:1.05, w:0.8, h:0, line:{color:"FFFFFF", width:0.5, transparency:80}});
+  slide.addText("COTIZACIÓN TÉCNICA", {x:2.85, y:0.97, w:2.8, h:0.2, fontSize:8, bold:true, color:"FFFFFF", fontFace:"Calibri", align:"center", charSpacing:5, transparency:55});
+  slide.addShape("line", {x:5.7, y:1.05, w:0.8, h:0, line:{color:"FFFFFF", width:0.5, transparency:80}});
 
-  // ════ LÍNEA DEGRADADA (3 colores apilados) ════
-  slide.addShape("rect", {x:0, y:1.95, w:4.45, h:0.04, fill:{color: COLOR.navy}, line:{type:"none"}});
-  slide.addShape("rect", {x:4.45, y:1.95, w:4.45, h:0.04, fill:{color: COLOR.blue}, line:{type:"none"}});
-  slide.addShape("rect", {x:8.9, y:1.95, w:4.45, h:0.04, fill:{color: COLOR.navy2}, line:{type:"none"}});
+  // ════ LÍNEA DEGRADADA (3 segmentos) ════
+  slide.addShape("rect", {x:0, y:1.7, w:2.83, h:0.05, fill:{color: COLOR.navy}, line:{type:"none"}});
+  slide.addShape("rect", {x:2.83, y:1.7, w:2.84, h:0.05, fill:{color: COLOR.blue}, line:{type:"none"}});
+  slide.addShape("rect", {x:5.67, y:1.7, w:2.83, h:0.05, fill:{color: COLOR.navy2}, line:{type:"none"}});
 
   // ════ FOLIO STRIP ════
-  slide.addShape("rect", {x:0, y:2.05, w:13.333, h:0.55, fill:{color: COLOR.white}, line:{type:"none"}});
-  slide.addShape("line", {x:0.5, y:2.6, w:12.33, h:0, line:{color: COLOR.borderLight, width:0.5}});
-  slide.addText(lugarFecha, {x:0.5, y:2.18, w:6, h:0.32, fontSize:11, color: COLOR.txtFaint, fontFace:"Calibri"});
-  slide.addText("FOLIO", {x:11, y:2.13, w:1.83, h:0.18, fontSize:7.5, bold:true, color:"B0BDD0", fontFace:"Calibri", align:"right", charSpacing:3});
-  slide.addText(cot.folio||"", {x:9.8, y:2.31, w:3.03, h:0.25, fontSize:13, bold:true, color: COLOR.navy2, fontFace:"Calibri", align:"right"});
+  slide.addText(lugarFecha, {x:0.45, y:1.85, w:4, h:0.3, fontSize:10.5, color: COLOR.txtFaint, fontFace:"Calibri"});
+  slide.addText("FOLIO", {x:6.5, y:1.85, w:1.55, h:0.18, fontSize:7.5, bold:true, color:"B0BDD0", fontFace:"Calibri", align:"right", charSpacing:3});
+  slide.addText(cot.folio||"", {x:5.5, y:2.0, w:2.55, h:0.25, fontSize:13, bold:true, color: COLOR.navy2, fontFace:"Calibri", align:"right"});
 
-  // ════ DESTINATARIO ════
-  slide.addText("DIRIGIDO A", {x:0.5, y:2.78, w:5, h:0.18, fontSize:7.5, bold:true, color: COLOR.txtFaint, fontFace:"Calibri", charSpacing:4});
-  slide.addText(cot.empresa || "", {x:0.5, y:2.96, w:8, h:0.28, fontSize:13, bold:true, color: COLOR.navy, fontFace:"Calibri"});
+  slide.addShape("line", {x:0.45, y:2.35, w:7.6, h:0, line:{color: COLOR.borderLight, width:0.5}});
+
+  // ════ DESTINATARIO + VIGENCIA ════
+  slide.addText("DIRIGIDO A", {x:0.45, y:2.5, w:4, h:0.2, fontSize:8, bold:true, color: COLOR.txtFaint, fontFace:"Calibri", charSpacing:4});
+  slide.addText(cot.empresa || "", {x:0.45, y:2.7, w:5.2, h:0.32, fontSize:14, bold:true, color: COLOR.navy, fontFace:"Calibri"});
   if(cot.atencion){
-    slide.addText("Attn: "+cot.atencion, {x:0.5, y:3.22, w:8, h:0.22, fontSize:10.5, color: COLOR.txtSec, fontFace:"Calibri"});
+    slide.addText("Attn: "+cot.atencion, {x:0.45, y:3.04, w:5.2, h:0.22, fontSize:11, color: COLOR.txtSec, fontFace:"Calibri"});
   }
   var contactoLineas = [];
   if(cot.email) contactoLineas.push(cot.email);
   if(cot.tel) contactoLineas.push(cot.tel);
   if(contactoLineas.length){
-    slide.addText(contactoLineas.join(" · "), {x:0.5, y:3.42, w:8, h:0.2, fontSize:9.5, color: COLOR.txtFaint, fontFace:"Calibri"});
+    slide.addText(contactoLineas.join(" · "), {x:0.45, y:3.26, w:5.2, h:0.2, fontSize:9.5, color: COLOR.txtFaint, fontFace:"Calibri"});
+  }
+  if(cot.rfc){
+    slide.addText("RFC: "+cot.rfc, {x:0.45, y:3.46, w:5.2, h:0.18, fontSize:9, color: COLOR.txtFaint, fontFace:"Calibri"});
   }
 
-  // ════ Cuadro de proyecto/vigencia (derecha) ════
-  slide.addShape("rect", {x:9.0, y:2.78, w:3.83, h:0.95, fill:{color: COLOR.bgLight}, line:{color: COLOR.border, width:0.5}});
-  slide.addText("VIGENCIA", {x:9.15, y:2.86, w:3.55, h:0.18, fontSize:7.5, bold:true, color: COLOR.txtFaint, fontFace:"Calibri", charSpacing:4});
-  slide.addText(vigencia+" días naturales", {x:9.15, y:3.04, w:3.55, h:0.3, fontSize:14, bold:true, color: COLOR.navy2, fontFace:"Calibri"});
-  slide.addText("a partir de la emisión", {x:9.15, y:3.36, w:3.55, h:0.22, fontSize:9, color: COLOR.txtMute, fontFace:"Calibri", italic:true});
+  // Cuadro vigencia (derecha)
+  slide.addShape("rect", {x:5.85, y:2.5, w:2.2, h:1.0, fill:{color: COLOR.bgLight}, line:{color: COLOR.border, width:0.5}});
+  slide.addText("VIGENCIA", {x:5.95, y:2.6, w:2.0, h:0.18, fontSize:7.5, bold:true, color: COLOR.txtFaint, fontFace:"Calibri", charSpacing:4});
+  slide.addText(vigencia+" días", {x:5.95, y:2.8, w:2.0, h:0.32, fontSize:16, bold:true, color: COLOR.navy2, fontFace:"Calibri"});
+  slide.addText("naturales desde la emisión", {x:5.95, y:3.15, w:2.0, h:0.22, fontSize:8.5, color: COLOR.txtMute, fontFace:"Calibri", italic:true});
 
-  // ════ Línea separadora ════
-  slide.addShape("line", {x:0.5, y:3.78, w:12.33, h:0, line:{color: COLOR.borderLight, width:0.5}});
+  slide.addShape("line", {x:0.45, y:3.78, w:7.6, h:0, line:{color: COLOR.borderLight, width:0.5}});
 
   // ════ INTRO (si activado) ════
   var yTabla = 3.95;
   if(inclIntro){
     slide.addText("Por este medio, nos es grato presentar nuestra propuesta técnico-comercial para "+(cot.empresa||"")+". A continuación se detalla el alcance, especificaciones y condiciones del proyecto:",
-      {x:0.5, y:3.85, w:12.33, h:0.4, fontSize:10, color: COLOR.txtSec, fontFace:"Calibri", italic:true});
-    yTabla = 4.35;
+      {x:0.45, y:3.88, w:7.6, h:0.45, fontSize:10, color: COLOR.txtSec, fontFace:"Calibri", italic:true, valign:"top"});
+    yTabla = 4.42;
   }
 
   // ════ TABLA DE PARTIDAS ════
@@ -8830,27 +9316,25 @@ function _ppt_construirSlide1(pptx, cot, partidas, sub, iva, total, lugarFecha, 
     {text:"TOTAL", options:{bold:true, fontSize:8.5, color:"A0AEC8", fill:{color: COLOR.navy}, align:"right", valign:"middle", charSpacing:2}}
   ];
 
-  // Tamaño de fuente dinámico
+  // Tamaño de fuente dinámico (ahora hay más espacio vertical)
   var fontTabla = 10;
-  if(partidas.length > 6) fontTabla = 9;
-  if(partidas.length > 10) fontTabla = 8;
-  if(partidas.length > 14) fontTabla = 7.5;
+  if(partidas.length > 8) fontTabla = 9;
+  if(partidas.length > 14) fontTabla = 8;
 
   var filasTabla = partidas.map(function(p, i){
     var st = (parseFloat(p.qty)||0) * (parseFloat(p.precio)||0);
     var tituloP = (p.tituloCustom && p.tituloCustom.trim()) ? p.tituloCustom.trim() : (p.servicio || "Sin título");
     var bgRow = (i%2===0) ? COLOR.white : COLOR.bgZebra;
 
-    // Concepto: título en negrita + descripción debajo
     var conceptoTexto = [
       {text: tituloP+"\n", options:{bold:true, fontSize: fontTabla, color: COLOR.navy}}
     ];
     if(p.desc && p.desc.trim()){
-      conceptoTexto.push({text: p.desc.trim(), options:{fontSize: fontTabla-1, color: COLOR.txtSec, italic:false}});
+      conceptoTexto.push({text: p.desc.trim(), options:{fontSize: fontTabla-1, color: COLOR.txtSec}});
     }
 
     return [
-      {text: conceptoTexto, options:{fill:{color: bgRow}, align:"left", valign:"middle", margin:[8,12,8,12]}},
+      {text: conceptoTexto, options:{fill:{color: bgRow}, align:"left", valign:"middle", margin:[6,8,6,8]}},
       {text: (parseFloat(p.qty)||0).toLocaleString('es-MX')+" "+(p.unit||""), options:{fontSize: fontTabla, color: COLOR.navy, fill:{color: bgRow}, align:"center", valign:"middle", bold:true}},
       {text: "$"+fmtPeso(parseFloat(p.precio)||0), options:{fontSize: fontTabla-0.5, color: COLOR.txtSec, fill:{color: bgRow}, align:"right", valign:"middle"}},
       {text: "$"+fmtPeso(st), options:{fontSize: fontTabla+1, color: COLOR.navy, fill:{color: bgRow}, align:"right", valign:"middle", bold:true}}
@@ -8859,103 +9343,103 @@ function _ppt_construirSlide1(pptx, cot, partidas, sub, iva, total, lugarFecha, 
 
   var dataTabla = [headerRow].concat(filasTabla);
 
-  // Calcular altura de filas según cantidad
+  // Altura de filas según partidas
   var rowHData = 0.55;
-  if(partidas.length > 6) rowHData = 0.48;
-  if(partidas.length > 10) rowHData = 0.4;
+  if(partidas.length > 8) rowHData = 0.45;
+  if(partidas.length > 14) rowHData = 0.38;
 
   slide.addTable(dataTabla, {
-    x: 0.5, y: yTabla, w: 12.33,
-    colW: [7.6, 1.7, 1.5, 1.53],
+    x: 0.45, y: yTabla, w: 7.6,
+    colW: [4.4, 1.1, 1.0, 1.1],
     border: {type:"solid", pt:0.5, color: COLOR.border},
     rowH: rowHData
   });
 
-  // ════ TOTALES (cuadro derecho con gradiente simulado) ════
-  // Calcular Y de totales basado en partidas
+  // ════ TOTALES (cuadro derecho debajo de tabla) ════
   var altoTabla = 0.45 + (partidas.length * rowHData);
-  var yTot = yTabla + altoTabla + 0.1;
-  if(yTot > 5.6) yTot = 5.6; // límite
-  var anchoBox = 3.6;
-  var xBox = 13.333 - 0.5 - anchoBox; // alineado a la derecha
+  var yTot = yTabla + altoTabla + 0.15;
+  // Asegurar que los totales caben antes del footer (footer empieza en 9.7)
+  if(yTot > 8.3) yTot = 8.3;
+
+  var anchoBox = 3.2;
+  var xBox = 8.5 - 0.45 - anchoBox;
 
   // Subtotal
   slide.addShape("rect", {x:xBox, y:yTot, w:anchoBox, h:0.34, fill:{color: COLOR.bgLight}, line:{color: COLOR.border, width:0.5}});
   slide.addText("Subtotal", {x:xBox+0.15, y:yTot+0.06, w:1.5, h:0.22, fontSize:10.5, color: COLOR.txtMute, fontFace:"Calibri"});
-  slide.addText("$"+fmtPeso(sub), {x:xBox+1.6, y:yTot+0.06, w:anchoBox-1.75, h:0.22, fontSize:10.5, color: COLOR.navy, fontFace:"Calibri", align:"right", bold:true});
+  slide.addText("$"+fmtPeso(sub), {x:xBox+1.4, y:yTot+0.06, w:anchoBox-1.55, h:0.22, fontSize:10.5, color: COLOR.navy, fontFace:"Calibri", align:"right", bold:true});
 
   // IVA
   slide.addShape("rect", {x:xBox, y:yTot+0.34, w:anchoBox, h:0.34, fill:{color: COLOR.bgLight}, line:{color: COLOR.border, width:0.5}});
-  slide.addText("IVA 8%", {x:xBox+0.15, y:yTot+0.40, w:1.5, h:0.22, fontSize:10, color: COLOR.txtMute, fontFace:"Calibri"});
-  slide.addText("Región Fronteriza", {x:xBox+0.85, y:yTot+0.42, w:1.4, h:0.18, fontSize:7, color:"9AAAC4", fontFace:"Calibri", italic:true});
-  slide.addText("$"+fmtPeso(iva), {x:xBox+1.6, y:yTot+0.40, w:anchoBox-1.75, h:0.22, fontSize:10.5, color: COLOR.navy, fontFace:"Calibri", align:"right", bold:true});
+  slide.addText("IVA 8%", {x:xBox+0.15, y:yTot+0.40, w:1.0, h:0.22, fontSize:10, color: COLOR.txtMute, fontFace:"Calibri"});
+  slide.addText("Región Fronteriza", {x:xBox+0.7, y:yTot+0.42, w:1.4, h:0.18, fontSize:7, color:"9AAAC4", fontFace:"Calibri", italic:true});
+  slide.addText("$"+fmtPeso(iva), {x:xBox+1.4, y:yTot+0.40, w:anchoBox-1.55, h:0.22, fontSize:10.5, color: COLOR.navy, fontFace:"Calibri", align:"right", bold:true});
 
-  // ════ GRAN TOTAL — bloque navy con gradiente simulado ════
+  // GRAN TOTAL — bloque navy degradado
   var yTotal = yTot + 0.68;
   slide.addShape("rect", {x:xBox, y:yTotal, w:anchoBox, h:0.85, fill:{color: COLOR.navy}, line:{type:"none"}});
-  // Capa secundaria para simular degradado
   slide.addShape("rect", {x:xBox+anchoBox*0.5, y:yTotal, w:anchoBox*0.5, h:0.85, fill:{color: COLOR.navy2, transparency: 35}, line:{type:"none"}});
-  // Círculo decorativo
   slide.addShape("ellipse", {x:xBox+anchoBox-0.6, y:yTotal-0.4, w:1.0, h:1.0, fill:{color: COLOR.blue, transparency: 88}, line:{type:"none"}});
 
   slide.addText("GRAN TOTAL", {x:xBox+0.18, y:yTotal+0.08, w:2, h:0.18, fontSize:8, bold:true, color:"FFFFFF", fontFace:"Calibri", charSpacing:5, transparency:50});
-  slide.addText("$"+fmtPeso(total), {x:xBox+0.18, y:yTotal+0.28, w:anchoBox-0.4, h:0.5, fontSize:24, bold:true, color: COLOR.white, fontFace:"Calibri", charSpacing:-1});
-  slide.addText("MXN", {x:xBox+anchoBox-0.85, y:yTotal+0.51, w:0.6, h:0.25, fontSize:10.5, bold:true, color: COLOR.blueLight, fontFace:"Calibri", align:"right", charSpacing:2});
+  slide.addText("$"+fmtPeso(total), {x:xBox+0.18, y:yTotal+0.28, w:anchoBox-0.4, h:0.5, fontSize:22, bold:true, color: COLOR.white, fontFace:"Calibri", charSpacing:-1});
+  slide.addText("MXN", {x:xBox+anchoBox-0.85, y:yTotal+0.5, w:0.6, h:0.25, fontSize:10, bold:true, color: COLOR.blueLight, fontFace:"Calibri", align:"right", charSpacing:2});
 
-  // ════ FOOTER ════
-  slide.addShape("line", {x:0.5, y:6.9, w:12.33, h:0, line:{color: COLOR.border, width:0.5}});
+  // ════ FOOTER ════ (slide 11" alto, footer en 10.4)
+  slide.addShape("line", {x:0.45, y:10.4, w:7.6, h:0, line:{color: COLOR.border, width:0.5}});
   slide.addText("ROMSA Industrial · Especialistas en mantenimiento y recubrimientos industriales",
-    {x:0.5, y:6.97, w:8, h:0.2, fontSize:8.5, color: COLOR.txtMute, fontFace:"Calibri"});
+    {x:0.45, y:10.48, w:6.5, h:0.2, fontSize:8.5, color: COLOR.txtMute, fontFace:"Calibri"});
   slide.addText(rTel + " · " + rEmail + " · " + rWeb,
-    {x:0.5, y:7.18, w:8, h:0.2, fontSize:8.5, color: COLOR.txtMute, fontFace:"Calibri"});
-  slide.addText("Página 1", {x:11.83, y:7.07, w:1, h:0.22, fontSize:9, color: COLOR.txtMute, fontFace:"Calibri", align:"right"});
+    {x:0.45, y:10.68, w:6.5, h:0.2, fontSize:8.5, color: COLOR.txtMute, fontFace:"Calibri"});
+  slide.addText("Página 1", {x:7.0, y:10.58, w:1.05, h:0.22, fontSize:9, color: COLOR.txtMute, fontFace:"Calibri", align:"right"});
 }
 
-// ─── SLIDE 2: Condiciones generales ───
+// ─── SLIDE 2: Condiciones generales (CARTA VERTICAL 8.5 x 11) ───
 function _ppt_construirSlide2(pptx, cot, clausulasFinal, rTel, rEmail, rWeb, COLOR, logos){
   var slide = pptx.addSlide();
   slide.background = {color: COLOR.white};
 
-  // ════ HEADER NAVY (más bajo que el slide 1) ════
-  slide.addShape("rect", {x:0, y:0, w:13.333, h:1.0, fill:{color: COLOR.navy}});
-  slide.addShape("rect", {x:7, y:0, w:6.33, h:1.0, fill:{color: COLOR.navyMid, transparency: 30}});
-  slide.addShape("ellipse", {x:11.8, y:-0.4, w:1.6, h:1.6, fill:{color: COLOR.blue, transparency: 92}, line:{type:"none"}});
+  // ════ HEADER NAVY (alto: 1.0") ════
+  slide.addShape("rect", {x:0, y:0, w:8.5, h:1.0, fill:{color: COLOR.navy}});
+  slide.addShape("rect", {x:4.5, y:0, w:4.0, h:1.0, fill:{color: COLOR.navyMid, transparency: 30}});
+  slide.addShape("ellipse", {x:7.4, y:-0.4, w:1.5, h:1.5, fill:{color: COLOR.blue, transparency: 92}, line:{type:"none"}});
 
   // Título a la izquierda
-  slide.addText("COTIZACIÓN TÉCNICA", {x:0.5, y:0.18, w:6, h:0.2, fontSize:7.5, color:"FFFFFF", fontFace:"Calibri", charSpacing:5, transparency:55});
-  slide.addText("Condiciones Generales de Venta", {x:0.5, y:0.42, w:8, h:0.4, fontSize:14, bold:true, color: COLOR.white, fontFace:"Calibri"});
+  slide.addText("COTIZACIÓN TÉCNICA", {x:0.45, y:0.18, w:5, h:0.2, fontSize:7.5, color:"FFFFFF", fontFace:"Calibri", charSpacing:5, transparency:55});
+  slide.addText("Condiciones Generales de Venta", {x:0.45, y:0.42, w:5.5, h:0.4, fontSize:14, bold:true, color: COLOR.white, fontFace:"Calibri"});
 
   // Folio derecha
-  slide.addText("FOLIO", {x:10.5, y:0.22, w:2.33, h:0.2, fontSize:7, bold:true, color:"FFFFFF", fontFace:"Calibri", align:"right", charSpacing:4, transparency:60});
-  slide.addText(cot.folio||"", {x:10.5, y:0.42, w:2.33, h:0.3, fontSize:11, bold:true, color: COLOR.white, fontFace:"Calibri", align:"right"});
+  slide.addText("FOLIO", {x:6.0, y:0.22, w:2.05, h:0.2, fontSize:7, bold:true, color:"FFFFFF", fontFace:"Calibri", align:"right", charSpacing:4, transparency:60});
+  slide.addText(cot.folio||"", {x:6.0, y:0.42, w:2.05, h:0.3, fontSize:11, bold:true, color: COLOR.white, fontFace:"Calibri", align:"right"});
 
   // Línea degradada (3 segmentos)
-  slide.addShape("rect", {x:0, y:1.0, w:4.45, h:0.04, fill:{color: COLOR.navy}, line:{type:"none"}});
-  slide.addShape("rect", {x:4.45, y:1.0, w:4.45, h:0.04, fill:{color: COLOR.blue}, line:{type:"none"}});
-  slide.addShape("rect", {x:8.9, y:1.0, w:4.45, h:0.04, fill:{color: COLOR.navy2}, line:{type:"none"}});
+  slide.addShape("rect", {x:0, y:1.0, w:2.83, h:0.05, fill:{color: COLOR.navy}, line:{type:"none"}});
+  slide.addShape("rect", {x:2.83, y:1.0, w:2.84, h:0.05, fill:{color: COLOR.blue}, line:{type:"none"}});
+  slide.addShape("rect", {x:5.67, y:1.0, w:2.83, h:0.05, fill:{color: COLOR.navy2}, line:{type:"none"}});
 
   // ════ Detectar tamaños dinámicos según contenido ════
   var totalChars = clausulasFinal.reduce(function(s,c){return s + (c.titulo||"").length + (c.texto||"").length;}, 0);
-  var fontTitle = 11;
-  var fontText  = 10;
-  var espaciado = 0.18;
+  var fontTitle = 12;
+  var fontText  = 10.5;
+  var espaciado = 0.22;
 
-  if(totalChars > 3500){ fontTitle = 10; fontText = 9; espaciado = 0.13; }
-  if(totalChars > 5500){ fontTitle = 9.5; fontText = 8.5; espaciado = 0.1; }
+  if(totalChars > 4500){ fontTitle = 11; fontText = 10; espaciado = 0.18; }
+  if(totalChars > 7000){ fontTitle = 10.5; fontText = 9.5; espaciado = 0.14; }
 
-  // ════ Distribuir cláusulas en slides (con desborde automático) ════
-  var slidesClausulas = []; // array de arrays
+  // ════ Distribuir cláusulas en slides ════
+  var slidesClausulas = [];
   var slideActual = [];
   var yPos = 1.4;
-  var maxY = 6.5; // límite antes del footer (footer empieza en 6.7)
+  var maxY = 9.6; // límite antes del footer (footer empieza en 9.7)
 
   for(var i=0; i<clausulasFinal.length; i++){
     var cl = clausulasFinal[i];
-    var nLineas = Math.max(1, Math.ceil((cl.texto||"").length / 145));
-    var altura = 0.32 + (nLineas * (fontText/72) * 1.45) + espaciado;
+    // Estimar líneas según ancho disponible (7.6") y tamaño de fuente
+    var charsPorLinea = Math.floor(95 * (10/fontText)); // ~95 chars a 10pt
+    var nLineas = Math.max(1, Math.ceil((cl.texto||"").length / charsPorLinea));
+    var altura = 0.34 + (nLineas * (fontText/72) * 1.5) + espaciado;
 
     if(yPos + altura > maxY && slideActual.length > 0){
-      // Guardar slide actual y empezar nuevo
       slidesClausulas.push(slideActual);
       slideActual = [];
       yPos = 1.4;
@@ -8970,107 +9454,105 @@ function _ppt_construirSlide2(pptx, cot, clausulasFinal, rTel, rEmail, rWeb, COL
     var s = (slideIdx === 0) ? slide : pptx.addSlide();
 
     if(slideIdx > 0){
-      // Slide adicional: clonar header
       s.background = {color: COLOR.white};
-      s.addShape("rect", {x:0, y:0, w:13.333, h:1.0, fill:{color: COLOR.navy}});
-      s.addShape("rect", {x:7, y:0, w:6.33, h:1.0, fill:{color: COLOR.navyMid, transparency: 30}});
-      s.addShape("ellipse", {x:11.8, y:-0.4, w:1.6, h:1.6, fill:{color: COLOR.blue, transparency: 92}, line:{type:"none"}});
-      s.addText("COTIZACIÓN TÉCNICA", {x:0.5, y:0.18, w:6, h:0.2, fontSize:7.5, color:"FFFFFF", fontFace:"Calibri", charSpacing:5, transparency:55});
-      s.addText("Condiciones Generales (cont.)", {x:0.5, y:0.42, w:8, h:0.4, fontSize:14, bold:true, color: COLOR.white, fontFace:"Calibri"});
-      s.addText("FOLIO", {x:10.5, y:0.22, w:2.33, h:0.2, fontSize:7, bold:true, color:"FFFFFF", fontFace:"Calibri", align:"right", charSpacing:4, transparency:60});
-      s.addText(cot.folio||"", {x:10.5, y:0.42, w:2.33, h:0.3, fontSize:11, bold:true, color: COLOR.white, fontFace:"Calibri", align:"right"});
-      s.addShape("rect", {x:0, y:1.0, w:4.45, h:0.04, fill:{color: COLOR.navy}, line:{type:"none"}});
-      s.addShape("rect", {x:4.45, y:1.0, w:4.45, h:0.04, fill:{color: COLOR.blue}, line:{type:"none"}});
-      s.addShape("rect", {x:8.9, y:1.0, w:4.45, h:0.04, fill:{color: COLOR.navy2}, line:{type:"none"}});
+      s.addShape("rect", {x:0, y:0, w:8.5, h:1.0, fill:{color: COLOR.navy}});
+      s.addShape("rect", {x:4.5, y:0, w:4.0, h:1.0, fill:{color: COLOR.navyMid, transparency: 30}});
+      s.addShape("ellipse", {x:7.4, y:-0.4, w:1.5, h:1.5, fill:{color: COLOR.blue, transparency: 92}, line:{type:"none"}});
+      s.addText("COTIZACIÓN TÉCNICA", {x:0.45, y:0.18, w:5, h:0.2, fontSize:7.5, color:"FFFFFF", fontFace:"Calibri", charSpacing:5, transparency:55});
+      s.addText("Condiciones Generales (cont.)", {x:0.45, y:0.42, w:5.5, h:0.4, fontSize:14, bold:true, color: COLOR.white, fontFace:"Calibri"});
+      s.addText("FOLIO", {x:6.0, y:0.22, w:2.05, h:0.2, fontSize:7, bold:true, color:"FFFFFF", fontFace:"Calibri", align:"right", charSpacing:4, transparency:60});
+      s.addText(cot.folio||"", {x:6.0, y:0.42, w:2.05, h:0.3, fontSize:11, bold:true, color: COLOR.white, fontFace:"Calibri", align:"right"});
+      s.addShape("rect", {x:0, y:1.0, w:2.83, h:0.05, fill:{color: COLOR.navy}, line:{type:"none"}});
+      s.addShape("rect", {x:2.83, y:1.0, w:2.84, h:0.05, fill:{color: COLOR.blue}, line:{type:"none"}});
+      s.addShape("rect", {x:5.67, y:1.0, w:2.83, h:0.05, fill:{color: COLOR.navy2}, line:{type:"none"}});
     }
 
     // Render cláusulas
     items.forEach(function(item){
       s.addText((item.num)+". "+(item.cl.titulo||""), {
-        x:0.6, y:item.y, w:12.13, h:0.28,
+        x:0.5, y:item.y, w:7.5, h:0.3,
         fontSize:fontTitle, bold:true, color: COLOR.blue, fontFace:"Calibri", charSpacing:1
       });
       s.addText(item.cl.texto||"", {
-        x:0.6, y:item.y+0.3, w:12.13, h: item.alt - 0.32,
+        x:0.5, y:item.y+0.32, w:7.5, h: item.alt - 0.34,
         fontSize:fontText, color: COLOR.txtMain, fontFace:"Calibri", valign:"top",
-        lineSpacingMultiple: 1.35
+        lineSpacingMultiple: 1.4
       });
     });
 
-    // ════ Footer con firma ════
-    // Línea degradada superior
-    s.addShape("rect", {x:0.5, y:6.7, w:4.1, h:0.025, fill:{color: COLOR.navy}, line:{type:"none"}});
-    s.addShape("rect", {x:4.6, y:6.7, w:4.11, h:0.025, fill:{color: COLOR.blue}, line:{type:"none"}});
-    s.addShape("rect", {x:8.71, y:6.7, w:4.12, h:0.025, fill:{color: COLOR.navy2}, line:{type:"none"}});
+    // ════ Footer ════ (slide 11" alto, footer en 9.7-10.8)
+    s.addShape("rect", {x:0.45, y:9.7, w:2.7, h:0.025, fill:{color: COLOR.navy}, line:{type:"none"}});
+    s.addShape("rect", {x:3.18, y:9.7, w:2.7, h:0.025, fill:{color: COLOR.blue}, line:{type:"none"}});
+    s.addShape("rect", {x:5.91, y:9.7, w:2.14, h:0.025, fill:{color: COLOR.navy2}, line:{type:"none"}});
 
-    // Logo + nombre (izquierda) — logo con proporción 7.54:1
+    // Logo + nombre (izquierda) — proporción 7.54:1
     if(logos.azul){
-      try { s.addImage({data: logos.azul, x:0.5, y:6.85, w:1.7, h:0.225}); } catch(e){}
+      try { s.addImage({data: logos.azul, x:0.45, y:9.85, w:1.7, h:0.225}); } catch(e){}
     }
-    s.addText("ROMSA Industrial", {x:0.5, y:7.1, w:5, h:0.22, fontSize:10, bold:true, color: COLOR.blue, fontFace:"Calibri"});
+    s.addText("ROMSA Industrial", {x:0.45, y:10.1, w:5, h:0.22, fontSize:10, bold:true, color: COLOR.blue, fontFace:"Calibri"});
     s.addText("Especialistas en mantenimiento y recubrimientos industriales",
-      {x:0.5, y:7.3, w:7, h:0.18, fontSize:8.5, color: COLOR.txtFaint, fontFace:"Calibri"});
+      {x:0.45, y:10.32, w:5.5, h:0.18, fontSize:8.5, color: COLOR.txtFaint, fontFace:"Calibri"});
 
     // Datos contacto (derecha)
-    s.addText("Mexicali, Baja California, México", {x:9, y:6.85, w:3.83, h:0.18, fontSize:8.5, color: COLOR.txtSec, fontFace:"Calibri", align:"right"});
-    s.addText(rTel, {x:9, y:7.02, w:3.83, h:0.18, fontSize:8.5, color: COLOR.txtSec, fontFace:"Calibri", align:"right"});
-    s.addText(rEmail, {x:9, y:7.18, w:3.83, h:0.18, fontSize:8.5, color: COLOR.blue, fontFace:"Calibri", align:"right"});
-    s.addText(rWeb, {x:9, y:7.34, w:3.83, h:0.16, fontSize:8.5, color: COLOR.txtSec, fontFace:"Calibri", align:"right"});
+    s.addText("Mexicali, Baja California, México", {x:5.5, y:9.85, w:2.55, h:0.18, fontSize:8.5, color: COLOR.txtSec, fontFace:"Calibri", align:"right"});
+    s.addText(rTel, {x:5.5, y:10.03, w:2.55, h:0.18, fontSize:8.5, color: COLOR.txtSec, fontFace:"Calibri", align:"right"});
+    s.addText(rEmail, {x:5.5, y:10.21, w:2.55, h:0.18, fontSize:8.5, color: COLOR.blue, fontFace:"Calibri", align:"right"});
+    s.addText(rWeb, {x:5.5, y:10.39, w:2.55, h:0.18, fontSize:8.5, color: COLOR.txtSec, fontFace:"Calibri", align:"right"});
   });
 }
 
-// ─── SLIDES de procedimiento técnico ───
+// ─── SLIDES de procedimiento técnico (CARTA VERTICAL 8.5 x 11) ───
 function _ppt_construirSlideProcedimientos(pptx, cot, partidasConProc, COLOR, logos){
   partidasConProc.forEach(function(p, idx){
     var slide = pptx.addSlide();
     slide.background = {color: COLOR.white};
 
     // Header navy
-    slide.addShape("rect", {x:0, y:0, w:13.333, h:1.0, fill:{color: COLOR.navy}});
-    slide.addShape("rect", {x:7, y:0, w:6.33, h:1.0, fill:{color: COLOR.navyMid, transparency: 30}});
-    slide.addShape("ellipse", {x:11.8, y:-0.4, w:1.6, h:1.6, fill:{color: COLOR.blue, transparency: 92}, line:{type:"none"}});
+    slide.addShape("rect", {x:0, y:0, w:8.5, h:1.0, fill:{color: COLOR.navy}});
+    slide.addShape("rect", {x:4.5, y:0, w:4.0, h:1.0, fill:{color: COLOR.navyMid, transparency: 30}});
+    slide.addShape("ellipse", {x:7.4, y:-0.4, w:1.5, h:1.5, fill:{color: COLOR.blue, transparency: 92}, line:{type:"none"}});
 
-    slide.addText("COTIZACIÓN TÉCNICA", {x:0.5, y:0.18, w:6, h:0.2, fontSize:7.5, color:"FFFFFF", fontFace:"Calibri", charSpacing:5, transparency:55});
-    slide.addText("Procedimiento Técnico", {x:0.5, y:0.42, w:8, h:0.4, fontSize:14, bold:true, color: COLOR.white, fontFace:"Calibri"});
-    slide.addText("FOLIO", {x:10.5, y:0.22, w:2.33, h:0.2, fontSize:7, bold:true, color:"FFFFFF", fontFace:"Calibri", align:"right", charSpacing:4, transparency:60});
-    slide.addText(cot.folio||"", {x:10.5, y:0.42, w:2.33, h:0.3, fontSize:11, bold:true, color: COLOR.white, fontFace:"Calibri", align:"right"});
+    slide.addText("COTIZACIÓN TÉCNICA", {x:0.45, y:0.18, w:5, h:0.2, fontSize:7.5, color:"FFFFFF", fontFace:"Calibri", charSpacing:5, transparency:55});
+    slide.addText("Procedimiento Técnico", {x:0.45, y:0.42, w:5.5, h:0.4, fontSize:14, bold:true, color: COLOR.white, fontFace:"Calibri"});
+    slide.addText("FOLIO", {x:6.0, y:0.22, w:2.05, h:0.2, fontSize:7, bold:true, color:"FFFFFF", fontFace:"Calibri", align:"right", charSpacing:4, transparency:60});
+    slide.addText(cot.folio||"", {x:6.0, y:0.42, w:2.05, h:0.3, fontSize:11, bold:true, color: COLOR.white, fontFace:"Calibri", align:"right"});
 
     // Línea degradada
-    slide.addShape("rect", {x:0, y:1.0, w:4.45, h:0.04, fill:{color: COLOR.navy}, line:{type:"none"}});
-    slide.addShape("rect", {x:4.45, y:1.0, w:4.45, h:0.04, fill:{color: COLOR.blue}, line:{type:"none"}});
-    slide.addShape("rect", {x:8.9, y:1.0, w:4.45, h:0.04, fill:{color: COLOR.navy2}, line:{type:"none"}});
+    slide.addShape("rect", {x:0, y:1.0, w:2.83, h:0.05, fill:{color: COLOR.navy}, line:{type:"none"}});
+    slide.addShape("rect", {x:2.83, y:1.0, w:2.84, h:0.05, fill:{color: COLOR.blue}, line:{type:"none"}});
+    slide.addShape("rect", {x:5.67, y:1.0, w:2.83, h:0.05, fill:{color: COLOR.navy2}, line:{type:"none"}});
 
     var titulo = (p.tituloCustom && p.tituloCustom.trim()) ? p.tituloCustom.trim() : (p.servicio || "Concepto");
-    slide.addText(titulo, {x:0.5, y:1.3, w:12.33, h:0.4, fontSize:18, bold:true, color: COLOR.navy, fontFace:"Calibri"});
+    slide.addText(titulo, {x:0.45, y:1.3, w:7.6, h:0.4, fontSize:18, bold:true, color: COLOR.navy, fontFace:"Calibri"});
 
     // Línea sutil bajo el título
-    slide.addShape("line", {x:0.5, y:1.78, w:2.5, h:0, line:{color: COLOR.blue, width:2}});
+    slide.addShape("line", {x:0.45, y:1.78, w:2.0, h:0, line:{color: COLOR.blue, width:2}});
 
     var lineas = (p.proc||"").split('\n').filter(function(l){return l.trim();});
     var totalChars = lineas.join("").length;
     var fontProc = 11;
-    if(totalChars > 1500) fontProc = 10;
-    if(totalChars > 2500) fontProc = 9;
+    if(totalChars > 2000) fontProc = 10;
+    if(totalChars > 3500) fontProc = 9;
 
     var procText = lineas.map(function(l){return l.trim();}).join("\n");
     slide.addText(procText, {
-      x:0.6, y:2.0, w:12.13, h:4.85,
+      x:0.55, y:2.0, w:7.4, h:7.5,
       fontSize:fontProc, color: COLOR.txtMain, fontFace:"Calibri", valign:"top",
       paraSpaceAfter: 8, lineSpacingMultiple: 1.4
     });
 
     // Footer
-    slide.addShape("rect", {x:0.5, y:6.7, w:4.1, h:0.025, fill:{color: COLOR.navy}, line:{type:"none"}});
-    slide.addShape("rect", {x:4.6, y:6.7, w:4.11, h:0.025, fill:{color: COLOR.blue}, line:{type:"none"}});
-    slide.addShape("rect", {x:8.71, y:6.7, w:4.12, h:0.025, fill:{color: COLOR.navy2}, line:{type:"none"}});
+    slide.addShape("rect", {x:0.45, y:9.7, w:2.7, h:0.025, fill:{color: COLOR.navy}, line:{type:"none"}});
+    slide.addShape("rect", {x:3.18, y:9.7, w:2.7, h:0.025, fill:{color: COLOR.blue}, line:{type:"none"}});
+    slide.addShape("rect", {x:5.91, y:9.7, w:2.14, h:0.025, fill:{color: COLOR.navy2}, line:{type:"none"}});
 
     if(logos.azul){
-      try { slide.addImage({data: logos.azul, x:0.5, y:6.85, w:1.7, h:0.225}); } catch(e){}
+      try { slide.addImage({data: logos.azul, x:0.45, y:9.85, w:1.7, h:0.225}); } catch(e){}
     }
-    slide.addText("ROMSA Industrial — Procedimiento técnico de aplicación", {x:0.5, y:7.15, w:7, h:0.18, fontSize:8.5, color: COLOR.txtFaint, fontFace:"Calibri", italic:true});
+    slide.addText("ROMSA Industrial — Procedimiento técnico de aplicación", {x:0.45, y:10.15, w:5.5, h:0.18, fontSize:8.5, color: COLOR.txtFaint, fontFace:"Calibri", italic:true});
 
-    slide.addText("Procedimiento "+(idx+1)+" de "+partidasConProc.length, {x:9, y:6.85, w:3.83, h:0.2, fontSize:9, color: COLOR.txtSec, fontFace:"Calibri", align:"right"});
-    slide.addText(cot.folio||"", {x:9, y:7.07, w:3.83, h:0.2, fontSize:8, color: COLOR.txtFaint, fontFace:"Calibri", align:"right"});
+    slide.addText("Procedimiento "+(idx+1)+" de "+partidasConProc.length, {x:5.5, y:9.85, w:2.55, h:0.2, fontSize:9, color: COLOR.txtSec, fontFace:"Calibri", align:"right"});
+    slide.addText(cot.folio||"", {x:5.5, y:10.07, w:2.55, h:0.2, fontSize:8, color: COLOR.txtFaint, fontFace:"Calibri", align:"right"});
   });
 }
 
@@ -9995,6 +10477,16 @@ function _renderEditorCosteo(){
     }
   });
 
+  // Cargar anticipo guardado (Sesión 11)
+  var antPct = (c.anticipo && c.anticipo.pct !== undefined) ? c.anticipo.pct : 60;
+  var antNota = (c.anticipo && c.anticipo.nota) ? c.anticipo.nota : "";
+  var pctInp = document.getElementById("ce-anticipo-pct");
+  var notaInp = document.getElementById("ce-anticipo-nota");
+  if(pctInp) pctInp.value = antPct;
+  if(notaInp) notaInp.value = antNota;
+  // Marcar preset activo
+  setTimeout(function(){ if(typeof ceSetAnticipo === "function") ceSetAnticipo(antPct); }, 100);
+
   _renderSistemas();
 }
 
@@ -10314,7 +10806,97 @@ function _actualizarResumenGlobal(){
   } else {
     al.style.display = "none";
   }
+
+  // Recalcular anticipo cada vez que cambian totales
+  ceCalcularAnticipo();
 }
+
+// ═══════════════════════════════════════════════════════════════
+// ANTICIPOS — Cálculo y persistencia
+// ═══════════════════════════════════════════════════════════════
+
+function ceCalcularAnticipo(){
+  if(!_ceCosteo) return;
+  // Calcular precio total
+  var precio = 0, costo = 0;
+  (_ceCosteo.sistemas||[]).forEach(function(s){
+    var t = _calcSistema(s);
+    precio += t.precio;
+    costo  += t.costo;
+  });
+  var pctEl = document.getElementById("ce-anticipo-pct");
+  if(!pctEl) return;
+  var pct = parseFloat(pctEl.value);
+  if(isNaN(pct) || pct < 0) pct = 0;
+  if(pct > 100){ pct = 100; pctEl.value = 100; }
+  var monto = precio * (pct/100);
+  var saldo = precio - monto;
+  // Actualizar UI
+  var el;
+  if((el=document.getElementById("ce-anticipo-monto")))    el.textContent = "$"+_fmt(monto);
+  if((el=document.getElementById("ce-anticipo-monto-2")))  el.textContent = "$"+_fmt(monto);
+  if((el=document.getElementById("ce-anticipo-total")))    el.textContent = "$"+_fmt(precio);
+  if((el=document.getElementById("ce-anticipo-saldo")))    el.textContent = "$"+_fmt(saldo);
+  if((el=document.getElementById("ce-anticipo-pct-display"))) el.textContent = pct;
+  // Análisis: ¿el anticipo cubre los costos?
+  var analisisEl = document.getElementById("ce-anticipo-analisis");
+  if(analisisEl){
+    if(costo === 0 || precio === 0){
+      analisisEl.style.display = "none";
+    } else if(monto >= costo){
+      var sobrante = monto - costo;
+      analisisEl.style.display = "block";
+      analisisEl.style.background = "#D1FAE5";
+      analisisEl.style.color = "#065F46";
+      analisisEl.style.border = "1px solid #6EE7B7";
+      analisisEl.innerHTML = '✅ <strong>El anticipo cubre todos los costos directos</strong> ($'+_fmt(costo)+'). Sobrante para flujo: $'+_fmt(sobrante)+'.';
+    } else {
+      var falta = costo - monto;
+      var pctMinimo = Math.ceil((costo/precio)*100);
+      analisisEl.style.display = "block";
+      analisisEl.style.background = "#FEE2E2";
+      analisisEl.style.color = "#991B1B";
+      analisisEl.style.border = "1px solid #FCA5A5";
+      analisisEl.innerHTML = '⚠️ <strong>El anticipo NO cubre los costos directos</strong> ($'+_fmt(costo)+'). Faltan $'+_fmt(falta)+'. Recomendado: ≥ '+pctMinimo+'%.';
+    }
+  }
+  // Guardar en _ceCosteo (sin persistir aún a Firestore — eso lo hace guardarCosteo)
+  if(!_ceCosteo.anticipo) _ceCosteo.anticipo = {};
+  _ceCosteo.anticipo.pct = pct;
+  _ceCosteo.anticipo.monto = monto;
+  _ceCosteo.anticipo.saldo = saldo;
+}
+
+function ceSetAnticipo(pct){
+  var el = document.getElementById("ce-anticipo-pct");
+  if(!el) return;
+  el.value = pct;
+  ceCalcularAnticipo();
+  // Update visual de los presets (resaltar el activo)
+  document.querySelectorAll("[onclick^='ceSetAnticipo']").forEach(function(b){
+    var v = parseFloat((b.getAttribute("onclick")||"").match(/\d+/)[0]);
+    if(v === pct){
+      b.style.background = "#F59E0B";
+      b.style.borderColor = "#D97706";
+      b.style.color = "#fff";
+    } else {
+      b.style.background = "#fff";
+      b.style.borderColor = "#FED7AA";
+      b.style.color = "#C2410C";
+    }
+  });
+}
+
+function ceGuardarAnticipoLocal(){
+  if(!_ceCosteo) return;
+  if(!_ceCosteo.anticipo) _ceCosteo.anticipo = {};
+  var nota = document.getElementById("ce-anticipo-nota");
+  if(nota) _ceCosteo.anticipo.nota = nota.value;
+}
+
+window.ceCalcularAnticipo = ceCalcularAnticipo;
+window.ceSetAnticipo = ceSetAnticipo;
+window.ceGuardarAnticipoLocal = ceGuardarAnticipoLocal;
 
 // ── Acciones: Sistemas ────────────────────────────────────────
 function agregarSistema(){
@@ -11060,6 +11642,19 @@ async function guardarCosteoActual(){
   _ceCosteo.utilidadTotal = utilidad;
   _ceCosteo.ts = Date.now();
 
+  // Persistir datos de anticipo (Sesión 11)
+  var antPctEl = document.getElementById("ce-anticipo-pct");
+  var antNotaEl = document.getElementById("ce-anticipo-nota");
+  if(antPctEl){
+    var pctVal = parseFloat(antPctEl.value);
+    if(isNaN(pctVal)) pctVal = 60;
+    if(!_ceCosteo.anticipo) _ceCosteo.anticipo = {};
+    _ceCosteo.anticipo.pct   = pctVal;
+    _ceCosteo.anticipo.monto = precio * (pctVal/100);
+    _ceCosteo.anticipo.saldo = precio - _ceCosteo.anticipo.monto;
+    _ceCosteo.anticipo.nota  = antNotaEl ? antNotaEl.value : "";
+  }
+
   try{
     const costeoSafe = (typeof _sanitizarParaFirestore==="function") ? _sanitizarParaFirestore(_ceCosteo) : _ceCosteo;
     await costeoCosteosRef.doc(_ceCosteo.id).set(costeoSafe);
@@ -11255,6 +11850,20 @@ function _llenarCotizacionDesdeCosteo(costeo){
     });
     if(typeof renderPartidasCot === "function") renderPartidasCot();
     if(typeof calcTotalesCot === "function") calcTotalesCot();
+
+    // Traspasar esquema de anticipo a la cláusula "Forma de pago" (Sesión 11)
+    if(costeo.anticipo && costeo.anticipo.pct){
+      var pct = parseFloat(costeo.anticipo.pct);
+      var saldo = 100 - pct;
+      var pagoEl = document.getElementById("cot-pago");
+      if(pagoEl){
+        var nuevoTexto = "El esquema de pago será "+pct+"% anticipo y "+saldo+"% contra entrega de área finalizada y recepción de factura final. Los pagos deberán realizarse en las fechas estipuladas. En caso de retraso en el pago por parte del cliente, se generará un cargo moratorio equivalente al 0.03% del saldo pendiente por cada día natural de atraso.";
+        if(costeo.anticipo.nota && costeo.anticipo.nota.trim()){
+          nuevoTexto += "\n\nNota adicional: " + costeo.anticipo.nota.trim();
+        }
+        pagoEl.value = nuevoTexto;
+      }
+    }
 
     // Guardar referencia al costeo origen (se leerá al guardar la cotización)
     window._cotizacionCosteoOrigen = {
