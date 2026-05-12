@@ -8923,45 +8923,24 @@ function generarPdfCotEnVentana(cot, winRef){
     +'.cot-clausula-texto{font-size:11px;color:#4A5E7A;line-height:1.8;white-space:pre-wrap;orphans:3;widows:3;}'
     +'.cot-clausula-salto{page-break-before:always !important;break-before:page !important;}'
     +'.cot-salto-aqui{page-break-before:always !important;break-before:page !important;display:block;height:0;}'
-    // ─── Footer estilo print (oculto en pantalla, visible en impresión) ───
-    +'.pdf-running-footer{display:none;}'
     +'@media print{'
-    // CRITICAL: Márgenes A4 con espacio para footer running
-    +'  @page{size:A4 portrait;margin:14mm 14mm 22mm 14mm;}'
-    +'  @page :first{margin:0 0 22mm 0;}' // Primera página sin margen superior (porque tiene su propio header)
+    // CRITICAL: Márgenes A4
+    +'  @page{size:A4 portrait;margin:14mm 14mm 14mm 14mm;}'
+    // Primera página: sin márgenes (tiene su header navy a página completa)
+    +'  @page :first{margin:0;}'
     +'  html,body{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;margin:0;padding:0;}'
     +'  .doc{max-width:none;}'
-    +'  .page1{min-height:0;}'
-    +'  .page2{min-height:0;}'
-    // Página 1: el contenido propio se mantiene; quitar paddings que conflictan
-    +'  .page1{padding:0 !important;}'
-    // Página 2: quitar header navy del flujo (solo aparece arriba de la 1ra hoja de cond) y quitar footer del flujo
-    +'  .page2{padding:0 !important;}'
-    // El "footer inline" original NO se muestra en impresión (lo reemplazamos por uno fijo)
-    +'  .pdf-footer-inline{display:none !important;}'
-    // Footer running real (se repite en cada hoja gracias al position:fixed)
-    +'  .pdf-running-footer{'
-    +'    display:block !important;'
-    +'    position:fixed;'
-    +'    bottom:0;'
-    +'    left:0;'
-    +'    right:0;'
-    +'    height:18mm;'
-    +'    padding:3mm 14mm 0;'
-    +'    background:#fff;'
-    +'    border-top:0 !important;'
-    +'    font-size:9px;'
-    +'    color:#8A9AB8;'
-    +'    z-index:100;'
+    +'  .page1{min-height:0;padding:0 !important;}'
+    +'  .page2{min-height:0;padding:0 !important;}'
+    // Footer running OCULTO en impresión (usamos el footer inline en su lugar)
+    +'  .pdf-running-footer{display:none !important;}'
+    // El footer inline de page2 se mantiene visible y cae naturalmente al final del flujo
+    +'  .pdf-footer-inline{'
+    +'    page-break-inside:avoid !important;'
+    +'    break-inside:avoid !important;'
+    +'    page-break-before:avoid !important;'
+    +'    break-before:avoid !important;'
     +'  }'
-    +'  .pdf-running-footer-linea{height:2px;background:linear-gradient(90deg,#0B1F3A,#1E6FD9,#1B3F72);margin-bottom:5mm;}'
-    +'  .pdf-running-footer-row{display:flex;justify-content:space-between;align-items:flex-end;}'
-    +'  .pdf-running-footer-left{font-size:9px;color:#8A9AB8;line-height:1.4;}'
-    +'  .pdf-running-footer-left .marca{font-size:9.5px;color:#1E6FD9;font-weight:700;}'
-    +'  .pdf-running-footer-right{font-size:8.5px;color:#8A9AB8;line-height:1.4;text-align:right;}'
-    +'  .pdf-running-footer-right .email{color:#1E6FD9;}'
-    // Contador "Página X de Y" usando CSS counters de @page
-    +'  .pdf-running-footer-pageno{font-size:8px;color:#C0CBD8;letter-spacing:.5px;text-align:center;margin-top:1mm;}'
     // tr y cláusulas no se parten
     +'  tr,.cond-item{page-break-inside:avoid !important;break-inside:avoid !important;}'
     +'  .cot-clausula{page-break-inside:avoid !important;break-inside:avoid !important;-webkit-region-break-inside:avoid;}'
@@ -8972,20 +8951,6 @@ function generarPdfCotEnVentana(cot, winRef){
     +'}'
     +'</style>'
     +'</head><body>'
-    // ─── Footer running: visible solo en print, fijo en cada hoja ───
-    +'<div class="pdf-running-footer">'
-      +'<div class="pdf-running-footer-linea"></div>'
-      +'<div class="pdf-running-footer-row">'
-        +'<div class="pdf-running-footer-left">'
-          +'<span class="marca">ROMSA Industrial</span><br>'
-          +'Especialistas en mantenimiento y recubrimientos industriales'
-        +'</div>'
-        +'<div class="pdf-running-footer-right">'
-          +'Mexicali, B.C. · '+rTel+'<br>'
-          +'<span class="email">'+rEmail+'</span> · '+rWeb
-        +'</div>'
-      +'</div>'
-    +'</div>'
     +'<div class="doc">'
 
     // ══ PÁGINA 1 ══
@@ -9184,6 +9149,9 @@ function _mostrarPreviewPdf(htmlStr, title){
   var oldOv = document.getElementById('_pdfPreviewOverlay');
   if(oldOv) oldOv.remove();
 
+  // Estado del modo (false = flujo normal, true = modo impresión con márgenes A4)
+  var _modoImpresion = false;
+
   var ov = document.createElement('div');
   ov.id = '_pdfPreviewOverlay';
   ov.style.cssText = 'position:fixed;inset:0;background:rgba(11,31,58,.85);z-index:9998;display:flex;flex-direction:column;font-family:sans-serif;';
@@ -9194,9 +9162,13 @@ function _mostrarPreviewPdf(htmlStr, title){
   bar.innerHTML = '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">'
       +'<div style="font-size:11px;font-weight:700;letter-spacing:1.5px;color:#60A5FA;">👁 VISTA PREVIA</div>'
       +'<div style="font-size:13px;font-weight:600;color:#fff;">'+escapeHtml(title||"Cotización")+'</div>'
-      +'<div style="font-size:10px;color:rgba(255,255,255,.5);">Tamaño A4 simulado · Los saltos reales pueden variar ligeramente</div>'
     +'</div>'
-    +'<div style="display:flex;gap:8px;">'
+    +'<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">'
+      // Toggle de modo
+      +'<div style="display:flex;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:8px;overflow:hidden;">'
+        +'<button id="_pdfModoFlujo" style="background:#1E6FD9;border:none;color:#fff;padding:7px 12px;font-size:10.5px;font-weight:700;cursor:pointer;font-family:sans-serif;letter-spacing:.3px;">📄 Flujo</button>'
+        +'<button id="_pdfModoImpresion" style="background:transparent;border:none;color:rgba(255,255,255,.7);padding:7px 12px;font-size:10.5px;font-weight:700;cursor:pointer;font-family:sans-serif;letter-spacing:.3px;">🖨 Impresión real</button>'
+      +'</div>'
       +'<button id="_pdfPreviewImprimir" style="background:#7C3AED;border:none;color:#fff;padding:8px 16px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">📄 Descargar PDF</button>'
       +'<button id="_pdfPreviewCerrar" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;padding:8px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">✕ Cerrar</button>'
     +'</div>';
@@ -9204,62 +9176,201 @@ function _mostrarPreviewPdf(htmlStr, title){
 
   // Contenedor del iframe con scroll
   var wrap = document.createElement('div');
-  wrap.style.cssText = 'flex:1;overflow:auto;padding:20px;background:#2A3142;display:flex;justify-content:center;';
+  wrap.style.cssText = 'flex:1;overflow:auto;padding:20px;background:#2A3142;display:flex;flex-direction:column;align-items:center;gap:16px;';
 
-  // Marco que simula hojas de A4: ancho ~21cm = 794px a 96dpi
-  var marco = document.createElement('div');
-  marco.style.cssText = 'width:794px;max-width:100%;background:#fff;box-shadow:0 0 50px rgba(0,0,0,.5);position:relative;';
+  // Container principal
+  var marcoContainer = document.createElement('div');
+  marcoContainer.id = '_pdfPreviewMarcoContainer';
+  marcoContainer.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:14px;';
 
-  // Iframe sin srcdoc (más compatible)
-  var iframe = document.createElement('iframe');
-  iframe.style.cssText = 'width:100%;border:none;display:block;background:#fff;min-height:1123px;';
-  iframe.id = '_pdfPreviewFrame';
-  marco.appendChild(iframe);
-  wrap.appendChild(marco);
+  wrap.appendChild(marcoContainer);
   ov.appendChild(wrap);
 
-  // Banda inferior con tip
+  // Banda inferior con tip dinámico
   var tip = document.createElement('div');
+  tip.id = '_pdfPreviewTip';
   tip.style.cssText = 'background:#0F2A5A;color:rgba(255,255,255,.7);padding:8px 16px;font-size:11px;text-align:center;border-top:1px solid #1B3F72;';
-  tip.innerHTML = '💡 Si una cláusula queda mal: cierra esta vista, ve a <strong style="color:#60A5FA;">📜 Condiciones</strong>, toca el botón <strong style="color:#F59E0B;">↕</strong> al lado de la cláusula que quieres mover a nueva página, y vuelve a abrir la vista previa.';
   ov.appendChild(tip);
 
   document.body.appendChild(ov);
 
-  // Cargar HTML en el iframe
-  iframe.onload = function(){
-    try {
-      // Ajustar alto del iframe al alto real del contenido
-      var doc = iframe.contentDocument || iframe.contentWindow.document;
-      var altoReal = doc.documentElement.scrollHeight;
-      iframe.style.height = altoReal + 'px';
+  // ── Función que renderiza el modo elegido ──
+  function renderModo(){
+    marcoContainer.innerHTML = '';
+    if(_modoImpresion){
+      // ═══ MODO IMPRESIÓN: simular hojas A4 separadas ═══
+      tip.innerHTML = '🖨 <strong>Modo impresión real</strong> — Hojas A4 separadas con márgenes reales. Esto es muy parecido a cómo saldrá el PDF.';
+      _renderModoImpresion();
+    } else {
+      // ═══ MODO FLUJO: hoja larga continua con líneas de corte ═══
+      tip.innerHTML = '💡 <strong>Modo flujo</strong> — Documento como página continua. Líneas naranjas muestran dónde rompe cada página. Si una cláusula queda mal: cierra, ve a <strong style="color:#60A5FA;">📜 Condiciones</strong>, toca <strong style="color:#F59E0B;">↕</strong> y vuelve a abrir vista previa.';
+      _renderModoFlujo();
+    }
 
-      // Dibujar líneas de corte de página A4 cada 1123px
-      var pageH = 1123; // A4 a 96 DPI
-      var nPages = Math.ceil(altoReal / pageH);
-      for(var i=1; i<nPages; i++){
-        var linea = document.createElement('div');
-        linea.style.cssText = 'position:absolute;left:-30px;right:-30px;top:'+(i*pageH)+'px;height:0;border-top:2px dashed #F59E0B;z-index:5;pointer-events:none;';
-        var etiqueta = document.createElement('div');
-        etiqueta.style.cssText = 'position:absolute;left:-30px;right:-30px;top:'+(i*pageH-12)+'px;text-align:center;color:#F59E0B;font-size:10px;font-weight:700;letter-spacing:2px;pointer-events:none;';
-        etiqueta.textContent = '↕ FIN PÁGINA ' + i + ' / INICIO PÁGINA ' + (i+1) + ' ↕';
-        marco.appendChild(linea);
-        marco.appendChild(etiqueta);
-      }
-    } catch(e){ console.warn("Preview ajuste:", e); }
-  };
-  iframe.contentDocument.open();
-  iframe.contentDocument.write(htmlStr);
-  iframe.contentDocument.close();
+    // Actualizar visual del toggle
+    var btnFlujo = document.getElementById('_pdfModoFlujo');
+    var btnImp = document.getElementById('_pdfModoImpresion');
+    if(btnFlujo && btnImp){
+      btnFlujo.style.background = _modoImpresion ? 'transparent' : '#1E6FD9';
+      btnFlujo.style.color = _modoImpresion ? 'rgba(255,255,255,.7)' : '#fff';
+      btnImp.style.background = _modoImpresion ? '#1E6FD9' : 'transparent';
+      btnImp.style.color = _modoImpresion ? '#fff' : 'rgba(255,255,255,.7)';
+    }
+  }
 
-  // Handlers
+  // ── MODO FLUJO: una sola "hoja larga" con líneas de corte ──
+  function _renderModoFlujo(){
+    var marco = document.createElement('div');
+    marco.style.cssText = 'width:794px;max-width:100%;background:#fff;box-shadow:0 0 50px rgba(0,0,0,.5);position:relative;';
+
+    var iframe = document.createElement('iframe');
+    iframe.style.cssText = 'width:100%;border:none;display:block;background:#fff;min-height:1123px;';
+    iframe.id = '_pdfPreviewFrame';
+    marco.appendChild(iframe);
+    marcoContainer.appendChild(marco);
+
+    iframe.onload = function(){
+      try {
+        var doc = iframe.contentDocument || iframe.contentWindow.document;
+        var altoReal = doc.documentElement.scrollHeight;
+        iframe.style.height = altoReal + 'px';
+        var pageH = 1123;
+        var nPages = Math.ceil(altoReal / pageH);
+        for(var i=1; i<nPages; i++){
+          var linea = document.createElement('div');
+          linea.style.cssText = 'position:absolute;left:-30px;right:-30px;top:'+(i*pageH)+'px;height:0;border-top:2px dashed #F59E0B;z-index:5;pointer-events:none;';
+          var etiqueta = document.createElement('div');
+          etiqueta.style.cssText = 'position:absolute;left:-30px;right:-30px;top:'+(i*pageH-12)+'px;text-align:center;color:#F59E0B;font-size:10px;font-weight:700;letter-spacing:2px;pointer-events:none;';
+          etiqueta.textContent = '↕ FIN PÁGINA ' + i + ' / INICIO PÁGINA ' + (i+1) + ' ↕';
+          marco.appendChild(linea);
+          marco.appendChild(etiqueta);
+        }
+      } catch(e){ console.warn("Preview ajuste:", e); }
+    };
+    iframe.contentDocument.open();
+    iframe.contentDocument.write(htmlStr);
+    iframe.contentDocument.close();
+  }
+
+  // ── MODO IMPRESIÓN: simular hojas A4 separadas con márgenes reales ──
+  function _renderModoImpresion(){
+    // Inyectar CSS adicional al HTML que fuerza modo print-like en pantalla
+    // A4: 210mm x 297mm. A 96dpi: 794 × 1123 px
+    // Márgenes reales del @page: 14mm = 53px, página 1 sin margen superior
+    var pxPorMM = 794 / 210; // 3.78
+    var marginPx = Math.round(14 * pxPorMM); // ~53px
+
+    // HTML modificado: inyectar CSS que active el comportamiento de print
+    var htmlPrint = htmlStr.replace('</head>',
+      '<style id="_previewPrintCss">'
+        +'@media screen{'
+        +'  .pdf-footer-inline{display:none !important;}'
+        +'  .doc{max-width:none !important;}'
+        +'  .page1{padding:0 !important;min-height:0 !important;}'
+        +'  .page2{padding:0 !important;min-height:0 !important;}'
+        +'}'
+      +'</style>'
+      +'</head>'
+    );
+
+    // Crear un único iframe del que extraeremos su DOM completo para luego "rebanarlo" en páginas
+    var iframeMain = document.createElement('iframe');
+    iframeMain.style.cssText = 'position:absolute;left:-9999px;top:0;width:794px;border:none;visibility:hidden;';
+    document.body.appendChild(iframeMain);
+    iframeMain.contentDocument.open();
+    iframeMain.contentDocument.write(htmlPrint);
+    iframeMain.contentDocument.close();
+
+    iframeMain.onload = function(){
+      setTimeout(function(){
+        var docInt = iframeMain.contentDocument;
+        var altoReal = docInt.documentElement.scrollHeight;
+
+        // Altura útil por hoja (descontando márgenes)
+        // Hoja 1: 1123px completos (sin márgenes — tiene su header propio)
+        // Hojas 2+: 1123 - 2*53 = 1017px útiles
+        var hojaH = 1123;
+        var marginV = marginPx;
+
+        // Calcular cuántas hojas necesitamos (aprox por área del contenido)
+        var nHojas = Math.ceil(altoReal / hojaH);
+
+        // Generar N hojas. Cada una es un iframe con el contenido completo pero desplazado en Y
+        for(var i=0; i<nHojas; i++){
+          var hojaWrap = document.createElement('div');
+          hojaWrap.style.cssText = 'width:794px;height:1123px;background:#fff;box-shadow:0 4px 30px rgba(0,0,0,.5);position:relative;overflow:hidden;';
+
+          var pageLabel = document.createElement('div');
+          pageLabel.style.cssText = 'position:absolute;top:-22px;left:0;color:#60A5FA;font-size:10px;font-weight:700;letter-spacing:1.5px;';
+          pageLabel.textContent = 'PÁGINA ' + (i+1);
+          hojaWrap.appendChild(pageLabel);
+
+          // Marcar márgenes con líneas guías (solo visual)
+          if(i > 0){ // página 2+ tiene márgenes
+            var top = document.createElement('div');
+            top.style.cssText = 'position:absolute;top:'+marginV+'px;left:0;right:0;height:0;border-top:1px dashed rgba(96,165,250,.25);pointer-events:none;z-index:3;';
+            hojaWrap.appendChild(top);
+            var bot = document.createElement('div');
+            bot.style.cssText = 'position:absolute;bottom:'+marginV+'px;left:0;right:0;height:0;border-top:1px dashed rgba(96,165,250,.25);pointer-events:none;z-index:3;';
+            hojaWrap.appendChild(bot);
+            var izq = document.createElement('div');
+            izq.style.cssText = 'position:absolute;top:0;bottom:0;left:'+marginV+'px;width:0;border-left:1px dashed rgba(96,165,250,.25);pointer-events:none;z-index:3;';
+            hojaWrap.appendChild(izq);
+            var der = document.createElement('div');
+            der.style.cssText = 'position:absolute;top:0;bottom:0;right:'+marginV+'px;width:0;border-left:1px dashed rgba(96,165,250,.25);pointer-events:none;z-index:3;';
+            hojaWrap.appendChild(der);
+          }
+
+          // Iframe propio de esta hoja: muestra contenido desplazado en Y
+          var iframeHoja = document.createElement('iframe');
+          iframeHoja.style.cssText = 'width:794px;height:'+altoReal+'px;border:none;position:absolute;top:'+(-i*hojaH)+'px;left:0;background:transparent;';
+          hojaWrap.appendChild(iframeHoja);
+
+          var hojaContainer = document.createElement('div');
+          hojaContainer.style.cssText = 'margin-top:22px;';
+          hojaContainer.appendChild(hojaWrap);
+          marcoContainer.appendChild(hojaContainer);
+
+          // Cargar el HTML en cada iframe (sin recursión problemática)
+          (function(ifr){
+            ifr.onload = null; // evitar bucle
+            ifr.contentDocument.open();
+            ifr.contentDocument.write(htmlPrint);
+            ifr.contentDocument.close();
+          })(iframeHoja);
+        }
+
+        iframeMain.remove();
+      }, 200);
+    };
+  }
+
+  // Render inicial
+  renderModo();
+
+  // Handlers de toggle
+  setTimeout(function(){
+    var btnFlujo = document.getElementById('_pdfModoFlujo');
+    var btnImp = document.getElementById('_pdfModoImpresion');
+    if(btnFlujo) btnFlujo.onclick = function(){ if(_modoImpresion){ _modoImpresion = false; renderModo(); } };
+    if(btnImp) btnImp.onclick = function(){ if(!_modoImpresion){ _modoImpresion = true; renderModo(); } };
+  }, 50);
+
+  // Handlers de cerrar/imprimir
   document.getElementById('_pdfPreviewCerrar').onclick = function(){ ov.remove(); };
   document.getElementById('_pdfPreviewImprimir').onclick = function(){
-    try {
-      iframe.contentWindow.focus();
-      iframe.contentWindow.print();
-    } catch(e){
-      alert("No se pudo imprimir: " + e.message);
+    var iframe = document.getElementById('_pdfPreviewFrame');
+    if(iframe){
+      try { iframe.contentWindow.focus(); iframe.contentWindow.print(); }
+      catch(e){ alert("No se pudo imprimir: " + e.message); }
+    } else {
+      // Si está en modo impresión, abrir nueva ventana para imprimir
+      var w = window.open('','_blank');
+      if(w){
+        w.document.write(htmlStr);
+        w.document.close();
+        setTimeout(function(){ try{ w.print(); }catch(e){} }, 500);
+      }
     }
   };
   // ESC para cerrar
