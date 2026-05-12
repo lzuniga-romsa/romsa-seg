@@ -8882,7 +8882,7 @@ function generarPdfCotEnVentana(cot, winRef){
     // Cuerpo con padding horizontal
     +'<div style="padding:32px 48px 0;flex:1;display:flex;flex-direction:column;">'
       +'<div style="flex:1;">'+condsHtml+notaHtml+'</div>'
-      +'<div style="margin-top:auto;padding-top:28px;padding-bottom:32px;">'
+      +'<div class="pdf-footer-inline" style="margin-top:auto;padding-top:28px;padding-bottom:32px;">'
         +'<div style="height:2px;background:linear-gradient(90deg,#0B1F3A,#1E6FD9,#1B3F72);margin-bottom:24px;"></div>'
         +'<div style="display:flex;align-items:center;justify-content:space-between;">'
           +'<div>'
@@ -8914,7 +8914,7 @@ function generarPdfCotEnVentana(cot, winRef){
     +'html,body{background:#fff;color:#0B1F3A;font-family:-apple-system,"SF Pro Display","SF Pro Text",Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased;}'
     +'.doc{max-width:900px;margin:0 auto;}'
     +'.page1{min-height:100vh;display:flex;flex-direction:column;}'
-    +'.page2{min-height:100vh;display:flex;flex-direction:column;}'
+    +'.page2{min-height:100vh;display:flex;flex-direction:column;position:relative;}'
     +'.page-break{page-break-before:always;break-before:page;}'
     // ─── Cláusulas: CSS robusto para saltos de página ───
     +'.cot-clausulas-wrap{display:block;}'
@@ -8923,19 +8923,70 @@ function generarPdfCotEnVentana(cot, winRef){
     +'.cot-clausula-texto{font-size:11px;color:#4A5E7A;line-height:1.8;white-space:pre-wrap;orphans:3;widows:3;}'
     +'.cot-clausula-salto{page-break-before:always !important;break-before:page !important;}'
     +'.cot-salto-aqui{page-break-before:always !important;break-before:page !important;display:block;height:0;}'
+    // ─── Footer estilo print (oculto en pantalla, visible en impresión) ───
+    +'.pdf-running-footer{display:none;}'
     +'@media print{'
-    +'  @page{size:A4 portrait;margin:0;}'
-    +'  html,body{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}'
+    // CRITICAL: Márgenes A4 con espacio para footer running
+    +'  @page{size:A4 portrait;margin:14mm 14mm 22mm 14mm;}'
+    +'  @page :first{margin:0 0 22mm 0;}' // Primera página sin margen superior (porque tiene su propio header)
+    +'  html,body{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;margin:0;padding:0;}'
+    +'  .doc{max-width:none;}'
+    +'  .page1{min-height:0;}'
+    +'  .page2{min-height:0;}'
+    // Página 1: el contenido propio se mantiene; quitar paddings que conflictan
+    +'  .page1{padding:0 !important;}'
+    // Página 2: quitar header navy del flujo (solo aparece arriba de la 1ra hoja de cond) y quitar footer del flujo
+    +'  .page2{padding:0 !important;}'
+    // El "footer inline" original NO se muestra en impresión (lo reemplazamos por uno fijo)
+    +'  .pdf-footer-inline{display:none !important;}'
+    // Footer running real (se repite en cada hoja gracias al position:fixed)
+    +'  .pdf-running-footer{'
+    +'    display:block !important;'
+    +'    position:fixed;'
+    +'    bottom:0;'
+    +'    left:0;'
+    +'    right:0;'
+    +'    height:18mm;'
+    +'    padding:3mm 14mm 0;'
+    +'    background:#fff;'
+    +'    border-top:0 !important;'
+    +'    font-size:9px;'
+    +'    color:#8A9AB8;'
+    +'    z-index:100;'
+    +'  }'
+    +'  .pdf-running-footer-linea{height:2px;background:linear-gradient(90deg,#0B1F3A,#1E6FD9,#1B3F72);margin-bottom:5mm;}'
+    +'  .pdf-running-footer-row{display:flex;justify-content:space-between;align-items:flex-end;}'
+    +'  .pdf-running-footer-left{font-size:9px;color:#8A9AB8;line-height:1.4;}'
+    +'  .pdf-running-footer-left .marca{font-size:9.5px;color:#1E6FD9;font-weight:700;}'
+    +'  .pdf-running-footer-right{font-size:8.5px;color:#8A9AB8;line-height:1.4;text-align:right;}'
+    +'  .pdf-running-footer-right .email{color:#1E6FD9;}'
+    // Contador "Página X de Y" usando CSS counters de @page
+    +'  .pdf-running-footer-pageno{font-size:8px;color:#C0CBD8;letter-spacing:.5px;text-align:center;margin-top:1mm;}'
+    // tr y cláusulas no se parten
     +'  tr,.cond-item{page-break-inside:avoid !important;break-inside:avoid !important;}'
     +'  .cot-clausula{page-break-inside:avoid !important;break-inside:avoid !important;-webkit-region-break-inside:avoid;}'
     +'  .cot-clausula-titulo{page-break-after:avoid !important;break-after:avoid !important;}'
     +'  .cot-clausula-texto{orphans:3 !important; widows:3 !important;}'
     +'  h1,h2,h3,h4,h5,h6{page-break-after:avoid !important;break-after:avoid !important;}'
     +'  img{page-break-inside:avoid !important; break-inside:avoid !important;}'
-    +'  .pdf-footer-cot{page-break-inside:avoid !important;break-inside:avoid !important;}'
     +'}'
     +'</style>'
-    +'</head><body><div class="doc">'
+    +'</head><body>'
+    // ─── Footer running: visible solo en print, fijo en cada hoja ───
+    +'<div class="pdf-running-footer">'
+      +'<div class="pdf-running-footer-linea"></div>'
+      +'<div class="pdf-running-footer-row">'
+        +'<div class="pdf-running-footer-left">'
+          +'<span class="marca">ROMSA Industrial</span><br>'
+          +'Especialistas en mantenimiento y recubrimientos industriales'
+        +'</div>'
+        +'<div class="pdf-running-footer-right">'
+          +'Mexicali, B.C. · '+rTel+'<br>'
+          +'<span class="email">'+rEmail+'</span> · '+rWeb
+        +'</div>'
+      +'</div>'
+    +'</div>'
+    +'<div class="doc">'
 
     // ══ PÁGINA 1 ══
     +'<div class="page1">'
