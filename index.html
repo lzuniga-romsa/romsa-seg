@@ -8861,48 +8861,60 @@ function generarPdfCotEnVentana(cot, winRef){
   // Vigencia ahora se muestra integrada en el header de Próximos pasos
   var secVigenciaLegacy = '';
 
-  // Página 2 — condiciones
+  // Página 2 — condiciones (TABLA con thead/tfoot que se repiten en cada hoja)
   var brP2 = pageBreakEn==='condiciones' ? ' page-break' : '';
   var secCondiciones = !inclCondiciones ? '' :
-    '<div class="page2'+brP2+'">'
-    // Header navy strip — solo título a la izquierda
-    +'<div style="background:linear-gradient(160deg,#0B1F3A 0%,#0F2A5A 100%);padding:20px 48px;display:flex;align-items:center;justify-content:space-between;position:relative;overflow:hidden;flex-shrink:0;">'
-      +'<div style="position:absolute;right:-40px;top:-40px;width:160px;height:160px;border-radius:50%;background:rgba(30,111,217,.08);"></div>'
-      +'<div style="position:relative;z-index:2;">'
-        +'<div style="font-size:8px;font-weight:600;letter-spacing:2.5px;text-transform:uppercase;color:rgba(255,255,255,.45);">Cotización Técnica</div>'
-        +'<div style="font-size:14px;font-weight:700;color:#fff;letter-spacing:.3px;margin-top:3px;">Condiciones Generales de Venta</div>'
-      +'</div>'
-      +'<div style="position:relative;z-index:2;text-align:right;">'
-        +'<div style="font-size:7.5px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.4);">Folio</div>'
-        +'<div style="font-size:11px;font-weight:700;color:#fff;margin-top:1px;font-variant-numeric:tabular-nums;">'+cot.folio+'</div>'
-      +'</div>'
-    +'</div>'
-    // Línea degradada (elemento de continuidad con P1)
-    +'<div style="height:3px;background:linear-gradient(90deg,#0B1F3A,#1E6FD9,#1B3F72);flex-shrink:0;"></div>'
-    // Cuerpo con padding horizontal
-    +'<div style="padding:32px 48px 0;flex:1;display:flex;flex-direction:column;">'
-      +'<div style="flex:1;">'+condsHtml+notaHtml+'</div>'
-      +'<div class="pdf-footer-inline" style="margin-top:auto;padding-top:28px;padding-bottom:32px;">'
-        +'<div style="height:2px;background:linear-gradient(90deg,#0B1F3A,#1E6FD9,#1B3F72);margin-bottom:24px;"></div>'
-        +'<div style="display:flex;align-items:center;justify-content:space-between;">'
-          +'<div>'
-            +(logo?'<img src="'+logo+'" style="height:22px;width:auto;margin-bottom:8px;display:block;" alt="ROMSA">':'')
-            +'<div style="font-size:10px;font-weight:700;color:#1E6FD9;">ROMSA Industrial</div>'
-            +'<div style="font-size:9.5px;color:#8A9AB8;margin-top:2px;">Especialistas en mantenimiento y recubrimientos industriales</div>'
+    '<table class="page2-table'+brP2+'" style="width:100%;border-collapse:collapse;border-spacing:0;">'
+    // ─── HEADER que se repite en cada hoja ───
+    +'<thead style="display:table-header-group;">'
+      +'<tr><td style="padding:0;">'
+        // Header navy strip
+        +'<div class="page2-header" style="background:linear-gradient(160deg,#0B1F3A 0%,#0F2A5A 100%);padding:20px 48px;display:flex;align-items:center;justify-content:space-between;position:relative;overflow:hidden;">'
+          +'<div style="position:absolute;right:-40px;top:-40px;width:160px;height:160px;border-radius:50%;background:rgba(30,111,217,.08);"></div>'
+          +'<div style="position:relative;z-index:2;">'
+            +'<div style="font-size:8px;font-weight:600;letter-spacing:2.5px;text-transform:uppercase;color:rgba(255,255,255,.45);">Cotización Técnica</div>'
+            +'<div style="font-size:14px;font-weight:700;color:#fff;letter-spacing:.3px;margin-top:3px;">Condiciones Generales de Venta</div>'
           +'</div>'
-          +'<div style="text-align:right;">'
-            +'<div style="font-size:9.5px;color:#4A5E7A;line-height:1.8;">'
-              +'Mexicali, Baja California, México<br>'
-              +'<a href="tel:'+rTel+'" style="color:#4A5E7A;text-decoration:none;">'+rTel+'</a><br>'
-              +'<a href="mailto:'+rEmail+'" style="color:#1E6FD9;text-decoration:none;">'+rEmail+'</a><br>'
-              +'<a href="https://'+rWeb+'" style="color:#1E6FD9;text-decoration:none;">'+rWeb+'</a>'
+          +'<div style="position:relative;z-index:2;text-align:right;">'
+            +'<div style="font-size:7.5px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.4);">Folio</div>'
+            +'<div style="font-size:11px;font-weight:700;color:#fff;margin-top:1px;font-variant-numeric:tabular-nums;">'+cot.folio+'</div>'
+          +'</div>'
+        +'</div>'
+        +'<div style="height:3px;background:linear-gradient(90deg,#0B1F3A,#1E6FD9,#1B3F72);"></div>'
+        // Espaciador después del header
+        +'<div style="height:20px;"></div>'
+      +'</td></tr>'
+    +'</thead>'
+    // ─── BODY: cláusulas ───
+    +'<tbody>'
+      +'<tr><td style="padding:0 48px;vertical-align:top;">'
+        +condsHtml+notaHtml
+      +'</td></tr>'
+    +'</tbody>'
+    // ─── FOOTER que se repite en cada hoja ───
+    +'<tfoot style="display:table-footer-group;">'
+      +'<tr><td style="padding:0;">'
+        +'<div class="page2-footer" style="padding:20px 48px 16px;">'
+          +'<div style="height:2px;background:linear-gradient(90deg,#0B1F3A,#1E6FD9,#1B3F72);margin-bottom:14px;"></div>'
+          +'<div style="display:flex;align-items:center;justify-content:space-between;">'
+            +'<div>'
+              +(logo?'<img src="'+logo+'" style="height:20px;width:auto;margin-bottom:6px;display:block;" alt="ROMSA">':'')
+              +'<div style="font-size:9.5px;font-weight:700;color:#1E6FD9;">ROMSA Industrial</div>'
+              +'<div style="font-size:8.5px;color:#8A9AB8;margin-top:1px;">Especialistas en mantenimiento y recubrimientos industriales</div>'
+            +'</div>'
+            +'<div style="text-align:right;">'
+              +'<div style="font-size:8.5px;color:#4A5E7A;line-height:1.6;">'
+                +'Mexicali, Baja California, México<br>'
+                +'<a href="tel:'+rTel+'" style="color:#4A5E7A;text-decoration:none;">'+rTel+'</a><br>'
+                +'<a href="mailto:'+rEmail+'" style="color:#1E6FD9;text-decoration:none;">'+rEmail+'</a><br>'
+                +'<a href="https://'+rWeb+'" style="color:#1E6FD9;text-decoration:none;">'+rWeb+'</a>'
+              +'</div>'
             +'</div>'
           +'</div>'
         +'</div>'
-        +'<div style="text-align:center;margin-top:16px;font-size:8.5px;color:#C0CBD8;letter-spacing:.5px;">2 DE 2</div>'
-      +'</div>'
-    +'</div>'
-    +'</div>';
+      +'</td></tr>'
+    +'</tfoot>'
+    +'</table>';
 
   var _pdfHtml=
     '<!DOCTYPE html><html lang="es"><head>'
@@ -8914,7 +8926,10 @@ function generarPdfCotEnVentana(cot, winRef){
     +'html,body{background:#fff;color:#0B1F3A;font-family:-apple-system,"SF Pro Display","SF Pro Text",Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased;}'
     +'.doc{max-width:900px;margin:0 auto;}'
     +'.page1{min-height:100vh;display:flex;flex-direction:column;}'
-    +'.page2{min-height:100vh;display:flex;flex-direction:column;position:relative;}'
+    +'.page2-table{width:100%;border-collapse:collapse;border-spacing:0;}'
+    +'.page2-table thead{display:table-header-group;}'
+    +'.page2-table tfoot{display:table-footer-group;}'
+    +'.page2-table td{padding:0;}'
     +'.page-break{page-break-before:always;break-before:page;}'
     // ─── Cláusulas: CSS robusto para saltos de página ───
     +'.cot-clausulas-wrap{display:block;}'
@@ -8924,24 +8939,21 @@ function generarPdfCotEnVentana(cot, winRef){
     +'.cot-clausula-salto{page-break-before:always !important;break-before:page !important;}'
     +'.cot-salto-aqui{page-break-before:always !important;break-before:page !important;display:block;height:0;}'
     +'@media print{'
-    // CRITICAL: Márgenes A4
     +'  @page{size:A4 portrait;margin:14mm 14mm 14mm 14mm;}'
     // Primera página: sin márgenes (tiene su header navy a página completa)
     +'  @page :first{margin:0;}'
     +'  html,body{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;margin:0;padding:0;}'
     +'  .doc{max-width:none;}'
     +'  .page1{min-height:0;padding:0 !important;}'
-    +'  .page2{min-height:0;padding:0 !important;}'
-    // Footer running OCULTO en impresión (usamos el footer inline en su lugar)
-    +'  .pdf-running-footer{display:none !important;}'
-    // El footer inline de page2 se mantiene visible y cae naturalmente al final del flujo
-    +'  .pdf-footer-inline{'
-    +'    page-break-inside:avoid !important;'
-    +'    break-inside:avoid !important;'
-    +'    page-break-before:avoid !important;'
-    +'    break-before:avoid !important;'
-    +'  }'
-    // tr y cláusulas no se parten
+    // ─── PAGE2: tabla con thead/tfoot que se repiten en cada hoja ───
+    +'  .page2-table{width:100%;border-collapse:collapse;page-break-inside:auto;}'
+    +'  .page2-table thead{display:table-header-group !important;}'
+    +'  .page2-table tfoot{display:table-footer-group !important;}'
+    +'  .page2-table tbody{display:table-row-group;}'
+    +'  .page2-table tr{page-break-inside:avoid;}'
+    // El header navy se estira hasta los bordes del A4 (compensa los márgenes de 14mm)
+    +'  .page2-header{margin:0 -14mm;}'
+    +'  .page2-footer{margin:0 -2mm;}'
     +'  tr,.cond-item{page-break-inside:avoid !important;break-inside:avoid !important;}'
     +'  .cot-clausula{page-break-inside:avoid !important;break-inside:avoid !important;-webkit-region-break-inside:avoid;}'
     +'  .cot-clausula-titulo{page-break-after:avoid !important;break-after:avoid !important;}'
