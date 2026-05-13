@@ -8861,60 +8861,53 @@ function generarPdfCotEnVentana(cot, winRef){
   // Vigencia ahora se muestra integrada en el header de Próximos pasos
   var secVigenciaLegacy = '';
 
-  // Página 2 — condiciones (TABLA con thead/tfoot que se repiten en cada hoja)
+  // Página 2+ — condiciones (estructura por hojas físicas con JS post-render)
   var brP2 = pageBreakEn==='condiciones' ? ' page-break' : '';
+
+  // Construir el HTML del header (se replicará por hoja)
+  var headerHojaHtml =
+    '<div class="hoja-cond-header" style="background:linear-gradient(160deg,#0B1F3A 0%,#0F2A5A 100%);padding:20px 48px;display:flex;align-items:center;justify-content:space-between;position:relative;overflow:hidden;">'
+      +'<div style="position:absolute;right:-40px;top:-40px;width:160px;height:160px;border-radius:50%;background:rgba(30,111,217,.08);"></div>'
+      +'<div style="position:relative;z-index:2;">'
+        +'<div style="font-size:8px;font-weight:600;letter-spacing:2.5px;text-transform:uppercase;color:rgba(255,255,255,.45);">Cotización Técnica</div>'
+        +'<div style="font-size:14px;font-weight:700;color:#fff;letter-spacing:.3px;margin-top:3px;">Condiciones Generales de Venta</div>'
+      +'</div>'
+      +'<div style="position:relative;z-index:2;text-align:right;">'
+        +'<div style="font-size:7.5px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.4);">Folio</div>'
+        +'<div style="font-size:11px;font-weight:700;color:#fff;margin-top:1px;font-variant-numeric:tabular-nums;">'+cot.folio+'</div>'
+      +'</div>'
+    +'</div>'
+    +'<div style="height:3px;background:linear-gradient(90deg,#0B1F3A,#1E6FD9,#1B3F72);"></div>';
+
+  // Construir el HTML del footer (se replicará por hoja)
+  var footerHojaHtml =
+    '<div class="hoja-cond-footer" style="padding:14px 48px 0;">'
+      +'<div style="height:2px;background:linear-gradient(90deg,#0B1F3A,#1E6FD9,#1B3F72);margin-bottom:12px;"></div>'
+      +'<div style="display:flex;align-items:center;justify-content:space-between;">'
+        +'<div>'
+          +(logo?'<img src="'+logo+'" style="height:20px;width:auto;margin-bottom:5px;display:block;" alt="ROMSA">':'')
+          +'<div style="font-size:9.5px;font-weight:700;color:#1E6FD9;">ROMSA Industrial</div>'
+          +'<div style="font-size:8.5px;color:#8A9AB8;margin-top:1px;">Especialistas en mantenimiento y recubrimientos industriales</div>'
+        +'</div>'
+        +'<div style="text-align:right;">'
+          +'<div style="font-size:8.5px;color:#4A5E7A;line-height:1.6;">'
+            +'Mexicali, Baja California, México<br>'
+            +'<a href="tel:'+rTel+'" style="color:#4A5E7A;text-decoration:none;">'+rTel+'</a><br>'
+            +'<a href="mailto:'+rEmail+'" style="color:#1E6FD9;text-decoration:none;">'+rEmail+'</a><br>'
+            +'<a href="https://'+rWeb+'" style="color:#1E6FD9;text-decoration:none;">'+rWeb+'</a>'
+          +'</div>'
+        +'</div>'
+      +'</div>'
+    +'</div>';
+
   var secCondiciones = !inclCondiciones ? '' :
-    '<table class="page2-table'+brP2+'" style="width:100%;border-collapse:collapse;border-spacing:0;">'
-    // ─── HEADER que se repite en cada hoja ───
-    +'<thead style="display:table-header-group;">'
-      +'<tr><td style="padding:0;">'
-        // Header navy strip
-        +'<div class="page2-header" style="background:linear-gradient(160deg,#0B1F3A 0%,#0F2A5A 100%);padding:20px 48px;display:flex;align-items:center;justify-content:space-between;position:relative;overflow:hidden;">'
-          +'<div style="position:absolute;right:-40px;top:-40px;width:160px;height:160px;border-radius:50%;background:rgba(30,111,217,.08);"></div>'
-          +'<div style="position:relative;z-index:2;">'
-            +'<div style="font-size:8px;font-weight:600;letter-spacing:2.5px;text-transform:uppercase;color:rgba(255,255,255,.45);">Cotización Técnica</div>'
-            +'<div style="font-size:14px;font-weight:700;color:#fff;letter-spacing:.3px;margin-top:3px;">Condiciones Generales de Venta</div>'
-          +'</div>'
-          +'<div style="position:relative;z-index:2;text-align:right;">'
-            +'<div style="font-size:7.5px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.4);">Folio</div>'
-            +'<div style="font-size:11px;font-weight:700;color:#fff;margin-top:1px;font-variant-numeric:tabular-nums;">'+cot.folio+'</div>'
-          +'</div>'
-        +'</div>'
-        +'<div style="height:3px;background:linear-gradient(90deg,#0B1F3A,#1E6FD9,#1B3F72);"></div>'
-        // Espaciador después del header
-        +'<div style="height:20px;"></div>'
-      +'</td></tr>'
-    +'</thead>'
-    // ─── BODY: cláusulas ───
-    +'<tbody>'
-      +'<tr><td style="padding:0 48px;vertical-align:top;">'
-        +condsHtml+notaHtml
-      +'</td></tr>'
-    +'</tbody>'
-    // ─── FOOTER que se repite en cada hoja ───
-    +'<tfoot style="display:table-footer-group;">'
-      +'<tr><td style="padding:0;">'
-        +'<div class="page2-footer" style="padding:20px 48px 16px;">'
-          +'<div style="height:2px;background:linear-gradient(90deg,#0B1F3A,#1E6FD9,#1B3F72);margin-bottom:14px;"></div>'
-          +'<div style="display:flex;align-items:center;justify-content:space-between;">'
-            +'<div>'
-              +(logo?'<img src="'+logo+'" style="height:20px;width:auto;margin-bottom:6px;display:block;" alt="ROMSA">':'')
-              +'<div style="font-size:9.5px;font-weight:700;color:#1E6FD9;">ROMSA Industrial</div>'
-              +'<div style="font-size:8.5px;color:#8A9AB8;margin-top:1px;">Especialistas en mantenimiento y recubrimientos industriales</div>'
-            +'</div>'
-            +'<div style="text-align:right;">'
-              +'<div style="font-size:8.5px;color:#4A5E7A;line-height:1.6;">'
-                +'Mexicali, Baja California, México<br>'
-                +'<a href="tel:'+rTel+'" style="color:#4A5E7A;text-decoration:none;">'+rTel+'</a><br>'
-                +'<a href="mailto:'+rEmail+'" style="color:#1E6FD9;text-decoration:none;">'+rEmail+'</a><br>'
-                +'<a href="https://'+rWeb+'" style="color:#1E6FD9;text-decoration:none;">'+rWeb+'</a>'
-              +'</div>'
-            +'</div>'
-          +'</div>'
-        +'</div>'
-      +'</td></tr>'
-    +'</tfoot>'
-    +'</table>';
+    // Wrapper invisible para que el JS de distribución meta aquí las hojas
+    '<div class="cond-wrap'+brP2+'" id="cond-wrap-distribuir">'
+      // Datos para el JS de distribución (se borran al renderizar)
+      +'<div id="cond-clausulas-source" style="display:none;">'+condsHtml+notaHtml+'</div>'
+      +'<div id="cond-header-tpl" style="display:none;">'+headerHojaHtml+'</div>'
+      +'<div id="cond-footer-tpl" style="display:none;">'+footerHojaHtml+'</div>'
+    +'</div>';
 
   var _pdfHtml=
     '<!DOCTYPE html><html lang="es"><head>'
@@ -8926,39 +8919,41 @@ function generarPdfCotEnVentana(cot, winRef){
     +'html,body{background:#fff;color:#0B1F3A;font-family:-apple-system,"SF Pro Display","SF Pro Text",Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased;}'
     +'.doc{max-width:900px;margin:0 auto;}'
     +'.page1{min-height:100vh;display:flex;flex-direction:column;}'
-    +'.page2-table{width:100%;border-collapse:collapse;border-spacing:0;}'
-    +'.page2-table thead{display:table-header-group;}'
-    +'.page2-table tfoot{display:table-footer-group;}'
-    +'.page2-table td{padding:0;}'
+    // ─── Hoja A4 física para condiciones (cada hoja es un div con altura fija A4) ───
+    +'.hoja-cond{'
+    +'  width:100%;'
+    +'  min-height:1123px;'
+    +'  display:flex;'
+    +'  flex-direction:column;'
+    +'  page-break-after:always;'
+    +'  break-after:page;'
+    +'  background:#fff;'
+    +'}'
+    +'.hoja-cond:last-child{page-break-after:auto;break-after:auto;}'
+    +'.hoja-cond-cuerpo{'
+    +'  flex:1;'
+    +'  padding:20px 48px;'
+    +'  display:flex;'
+    +'  flex-direction:column;'
+    +'}'
+    +'.hoja-cond-cuerpo-clausulas{flex:1;}'
     +'.page-break{page-break-before:always;break-before:page;}'
-    // ─── Cláusulas: CSS robusto para saltos de página ───
+    // ─── Cláusulas ───
     +'.cot-clausulas-wrap{display:block;}'
-    +'.cot-clausula{display:block;margin-bottom:18px;page-break-inside:avoid !important;break-inside:avoid !important;-webkit-column-break-inside:avoid;}'
+    +'.cot-clausula{display:block;margin-bottom:18px;page-break-inside:avoid !important;break-inside:avoid !important;}'
     +'.cot-clausula-titulo{font-size:9.5px;font-weight:800;color:#0B1F3A;text-transform:uppercase;letter-spacing:1px;margin-bottom:5px;page-break-after:avoid !important;break-after:avoid !important;}'
     +'.cot-clausula-texto{font-size:11px;color:#4A5E7A;line-height:1.8;white-space:pre-wrap;orphans:3;widows:3;}'
     +'.cot-clausula-salto{page-break-before:always !important;break-before:page !important;}'
-    +'.cot-salto-aqui{page-break-before:always !important;break-before:page !important;display:block;height:0;}'
     +'@media print{'
-    +'  @page{size:A4 portrait;margin:14mm 14mm 14mm 14mm;}'
-    // Primera página: sin márgenes (tiene su header navy a página completa)
-    +'  @page :first{margin:0;}'
+    +'  @page{size:A4 portrait;margin:0;}'
     +'  html,body{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;margin:0;padding:0;}'
     +'  .doc{max-width:none;}'
     +'  .page1{min-height:0;padding:0 !important;}'
-    // ─── PAGE2: tabla con thead/tfoot que se repiten en cada hoja ───
-    +'  .page2-table{width:100%;border-collapse:collapse;page-break-inside:auto;}'
-    +'  .page2-table thead{display:table-header-group !important;}'
-    +'  .page2-table tfoot{display:table-footer-group !important;}'
-    +'  .page2-table tbody{display:table-row-group;}'
-    +'  .page2-table tr{page-break-inside:avoid;}'
-    // El header navy se estira hasta los bordes del A4 (compensa los márgenes de 14mm)
-    +'  .page2-header{margin:0 -14mm;}'
-    +'  .page2-footer{margin:0 -2mm;}'
-    +'  tr,.cond-item{page-break-inside:avoid !important;break-inside:avoid !important;}'
-    +'  .cot-clausula{page-break-inside:avoid !important;break-inside:avoid !important;-webkit-region-break-inside:avoid;}'
+    +'  .hoja-cond{min-height:297mm;height:297mm;page-break-after:always;break-after:page;}'
+    +'  .hoja-cond:last-child{page-break-after:auto;break-after:auto;}'
+    +'  .cot-clausula{page-break-inside:avoid !important;break-inside:avoid !important;}'
     +'  .cot-clausula-titulo{page-break-after:avoid !important;break-after:avoid !important;}'
     +'  .cot-clausula-texto{orphans:3 !important; widows:3 !important;}'
-    +'  h1,h2,h3,h4,h5,h6{page-break-after:avoid !important;break-after:avoid !important;}'
     +'  img{page-break-inside:avoid !important; break-inside:avoid !important;}'
     +'}'
     +'</style>'
@@ -9072,27 +9067,83 @@ function generarPdfCotEnVentana(cot, winRef){
     +secCondiciones
 
     +'</div>'// /doc
-    // ═══ Confiamos en el CSS estricto + control manual (sin optimizador automático) ═══
-    // El intento de optimizador con offsetTop sobre-corregía: a veces movía cláusulas que el
-    // navegador ya había acomodado bien. El CSS page-break-inside:avoid + control ↕ manual son
-    // suficientes y predecibles.
+    // ═══ Distribuidor dinámico de cláusulas en hojas físicas ═══
+    // Mide cada cláusula y la coloca en hojas A4 (1123px), respetando saltos manuales
+    // y page-break-inside:avoid. Cada hoja tiene su header navy y footer ROMSA propios.
     +'<script>'
     +'(function(){'
     +'  function dbg(msg){ try{console.log("[ROMSA PDF] "+msg);}catch(e){} }'
-    +'  function diagnostico(){'
-    +'    var clausulas = document.querySelectorAll(".cot-clausula");'
-    +'    if(!clausulas.length) return;'
-    +'    dbg(clausulas.length + " cláusulas en el documento. CSS page-break-inside:avoid activo.");'
-    +'    clausulas.forEach(function(cl, idx){'
-    +'      var el = cl, topReal = 0;'
-    +'      while(el){ topReal += el.offsetTop; el = el.offsetParent; }'
-    +'      var alto = cl.getBoundingClientRect().height;'
-    +'      var tieneSaltoManual = cl.classList.contains("cot-clausula-salto");'
-    +'      dbg("Cláusula "+(idx+1)+": y="+Math.round(topReal)+"px, alto="+Math.round(alto)+"px"+(tieneSaltoManual?" [SALTO MANUAL]":""));'
+    +'  function distribuir(){'
+    +'    var wrap = document.getElementById("cond-wrap-distribuir");'
+    +'    if(!wrap){ dbg("sin cond-wrap-distribuir"); return; }'
+    +'    var source = document.getElementById("cond-clausulas-source");'
+    +'    var headerTpl = document.getElementById("cond-header-tpl");'
+    +'    var footerTpl = document.getElementById("cond-footer-tpl");'
+    +'    if(!source || !headerTpl || !footerTpl){ dbg("faltan tpl"); return; }'
+    // Constantes (en px, A4=1123px a 96dpi)
+    +'    var HOJA_ALTO = 1123;'
+    +'    var HEADER_ALTO = 72;' // header navy ~70px
+    +'    var FOOTER_ALTO = 130;' // footer ROMSA ~130px
+    +'    var PADDING_TOP = 20;'
+    +'    var PADDING_BOTTOM = 16;'
+    +'    var AREA_UTIL = HOJA_ALTO - HEADER_ALTO - FOOTER_ALTO - PADDING_TOP - PADDING_BOTTOM;'
+    +'    dbg("Área útil por hoja: "+AREA_UTIL+"px");'
+    // Obtener todas las cláusulas (estaban en source, las pasamos a un contenedor temporal para medir)
+    +'    var headerHTML = headerTpl.innerHTML;'
+    +'    var footerHTML = footerTpl.innerHTML;'
+    +'    var sourceHTML = source.innerHTML;'
+    // Mover todo el source a un contenedor temporal visible (off-screen) para medir
+    +'    var medidor = document.createElement("div");'
+    +'    medidor.style.cssText = "position:absolute;left:-99999px;top:0;width:"+(wrap.offsetWidth || 794)+"px;visibility:hidden;";'
+    +'    medidor.innerHTML = sourceHTML;'
+    +'    document.body.appendChild(medidor);'
+    +'    var clausulas = medidor.querySelectorAll(".cot-clausula");'
+    +'    var alturas = [];'
+    +'    clausulas.forEach(function(cl){'
+    +'      alturas.push({'
+    +'        html: cl.outerHTML,'
+    +'        alto: cl.getBoundingClientRect().height,'
+    +'        salto: cl.classList.contains("cot-clausula-salto")'
+    +'      });'
     +'    });'
+    +'    medidor.remove();'
+    +'    dbg("Cláusulas: "+alturas.length+", alturas:", alturas.map(function(a){return Math.round(a.alto);}));'
+    // Distribuir en hojas
+    +'    var hojas = [];'
+    +'    var hojaActual = [];'
+    +'    var altoActual = 0;'
+    +'    alturas.forEach(function(item, idx){'
+    +'      var altoConMargen = item.alto + 18;' // +18 del margin-bottom
+    +'      var necesitaSaltoManual = item.salto && idx > 0;'
+    +'      var noCabe = (altoActual + altoConMargen) > AREA_UTIL;'
+    +'      if((necesitaSaltoManual || noCabe) && hojaActual.length > 0){'
+    +'        hojas.push(hojaActual);'
+    +'        hojaActual = [];'
+    +'        altoActual = 0;'
+    +'      }'
+    +'      hojaActual.push(item.html);'
+    +'      altoActual += altoConMargen;'
+    +'    });'
+    +'    if(hojaActual.length) hojas.push(hojaActual);'
+    +'    dbg("Total hojas a generar: "+hojas.length);'
+    // Generar el HTML final reemplazando el wrap
+    +'    var html = "";'
+    +'    hojas.forEach(function(clausulasDeHoja, idx){'
+    +'      html += "<div class=\\"hoja-cond\\">"'
+    +'        + headerHTML'
+    +'        + "<div class=\\"hoja-cond-cuerpo\\">"'
+    +'          + "<div class=\\"hoja-cond-cuerpo-clausulas\\">"'
+    +'            + clausulasDeHoja.join("")'
+    +'          + "</div>"'
+    +'          + footerHTML'
+    +'        + "</div>"'
+    +'      + "</div>";'
+    +'    });'
+    +'    wrap.innerHTML = html;'
+    +'    dbg("Distribución completada");'
     +'  }'
-    +'  if(document.readyState === "complete"){ diagnostico(); }'
-    +'  else { window.addEventListener("load", diagnostico); }'
+    +'  if(document.readyState === "complete"){ distribuir(); }'
+    +'  else { window.addEventListener("load", distribuir); }'
     +'})();'
     +'<\/script>'
     +'<\/body><\/html>';
@@ -9130,28 +9181,28 @@ function _inyectarPdf(htmlStr, title, winRef){
     fr.onload = function(){
       setTimeout(function(){
         try{ fr.contentWindow.focus(); fr.contentWindow.print(); }catch(e){}
-      }, 500);
+      }, 900);
     };
   } else if(winRef){
     // Chrome/Firefox con ventana ya abierta (síncrona desde el click)
     winRef.document.open();
     winRef.document.write(htmlStr);
     winRef.document.close();
-    winRef.onload = function(){ setTimeout(function(){ winRef.print(); }, 500); };
+    winRef.onload = function(){ setTimeout(function(){ winRef.print(); }, 900); };
     // Si onload no dispara (documento ya cargado), imprimir directamente
     setTimeout(function(){
       try{ if(winRef && !winRef.closed) winRef.print(); }catch(e){}
-    }, 900);
+    }, 1400);
   } else {
     // Fallback: abrir nueva ventana
     var win2 = window.open('', '_blank');
     if(!win2){ showToast('⚠️ Permite ventanas emergentes'); return; }
     win2.document.write(htmlStr);
     win2.document.close();
-    win2.onload = function(){ setTimeout(function(){ win2.print(); }, 500); };
+    win2.onload = function(){ setTimeout(function(){ win2.print(); }, 900); };
     setTimeout(function(){
       try{ if(win2 && !win2.closed) win2.print(); }catch(e){}
-    }, 900);
+    }, 1400);
   }
 }
 
