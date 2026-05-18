@@ -1094,8 +1094,8 @@ body.in-costeo #app{
 <!-- SELECTOR DE MÓDULO -->
 <div id="module-selector" class="hidden">
   <img class="mod-logo" id="mod-logo-img" alt="ROMSA" src="">
-  <div class="mod-sub">Sistema ROMSA Industrial</div>
-  <div class="mod-title">¿Qué deseas hacer hoy?</div>
+  <div class="mod-sub">Bienvenidos al</div>
+  <div class="mod-title">CRM de ROMSA Industrial</div>
 
   <div class="mod-card blue" onclick="selectModule('obras')">
     <div class="mod-icon blue">🏗️</div>
@@ -1120,6 +1120,15 @@ body.in-costeo #app{
     <div class="mod-info">
       <div class="mod-name">Cotizaciones</div>
       <div class="mod-desc">Genera, personaliza y envía cotizaciones en PDF</div>
+    </div>
+    <div class="mod-arrow">›</div>
+  </div>
+
+  <div class="mod-card" onclick="selectModule('contactos')" style="background:linear-gradient(135deg,#FFF7ED,#FFEDD5);border:1px solid rgba(245,158,11,.3);">
+    <div class="mod-icon" style="background:rgba(245,158,11,.15);color:#C2410C;">👥</div>
+    <div class="mod-info">
+      <div class="mod-name">Contactos</div>
+      <div class="mod-desc">Red profesional, leads y directorio de personas</div>
     </div>
     <div class="mod-arrow">›</div>
   </div>
@@ -1942,6 +1951,15 @@ body.in-costeo #app{
               </div>
             </div>
 
+            <!-- 👥 Cuadrilla asignada -->
+            <div style="font-size:9.5px;font-weight:700;color:var(--tx2);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;">👥 Cuadrilla asignada</div>
+            <div class="fg" style="margin-bottom:14px;">
+              <select class="finput" id="cot-cuadrilla-id" onchange="actualizarVisualCuadrillaCot()" style="font-family:var(--font);">
+                <option value="">— Sin asignar —</option>
+              </select>
+              <div id="cot-cuadrilla-info" style="display:none;margin-top:6px;padding:8px 10px;border-radius:6px;font-size:10.5px;line-height:1.5;"></div>
+            </div>
+
             <!-- Responsable -->
             <div style="font-size:9.5px;font-weight:700;color:var(--tx2);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;">👤 Responsable / Supervisor</div>
             <div class="fg" style="margin-bottom:14px;">
@@ -2467,6 +2485,57 @@ body.in-costeo #app{
 
     </div>
   </div><!-- /screen-costeo-editor -->
+
+  <!-- ════════════════════════════════════════════════════════════════ -->
+  <!-- 📇 MÓDULO CONTACTOS · Red profesional, leads, directorio personas -->
+  <!-- ════════════════════════════════════════════════════════════════ -->
+  <div id="screen-contactos" class="screen" style="padding:0;overflow-y:auto;background:var(--off);">
+
+    <!-- HEADER del módulo -->
+    <div style="background:linear-gradient(135deg,#FFF7ED 0%,#FFEDD5 100%);border-bottom:1px solid rgba(245,158,11,.2);padding:16px 18px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <button onclick="volverSelector()" style="background:rgba(11,31,58,.06);border:1px solid rgba(11,31,58,.1);color:var(--navy);font-size:13px;font-weight:700;padding:6px 12px;border-radius:8px;cursor:pointer;font-family:var(--font);">← Menú</button>
+          <div>
+            <div style="font-size:9px;font-weight:700;color:#C2410C;letter-spacing:2px;text-transform:uppercase;">CRM · Personas</div>
+            <div style="font-size:18px;font-weight:800;color:#0B1F3A;">👥 Contactos</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <button onclick="exportarContactosExcel()" style="background:#10B981;border:none;color:#fff;font-size:11.5px;font-weight:700;padding:8px 14px;border-radius:8px;cursor:pointer;font-family:var(--font);">📊 Exportar Excel</button>
+          <button onclick="abrirEditorContacto()" style="background:#F59E0B;border:none;color:#fff;font-size:11.5px;font-weight:700;padding:8px 14px;border-radius:8px;cursor:pointer;font-family:var(--font);">+ Nuevo Contacto</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats rápidas -->
+    <div style="padding:14px 18px 0;">
+      <div id="ct-stats" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;">
+        <!-- generados por JS -->
+      </div>
+    </div>
+
+    <!-- Búsqueda y filtros -->
+    <div style="padding:14px 18px 8px;">
+      <div style="position:relative;margin-bottom:10px;">
+        <input id="ct-busqueda" oninput="renderListaContactos()" placeholder="🔍 Buscar por nombre, empresa, email, ciudad..." style="width:100%;background:#fff;border:1px solid var(--g1);border-radius:10px;padding:11px 14px;font-size:13px;font-family:var(--font);outline:none;">
+      </div>
+      <div id="ct-filtros" style="display:flex;gap:6px;flex-wrap:wrap;overflow-x:auto;padding-bottom:2px;">
+        <button class="ct-chip" data-tipo="todos" onclick="filtrarContactos('todos')" style="background:#F59E0B;color:#fff;border:1px solid #D97706;font-size:11px;font-weight:700;padding:6px 12px;border-radius:18px;cursor:pointer;font-family:var(--font);white-space:nowrap;">Todos</button>
+        <button class="ct-chip" data-tipo="cliente" onclick="filtrarContactos('cliente')" style="background:#fff;color:var(--tx);border:1px solid var(--g1);font-size:11px;font-weight:600;padding:6px 12px;border-radius:18px;cursor:pointer;font-family:var(--font);white-space:nowrap;">🟢 Cliente</button>
+        <button class="ct-chip" data-tipo="lead" onclick="filtrarContactos('lead')" style="background:#fff;color:var(--tx);border:1px solid var(--g1);font-size:11px;font-weight:600;padding:6px 12px;border-radius:18px;cursor:pointer;font-family:var(--font);white-space:nowrap;">🔵 Lead</button>
+        <button class="ct-chip" data-tipo="proveedor" onclick="filtrarContactos('proveedor')" style="background:#fff;color:var(--tx);border:1px solid var(--g1);font-size:11px;font-weight:600;padding:6px 12px;border-radius:18px;cursor:pointer;font-family:var(--font);white-space:nowrap;">🟠 Proveedor</button>
+        <button class="ct-chip" data-tipo="socio" onclick="filtrarContactos('socio')" style="background:#fff;color:var(--tx);border:1px solid var(--g1);font-size:11px;font-weight:600;padding:6px 12px;border-radius:18px;cursor:pointer;font-family:var(--font);white-space:nowrap;">🟣 Socio</button>
+        <button class="ct-chip" data-tipo="otro" onclick="filtrarContactos('otro')" style="background:#fff;color:var(--tx);border:1px solid var(--g1);font-size:11px;font-weight:600;padding:6px 12px;border-radius:18px;cursor:pointer;font-family:var(--font);white-space:nowrap;">⚪ Otro</button>
+      </div>
+    </div>
+
+    <!-- Lista de contactos -->
+    <div id="ct-lista" style="padding:8px 18px 90px;">
+      <!-- generados por JS -->
+    </div>
+
+  </div><!-- /screen-contactos -->
 
   </div><!-- /main -->
 
@@ -5394,6 +5463,9 @@ function selectModule(mod){
   } else if(mod === 'costeo'){
     if(!window._costeoAcceso){ showToast("🔒 Sin acceso a este módulo"); volverSelector(); return; }
     goScreen('costeo');
+  } else if(mod === 'contactos'){
+    goScreen('contactos');
+    if(typeof cargarContactos === "function") cargarContactos();
   }
 }
 
@@ -5957,6 +6029,10 @@ function showCotSubtab(tab, btnEl){
     if(typeof cargarClientes === "function") cargarClientes();
   } else if(tab === "condiciones"){
     if(typeof cargarPlantillasCondiciones === "function") cargarPlantillasCondiciones();
+  } else if(tab === "cuadrillas"){
+    if(typeof cargarCuadrillas === "function") cargarCuadrillas();
+  } else if(tab === "calendario"){
+    if(typeof renderCalendario === "function") renderCalendario();
   }
 }
 
@@ -7440,6 +7516,64 @@ window._cuaAddMiembro = _cuaAddMiembro;
 window._cuaEliminarMiembro = _cuaEliminarMiembro;
 
 // ═══════════════════════════════════════════════════════════════
+// CUADRILLA ASIGNADA A COTIZACIÓN — Dropdown + integración
+// ═══════════════════════════════════════════════════════════════
+
+// Llenar dropdown #cot-cuadrilla-id con las cuadrillas activas
+async function _llenarDropdownCuadrillasCot(){
+  var sel = document.getElementById("cot-cuadrilla-id");
+  if(!sel) return;
+  // Asegurar que cuadrillas estén cargadas
+  if(!_cuadrillasCargadas){
+    try { await cargarCuadrillas(); } catch(e){ console.warn("[ROMSA] Cuadrillas:", e); }
+  }
+  var idActual = sel.value || "";
+  var activas = _cuadrillas.filter(function(c){return c.activo !== false;});
+  activas.sort(function(a,b){return (a.nombre||"").localeCompare(b.nombre||"");});
+
+  sel.innerHTML = '<option value="">— Sin asignar —</option>'
+    + activas.map(function(cu){
+        var sel2 = cu.id === idActual ? ' selected' : '';
+        var lider = cu.lider ? ' · '+cu.lider : '';
+        return '<option value="'+cu.id+'"'+sel2+'>'+escapeHtml(cu.nombre||"")+lider+'</option>';
+      }).join("");
+  actualizarVisualCuadrillaCot();
+}
+
+// Mostrar visual con color/líder/miembros al seleccionar cuadrilla
+function actualizarVisualCuadrillaCot(){
+  var sel = document.getElementById("cot-cuadrilla-id");
+  var info = document.getElementById("cot-cuadrilla-info");
+  if(!sel || !info) return;
+  var id = sel.value;
+  if(!id){
+    info.style.display = "none";
+    info.innerHTML = "";
+    return;
+  }
+  var cu = _cuadrillas.find(function(c){return c.id === id;});
+  if(!cu){
+    info.style.display = "none";
+    return;
+  }
+  var color = cu.color || "#7C3AED";
+  var miembros = Array.isArray(cu.miembros) ? cu.miembros : [];
+  info.style.display = "block";
+  info.style.background = color + "12"; // 12 = ~7% alpha
+  info.style.border = "1px solid " + color + "40";
+  info.style.color = "#1B3F72";
+  info.innerHTML = '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">'
+    +'<div style="width:10px;height:10px;border-radius:3px;background:'+color+';"></div>'
+    +'<strong style="color:'+color+';">'+escapeHtml(cu.nombre||"")+'</strong>'
+    +(cu.lider?'<span style="color:var(--tx2);">· Líder: '+escapeHtml(cu.lider)+'</span>':'')
+    +'</div>'
+    +(miembros.length?'<div style="color:var(--tx2);font-size:9.5px;">👷 '+miembros.length+' miembro'+(miembros.length===1?"":"s")+': '+miembros.slice(0,4).map(escapeHtml).join(", ")+(miembros.length>4?' +'+(miembros.length-4)+' más':'')+'</div>':'<div style="color:var(--tx2);font-size:9.5px;font-style:italic;">Sin miembros registrados</div>');
+}
+
+window._llenarDropdownCuadrillasCot = _llenarDropdownCuadrillasCot;
+window.actualizarVisualCuadrillaCot = actualizarVisualCuadrillaCot;
+
+// ═══════════════════════════════════════════════════════════════
 // CALENDARIO DE OBRAS (Sesión 10)
 // ═══════════════════════════════════════════════════════════════
 
@@ -7864,12 +7998,16 @@ function showNuevaCot(){
   var elMRwrap = document.getElementById("cot-motivo-rechazo-wrap"); if(elMRwrap) elMRwrap.style.display = "none";
   // Limpiar campos de seguimiento de obra (Sesión 4)
   ["cot-fecha-inicio-est","cot-fecha-fin-est","cot-fecha-inicio-real","cot-fecha-fin-real",
-   "cot-responsable","cot-costo-estimado","cot-costo-real"].forEach(function(id){
+   "cot-responsable","cot-costo-estimado","cot-costo-real","cot-cuadrilla-id"].forEach(function(id){
     var el = document.getElementById(id); if(el) el.value = "";
   });
   _cotNotasSeguimiento = [];
   _cotDocsSeguimiento = [];
   var seg = document.getElementById("cot-seguimiento-obra"); if(seg) seg.style.display = "none";
+  // Poblar dropdown de cuadrillas para nueva cot (Sesión 22)
+  setTimeout(function(){
+    if(typeof _llenarDropdownCuadrillasCot === "function") _llenarDropdownCuadrillasCot();
+  }, 80);
   // Partidas iniciales
   _cotPartidas=[{
     id:1,
@@ -7953,6 +8091,14 @@ function abrirCot(id){
   setVal("cot-responsable",       c.responsable);
   setVal("cot-costo-estimado",    c.costoEstimado || "");
   setVal("cot-costo-real",        c.costoReal || "");
+  // Cargar cuadrilla asignada (Sesión 22)
+  setVal("cot-cuadrilla-id",      c.cuadrillaId || "");
+  // Poblar dropdown de cuadrillas (en background — no bloquea apertura)
+  setTimeout(function(){
+    if(typeof _llenarDropdownCuadrillasCot === "function"){
+      _llenarDropdownCuadrillasCot();
+    }
+  }, 80);
   _cotNotasSeguimiento = Array.isArray(c.notasSeguimiento) ? c.notasSeguimiento.slice() : [];
   _cotDocsSeguimiento  = Array.isArray(c.documentos)       ? c.documentos.slice()       : [];
   // Mostrar sección de seguimiento si el estado lo amerita
@@ -8590,6 +8736,7 @@ async function guardarCot(){
     fechaFinEst:    (document.getElementById("cot-fecha-fin-est")?.value)    || "",
     fechaInicioReal:(document.getElementById("cot-fecha-inicio-real")?.value)|| "",
     fechaFinReal:   (document.getElementById("cot-fecha-fin-real")?.value)   || "",
+    cuadrillaId:    (document.getElementById("cot-cuadrilla-id")?.value || ""),
     responsable:    (document.getElementById("cot-responsable")?.value || "").trim(),
     costoEstimado:  parseFloat(document.getElementById("cot-costo-estimado")?.value) || 0,
     costoReal:      parseFloat(document.getElementById("cot-costo-real")?.value)     || 0,
@@ -12577,6 +12724,9 @@ auth.onAuthStateChanged(async user => {
     if(typeof cargarPlantillasCondiciones === "function"){
       cargarPlantillasCondiciones().catch(function(e){ console.warn("[ROMSA] Plantillas no se pudieron precargar:", e); });
     }
+    if(typeof cargarCuadrillas === "function"){
+      cargarCuadrillas().catch(function(e){ console.warn("[ROMSA] Cuadrillas no se pudieron precargar:", e); });
+    }
     checkUrlParams();
     updateHoraCi();
 
@@ -12817,6 +12967,321 @@ function getPerfil(){
 function autoFillTecnico(){
   return currentUserProfile?.nombre || "";
 }
+
+// ═══════════════════════════════════════════════════════════════════════
+// 📇 MÓDULO CONTACTOS (CRM · Red profesional, leads, directorio)
+// ═══════════════════════════════════════════════════════════════════════
+
+let _contactos = [];
+let _contactosCargados = false;
+let _contactosFiltroTipo = "todos";
+let _contactoEditId = null;
+
+const TIPOS_CONTACTO = [
+  {id:"cliente",   nombre:"Cliente",   color:"#10B981", bg:"#D1FAE5", bd:"#6EE7B7", emoji:"🟢"},
+  {id:"lead",      nombre:"Lead",      color:"#3B82F6", bg:"#DBEAFE", bd:"#93C5FD", emoji:"🔵"},
+  {id:"proveedor", nombre:"Proveedor", color:"#F59E0B", bg:"#FEF3C7", bd:"#FCD34D", emoji:"🟠"},
+  {id:"socio",     nombre:"Socio",     color:"#A855F7", bg:"#F3E8FF", bd:"#D8B4FE", emoji:"🟣"},
+  {id:"otro",      nombre:"Otro",      color:"#6B7280", bg:"#F3F4F6", bd:"#D1D5DB", emoji:"⚪"}
+];
+
+function _tipoContactoInfo(id){
+  return TIPOS_CONTACTO.find(t => t.id === id) || TIPOS_CONTACTO[TIPOS_CONTACTO.length-1];
+}
+
+async function cargarContactos(){
+  try {
+    const snap = await db.collection("crm_contactos").orderBy("nombre","asc").get();
+    _contactos = snap.docs.map(d => Object.assign({id:d.id}, d.data()));
+    _contactosCargados = true;
+    console.log("[ROMSA] "+_contactos.length+" contactos cargados");
+    renderListaContactos();
+    renderStatsContactos();
+  } catch(err) {
+    console.error("[ROMSA] Error cargando contactos:", err);
+    // Si el error es por orderBy sin índice, intentar sin orderBy
+    try {
+      const snap = await db.collection("crm_contactos").get();
+      _contactos = snap.docs.map(d => Object.assign({id:d.id}, d.data()));
+      _contactos.sort((a,b) => (a.nombre||"").localeCompare(b.nombre||""));
+      _contactosCargados = true;
+      renderListaContactos();
+      renderStatsContactos();
+    } catch(err2){
+      showToast("⚠️ Error: " + err2.message);
+    }
+  }
+}
+
+function renderStatsContactos(){
+  const el = document.getElementById("ct-stats");
+  if(!el) return;
+  const total = _contactos.length;
+  const counts = {};
+  TIPOS_CONTACTO.forEach(t => counts[t.id] = 0);
+  _contactos.forEach(c => {
+    if(counts[c.tipo] !== undefined) counts[c.tipo]++;
+    else counts.otro++;
+  });
+  el.innerHTML =
+    `<div style="background:#fff;border:1px solid var(--g1);border-radius:9px;padding:9px 10px;">
+       <div style="font-size:8px;font-weight:700;color:var(--tx2);letter-spacing:1.5px;text-transform:uppercase;">Total</div>
+       <div style="font-size:20px;font-weight:900;color:#0B1F3A;line-height:1;margin-top:3px;">${total}</div>
+     </div>`
+  + TIPOS_CONTACTO.map(t => {
+      if(counts[t.id] === 0) return "";
+      return `<div style="background:#fff;border:1px solid ${t.bd};border-left:3px solid ${t.color};border-radius:9px;padding:9px 10px;">
+        <div style="font-size:8px;font-weight:700;color:${t.color};letter-spacing:1.5px;text-transform:uppercase;">${t.emoji} ${t.nombre}</div>
+        <div style="font-size:20px;font-weight:900;color:#0B1F3A;line-height:1;margin-top:3px;">${counts[t.id]}</div>
+      </div>`;
+    }).join("");
+}
+
+function filtrarContactos(tipo){
+  _contactosFiltroTipo = tipo;
+  document.querySelectorAll(".ct-chip").forEach(b => {
+    const activo = b.dataset.tipo === tipo;
+    b.style.background = activo ? "#F59E0B" : "#fff";
+    b.style.color      = activo ? "#fff"    : "var(--tx)";
+    b.style.border     = activo ? "1px solid #D97706" : "1px solid var(--g1)";
+    b.style.fontWeight = activo ? "700" : "600";
+  });
+  renderListaContactos();
+}
+
+function renderListaContactos(){
+  const lista = document.getElementById("ct-lista");
+  if(!lista) return;
+  const q = (document.getElementById("ct-busqueda")?.value || "").trim().toLowerCase();
+  let filtrados = _contactos.slice();
+  if(_contactosFiltroTipo !== "todos"){
+    filtrados = filtrados.filter(c => (c.tipo||"otro") === _contactosFiltroTipo);
+  }
+  if(q){
+    filtrados = filtrados.filter(c => {
+      const blob = [c.nombre,c.empresa,c.email,c.telefono,c.ciudad,c.cargo,c.notas].join(" ").toLowerCase();
+      return blob.indexOf(q) >= 0;
+    });
+  }
+  if(!filtrados.length){
+    lista.innerHTML = `<div style="text-align:center;padding:48px 18px;color:var(--tx2);font-size:13px;background:#fff;border:1px dashed var(--g1);border-radius:12px;margin-top:12px;">
+      ${q || _contactosFiltroTipo!=="todos" ? "Sin resultados con esos filtros." : "Aún no tienes contactos. Toca <strong>+ Nuevo Contacto</strong> para empezar."}
+    </div>`;
+    return;
+  }
+  lista.innerHTML = filtrados.map(c => {
+    const t = _tipoContactoInfo(c.tipo);
+    const iniciales = (c.nombre||"?").split(" ").slice(0,2).map(s=>s[0]||"").join("").toUpperCase();
+    return `<div onclick="abrirEditorContacto('${c.id}')" style="background:#fff;border:1px solid var(--g1);border-left:3px solid ${t.color};border-radius:10px;padding:11px 12px;margin-bottom:8px;cursor:pointer;display:flex;align-items:center;gap:10px;">
+      <div style="width:42px;height:42px;border-radius:50%;background:${t.bg};color:${t.color};display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;flex-shrink:0;">${escapeHtml(iniciales)}</div>
+      <div style="flex:1;min-width:0;">
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+          <div style="font-size:13px;font-weight:700;color:#0B1F3A;">${escapeHtml(c.nombre||"Sin nombre")}</div>
+          <span style="font-size:8.5px;font-weight:700;color:${t.color};background:${t.bg};padding:2px 7px;border-radius:10px;letter-spacing:.5px;text-transform:uppercase;">${t.emoji} ${t.nombre}</span>
+        </div>
+        <div style="font-size:11px;color:var(--tx2);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+          ${escapeHtml(c.empresa||"—")}${c.cargo?' · '+escapeHtml(c.cargo):''}${c.ciudad?' · '+escapeHtml(c.ciudad):''}
+        </div>
+        <div style="font-size:10.5px;color:var(--tx2);margin-top:2px;">
+          ${c.email?'📧 '+escapeHtml(c.email):''}${c.email && c.telefono?' · ':''}${c.telefono?'📞 '+escapeHtml(c.telefono):''}
+        </div>
+      </div>
+      <div style="color:var(--tx2);font-size:16px;flex-shrink:0;">›</div>
+    </div>`;
+  }).join("");
+}
+
+function abrirEditorContacto(id){
+  _contactoEditId = id || null;
+  const c = id ? _contactos.find(x => x.id === id) : null;
+  const ov = document.createElement("div");
+  ov.id = "modal-contacto";
+  ov.style.cssText = "position:fixed;inset:0;background:rgba(11,31,58,.6);z-index:600;display:flex;align-items:flex-end;justify-content:center;";
+  ov.onclick = function(e){ if(e.target === ov) cerrarEditorContacto(); };
+
+  const opcionesTipo = TIPOS_CONTACTO.map(t => {
+    const sel = (c && c.tipo === t.id) || (!c && t.id === "lead") ? " selected" : "";
+    return `<option value="${t.id}"${sel}>${t.emoji} ${t.nombre}</option>`;
+  }).join("");
+
+  ov.innerHTML = `<div style="background:#fff;width:100%;max-width:600px;max-height:92vh;border-radius:18px 18px 0 0;overflow-y:auto;display:flex;flex-direction:column;">
+    <div style="padding:14px 18px;border-bottom:1px solid var(--g1);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#fff;z-index:1;">
+      <div>
+        <div style="font-size:9px;color:#C2410C;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;">Contacto</div>
+        <div style="font-size:15px;font-weight:800;color:var(--navy);">👤 ${id?'Editar contacto':'Nuevo contacto'}</div>
+      </div>
+      <button onclick="cerrarEditorContacto()" style="background:none;border:none;font-size:22px;color:var(--tx2);cursor:pointer;">×</button>
+    </div>
+    <div style="padding:16px;flex:1;">
+
+      <div class="fg"><label class="flabel">Nombre completo <span style="color:#EF4444;">*</span></label>
+        <input class="finput" id="ct-nombre" placeholder="Ej: Juan Pérez García" value="${c?escapeHtml(c.nombre||"").replace(/"/g,"&quot;"):""}" style="font-weight:600;"></div>
+
+      <div class="fg"><label class="flabel">Empresa <span style="color:#EF4444;">*</span></label>
+        <input class="finput" id="ct-empresa" placeholder="Ej: Constructora ABC" value="${c?escapeHtml(c.empresa||"").replace(/"/g,"&quot;"):""}"></div>
+
+      <div class="fg"><label class="flabel">Email <span style="color:#EF4444;">*</span></label>
+        <input class="finput" id="ct-email" type="email" placeholder="correo@empresa.com" value="${c?escapeHtml(c.email||"").replace(/"/g,"&quot;"):""}"></div>
+
+      <div class="fg"><label class="flabel">Tipo de contacto</label>
+        <select class="finput" id="ct-tipo" style="font-family:var(--font);">${opcionesTipo}</select></div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <div class="fg"><label class="flabel">Teléfono</label>
+          <input class="finput" id="ct-telefono" placeholder="686-123-4567" value="${c?escapeHtml(c.telefono||"").replace(/"/g,"&quot;"):""}"></div>
+        <div class="fg"><label class="flabel">Ciudad</label>
+          <input class="finput" id="ct-ciudad" placeholder="Mexicali, B.C." value="${c?escapeHtml(c.ciudad||"").replace(/"/g,"&quot;"):""}"></div>
+      </div>
+
+      <div class="fg"><label class="flabel">Cargo / Puesto</label>
+        <input class="finput" id="ct-cargo" placeholder="Ej: Director de obras" value="${c?escapeHtml(c.cargo||"").replace(/"/g,"&quot;"):""}"></div>
+
+      <div class="fg"><label class="flabel">LinkedIn / Web</label>
+        <input class="finput" id="ct-linkedin" placeholder="linkedin.com/in/usuario" value="${c?escapeHtml(c.linkedin||"").replace(/"/g,"&quot;"):""}"></div>
+
+      <div class="fg"><label class="flabel">Notas adicionales</label>
+        <textarea class="ftextarea" id="ct-notas" placeholder="Conocido en feria 2024, interesado en pisos epóxicos, prefiere contacto vía WhatsApp..." style="min-height:80px;">${c?escapeHtml(c.notas||""):""}</textarea></div>
+
+    </div>
+    <div style="padding:12px 18px;border-top:1px solid var(--g1);display:flex;gap:8px;background:#fff;position:sticky;bottom:0;">
+      ${id?'<button onclick="eliminarContacto()" style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:#EF4444;font-size:12px;font-weight:700;padding:11px 14px;border-radius:8px;cursor:pointer;font-family:var(--font);">🗑 Eliminar</button>':''}
+      <button onclick="cerrarEditorContacto()" style="flex:1;background:var(--off);border:1px solid var(--g1);color:var(--navy);font-size:12px;font-weight:700;padding:11px;border-radius:8px;cursor:pointer;font-family:var(--font);">Cancelar</button>
+      <button onclick="guardarContacto()" style="flex:2;background:#F59E0B;border:none;color:#fff;font-size:12px;font-weight:700;padding:11px;border-radius:8px;cursor:pointer;font-family:var(--font);">${id?'✓ Actualizar':'✓ Crear contacto'}</button>
+    </div>
+  </div>`;
+  document.body.appendChild(ov);
+  setTimeout(()=>{ document.getElementById("ct-nombre")?.focus(); }, 100);
+}
+
+function cerrarEditorContacto(){
+  const m = document.getElementById("modal-contacto");
+  if(m) m.remove();
+  _contactoEditId = null;
+}
+
+function _validarEmail(email){
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+async function guardarContacto(){
+  const nombre   = (document.getElementById("ct-nombre")?.value || "").trim();
+  const empresa  = (document.getElementById("ct-empresa")?.value || "").trim();
+  const email    = (document.getElementById("ct-email")?.value || "").trim();
+  if(!nombre){  alert("⚠️ El nombre es obligatorio"); return; }
+  if(!empresa){ alert("⚠️ La empresa es obligatoria"); return; }
+  if(!email){   alert("⚠️ El email es obligatorio"); return; }
+  if(!_validarEmail(email)){ alert("⚠️ Email inválido"); return; }
+
+  const data = {
+    nombre, empresa, email,
+    tipo:     document.getElementById("ct-tipo")?.value     || "lead",
+    telefono:(document.getElementById("ct-telefono")?.value || "").trim(),
+    ciudad:  (document.getElementById("ct-ciudad")?.value   || "").trim(),
+    cargo:   (document.getElementById("ct-cargo")?.value    || "").trim(),
+    linkedin:(document.getElementById("ct-linkedin")?.value || "").trim(),
+    notas:   (document.getElementById("ct-notas")?.value    || "").trim(),
+    ts: Date.now()
+  };
+
+  try {
+    const ref = db.collection("crm_contactos");
+    if(_contactoEditId){
+      await ref.doc(_contactoEditId).set(data, {merge:true});
+      const idx = _contactos.findIndex(x => x.id === _contactoEditId);
+      if(idx >= 0) _contactos[idx] = Object.assign({}, _contactos[idx], data);
+      showToast("✓ Contacto actualizado");
+    } else {
+      data.creadoTs = Date.now();
+      const docRef = await ref.add(data);
+      data.id = docRef.id;
+      _contactos.push(data);
+      _contactos.sort((a,b) => (a.nombre||"").localeCompare(b.nombre||""));
+      showToast("✓ Contacto creado");
+    }
+    cerrarEditorContacto();
+    renderListaContactos();
+    renderStatsContactos();
+  } catch(err) {
+    console.error("[ROMSA] Error guardando contacto:", err);
+    alert("Error: " + err.message);
+  }
+}
+
+async function eliminarContacto(){
+  if(!_contactoEditId) return;
+  const c = _contactos.find(x => x.id === _contactoEditId);
+  if(!confirm(`¿Eliminar a "${c?.nombre || 'este contacto'}" permanentemente?`)) return;
+  try {
+    await db.collection("crm_contactos").doc(_contactoEditId).delete();
+    _contactos = _contactos.filter(x => x.id !== _contactoEditId);
+    cerrarEditorContacto();
+    renderListaContactos();
+    renderStatsContactos();
+    showToast("Contacto eliminado");
+  } catch(err) {
+    alert("Error: " + err.message);
+  }
+}
+
+// ── Exportar a Excel ──
+function exportarContactosExcel(){
+  if(!_contactos.length){ showToast("⚠️ No hay contactos para exportar"); return; }
+  if(typeof XLSX === "undefined"){
+    showToast("⏳ Cargando librería...");
+    const sc = document.createElement("script");
+    sc.src = "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";
+    sc.onload = _exportarContactosExcelReal;
+    sc.onerror = () => showToast("⚠️ No se pudo cargar la librería");
+    document.head.appendChild(sc);
+    return;
+  }
+  _exportarContactosExcelReal();
+}
+
+function _exportarContactosExcelReal(){
+  try {
+    const wb = XLSX.utils.book_new();
+    const filas = [["Nombre","Empresa","Email","Teléfono","Ciudad","Tipo","Cargo","LinkedIn","Notas","Fecha registro"]];
+
+    _contactos.forEach(c => {
+      const t = _tipoContactoInfo(c.tipo);
+      const fecha = c.creadoTs ? new Date(c.creadoTs).toLocaleDateString("es-MX") : "";
+      filas.push([
+        c.nombre || "",
+        c.empresa || "",
+        c.email || "",
+        c.telefono || "",
+        c.ciudad || "",
+        t.nombre,
+        c.cargo || "",
+        c.linkedin || "",
+        c.notas || "",
+        fecha
+      ]);
+    });
+
+    const ws = XLSX.utils.aoa_to_sheet(filas);
+    ws['!cols'] = [{wch:25},{wch:28},{wch:30},{wch:16},{wch:18},{wch:12},{wch:22},{wch:30},{wch:50},{wch:14}];
+    XLSX.utils.book_append_sheet(wb, ws, "Contactos");
+
+    const fechaTag = new Date().toISOString().slice(0,10).replace(/-/g,'');
+    XLSX.writeFile(wb, "ROMSA_Contactos_" + fechaTag + ".xlsx");
+    showToast("✓ Excel descargado · " + _contactos.length + " contactos");
+  } catch(err) {
+    console.error("[ROMSA] Error Excel:", err);
+    showToast("⚠️ Error: " + err.message);
+  }
+}
+
+// Exposición al window
+window.cargarContactos = cargarContactos;
+window.renderListaContactos = renderListaContactos;
+window.filtrarContactos = filtrarContactos;
+window.abrirEditorContacto = abrirEditorContacto;
+window.cerrarEditorContacto = cerrarEditorContacto;
+window.guardarContacto = guardarContacto;
+window.eliminarContacto = eliminarContacto;
+window.exportarContactosExcel = exportarContactosExcel;
 
 </script>
 
