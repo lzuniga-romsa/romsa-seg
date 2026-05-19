@@ -871,7 +871,9 @@ body.in-costeo #app{
   z-index:999;padding:32px 24px;
 }
 #module-selector.hidden{display:none;}
-.mod-logo{height:34px;width:auto;margin-bottom:8px;}
+.mod-logo{height:46px;width:auto;margin-bottom:32px;}
+.mod-welcome{font-size:11px;color:rgba(255,255,255,.5);letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;font-weight:600;text-align:center;}
+.mod-welcome-title{font-size:18px;font-weight:800;color:#fff;letter-spacing:.3px;margin-bottom:32px;text-align:center;}
 .mod-sub{font-size:10px;color:rgba(255,255,255,.3);letter-spacing:1.8px;text-transform:uppercase;margin-bottom:40px;}
 .mod-title{font-size:13px;font-weight:700;color:rgba(255,255,255,.5);letter-spacing:1px;text-transform:uppercase;margin-bottom:16px;text-align:center;}
 .mod-card{
@@ -1094,8 +1096,8 @@ body.in-costeo #app{
 <!-- SELECTOR DE MÓDULO -->
 <div id="module-selector" class="hidden">
   <img class="mod-logo" id="mod-logo-img" alt="ROMSA" src="">
-  <div class="mod-sub">Bienvenidos al</div>
-  <div class="mod-title">CRM de ROMSA Industrial</div>
+  <div class="mod-welcome">Bienvenidos al</div>
+  <div class="mod-welcome-title">CRM de ROMSA Industrial</div>
 
   <div class="mod-card blue" onclick="selectModule('obras')">
     <div class="mod-icon blue">🏗️</div>
@@ -1124,15 +1126,6 @@ body.in-costeo #app{
     <div class="mod-arrow">›</div>
   </div>
 
-  <div class="mod-card" onclick="selectModule('contactos')" style="background:linear-gradient(135deg,#FFF7ED,#FFEDD5);border:1px solid rgba(245,158,11,.3);">
-    <div class="mod-icon" style="background:rgba(245,158,11,.15);color:#C2410C;">👥</div>
-    <div class="mod-info">
-      <div class="mod-name">Contactos</div>
-      <div class="mod-desc">Red profesional, leads y directorio de personas</div>
-    </div>
-    <div class="mod-arrow">›</div>
-  </div>
-
   <!-- Módulo Costeo — Solo visible para usuarios autorizados -->
   <div id="mod-card-costeo" class="mod-card" onclick="selectModule('costeo')" style="display:none;background:linear-gradient(135deg,#1B3F72,#0B1F3A);border:1px solid rgba(96,165,250,.3);">
     <div class="mod-icon" style="background:rgba(96,165,250,.2);color:#60A5FA;">💰</div>
@@ -1141,6 +1134,16 @@ body.in-costeo #app{
       <div class="mod-desc" style="color:rgba(255,255,255,.5);">Análisis de costos, materiales y utilidad</div>
     </div>
     <div class="mod-arrow" style="color:#60A5FA;">›</div>
+  </div>
+
+  <!-- Módulo Contactos (al final del listado) -->
+  <div class="mod-card" onclick="selectModule('contactos')" style="background:linear-gradient(135deg,#7C2D12,#9A3412);border:1px solid rgba(245,158,11,.4);">
+    <div class="mod-icon" style="background:rgba(245,158,11,.25);color:#FCD34D;">👥</div>
+    <div class="mod-info">
+      <div class="mod-name" style="color:#fff;">Contactos</div>
+      <div class="mod-desc" style="color:rgba(255,255,255,.65);">Red profesional, leads y directorio de personas</div>
+    </div>
+    <div class="mod-arrow" style="color:#FCD34D;">›</div>
   </div>
 </div>
 
@@ -13008,7 +13011,27 @@ async function cargarContactos(){
       renderListaContactos();
       renderStatsContactos();
     } catch(err2){
-      showToast("⚠️ Error: " + err2.message);
+      console.error("[ROMSA] Error fallback cargando:", err2);
+      const lista = document.getElementById("ct-lista");
+      if(lista){
+        if(err2.code === "permission-denied" || (err2.message||"").indexOf("Missing or insufficient permissions") >= 0){
+          lista.innerHTML = `<div style="background:#FEE2E2;border:1px solid #FCA5A5;border-radius:12px;padding:20px;margin-top:12px;color:#991B1B;">
+            <div style="font-size:14px;font-weight:800;margin-bottom:8px;">⚠️ Sin permisos para acceder a Contactos</div>
+            <div style="font-size:12px;line-height:1.6;">
+              Las reglas de Firestore están bloqueando el acceso a la colección <code style="background:#fff;padding:2px 5px;border-radius:3px;">crm_contactos</code>.
+              <br><br><strong>Solución (admin):</strong>
+              <br>1. Firebase Console → Firestore → <strong>Rules</strong>
+              <br>2. Agrega esta regla general:
+              <br><pre style="background:#fff;padding:10px;border-radius:6px;margin-top:6px;font-size:11px;">match /{document=**} {
+  allow read, write: if request.auth != null;
+}</pre>
+              <br>3. Publica los cambios y vuelve a recargar la página.
+            </div>
+          </div>`;
+        } else {
+          showToast("⚠️ Error: " + err2.message);
+        }
+      }
     }
   }
 }
@@ -13172,6 +13195,12 @@ async function guardarContacto(){
   if(!email){   alert("⚠️ El email es obligatorio"); return; }
   if(!_validarEmail(email)){ alert("⚠️ Email inválido"); return; }
 
+  // Verificar autenticación antes de guardar
+  if(typeof firebase !== "undefined" && firebase.auth && !firebase.auth().currentUser){
+    alert("⚠️ Tu sesión expiró. Recarga la página e inicia sesión de nuevo.");
+    return;
+  }
+
   const data = {
     nombre, empresa, email,
     tipo:     document.getElementById("ct-tipo")?.value     || "lead",
@@ -13203,7 +13232,12 @@ async function guardarContacto(){
     renderStatsContactos();
   } catch(err) {
     console.error("[ROMSA] Error guardando contacto:", err);
-    alert("Error: " + err.message);
+    // Mensaje más útil según el tipo de error
+    if(err.code === "permission-denied" || (err.message||"").indexOf("Missing or insufficient permissions") >= 0){
+      alert("⚠️ Sin permisos para guardar en la base de datos.\n\nPosibles causas:\n• Tu sesión expiró → recarga la página\n• Las reglas de Firestore no permiten escribir en 'crm_contactos'\n\nSi eres el admin, ve a Firebase Console → Firestore → Rules y verifica que las reglas incluyan la regla general:\n\n  match /{document=**} {\n    allow read, write: if request.auth != null;\n  }");
+    } else {
+      alert("Error al guardar: " + err.message);
+    }
   }
 }
 
