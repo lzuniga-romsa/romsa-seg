@@ -1126,6 +1126,16 @@ body.in-costeo #app{
     <div class="mod-arrow">›</div>
   </div>
 
+  <!-- Módulo Reportes de Obra -->
+  <div class="mod-card" onclick="selectModule('reportes')" style="background:linear-gradient(135deg,#164E63,#0E7490);border:1px solid rgba(34,211,238,.35);">
+    <div class="mod-icon" style="background:rgba(34,211,238,.2);color:#67E8F9;">📊</div>
+    <div class="mod-info">
+      <div class="mod-name" style="color:#fff;">Reportes de Obra</div>
+      <div class="mod-desc" style="color:rgba(255,255,255,.65);">Genera reportes finales, de avance y entregas</div>
+    </div>
+    <div class="mod-arrow" style="color:#67E8F9;">›</div>
+  </div>
+
   <!-- Módulo Costeo — Solo visible para usuarios autorizados -->
   <div id="mod-card-costeo" class="mod-card" onclick="selectModule('costeo')" style="display:none;background:linear-gradient(135deg,#1B3F72,#0B1F3A);border:1px solid rgba(96,165,250,.3);">
     <div class="mod-icon" style="background:rgba(96,165,250,.2);color:#60A5FA;">💰</div>
@@ -2539,6 +2549,56 @@ body.in-costeo #app{
     </div>
 
   </div><!-- /screen-contactos -->
+
+  <!-- ════════════════════════════════════════════════════════════════ -->
+  <!-- 📊 MÓDULO REPORTES DE OBRA · Reportes finales, avance, entregas    -->
+  <!-- ════════════════════════════════════════════════════════════════ -->
+  <div id="screen-reportes" class="screen" style="padding:0;overflow-y:auto;background:var(--off);">
+
+    <!-- HEADER del módulo -->
+    <div style="background:linear-gradient(135deg,#164E63 0%,#0E7490 100%);padding:18px;color:#fff;position:relative;overflow:hidden;">
+      <div style="position:absolute;right:-30px;top:-30px;width:140px;height:140px;border-radius:50%;background:rgba(103,232,249,.08);"></div>
+      <div style="position:relative;z-index:2;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <button onclick="volverSelector()" style="background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:#fff;font-size:13px;font-weight:700;padding:6px 12px;border-radius:8px;cursor:pointer;font-family:var(--font);">← Menú</button>
+          <div>
+            <div style="font-size:9px;font-weight:700;color:#67E8F9;letter-spacing:2px;text-transform:uppercase;">CRM · Reportes</div>
+            <div style="font-size:18px;font-weight:800;color:#fff;">📊 Reportes de Obra</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <button onclick="abrirEditorReporte()" style="background:#67E8F9;border:none;color:#164E63;font-size:11.5px;font-weight:800;padding:8px 14px;border-radius:8px;cursor:pointer;font-family:var(--font);">+ Nuevo Reporte</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats rápidas -->
+    <div style="padding:14px 18px 0;">
+      <div id="rp-stats" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;">
+        <!-- generados por JS -->
+      </div>
+    </div>
+
+    <!-- Búsqueda y filtros -->
+    <div style="padding:14px 18px 8px;">
+      <div style="position:relative;margin-bottom:10px;">
+        <input id="rp-busqueda" oninput="renderListaReportes()" placeholder="🔍 Buscar por cliente, proyecto, folio..." style="width:100%;background:#fff;border:1px solid var(--g1);border-radius:10px;padding:11px 14px;font-size:13px;font-family:var(--font);outline:none;">
+      </div>
+      <div id="rp-filtros" style="display:flex;gap:6px;flex-wrap:wrap;overflow-x:auto;padding-bottom:2px;">
+        <button class="rp-chip" data-tipo="todos" onclick="filtrarReportes('todos')" style="background:#0E7490;color:#fff;border:1px solid #155E75;font-size:11px;font-weight:700;padding:6px 12px;border-radius:18px;cursor:pointer;font-family:var(--font);white-space:nowrap;">Todos</button>
+        <button class="rp-chip" data-tipo="inicial" onclick="filtrarReportes('inicial')" style="background:#fff;color:var(--tx);border:1px solid var(--g1);font-size:11px;font-weight:600;padding:6px 12px;border-radius:18px;cursor:pointer;font-family:var(--font);white-space:nowrap;">🟦 Inicial</button>
+        <button class="rp-chip" data-tipo="avance" onclick="filtrarReportes('avance')" style="background:#fff;color:var(--tx);border:1px solid var(--g1);font-size:11px;font-weight:600;padding:6px 12px;border-radius:18px;cursor:pointer;font-family:var(--font);white-space:nowrap;">🟨 Avance</button>
+        <button class="rp-chip" data-tipo="final" onclick="filtrarReportes('final')" style="background:#fff;color:var(--tx);border:1px solid var(--g1);font-size:11px;font-weight:600;padding:6px 12px;border-radius:18px;cursor:pointer;font-family:var(--font);white-space:nowrap;">🟩 Final</button>
+        <button class="rp-chip" data-tipo="incidencia" onclick="filtrarReportes('incidencia')" style="background:#fff;color:var(--tx);border:1px solid var(--g1);font-size:11px;font-weight:600;padding:6px 12px;border-radius:18px;cursor:pointer;font-family:var(--font);white-space:nowrap;">🟥 Incidencia</button>
+      </div>
+    </div>
+
+    <!-- Lista de reportes -->
+    <div id="rp-lista" style="padding:8px 18px 90px;">
+      <!-- generados por JS -->
+    </div>
+
+  </div><!-- /screen-reportes -->
 
   </div><!-- /main -->
 
@@ -5469,6 +5529,9 @@ function selectModule(mod){
   } else if(mod === 'contactos'){
     goScreen('contactos');
     if(typeof cargarContactos === "function") cargarContactos();
+  } else if(mod === 'reportes'){
+    goScreen('reportes');
+    if(typeof cargarReportes === "function") cargarReportes();
   }
 }
 
@@ -13316,6 +13379,503 @@ window.cerrarEditorContacto = cerrarEditorContacto;
 window.guardarContacto = guardarContacto;
 window.eliminarContacto = eliminarContacto;
 window.exportarContactosExcel = exportarContactosExcel;
+
+// ═══════════════════════════════════════════════════════════════════════
+// 📊 MÓDULO REPORTES DE OBRA (CRM · Reportes finales, avance, entregas)
+// ═══════════════════════════════════════════════════════════════════════
+
+let _reportes = [];
+let _reportesCargados = false;
+let _reportesFiltroTipo = "todos";
+let _reporteEditId = null;
+
+const TIPOS_REPORTE = [
+  {id:"inicial",    nombre:"Inicial",    color:"#3B82F6", bg:"#DBEAFE", bd:"#93C5FD", emoji:"🟦", label:"REPORTE INICIAL DE OBRA"},
+  {id:"avance",     nombre:"Avance",     color:"#F59E0B", bg:"#FEF3C7", bd:"#FCD34D", emoji:"🟨", label:"REPORTE DE AVANCE DE OBRA"},
+  {id:"final",      nombre:"Final",      color:"#10B981", bg:"#D1FAE5", bd:"#6EE7B7", emoji:"🟩", label:"REPORTE FINAL DE OBRA"},
+  {id:"incidencia", nombre:"Incidencia", color:"#EF4444", bg:"#FEE2E2", bd:"#FCA5A5", emoji:"🟥", label:"REPORTE DE INCIDENCIA"}
+];
+
+function _tipoReporteInfo(id){
+  return TIPOS_REPORTE.find(t => t.id === id) || TIPOS_REPORTE[2]; // default: final
+}
+
+// Estructura base de un reporte (mismas secciones que ejemplo Sunrise)
+function _reporteBaseSecciones(){
+  return [
+    {id:"descripcion", titulo:"Descripción de los Trabajos Realizados", texto:""},
+    {id:"alcance",     titulo:"Alcance del Proyecto",                   texto:""},
+    {id:"resultados",  titulo:"Resultados",                              texto:""},
+    {id:"observaciones",titulo:"Observaciones",                          texto:""},
+    {id:"conclusion",  titulo:"Conclusión",                              texto:""}
+  ];
+}
+
+async function cargarReportes(){
+  try {
+    let snap;
+    try {
+      snap = await db.collection("crm_reportes").orderBy("creadoTs","desc").get();
+    } catch(e1){
+      // Fallback sin orderBy
+      snap = await db.collection("crm_reportes").get();
+    }
+    _reportes = snap.docs.map(d => Object.assign({id:d.id}, d.data()));
+    _reportes.sort((a,b) => (b.creadoTs||0) - (a.creadoTs||0));
+    _reportesCargados = true;
+    console.log("[ROMSA] "+_reportes.length+" reportes cargados");
+    renderListaReportes();
+    renderStatsReportes();
+  } catch(err) {
+    console.error("[ROMSA] Error cargando reportes:", err);
+    const lista = document.getElementById("rp-lista");
+    if(lista){
+      if(err.code === "permission-denied" || (err.message||"").indexOf("Missing or insufficient permissions") >= 0){
+        lista.innerHTML = `<div style="background:#FEE2E2;border:1px solid #FCA5A5;border-radius:12px;padding:20px;margin-top:12px;color:#991B1B;">
+          <div style="font-size:14px;font-weight:800;margin-bottom:8px;">⚠️ Sin permisos para acceder a Reportes</div>
+          <div style="font-size:12px;line-height:1.6;">
+            Las reglas de Firestore están bloqueando el acceso a <code style="background:#fff;padding:2px 5px;border-radius:3px;">crm_reportes</code>.
+            <br><br><strong>Solución (admin):</strong>
+            <br>Firebase Console → Firestore → Rules → publicar:
+            <br><pre style="background:#fff;padding:10px;border-radius:6px;margin-top:6px;font-size:11px;">match /{document=**} {
+  allow read, write: if request.auth != null;
+}</pre>
+          </div>
+        </div>`;
+      } else {
+        showToast("⚠️ Error: " + err.message);
+      }
+    }
+  }
+}
+
+function renderStatsReportes(){
+  const el = document.getElementById("rp-stats");
+  if(!el) return;
+  const total = _reportes.length;
+  const counts = {};
+  TIPOS_REPORTE.forEach(t => counts[t.id] = 0);
+  _reportes.forEach(r => {
+    if(counts[r.tipo] !== undefined) counts[r.tipo]++;
+  });
+  el.innerHTML =
+    `<div style="background:#fff;border:1px solid var(--g1);border-radius:9px;padding:9px 10px;">
+       <div style="font-size:8px;font-weight:700;color:var(--tx2);letter-spacing:1.5px;text-transform:uppercase;">Total</div>
+       <div style="font-size:20px;font-weight:900;color:#0B1F3A;line-height:1;margin-top:3px;">${total}</div>
+     </div>`
+  + TIPOS_REPORTE.map(t => {
+      if(counts[t.id] === 0) return "";
+      return `<div style="background:#fff;border:1px solid ${t.bd};border-left:3px solid ${t.color};border-radius:9px;padding:9px 10px;">
+        <div style="font-size:8px;font-weight:700;color:${t.color};letter-spacing:1.5px;text-transform:uppercase;">${t.emoji} ${t.nombre}</div>
+        <div style="font-size:20px;font-weight:900;color:#0B1F3A;line-height:1;margin-top:3px;">${counts[t.id]}</div>
+      </div>`;
+    }).join("");
+}
+
+function filtrarReportes(tipo){
+  _reportesFiltroTipo = tipo;
+  document.querySelectorAll(".rp-chip").forEach(b => {
+    const activo = b.dataset.tipo === tipo;
+    b.style.background = activo ? "#0E7490" : "#fff";
+    b.style.color      = activo ? "#fff"    : "var(--tx)";
+    b.style.border     = activo ? "1px solid #155E75" : "1px solid var(--g1)";
+    b.style.fontWeight = activo ? "700" : "600";
+  });
+  renderListaReportes();
+}
+
+function renderListaReportes(){
+  const lista = document.getElementById("rp-lista");
+  if(!lista) return;
+  const q = (document.getElementById("rp-busqueda")?.value || "").trim().toLowerCase();
+  let filtrados = _reportes.slice();
+  if(_reportesFiltroTipo !== "todos"){
+    filtrados = filtrados.filter(r => (r.tipo||"final") === _reportesFiltroTipo);
+  }
+  if(q){
+    filtrados = filtrados.filter(r => {
+      const blob = [r.folio,r.cliente,r.proyecto,r.atencion,r.asunto,r.cotizacionFolio].join(" ").toLowerCase();
+      return blob.indexOf(q) >= 0;
+    });
+  }
+  if(!filtrados.length){
+    lista.innerHTML = `<div style="text-align:center;padding:48px 18px;color:var(--tx2);font-size:13px;background:#fff;border:1px dashed var(--g1);border-radius:12px;margin-top:12px;">
+      ${q || _reportesFiltroTipo!=="todos" ? "Sin resultados con esos filtros." : "Aún no tienes reportes. Toca <strong>+ Nuevo Reporte</strong> para crear el primero."}
+    </div>`;
+    return;
+  }
+  lista.innerHTML = filtrados.map(r => {
+    const t = _tipoReporteInfo(r.tipo);
+    const fecha = r.fechaEjecucion || (r.creadoTs ? new Date(r.creadoTs).toLocaleDateString("es-MX") : "");
+    const vincBadge = r.cotizacionFolio
+      ? `<span style="font-size:8.5px;font-weight:700;color:#7C3AED;background:#F3E8FF;padding:2px 7px;border-radius:10px;letter-spacing:.5px;">🔗 ${escapeHtml(r.cotizacionFolio)}</span>`
+      : '';
+    return `<div onclick="abrirEditorReporte('${r.id}')" style="background:#fff;border:1px solid var(--g1);border-left:3px solid ${t.color};border-radius:10px;padding:12px;margin-bottom:8px;cursor:pointer;">
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px;">
+        <span style="font-size:8.5px;font-weight:700;color:${t.color};background:${t.bg};padding:2px 7px;border-radius:10px;letter-spacing:.5px;text-transform:uppercase;">${t.emoji} ${t.nombre}</span>
+        ${vincBadge}
+        <span style="font-size:9.5px;color:var(--tx2);font-family:monospace;margin-left:auto;">${escapeHtml(r.folio||"sin folio")}</span>
+      </div>
+      <div style="font-size:13px;font-weight:700;color:#0B1F3A;">${escapeHtml(r.proyecto || r.asunto || "Sin proyecto")}</div>
+      <div style="font-size:11px;color:var(--tx2);margin-top:2px;">
+        ${escapeHtml(r.cliente||"—")}${r.atencion?' · Atn: '+escapeHtml(r.atencion):''}
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;font-size:10.5px;color:var(--tx2);">
+        <div>📅 ${escapeHtml(fecha||"—")}</div>
+        <div>${r.areaTrabajada?'📐 '+escapeHtml(String(r.areaTrabajada))+' m²':''}</div>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+// ─────────────────────────────────────────────────────────────────
+// Generador de folio: REP-{prefijo}-{YYYYMMDD}-{consec}
+// ─────────────────────────────────────────────────────────────────
+function _generarFolioReporte(prefijoCot){
+  const d = new Date();
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth()+1).padStart(2,"0");
+  const dd = String(d.getDate()).padStart(2,"0");
+  const fechaTag = yyyy+mm+dd;
+  const prefijo = (prefijoCot||"GEN").toUpperCase().replace(/[^A-Z0-9]/g,"");
+
+  // Buscar consec del día
+  const reportesHoy = _reportes.filter(r => (r.folio||"").indexOf("REP-"+prefijo+"-"+fechaTag) === 0);
+  const consec = String(reportesHoy.length + 1).padStart(3,"0");
+  return "REP-"+prefijo+"-"+fechaTag+"-"+consec;
+}
+
+// ─────────────────────────────────────────────────────────────────
+// EDITOR — modal grande para crear/editar reporte
+// ─────────────────────────────────────────────────────────────────
+async function abrirEditorReporte(id){
+  _reporteEditId = id || null;
+  let r = id ? _reportes.find(x => x.id === id) : null;
+
+  // Si es nuevo, inicializar con estructura base
+  if(!r){
+    r = {
+      tipo: "final",
+      folio: "",
+      fechaEmision: new Date().toISOString().slice(0,10),
+      fechaEjecucion: "",
+      cliente: "",
+      atencion: "",
+      proyecto: "",
+      asunto: "",
+      areaTrabajada: "",
+      cotizacionId: "",
+      cotizacionFolio: "",
+      secciones: _reporteBaseSecciones()
+    };
+  }
+
+  // Si las secciones están incompletas (por reporte antiguo), agregar las base
+  if(!Array.isArray(r.secciones) || !r.secciones.length){
+    r.secciones = _reporteBaseSecciones();
+  }
+
+  // Asegurar que cotizaciones estén cargadas para el selector
+  if(!cotizaciones || !cotizaciones.length){
+    try { await cargarCotizaciones(); } catch(e){ console.warn("[ROMSA] cot:", e); }
+  }
+
+  const ov = document.createElement("div");
+  ov.id = "modal-reporte";
+  ov.style.cssText = "position:fixed;inset:0;background:rgba(11,31,58,.7);z-index:600;display:flex;align-items:flex-end;justify-content:center;";
+  ov.onclick = function(e){ if(e.target === ov) cerrarEditorReporte(); };
+
+  const opcionesTipo = TIPOS_REPORTE.map(t => {
+    const sel = (r.tipo === t.id) ? " selected" : "";
+    return `<option value="${t.id}"${sel}>${t.emoji} ${t.nombre}</option>`;
+  }).join("");
+
+  // Opciones de cotizaciones (solo aceptadas, en obra o cerradas)
+  const cotsElegibles = (cotizaciones||[]).filter(c =>
+    ["aceptada","en_obra","cerrada"].indexOf(c.estado) >= 0
+  ).sort((a,b) => (b.ts||0) - (a.ts||0));
+
+  const opcionesCot = cotsElegibles.map(c => {
+    const sel = (r.cotizacionId === c.id) ? " selected" : "";
+    return `<option value="${c.id}"${sel}>${escapeHtml(c.folio||"")} — ${escapeHtml(c.empresa||c.cliente||"")}</option>`;
+  }).join("");
+
+  ov.innerHTML = `<div style="background:#fff;width:100%;max-width:700px;max-height:94vh;border-radius:18px 18px 0 0;overflow-y:auto;display:flex;flex-direction:column;">
+    <div style="padding:14px 18px;border-bottom:1px solid var(--g1);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#fff;z-index:1;">
+      <div>
+        <div style="font-size:9px;color:#0E7490;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;">Reporte de Obra</div>
+        <div style="font-size:15px;font-weight:800;color:var(--navy);">📊 ${id?'Editar reporte':'Nuevo reporte'}</div>
+      </div>
+      <button onclick="cerrarEditorReporte()" style="background:none;border:none;font-size:22px;color:var(--tx2);cursor:pointer;">×</button>
+    </div>
+
+    <div style="padding:16px;flex:1;">
+
+      <!-- Vinculación a cotización (opcional) -->
+      <div style="background:#F3E8FF;border:1px solid #C4B5FD;border-left:3px solid #7C3AED;border-radius:8px;padding:10px;margin-bottom:14px;">
+        <div style="font-size:8.5px;font-weight:700;color:#5B21B6;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px;">🔗 Vinculación a cotización (opcional)</div>
+        <select class="finput" id="rp-cot-id" onchange="rpAutoLlenarDesdeCot()" style="font-family:var(--font);background:#fff;">
+          <option value="">— Sin cotización vinculada (reporte libre) —</option>
+          ${opcionesCot}
+        </select>
+        <div style="font-size:10px;color:#5B21B6;margin-top:5px;">Selecciona una cotización para auto-llenar cliente, atención, proyecto y área.</div>
+      </div>
+
+      <!-- Tipo de reporte -->
+      <div class="fg">
+        <label class="flabel">Tipo de reporte <span style="color:#EF4444;">*</span></label>
+        <select class="finput" id="rp-tipo" style="font-family:var(--font);font-weight:700;">${opcionesTipo}</select>
+      </div>
+
+      <!-- Datos del reporte -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <div class="fg"><label class="flabel">Folio</label>
+          <input class="finput" id="rp-folio" placeholder="Auto-generado" value="${escapeHtml(r.folio||"")}" style="font-family:monospace;font-size:11.5px;"></div>
+        <div class="fg"><label class="flabel">Fecha emisión</label>
+          <input class="finput" id="rp-fecha-emision" type="date" value="${r.fechaEmision||""}"></div>
+      </div>
+
+      <div class="fg"><label class="flabel">Cliente <span style="color:#EF4444;">*</span></label>
+        <input class="finput" id="rp-cliente" placeholder="Ej: Sunrise Medical Tijuana" value="${escapeHtml(r.cliente||"")}" style="font-weight:600;"></div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <div class="fg"><label class="flabel">Atención</label>
+          <input class="finput" id="rp-atencion" placeholder="Ej: Ing. Joel Román" value="${escapeHtml(r.atencion||"")}"></div>
+        <div class="fg"><label class="flabel">Fecha(s) ejecución</label>
+          <input class="finput" id="rp-fecha-ejecucion" placeholder="Ej: 27 y 28 de abril 2026" value="${escapeHtml(r.fechaEjecucion||"")}"></div>
+      </div>
+
+      <div class="fg"><label class="flabel">Proyecto / Asunto <span style="color:#EF4444;">*</span></label>
+        <input class="finput" id="rp-asunto" placeholder="Ej: Aplicación de sistema epóxico con poliuretano" value="${escapeHtml(r.asunto||r.proyecto||"")}" style="font-weight:600;"></div>
+
+      <div class="fg"><label class="flabel">Área trabajada (m²)</label>
+        <input class="finput" id="rp-area" type="number" min="0" step="0.01" placeholder="87" value="${r.areaTrabajada||""}"></div>
+
+      <!-- ── SECCIONES DEL REPORTE ── -->
+      <div style="border-top:1px solid var(--g1);margin:18px 0 14px;padding-top:14px;">
+        <div style="font-size:11px;font-weight:800;color:#0B1F3A;letter-spacing:1px;text-transform:uppercase;margin-bottom:10px;">📝 Contenido del reporte</div>
+        <div id="rp-secciones-wrap">
+          <!-- generadas por JS -->
+        </div>
+        <button onclick="rpAgregarSeccion()" style="width:100%;background:rgba(14,116,144,.08);border:1px dashed #0E7490;color:#0E7490;font-size:11px;font-weight:700;padding:8px;border-radius:8px;cursor:pointer;font-family:var(--font);margin-top:6px;">+ Agregar sección custom</button>
+      </div>
+
+      <div style="background:#FEF3C7;border:1px solid #FCD34D;border-radius:8px;padding:10px;font-size:10.5px;color:#92400E;">
+        <strong>📷 Fotos:</strong> En la próxima versión podrás agregar evidencia fotográfica con categorías Antes/Durante/Después.
+      </div>
+
+    </div>
+
+    <div style="padding:12px 18px;border-top:1px solid var(--g1);display:flex;gap:8px;background:#fff;position:sticky;bottom:0;">
+      ${id?'<button onclick="eliminarReporte()" style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:#EF4444;font-size:12px;font-weight:700;padding:11px 14px;border-radius:8px;cursor:pointer;font-family:var(--font);">🗑 Eliminar</button>':''}
+      <button onclick="cerrarEditorReporte()" style="flex:1;background:var(--off);border:1px solid var(--g1);color:var(--navy);font-size:12px;font-weight:700;padding:11px;border-radius:8px;cursor:pointer;font-family:var(--font);">Cancelar</button>
+      <button onclick="guardarReporte()" style="flex:2;background:#0E7490;border:none;color:#fff;font-size:12px;font-weight:700;padding:11px;border-radius:8px;cursor:pointer;font-family:var(--font);">${id?'✓ Actualizar':'✓ Crear reporte'}</button>
+    </div>
+  </div>`;
+
+  document.body.appendChild(ov);
+
+  // Renderizar secciones
+  _rpSeccionesTemp = JSON.parse(JSON.stringify(r.secciones));
+  _rpRenderSecciones();
+
+  // Auto-generar folio si está vacío
+  setTimeout(() => {
+    const folioEl = document.getElementById("rp-folio");
+    if(folioEl && !folioEl.value){
+      folioEl.value = _generarFolioReporte("GEN");
+    }
+    document.getElementById("rp-cliente")?.focus();
+  }, 100);
+}
+
+// Variable temporal para las secciones mientras se edita
+let _rpSeccionesTemp = [];
+
+function _rpRenderSecciones(){
+  const wrap = document.getElementById("rp-secciones-wrap");
+  if(!wrap) return;
+  wrap.innerHTML = _rpSeccionesTemp.map((s, i) => {
+    return `<div style="border:1px solid var(--g1);border-radius:8px;padding:10px;margin-bottom:8px;background:#FAFBFD;">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+        <div style="width:22px;height:22px;background:#0B1F3A;color:#fff;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;">${i+1}</div>
+        <input type="text" placeholder="Título de la sección" value="${escapeHtml(s.titulo||"").replace(/"/g,"&quot;")}" oninput="_rpUpdSeccion(${i},'titulo',this.value)" style="flex:1;background:transparent;border:none;border-bottom:1px dashed var(--g1);font-size:11.5px;font-weight:700;color:var(--navy);outline:none;padding:3px 0;font-family:var(--font);">
+        <button onclick="_rpEliminarSeccion(${i})" title="Eliminar sección" style="background:none;border:none;color:#EF4444;font-size:14px;cursor:pointer;padding:2px 6px;">✕</button>
+      </div>
+      <textarea class="ftextarea" placeholder="Texto de la sección (puedes usar viñetas con • o líneas separadas para listas)..." oninput="_rpUpdSeccion(${i},'texto',this.value)" style="min-height:80px;font-family:var(--font);">${escapeHtml(s.texto||"")}</textarea>
+    </div>`;
+  }).join("");
+}
+
+function _rpUpdSeccion(i, field, val){
+  if(_rpSeccionesTemp[i]){ _rpSeccionesTemp[i][field] = val; }
+}
+
+function _rpEliminarSeccion(i){
+  if(!confirm("¿Eliminar esta sección?")) return;
+  _rpSeccionesTemp.splice(i, 1);
+  _rpRenderSecciones();
+}
+
+function rpAgregarSeccion(){
+  _rpSeccionesTemp.push({id:"custom-"+Date.now(), titulo:"Nueva sección", texto:""});
+  _rpRenderSecciones();
+}
+
+// Auto-llenar campos desde cotización seleccionada
+function rpAutoLlenarDesdeCot(){
+  const cotId = document.getElementById("rp-cot-id")?.value;
+  if(!cotId){ return; }
+  const cot = (cotizaciones||[]).find(c => c.id === cotId);
+  if(!cot) return;
+
+  // Llenar campos
+  const setIfEmpty = (id, val) => {
+    const el = document.getElementById(id);
+    if(el && !el.value && val) el.value = val;
+  };
+
+  setIfEmpty("rp-cliente", cot.empresa || cot.cliente || "");
+  setIfEmpty("rp-atencion", cot.atencion || "");
+  setIfEmpty("rp-asunto", _resumirAsuntoDesdeCot(cot));
+
+  // Si no hay folio aún, regenerar con prefijo de la cot
+  const folioEl = document.getElementById("rp-folio");
+  if(folioEl && (!folioEl.value || folioEl.value.startsWith("REP-GEN-"))){
+    const prefijo = (cot.folio||"").split("-")[1] || "GEN";
+    folioEl.value = _generarFolioReporte(prefijo);
+  }
+
+  // Sumar áreas de las partidas si están en m²
+  const areaEl = document.getElementById("rp-area");
+  if(areaEl && !areaEl.value){
+    const totalArea = (cot.partidas||[]).reduce((s,p) => {
+      if((p.unit||"").toLowerCase().indexOf("m²") >= 0 || (p.unit||"").toLowerCase().indexOf("m2") >= 0){
+        return s + (parseFloat(p.qty)||0);
+      }
+      return s;
+    }, 0);
+    if(totalArea > 0) areaEl.value = totalArea;
+  }
+
+  // Auto-llenar la sección "Descripción" si está vacía
+  if(_rpSeccionesTemp[0] && !_rpSeccionesTemp[0].texto){
+    const partidas = (cot.partidas||[]).slice(0,3).map(p => p.tituloCustom || p.servicio).filter(Boolean);
+    if(partidas.length){
+      _rpSeccionesTemp[0].texto = "Se llevaron a cabo trabajos de "+partidas.join(", ").toLowerCase()+" conforme a las especificaciones técnicas requeridas.";
+      _rpRenderSecciones();
+    }
+  }
+
+  if(typeof showToast === "function") showToast("✓ Datos auto-llenados desde " + (cot.folio||"cotización"));
+}
+
+function _resumirAsuntoDesdeCot(cot){
+  const partidas = (cot.partidas||[]).slice(0,2).map(p => p.tituloCustom || p.servicio).filter(Boolean);
+  if(partidas.length === 0) return cot.proyecto || "";
+  if(partidas.length === 1) return "Aplicación de "+partidas[0];
+  return "Aplicación de "+partidas.join(" + ");
+}
+
+function cerrarEditorReporte(){
+  const m = document.getElementById("modal-reporte");
+  if(m) m.remove();
+  _reporteEditId = null;
+  _rpSeccionesTemp = [];
+}
+
+async function guardarReporte(){
+  const cliente = (document.getElementById("rp-cliente")?.value || "").trim();
+  const asunto  = (document.getElementById("rp-asunto")?.value || "").trim();
+  if(!cliente){ alert("⚠️ El cliente es obligatorio"); return; }
+  if(!asunto){  alert("⚠️ El proyecto/asunto es obligatorio"); return; }
+
+  if(typeof firebase !== "undefined" && firebase.auth && !firebase.auth().currentUser){
+    alert("⚠️ Tu sesión expiró. Recarga la página e inicia sesión de nuevo.");
+    return;
+  }
+
+  // Capturar cotización vinculada
+  const cotId = document.getElementById("rp-cot-id")?.value || "";
+  const cot = cotId ? (cotizaciones||[]).find(c => c.id === cotId) : null;
+
+  const data = {
+    tipo:           document.getElementById("rp-tipo")?.value || "final",
+    folio:         (document.getElementById("rp-folio")?.value || "").trim(),
+    fechaEmision:  (document.getElementById("rp-fecha-emision")?.value || ""),
+    fechaEjecucion:(document.getElementById("rp-fecha-ejecucion")?.value || "").trim(),
+    cliente:        cliente,
+    atencion:      (document.getElementById("rp-atencion")?.value || "").trim(),
+    asunto:         asunto,
+    proyecto:       asunto, // alias
+    areaTrabajada: (document.getElementById("rp-area")?.value || "").trim(),
+    cotizacionId:    cotId,
+    cotizacionFolio: cot ? (cot.folio||"") : "",
+    secciones: _rpSeccionesTemp.filter(s => s.titulo || s.texto), // descartar vacías
+    ts: Date.now()
+  };
+
+  // Auto-folio si no se puso
+  if(!data.folio){
+    const prefijo = cot ? ((cot.folio||"").split("-")[1] || "GEN") : "GEN";
+    data.folio = _generarFolioReporte(prefijo);
+  }
+
+  try {
+    const ref = db.collection("crm_reportes");
+    if(_reporteEditId){
+      await ref.doc(_reporteEditId).set(data, {merge:true});
+      const idx = _reportes.findIndex(x => x.id === _reporteEditId);
+      if(idx >= 0) _reportes[idx] = Object.assign({}, _reportes[idx], data);
+      showToast("✓ Reporte actualizado");
+    } else {
+      data.creadoTs = Date.now();
+      const docRef = await ref.add(data);
+      data.id = docRef.id;
+      _reportes.unshift(data);
+      showToast("✓ Reporte creado");
+    }
+    cerrarEditorReporte();
+    renderListaReportes();
+    renderStatsReportes();
+  } catch(err) {
+    console.error("[ROMSA] Error guardando reporte:", err);
+    if(err.code === "permission-denied" || (err.message||"").indexOf("Missing or insufficient permissions") >= 0){
+      alert("⚠️ Sin permisos para guardar.\n\nRevisa las reglas de Firestore. La colección 'crm_reportes' necesita permitir read/write para usuarios autenticados.");
+    } else {
+      alert("Error: " + err.message);
+    }
+  }
+}
+
+async function eliminarReporte(){
+  if(!_reporteEditId) return;
+  const r = _reportes.find(x => x.id === _reporteEditId);
+  if(!confirm(`¿Eliminar el reporte "${r?.folio || r?.proyecto || _reporteEditId}" permanentemente?`)) return;
+  try {
+    await db.collection("crm_reportes").doc(_reporteEditId).delete();
+    _reportes = _reportes.filter(x => x.id !== _reporteEditId);
+    cerrarEditorReporte();
+    renderListaReportes();
+    renderStatsReportes();
+    showToast("Reporte eliminado");
+  } catch(err) {
+    alert("Error: " + err.message);
+  }
+}
+
+// Exposición al window
+window.cargarReportes = cargarReportes;
+window.renderListaReportes = renderListaReportes;
+window.filtrarReportes = filtrarReportes;
+window.abrirEditorReporte = abrirEditorReporte;
+window.cerrarEditorReporte = cerrarEditorReporte;
+window.guardarReporte = guardarReporte;
+window.eliminarReporte = eliminarReporte;
+window.rpAgregarSeccion = rpAgregarSeccion;
+window.rpAutoLlenarDesdeCot = rpAutoLlenarDesdeCot;
+window._rpUpdSeccion = _rpUpdSeccion;
+window._rpEliminarSeccion = _rpEliminarSeccion;
 
 </script>
 
