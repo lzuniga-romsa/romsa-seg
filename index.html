@@ -13584,8 +13584,37 @@ async function abrirEditorReporte(id){
   }
 
   // Asegurar que cotizaciones estén cargadas para el selector
+  // Si la lista está vacía, intentar cargarlas directamente desde Firestore
   if(!cotizaciones || !cotizaciones.length){
-    try { await cargarCotizaciones(); } catch(e){ console.warn("[ROMSA] cot:", e); }
+    try {
+      // Primero intentar con el subscribe (si hay currentUser)
+      if(typeof subscribeCotizaciones === "function" && currentUser){
+        subscribeCotizaciones();
+      }
+      // Fallback: cargar directamente desde Firestore (independiente del módulo)
+      if(cotRef){
+        const isAdminCheck = (typeof isAdmin !== "undefined") ? isAdmin : false;
+        const uid = currentUser ? currentUser.uid : (firebase.auth().currentUser ? firebase.auth().currentUser.uid : null);
+        let snap;
+        try {
+          if(isAdminCheck){
+            snap = await cotRef.orderBy("ts","desc").get();
+          } else if(uid){
+            snap = await cotRef.where("creadoPorUid","==",uid).orderBy("ts","desc").get();
+          } else {
+            snap = await cotRef.get();
+          }
+          cotizaciones = snap.docs.map(d => d.data());
+          console.log("[ROMSA] Cargadas " + cotizaciones.length + " cotizaciones para selector de reporte");
+        } catch(e){
+          console.warn("[ROMSA] Fallback cot sin orderBy:", e);
+          snap = await cotRef.get();
+          cotizaciones = snap.docs.map(d => d.data());
+        }
+      }
+    } catch(e){
+      console.warn("[ROMSA] No se pudieron cargar cotizaciones:", e);
+    }
   }
 
   const ov = document.createElement("div");
@@ -13618,6 +13647,18 @@ async function abrirEditorReporte(id){
     </div>
 
     <div style="padding:16px;flex:1;">
+
+      <!-- ✨ BOTÓN MÁGICO: Pegar reporte completo y auto-parsear -->
+      <div style="background:linear-gradient(135deg,#FEF3C7,#FED7AA);border:1px solid #F59E0B;border-radius:8px;padding:10px;margin-bottom:14px;cursor:pointer;" onclick="rpAbrirPegadoMagico()">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="font-size:24px;line-height:1;">✨</div>
+          <div style="flex:1;">
+            <div style="font-size:11.5px;font-weight:800;color:#92400E;">Pegar reporte completo</div>
+            <div style="font-size:9.5px;color:#92400E;opacity:.85;line-height:1.4;">Pega un texto de Word/PDF/Drive y auto-llena todos los campos y secciones del reporte</div>
+          </div>
+          <div style="background:#F59E0B;color:#fff;font-size:10px;font-weight:700;padding:5px 10px;border-radius:6px;">✨ Mágico</div>
+        </div>
+      </div>
 
       <!-- Vinculación a cotización (opcional) -->
       <div style="background:#F3E8FF;border:1px solid #C4B5FD;border-left:3px solid #7C3AED;border-radius:8px;padding:10px;margin-bottom:14px;">
@@ -14188,6 +14229,271 @@ window._rpRenderGaleria = _rpRenderGaleria;
 window._rpRenderTodasGalerias = _rpRenderTodasGalerias;
 window._rpAbrirFotoCompleta = _rpAbrirFotoCompleta;
 window._rpEliminarFoto = _rpEliminarFoto;
+
+// ═══════════════════════════════════════════════════════════════════════
+// ✨ PEGADO MÁGICO — Parser de texto a reporte estructurado
+// ═══════════════════════════════════════════════════════════════════════
+
+function rpAbrirPegadoMagico(){
+  const ov = document.createElement("div");
+  ov.id = "modal-pegado-magico";
+  ov.style.cssText = "position:fixed;inset:0;background:rgba(11,31,58,.8);z-index:700;display:flex;align-items:flex-end;justify-content:center;";
+  ov.onclick = function(e){ if(e.target === ov) ov.remove(); };
+
+  ov.innerHTML = `<div style="background:#fff;width:100%;max-width:700px;max-height:90vh;border-radius:18px 18px 0 0;overflow-y:auto;display:flex;flex-direction:column;">
+    <div style="padding:14px 18px;border-bottom:1px solid var(--g1);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#fff;z-index:1;">
+      <div>
+        <div style="font-size:9px;color:#F59E0B;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;">Pegado mágico</div>
+        <div style="font-size:15px;font-weight:800;color:var(--navy);">✨ Pegar reporte completo</div>
+      </div>
+      <button onclick="document.getElementById('modal-pegado-magico')?.remove()" style="background:none;border:none;font-size:22px;color:var(--tx2);cursor:pointer;">×</button>
+    </div>
+
+    <div style="padding:16px;flex:1;">
+
+      <div style="background:#F0F9FF;border:1px solid #7DD3FC;border-radius:8px;padding:12px;margin-bottom:14px;font-size:11px;color:#075985;line-height:1.6;">
+        <strong>💡 Cómo funciona:</strong><br>
+        1. Copia el texto completo de tu reporte (Word, PDF, Drive, lo que sea)<br>
+        2. Pégalo abajo<br>
+        3. Click "Procesar texto" → llenará TODOS los campos automáticamente<br>
+        <br>
+        <strong>📋 Detecta automáticamente:</strong> ATENCIÓN, CLIENTE, FECHA, ASUNTO, ÁREA TRABAJADA, y las secciones numeradas (1. Descripción, 2. Alcance, 3. Resultados, etc.)
+      </div>
+
+      <label style="font-size:9.5px;font-weight:700;color:var(--tx2);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px;display:block;">Pega aquí tu texto completo</label>
+      <textarea id="rp-pegado-texto" placeholder="Pega aquí el texto completo del reporte...
+
+Ejemplo:
+
+ATENCIÓN: Ing. Joel Román
+CLIENTE: Sunrise Medical Tijuana
+FECHA DE EJECUCIÓN: 27 y 28 de abril de 2026
+ASUNTO: Aplicación de sistema epóxico 100% con sello de poliuretano
+ÁREA TRABAJADA: 87 m²
+
+1. Descripción de los Trabajos Realizados
+Se llevaron a cabo trabajos de suministro y aplicación de un sistema...
+
+2. Alcance del Proyecto
+• Preparación mecánica de superficie.
+• Limpieza y acondicionamiento.
+• Aplicación de capa base...
+
+3. Resultados
+• Superficie continua y uniforme.
+• Mejora en resistencia al desgaste.
+
+..." style="width:100%;min-height:280px;font-family:'Courier New',monospace;font-size:11px;padding:12px;border:2px solid var(--g1);border-radius:8px;resize:vertical;outline:none;line-height:1.5;"></textarea>
+
+      <div id="rp-pegado-preview" style="display:none;margin-top:14px;background:#D1FAE5;border:1px solid #6EE7B7;border-radius:8px;padding:12px;">
+        <div style="font-size:10px;font-weight:800;color:#065F46;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">✓ Detectado</div>
+        <div id="rp-pegado-preview-content" style="font-size:11px;color:#065F46;line-height:1.7;"></div>
+      </div>
+
+    </div>
+
+    <div style="padding:12px 18px;border-top:1px solid var(--g1);display:flex;gap:8px;background:#fff;position:sticky;bottom:0;">
+      <button onclick="rpProbarParseo()" style="flex:1;background:var(--off);border:1px solid var(--g1);color:var(--navy);font-size:12px;font-weight:700;padding:11px;border-radius:8px;cursor:pointer;font-family:var(--font);">🔍 Probar</button>
+      <button onclick="rpAplicarPegadoMagico()" style="flex:2;background:#F59E0B;border:none;color:#fff;font-size:12px;font-weight:800;padding:11px;border-radius:8px;cursor:pointer;font-family:var(--font);">✨ Aplicar al reporte</button>
+    </div>
+  </div>`;
+  document.body.appendChild(ov);
+  setTimeout(() => document.getElementById("rp-pegado-texto")?.focus(), 100);
+}
+
+// ── Parser principal: convierte texto plano a {campos, secciones} ──
+function rpParsearTexto(txt){
+  if(!txt || !txt.trim()) return null;
+
+  // Normalizar: line endings y trim
+  let t = txt.replace(/\r\n/g, "\n").replace(/\r/g, "\n").trim();
+
+  const resultado = {
+    campos: {},      // {atencion, cliente, fechaEjecucion, asunto, areaTrabajada}
+    secciones: []    // [{titulo, texto}]
+  };
+
+  // ── 1. Detectar campos del header ──
+  // Patrones flexibles para cada campo
+  const patrones = [
+    {regex: /atenci[oó]n\s*[:：]\s*([^\n]+)/i,                  campo: "atencion"},
+    {regex: /cliente\s*[:：]\s*([^\n]+)/i,                       campo: "cliente"},
+    {regex: /(?:fecha(?:\s+de)?\s+ejecuci[oó]n|fecha\(s?\)\s+ejecuci[oó]n)\s*[:：]\s*([^\n]+)/i, campo: "fechaEjecucion"},
+    {regex: /(?:asunto|proyecto)\s*[:：]\s*([^\n]+)/i,           campo: "asunto"},
+    {regex: /(?:[aá]rea\s+trabajada|[aá]rea\s+de\s+trabajo|[aá]rea\s+total|[aá]rea)\s*[:：]\s*([^\n]+)/i, campo: "areaTrabajada"}
+  ];
+
+  patrones.forEach(p => {
+    const m = t.match(p.regex);
+    if(m && m[1]){
+      let val = m[1].trim();
+      // Para área, extraer solo el número
+      if(p.campo === "areaTrabajada"){
+        const numMatch = val.match(/[\d,\.]+/);
+        if(numMatch) val = numMatch[0].replace(/,/g,"");
+      }
+      resultado.campos[p.campo] = val;
+    }
+  });
+
+  // ── 2. Detectar secciones numeradas ──
+  // Patrón: línea que empiece con "1.", "2.", etc. seguida de título
+  // Soporta también "1) Título", "I.- Título", "PRIMERO. Título"
+  const lineas = t.split("\n");
+  let seccionActual = null;
+  let acumulado = [];
+
+  // Regex para detectar inicio de sección: número(.|)|paréntesis)
+  // Ej: "1. Descripción", "2) Alcance", "3.- Resultados"
+  const regexSeccion = /^\s*(\d{1,2})\s*[\.\)\-]+\s+(.+?)\s*$/;
+
+  for(let i = 0; i < lineas.length; i++){
+    const linea = lineas[i];
+    const m = linea.match(regexSeccion);
+    if(m){
+      // Guardar sección anterior si existía
+      if(seccionActual){
+        seccionActual.texto = acumulado.join("\n").trim();
+        if(seccionActual.titulo || seccionActual.texto){
+          resultado.secciones.push(seccionActual);
+        }
+      }
+      // Nueva sección
+      seccionActual = {
+        titulo: m[2].trim(),
+        texto: ""
+      };
+      acumulado = [];
+    } else {
+      // Si ya tenemos una sección activa, acumular texto
+      if(seccionActual){
+        // Saltar líneas que sean solo headers o campos ya capturados
+        const esCampoCapturado = patrones.some(p => p.regex.test(linea));
+        if(!esCampoCapturado){
+          acumulado.push(linea);
+        }
+      }
+    }
+  }
+
+  // Guardar última sección
+  if(seccionActual){
+    seccionActual.texto = acumulado.join("\n").trim();
+    if(seccionActual.titulo || seccionActual.texto){
+      resultado.secciones.push(seccionActual);
+    }
+  }
+
+  // ── 3. Limpiar viñetas en el texto de las secciones ──
+  resultado.secciones.forEach(s => {
+    // Normalizar viñetas (•, ●, *, -, ▪) y dejar como saltos de línea
+    s.texto = s.texto
+      .replace(/^[\s]*[•●▪\*\-]\s+/gm, "• ")  // estandarizar a "• "
+      .replace(/\n{3,}/g, "\n\n")              // máx 2 saltos de línea
+      .trim();
+  });
+
+  return resultado;
+}
+
+function rpProbarParseo(){
+  const txt = document.getElementById("rp-pegado-texto")?.value || "";
+  const previewEl = document.getElementById("rp-pegado-preview");
+  const contentEl = document.getElementById("rp-pegado-preview-content");
+  if(!txt.trim()){
+    if(previewEl){
+      previewEl.style.background = "#FEE2E2";
+      previewEl.style.borderColor = "#FCA5A5";
+      previewEl.style.display = "block";
+      contentEl.style.color = "#991B1B";
+      contentEl.innerHTML = "⚠️ Pega algún texto primero";
+    }
+    return;
+  }
+  const parsed = rpParsearTexto(txt);
+  if(!parsed){
+    contentEl.innerHTML = "⚠️ No se pudo procesar el texto";
+    return;
+  }
+
+  let html = "";
+  const camposNombres = {
+    atencion: "Atención",
+    cliente: "Cliente",
+    fechaEjecucion: "Fecha ejecución",
+    asunto: "Asunto",
+    areaTrabajada: "Área (m²)"
+  };
+  const camposDetectados = Object.keys(parsed.campos).filter(k => parsed.campos[k]);
+  if(camposDetectados.length){
+    html += "<strong>📋 Campos detectados (" + camposDetectados.length + "):</strong><br>";
+    camposDetectados.forEach(k => {
+      html += "  • <strong>" + camposNombres[k] + ":</strong> " + escapeHtml(parsed.campos[k]) + "<br>";
+    });
+  } else {
+    html += "<em>Ningún campo del header detectado (ATENCIÓN, CLIENTE, etc.)</em><br>";
+  }
+
+  html += "<br>";
+  if(parsed.secciones.length){
+    html += "<strong>📝 Secciones detectadas (" + parsed.secciones.length + "):</strong><br>";
+    parsed.secciones.forEach((s, i) => {
+      const preview = (s.texto||"").slice(0, 80).replace(/\n/g," ");
+      html += "  • <strong>" + (i+1) + ". " + escapeHtml(s.titulo) + "</strong> <span style='opacity:.7;'>" + (preview ? "— " + escapeHtml(preview) + (s.texto.length>80?"...":"") : "(vacía)") + "</span><br>";
+    });
+  } else {
+    html += "<em>No se detectaron secciones numeradas (1., 2., 3...)</em><br>";
+  }
+
+  previewEl.style.background = "#D1FAE5";
+  previewEl.style.borderColor = "#6EE7B7";
+  contentEl.style.color = "#065F46";
+  previewEl.style.display = "block";
+  contentEl.innerHTML = html;
+}
+
+function rpAplicarPegadoMagico(){
+  const txt = document.getElementById("rp-pegado-texto")?.value || "";
+  if(!txt.trim()){ alert("⚠️ Pega algún texto primero"); return; }
+
+  const parsed = rpParsearTexto(txt);
+  if(!parsed){ alert("⚠️ No se pudo procesar el texto"); return; }
+
+  // ── Aplicar campos del header ──
+  const setIfPresent = (id, val) => {
+    if(!val) return;
+    const el = document.getElementById(id);
+    if(el) el.value = val;
+  };
+  setIfPresent("rp-atencion",         parsed.campos.atencion);
+  setIfPresent("rp-cliente",          parsed.campos.cliente);
+  setIfPresent("rp-fecha-ejecucion",  parsed.campos.fechaEjecucion);
+  setIfPresent("rp-asunto",           parsed.campos.asunto);
+  setIfPresent("rp-area",             parsed.campos.areaTrabajada);
+
+  // ── Aplicar secciones ──
+  if(parsed.secciones.length){
+    _rpSeccionesTemp = parsed.secciones.map(s => ({
+      id: "parsed-" + Date.now() + "-" + Math.random().toString(36).slice(2,6),
+      titulo: s.titulo,
+      texto: s.texto
+    }));
+    _rpRenderSecciones();
+  }
+
+  // Cerrar modal
+  document.getElementById("modal-pegado-magico")?.remove();
+
+  // Feedback
+  const ncampos = Object.keys(parsed.campos).filter(k => parsed.campos[k]).length;
+  const nsecciones = parsed.secciones.length;
+  showToast("✨ Aplicado: " + ncampos + " campo" + (ncampos===1?"":"s") + " + " + nsecciones + " secci" + (nsecciones===1?"ón":"ones"));
+}
+
+window.rpAbrirPegadoMagico = rpAbrirPegadoMagico;
+window.rpProbarParseo = rpProbarParseo;
+window.rpAplicarPegadoMagico = rpAplicarPegadoMagico;
+window.rpParsearTexto = rpParsearTexto;
 
 </script>
 
