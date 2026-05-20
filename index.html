@@ -29,6 +29,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
 :root{
@@ -2894,6 +2895,7 @@ const _fbCfg = {
 };
 if(typeof firebase!=="undefined"&&!firebase.apps.length) firebase.initializeApp(_fbCfg);
 const db=(typeof firebase!=="undefined")?firebase.firestore():null;
+const storage=(typeof firebase!=="undefined" && firebase.storage)?firebase.storage():null;
 const obrasRef=db?db.collection("obras_seguimiento_v2"):null;
 function getBaPairsRef(obraId){ return obrasRef.doc(obraId).collection("baPairs"); }
 function getUpdatesRef(obraId){ return obrasRef.doc(obraId).collection("updates"); }
@@ -13522,7 +13524,13 @@ function renderListaReportes(){
       </div>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;font-size:10.5px;color:var(--tx2);">
         <div>📅 ${escapeHtml(fecha||"—")}</div>
-        <div>${r.areaTrabajada?'📐 '+escapeHtml(String(r.areaTrabajada))+' m²':''}</div>
+        <div style="display:flex;gap:10px;align-items:center;">
+          ${(() => {
+            const totalFotos = ((r.fotos?.antes||[]).length + (r.fotos?.durante||[]).length + (r.fotos?.despues||[]).length);
+            return totalFotos ? '<span>📷 '+totalFotos+'</span>' : '';
+          })()}
+          <div>${r.areaTrabajada?'📐 '+escapeHtml(String(r.areaTrabajada))+' m²':''}</div>
+        </div>
       </div>
     </div>`;
   }).join("");
@@ -13660,8 +13668,58 @@ async function abrirEditorReporte(id){
         <button onclick="rpAgregarSeccion()" style="width:100%;background:rgba(14,116,144,.08);border:1px dashed #0E7490;color:#0E7490;font-size:11px;font-weight:700;padding:8px;border-radius:8px;cursor:pointer;font-family:var(--font);margin-top:6px;">+ Agregar sección custom</button>
       </div>
 
-      <div style="background:#FEF3C7;border:1px solid #FCD34D;border-radius:8px;padding:10px;font-size:10.5px;color:#92400E;">
-        <strong>📷 Fotos:</strong> En la próxima versión podrás agregar evidencia fotográfica con categorías Antes/Durante/Después.
+      <!-- 📷 EVIDENCIA FOTOGRÁFICA -->
+      <div style="border-top:1px solid var(--g1);margin:18px 0 14px;padding-top:14px;">
+        <div style="font-size:11px;font-weight:800;color:#0B1F3A;letter-spacing:1px;text-transform:uppercase;margin-bottom:10px;">📷 Evidencia fotográfica</div>
+
+        <!-- Categoría ANTES -->
+        <div style="background:#F7F9FC;border:1px solid var(--g1);border-left:3px solid #6B7280;border-radius:8px;padding:10px;margin-bottom:8px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+            <div style="display:flex;align-items:center;gap:6px;">
+              <span style="font-size:9px;font-weight:800;color:#6B7280;background:#E5E7EB;padding:3px 8px;border-radius:10px;letter-spacing:1px;">⬛ ANTES</span>
+              <span id="rp-count-antes" style="font-size:10px;color:var(--tx2);">0 fotos</span>
+            </div>
+            <label style="background:#6B7280;color:#fff;font-size:10.5px;font-weight:700;padding:5px 10px;border-radius:6px;cursor:pointer;font-family:var(--font);">
+              + Agregar
+              <input type="file" accept="image/*" multiple onchange="rpSubirFotos(this,'antes')" style="display:none;">
+            </label>
+          </div>
+          <div id="rp-galeria-antes" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(70px,1fr));gap:6px;"></div>
+        </div>
+
+        <!-- Categoría DURANTE -->
+        <div style="background:#FEF3C7;border:1px solid #FCD34D;border-left:3px solid #F59E0B;border-radius:8px;padding:10px;margin-bottom:8px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+            <div style="display:flex;align-items:center;gap:6px;">
+              <span style="font-size:9px;font-weight:800;color:#92400E;background:#FCD34D;padding:3px 8px;border-radius:10px;letter-spacing:1px;">🟧 DURANTE</span>
+              <span id="rp-count-durante" style="font-size:10px;color:var(--tx2);">0 fotos</span>
+            </div>
+            <label style="background:#F59E0B;color:#fff;font-size:10.5px;font-weight:700;padding:5px 10px;border-radius:6px;cursor:pointer;font-family:var(--font);">
+              + Agregar
+              <input type="file" accept="image/*" multiple onchange="rpSubirFotos(this,'durante')" style="display:none;">
+            </label>
+          </div>
+          <div id="rp-galeria-durante" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(70px,1fr));gap:6px;"></div>
+        </div>
+
+        <!-- Categoría DESPUÉS -->
+        <div style="background:#D1FAE5;border:1px solid #6EE7B7;border-left:3px solid #10B981;border-radius:8px;padding:10px;margin-bottom:8px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+            <div style="display:flex;align-items:center;gap:6px;">
+              <span style="font-size:9px;font-weight:800;color:#065F46;background:#6EE7B7;padding:3px 8px;border-radius:10px;letter-spacing:1px;">🟩 DESPUÉS</span>
+              <span id="rp-count-despues" style="font-size:10px;color:var(--tx2);">0 fotos</span>
+            </div>
+            <label style="background:#10B981;color:#fff;font-size:10.5px;font-weight:700;padding:5px 10px;border-radius:6px;cursor:pointer;font-family:var(--font);">
+              + Agregar
+              <input type="file" accept="image/*" multiple onchange="rpSubirFotos(this,'despues')" style="display:none;">
+            </label>
+          </div>
+          <div id="rp-galeria-despues" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(70px,1fr));gap:6px;"></div>
+        </div>
+
+        <div id="rp-upload-progress" style="display:none;background:#DBEAFE;border:1px solid #93C5FD;border-radius:8px;padding:8px 10px;font-size:10.5px;color:#1E40AF;margin-top:6px;"></div>
+
+        <div style="font-size:9.5px;color:var(--tx2);text-align:center;margin-top:6px;">📱 Toca "+ Agregar" para subir desde galería o cámara · Las fotos se comprimen automáticamente a ~800 KB · Máx 10 MB/foto</div>
       </div>
 
     </div>
@@ -13678,6 +13736,15 @@ async function abrirEditorReporte(id){
   // Renderizar secciones
   _rpSeccionesTemp = JSON.parse(JSON.stringify(r.secciones));
   _rpRenderSecciones();
+
+  // Inicializar fotos (desde reporte existente o vacías)
+  _rpFotosTemp = {antes:[], durante:[], despues:[]};
+  if(r.fotos && typeof r.fotos === "object"){
+    ["antes","durante","despues"].forEach(c => {
+      if(Array.isArray(r.fotos[c])) _rpFotosTemp[c] = r.fotos[c].slice();
+    });
+  }
+  _rpRenderTodasGalerias();
 
   // Auto-generar folio si está vacío
   setTimeout(() => {
@@ -13782,6 +13849,7 @@ function cerrarEditorReporte(){
   if(m) m.remove();
   _reporteEditId = null;
   _rpSeccionesTemp = [];
+  _rpFotosTemp = {antes:[], durante:[], despues:[]};
 }
 
 async function guardarReporte(){
@@ -13812,6 +13880,11 @@ async function guardarReporte(){
     cotizacionId:    cotId,
     cotizacionFolio: cot ? (cot.folio||"") : "",
     secciones: _rpSeccionesTemp.filter(s => s.titulo || s.texto), // descartar vacías
+    fotos: {
+      antes:   _rpFotosTemp.antes.slice(),
+      durante: _rpFotosTemp.durante.slice(),
+      despues: _rpFotosTemp.despues.slice()
+    },
     ts: Date.now()
   };
 
@@ -13852,6 +13925,18 @@ async function eliminarReporte(){
   if(!_reporteEditId) return;
   const r = _reportes.find(x => x.id === _reporteEditId);
   if(!confirm(`¿Eliminar el reporte "${r?.folio || r?.proyecto || _reporteEditId}" permanentemente?`)) return;
+
+  // Borrar fotos del Storage (cleanup)
+  if(storage && r && r.fotos){
+    const todasLasFotos = [].concat(r.fotos.antes||[], r.fotos.durante||[], r.fotos.despues||[]);
+    for(const f of todasLasFotos){
+      if(f.path){
+        try { await storage.ref().child(f.path).delete(); }
+        catch(e){ console.warn("No se pudo borrar foto:", f.path, e); }
+      }
+    }
+  }
+
   try {
     await db.collection("crm_reportes").doc(_reporteEditId).delete();
     _reportes = _reportes.filter(x => x.id !== _reporteEditId);
@@ -13876,6 +13961,233 @@ window.rpAgregarSeccion = rpAgregarSeccion;
 window.rpAutoLlenarDesdeCot = rpAutoLlenarDesdeCot;
 window._rpUpdSeccion = _rpUpdSeccion;
 window._rpEliminarSeccion = _rpEliminarSeccion;
+
+// ═══════════════════════════════════════════════════════════════════════
+// 📷 SISTEMA DE FOTOS PARA REPORTES (Firebase Storage)
+// ═══════════════════════════════════════════════════════════════════════
+
+// Variable temporal con las fotos del reporte que se está editando
+// Estructura: {antes:[], durante:[], despues:[]}
+// Cada foto: {url, path, nombre, tamaño, ts}
+let _rpFotosTemp = {antes:[], durante:[], despues:[]};
+
+// ── Comprimir imagen antes de subir (reduce ~70-80%) ──
+function _rpComprimirImagen(file, maxLado=1600, calidad=0.82){
+  return new Promise(function(resolve, reject){
+    const reader = new FileReader();
+    reader.onload = function(e){
+      const img = new Image();
+      img.onload = function(){
+        // Calcular dimensiones manteniendo aspect ratio
+        let w = img.width, h = img.height;
+        if(w > maxLado || h > maxLado){
+          if(w > h){
+            h = Math.round(h * (maxLado / w));
+            w = maxLado;
+          } else {
+            w = Math.round(w * (maxLado / h));
+            h = maxLado;
+          }
+        }
+        // Dibujar en canvas y comprimir
+        const canvas = document.createElement("canvas");
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext("2d");
+        // Para fotos con orientación EXIF, asumimos que el navegador ya las orientó
+        ctx.drawImage(img, 0, 0, w, h);
+        canvas.toBlob(function(blob){
+          if(blob) resolve(blob);
+          else reject(new Error("Error al comprimir"));
+        }, "image/jpeg", calidad);
+      };
+      img.onerror = () => reject(new Error("Error cargando imagen"));
+      img.src = e.target.result;
+    };
+    reader.onerror = () => reject(new Error("Error leyendo archivo"));
+    reader.readAsDataURL(file);
+  });
+}
+
+// ── Subir múltiples fotos a una categoría ──
+async function rpSubirFotos(inputEl, categoria){
+  if(!storage){
+    alert("⚠️ Firebase Storage no está disponible. Verifica la configuración.");
+    return;
+  }
+  if(typeof firebase !== "undefined" && firebase.auth && !firebase.auth().currentUser){
+    alert("⚠️ Tu sesión expiró. Recarga la página e inicia sesión de nuevo.");
+    return;
+  }
+
+  const files = Array.from(inputEl.files || []);
+  if(!files.length) return;
+
+  // Validar tamaño antes de comprimir
+  for(const f of files){
+    if(f.size > 20 * 1024 * 1024){
+      alert("⚠️ La foto '" + f.name + "' pesa más de 20 MB. Usa una más pequeña.");
+      return;
+    }
+    if(!f.type.startsWith("image/")){
+      alert("⚠️ El archivo '" + f.name + "' no es una imagen.");
+      return;
+    }
+  }
+
+  // Generar reporteId temporal si es nuevo (para la carpeta en Storage)
+  if(!_reporteEditId){
+    _reporteEditId = "tmp-" + Date.now() + "-" + Math.random().toString(36).slice(2,8);
+  }
+
+  const progressEl = document.getElementById("rp-upload-progress");
+  if(progressEl){
+    progressEl.style.display = "block";
+    progressEl.innerHTML = "⏳ Comprimiendo y subiendo " + files.length + " foto" + (files.length===1?"":"s") + "...";
+  }
+
+  let exitosos = 0, fallidos = 0;
+
+  for(let i = 0; i < files.length; i++){
+    const file = files[i];
+    try {
+      // Comprimir
+      if(progressEl) progressEl.innerHTML = "📦 Comprimiendo foto " + (i+1) + "/" + files.length + "...";
+      const blob = await _rpComprimirImagen(file);
+
+      // Construir path: reportes/{reporteId}/{categoria}-{timestamp}-{random}.jpg
+      const ts = Date.now();
+      const rand = Math.random().toString(36).slice(2,8);
+      const path = "reportes/" + _reporteEditId + "/" + categoria + "-" + ts + "-" + rand + ".jpg";
+      const ref = storage.ref().child(path);
+
+      // Subir
+      if(progressEl) progressEl.innerHTML = "☁️ Subiendo foto " + (i+1) + "/" + files.length + " (" + _formatBytes(blob.size) + ")...";
+      const snapshot = await ref.put(blob, {contentType:"image/jpeg"});
+      const url = await snapshot.ref.getDownloadURL();
+
+      // Agregar al array
+      _rpFotosTemp[categoria].push({
+        url: url,
+        path: path,
+        nombre: file.name,
+        tamano: blob.size,
+        ts: ts
+      });
+      exitosos++;
+    } catch(err){
+      console.error("[ROMSA] Error subiendo foto:", err);
+      fallidos++;
+      if(err.code === "storage/unauthorized"){
+        if(progressEl){
+          progressEl.style.background = "#FEE2E2";
+          progressEl.style.border = "1px solid #FCA5A5";
+          progressEl.style.color = "#991B1B";
+          progressEl.innerHTML = "⚠️ Sin permisos. Verifica las reglas de Firebase Storage.";
+        }
+        break;
+      }
+    }
+  }
+
+  // Reset input para permitir re-seleccionar las mismas fotos
+  inputEl.value = "";
+
+  // Actualizar UI
+  _rpRenderGaleria(categoria);
+
+  if(progressEl){
+    if(fallidos === 0){
+      progressEl.style.background = "#D1FAE5";
+      progressEl.style.border = "1px solid #6EE7B7";
+      progressEl.style.color = "#065F46";
+      progressEl.innerHTML = "✅ " + exitosos + " foto" + (exitosos===1?"":"s") + " subida" + (exitosos===1?"":"s") + " correctamente";
+    } else if(exitosos === 0){
+      progressEl.innerHTML = "⚠️ No se pudieron subir las fotos";
+    } else {
+      progressEl.innerHTML = "⚠️ " + exitosos + " subidas, " + fallidos + " fallaron";
+    }
+    setTimeout(() => {
+      if(progressEl) progressEl.style.display = "none";
+    }, 4000);
+  }
+}
+
+function _formatBytes(bytes){
+  if(bytes < 1024) return bytes + " B";
+  if(bytes < 1024*1024) return (bytes/1024).toFixed(1) + " KB";
+  return (bytes/(1024*1024)).toFixed(2) + " MB";
+}
+
+// ── Renderizar galería de una categoría ──
+function _rpRenderGaleria(categoria){
+  const wrap = document.getElementById("rp-galeria-" + categoria);
+  const count = document.getElementById("rp-count-" + categoria);
+  if(!wrap) return;
+
+  const fotos = _rpFotosTemp[categoria] || [];
+
+  // Actualizar contador
+  if(count){
+    count.textContent = fotos.length + " foto" + (fotos.length===1?"":"s");
+  }
+
+  if(!fotos.length){
+    wrap.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--tx2);font-size:10px;padding:14px 0;font-style:italic;">Sin fotos aún</div>';
+    return;
+  }
+
+  wrap.innerHTML = fotos.map((f, i) => {
+    return `<div style="position:relative;aspect-ratio:1;border-radius:6px;overflow:hidden;cursor:pointer;background:#000;border:1px solid var(--g1);" onclick="_rpAbrirFotoCompleta('${categoria}',${i})">
+      <img src="${f.url}" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block;">
+      <button onclick="event.stopPropagation();_rpEliminarFoto('${categoria}',${i})" style="position:absolute;top:2px;right:2px;background:rgba(239,68,68,.9);border:none;color:#fff;width:20px;height:20px;border-radius:50%;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;padding:0;">×</button>
+    </div>`;
+  }).join("");
+}
+
+// Renderizar TODAS las galerías
+function _rpRenderTodasGalerias(){
+  ["antes","durante","despues"].forEach(c => _rpRenderGaleria(c));
+}
+
+// ── Abrir foto en grande (lightbox simple) ──
+function _rpAbrirFotoCompleta(categoria, idx){
+  const f = _rpFotosTemp[categoria][idx];
+  if(!f) return;
+  const ov = document.createElement("div");
+  ov.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.93);z-index:9000;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:20px;";
+  ov.onclick = () => ov.remove();
+  ov.innerHTML = `<img src="${f.url}" style="max-width:100%;max-height:100%;object-fit:contain;border-radius:6px;">
+    <button onclick="event.stopPropagation();this.parentElement.remove();" style="position:absolute;top:14px;right:14px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;width:36px;height:36px;border-radius:50%;font-size:18px;cursor:pointer;">×</button>
+    <div style="position:absolute;bottom:14px;left:14px;color:#fff;font-size:11px;background:rgba(0,0,0,.6);padding:6px 10px;border-radius:6px;font-family:monospace;">${categoria.toUpperCase()} · ${escapeHtml(f.nombre||"")} · ${_formatBytes(f.tamano||0)}</div>`;
+  document.body.appendChild(ov);
+}
+
+// ── Eliminar foto individual ──
+async function _rpEliminarFoto(categoria, idx){
+  const f = _rpFotosTemp[categoria][idx];
+  if(!f) return;
+  if(!confirm("¿Eliminar esta foto?")) return;
+
+  try {
+    if(storage && f.path){
+      await storage.ref().child(f.path).delete();
+    }
+  } catch(err){
+    console.warn("[ROMSA] No se pudo borrar del storage (sigue):", err);
+    // Continúa de todas formas — quizás ya no existe
+  }
+
+  _rpFotosTemp[categoria].splice(idx, 1);
+  _rpRenderGaleria(categoria);
+  showToast("Foto eliminada");
+}
+
+window.rpSubirFotos = rpSubirFotos;
+window._rpRenderGaleria = _rpRenderGaleria;
+window._rpRenderTodasGalerias = _rpRenderTodasGalerias;
+window._rpAbrirFotoCompleta = _rpAbrirFotoCompleta;
+window._rpEliminarFoto = _rpEliminarFoto;
 
 </script>
 
