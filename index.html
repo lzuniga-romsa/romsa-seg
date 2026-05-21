@@ -14342,10 +14342,28 @@ function rpParsearTexto(txt){
     {regex: /(?:[aá]rea\s+trabajada|[aá]rea\s+de\s+trabajo|[aá]rea\s+total|[aá]rea)\s*[:：]\s*([^\n]+)/i, campo: "areaTrabajada"}
   ];
 
+  // Helper para limpiar formato Markdown (asteriscos, guiones bajos, etc.)
+  const _rpLimpiarMd = function(s){
+    if(!s) return s;
+    return s
+      .replace(/\*\*\*([^*]+)\*\*\*/g, "$1")  // ***bold italic***
+      .replace(/\*\*([^*]+)\*\*/g, "$1")       // **bold**
+      .replace(/__([^_]+)__/g, "$1")            // __bold__
+      .replace(/^\*\*\s*/, "")                   // ** al inicio sin cerrar
+      .replace(/\s*\*\*$/, "")                   // ** al final
+      .replace(/^\*+\s*/, "")                    // * al inicio
+      .replace(/\s*\*+$/, "")                    // * al final
+      .replace(/^_+\s*/, "")
+      .replace(/\s*_+$/, "")
+      .trim();
+  };
+
   patrones.forEach(p => {
     const m = t.match(p.regex);
     if(m && m[1]){
       let val = m[1].trim();
+      // Limpiar formato Markdown
+      val = _rpLimpiarMd(val);
       // Para área, extraer solo el número
       if(p.campo === "areaTrabajada"){
         const numMatch = val.match(/[\d,\.]+/);
@@ -14364,7 +14382,8 @@ function rpParsearTexto(txt){
 
   // Regex para detectar inicio de sección: número(.|)|paréntesis)
   // Ej: "1. Descripción", "2) Alcance", "3.- Resultados"
-  const regexSeccion = /^\s*(\d{1,2})\s*[\.\)\-]+\s+(.+?)\s*$/;
+  // Acepta también líneas con markdown: **1. Título**, *1. Título*, ## 1. Título
+  const regexSeccion = /^\s*[\*_#]*\s*(\d{1,2})\s*[\.\)\-]+\s+(.+?)\s*[\*_]*\s*$/;
 
   for(let i = 0; i < lineas.length; i++){
     const linea = lineas[i];
@@ -14379,7 +14398,7 @@ function rpParsearTexto(txt){
       }
       // Nueva sección
       seccionActual = {
-        titulo: m[2].trim(),
+        titulo: _rpLimpiarMd(m[2].trim()),
         texto: ""
       };
       acumulado = [];
@@ -14403,11 +14422,22 @@ function rpParsearTexto(txt){
     }
   }
 
-  // ── 3. Limpiar viñetas en el texto de las secciones ──
+  // ── 3. Limpiar viñetas y markdown en el texto de las secciones ──
   resultado.secciones.forEach(s => {
-    // Normalizar viñetas (•, ●, *, -, ▪) y dejar como saltos de línea
+    // Normalizar viñetas y limpiar markdown línea por línea
     s.texto = s.texto
-      .replace(/^[\s]*[•●▪\*\-]\s+/gm, "• ")  // estandarizar a "• "
+      .split("\n")
+      .map(l => {
+        // Quitar bullet del inicio si lo hay (cualquier estilo)
+        let limpia = l.replace(/^[\s]*[•●▪\*\-]\s+/, "• ");
+        // Limpiar markdown bold/italic inline
+        limpia = limpia
+          .replace(/\*\*\*([^*]+)\*\*\*/g, "$1")
+          .replace(/\*\*([^*]+)\*\*/g, "$1")
+          .replace(/__([^_]+)__/g, "$1");
+        return limpia;
+      })
+      .join("\n")
       .replace(/\n{3,}/g, "\n\n")              // máx 2 saltos de línea
       .trim();
   });
@@ -14589,8 +14619,11 @@ function _rpRenderizarPDF(r){
   const fechaEmision = _rpFechaBonita(r.fechaEmision) || _rpFechaBonita(new Date().toISOString().slice(0,10));
   const fechaEjecucion = r.fechaEjecucion || "";
 
-  // Obtener logo si existe
-  const logo = window.LOGO_B64 ? "data:image/png;base64,"+window.LOGO_B64 : "";
+  // Obtener logo blanco (para fondo navy del header)
+  const logoBlanco = window._romsaLogoBlanco || "";
+  const logoAzul = window._romsaLogoAzul || "";
+  // Para el header navy usamos el blanco; si no existe, fallback al azul
+  const logo = logoBlanco || logoAzul;
 
   // ── Datos del cliente (caja con borde azul) ──
   const datosCliente = [
@@ -14609,10 +14642,17 @@ function _rpRenderizarPDF(r){
   ).join("");
 
   // ── Secciones del cuerpo ──
-  const seccionesHtml = (r.secciones || []).map((s, i) => {
+  // Filtrar secciones que tengan AL MENOS título o texto (no totalmente vacías)
+  const seccionesConContenido = (r.secciones || []).filter(s => (s.titulo || "").trim() || (s.texto || "").trim());
+
+  const seccionesHtml = seccionesConContenido.map((s, i) => {
     const esResultados = (s.titulo || "").toLowerCase().includes("resultado");
     const colorAccent = esResultados ? "#10B981" : "#0B1F3A";
     const colorTitleText = esResultados ? "#10B981" : "#0B1F3A";
+    const textoLimpio = (s.texto || "").trim();
+    const contenidoHtml = textoLimpio
+      ? _rpTextoAHtml(textoLimpio)
+      : '<p style="margin:0;color:#94A3B8;font-style:italic;font-size:10.5px;">— Sin contenido en esta sección —</p>';
 
     return `<div class="rp-seccion" style="margin-bottom:20px;break-inside:avoid;">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
@@ -14620,7 +14660,7 @@ function _rpRenderizarPDF(r){
         <div style="font-size:13px;font-weight:800;color:${colorTitleText};letter-spacing:.5px;text-transform:uppercase;">${escapeHtml(s.titulo || "")}</div>
       </div>
       <div style="padding-left:36px;color:#1B3F72;font-size:11px;">
-        ${_rpTextoAHtml(s.texto || "")}
+        ${contenidoHtml}
       </div>
     </div>`;
   }).join("");
@@ -14664,6 +14704,9 @@ function _rpRenderizarPDF(r){
 <head>
 <meta charset="UTF-8">
 <title>${escapeHtml(r.folio || "Reporte")} - ${escapeHtml(r.cliente || "ROMSA")}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 @page { size: A4; margin: 0; }
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -14686,8 +14729,8 @@ body { font-family: 'Inter', -apple-system, system-ui, sans-serif; background: #
   content:""; position:absolute; bottom:0; left:0; right:0; height:4px;
   background: linear-gradient(90deg, #0B1F3A, #1E6FD9, #1B3F72);
 }
-.logo-wrap { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:14px; }
-.logo-img { height: 38px; opacity: 0.95; }
+.logo-wrap { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; gap: 20px; }
+.logo-img { height: 32px; width: auto; opacity: 0.98; max-width: 220px; object-fit: contain; }
 .tipo-badge {
   display:inline-block; font-size:8px; font-weight:800; letter-spacing:2.5px;
   text-transform:uppercase; padding: 4px 12px; border-radius: 11px;
@@ -14771,7 +14814,7 @@ body { font-family: 'Inter', -apple-system, system-ui, sans-serif; background: #
     <!-- HEADER -->
     <div class="header">
       <div class="logo-wrap">
-        ${logo ? '<img src="'+logo+'" class="logo-img" alt="ROMSA">' : '<div style="font-size:18px;font-weight:900;letter-spacing:2px;">ROMSA</div>'}
+        ${logo ? '<img src="'+logo+'" class="logo-img" alt="ROMSA">' : '<div></div>'}
         <div class="tipo-badge">${t.emoji} ${escapeHtml(t.label)}</div>
       </div>
       <div class="titulo-pdf">${escapeHtml(t.label)}</div>
