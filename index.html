@@ -13530,6 +13530,7 @@ function renderListaReportes(){
             return totalFotos ? '<span>📷 '+totalFotos+'</span>' : '';
           })()}
           <div>${r.areaTrabajada?'📐 '+escapeHtml(String(r.areaTrabajada))+' m²':''}</div>
+          <button onclick="event.stopPropagation();rpGenerarPdfDirecto('${r.id}')" title="Descargar PDF" style="background:#0B1F3A;color:#fff;border:none;font-size:10px;font-weight:700;padding:4px 9px;border-radius:5px;cursor:pointer;font-family:var(--font);">📄 PDF</button>
         </div>
       </div>
     </div>`;
@@ -13583,38 +13584,42 @@ async function abrirEditorReporte(id){
     r.secciones = _reporteBaseSecciones();
   }
 
-  // Asegurar que cotizaciones estén cargadas para el selector
-  // Si la lista está vacía, intentar cargarlas directamente desde Firestore
-  if(!cotizaciones || !cotizaciones.length){
-    try {
-      // Primero intentar con el subscribe (si hay currentUser)
-      if(typeof subscribeCotizaciones === "function" && currentUser){
-        subscribeCotizaciones();
-      }
-      // Fallback: cargar directamente desde Firestore (independiente del módulo)
-      if(cotRef){
-        const isAdminCheck = (typeof isAdmin !== "undefined") ? isAdmin : false;
-        const uid = currentUser ? currentUser.uid : (firebase.auth().currentUser ? firebase.auth().currentUser.uid : null);
-        let snap;
+  // ── Cargar cotizaciones SIEMPRE (no depende del módulo Cotizaciones) ──
+  console.log("[ROMSA] Editor reporte: intentando cargar cotizaciones. Actuales:", cotizaciones?.length || 0);
+  try {
+    if(cotRef){
+      const isAdminCheck = (typeof isAdmin !== "undefined") ? isAdmin : false;
+      const uid = currentUser ? currentUser.uid : (firebase.auth && firebase.auth().currentUser ? firebase.auth().currentUser.uid : null);
+      let snap;
+      try {
+        if(isAdminCheck){
+          console.log("[ROMSA] Cargando como admin (todas las cotizaciones)");
+          snap = await cotRef.orderBy("ts","desc").get();
+        } else if(uid){
+          console.log("[ROMSA] Cargando solo cotizaciones de uid:", uid);
+          snap = await cotRef.where("creadoPorUid","==",uid).orderBy("ts","desc").get();
+        } else {
+          console.log("[ROMSA] Sin uid, cargando todas (puede fallar por reglas)");
+          snap = await cotRef.get();
+        }
+        cotizaciones = snap.docs.map(d => d.data());
+        console.log("[ROMSA] ✓ Cargadas " + cotizaciones.length + " cotizaciones en total");
+        console.log("[ROMSA] Estados encontrados:", [...new Set(cotizaciones.map(c => c.estado))]);
+      } catch(e){
+        console.warn("[ROMSA] Fallback sin orderBy:", e);
         try {
-          if(isAdminCheck){
-            snap = await cotRef.orderBy("ts","desc").get();
-          } else if(uid){
-            snap = await cotRef.where("creadoPorUid","==",uid).orderBy("ts","desc").get();
-          } else {
-            snap = await cotRef.get();
-          }
-          cotizaciones = snap.docs.map(d => d.data());
-          console.log("[ROMSA] Cargadas " + cotizaciones.length + " cotizaciones para selector de reporte");
-        } catch(e){
-          console.warn("[ROMSA] Fallback cot sin orderBy:", e);
           snap = await cotRef.get();
           cotizaciones = snap.docs.map(d => d.data());
+          console.log("[ROMSA] ✓ Cargadas " + cotizaciones.length + " cotizaciones (fallback)");
+        } catch(e2){
+          console.error("[ROMSA] Error final cargando cotizaciones:", e2);
         }
       }
-    } catch(e){
-      console.warn("[ROMSA] No se pudieron cargar cotizaciones:", e);
+    } else {
+      console.warn("[ROMSA] cotRef es null — Firestore no inicializado");
     }
+  } catch(e){
+    console.warn("[ROMSA] No se pudieron cargar cotizaciones:", e);
   }
 
   const ov = document.createElement("div");
@@ -13627,15 +13632,27 @@ async function abrirEditorReporte(id){
     return `<option value="${t.id}"${sel}>${t.emoji} ${t.nombre}</option>`;
   }).join("");
 
-  // Opciones de cotizaciones (solo aceptadas, en obra o cerradas)
-  const cotsElegibles = (cotizaciones||[]).filter(c =>
-    ["aceptada","en_obra","cerrada"].indexOf(c.estado) >= 0
-  ).sort((a,b) => (b.ts||0) - (a.ts||0));
+  // Opciones de cotizaciones — TODAS, con badge de estado al lado
+  const cotsElegibles = (cotizaciones||[]).slice().sort((a,b) => (b.ts||0) - (a.ts||0));
+  console.log("[ROMSA] Cotizaciones para dropdown:", cotsElegibles.length);
+
+  const _emoEstado = function(est){
+    return ({
+      pendiente: "⏳", aceptada: "✓", en_obra: "🏗️", cerrada: "🟢",
+      rechazada: "❌", vencida: "⏰", ganada: "✓"
+    })[est] || "•";
+  };
 
   const opcionesCot = cotsElegibles.map(c => {
     const sel = (r.cotizacionId === c.id) ? " selected" : "";
-    return `<option value="${c.id}"${sel}>${escapeHtml(c.folio||"")} — ${escapeHtml(c.empresa||c.cliente||"")}</option>`;
+    const emo = _emoEstado(c.estado);
+    const empresa = c.empresa || c.cliente || "Sin cliente";
+    return `<option value="${c.id}"${sel}>${emo} ${escapeHtml(c.folio||"sin folio")} — ${escapeHtml(empresa)}</option>`;
   }).join("");
+
+  const opcionVacia = cotsElegibles.length === 0
+    ? '<option disabled>⚠️ No hay cotizaciones cargadas (revisa la consola del navegador)</option>'
+    : '';
 
   ov.innerHTML = `<div style="background:#fff;width:100%;max-width:700px;max-height:94vh;border-radius:18px 18px 0 0;overflow-y:auto;display:flex;flex-direction:column;">
     <div style="padding:14px 18px;border-bottom:1px solid var(--g1);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#fff;z-index:1;">
@@ -13662,10 +13679,11 @@ async function abrirEditorReporte(id){
 
       <!-- Vinculación a cotización (opcional) -->
       <div style="background:#F3E8FF;border:1px solid #C4B5FD;border-left:3px solid #7C3AED;border-radius:8px;padding:10px;margin-bottom:14px;">
-        <div style="font-size:8.5px;font-weight:700;color:#5B21B6;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px;">🔗 Vinculación a cotización (opcional)</div>
+        <div style="font-size:8.5px;font-weight:700;color:#5B21B6;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px;">🔗 Vinculación a cotización (opcional) · ${cotsElegibles.length} disponibles</div>
         <select class="finput" id="rp-cot-id" onchange="rpAutoLlenarDesdeCot()" style="font-family:var(--font);background:#fff;">
           <option value="">— Sin cotización vinculada (reporte libre) —</option>
           ${opcionesCot}
+          ${opcionVacia}
         </select>
         <div style="font-size:10px;color:#5B21B6;margin-top:5px;">Selecciona una cotización para auto-llenar cliente, atención, proyecto y área.</div>
       </div>
@@ -13765,10 +13783,11 @@ async function abrirEditorReporte(id){
 
     </div>
 
-    <div style="padding:12px 18px;border-top:1px solid var(--g1);display:flex;gap:8px;background:#fff;position:sticky;bottom:0;">
+    <div style="padding:12px 18px;border-top:1px solid var(--g1);display:flex;gap:8px;background:#fff;position:sticky;bottom:0;flex-wrap:wrap;">
       ${id?'<button onclick="eliminarReporte()" style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:#EF4444;font-size:12px;font-weight:700;padding:11px 14px;border-radius:8px;cursor:pointer;font-family:var(--font);">🗑 Eliminar</button>':''}
-      <button onclick="cerrarEditorReporte()" style="flex:1;background:var(--off);border:1px solid var(--g1);color:var(--navy);font-size:12px;font-weight:700;padding:11px;border-radius:8px;cursor:pointer;font-family:var(--font);">Cancelar</button>
-      <button onclick="guardarReporte()" style="flex:2;background:#0E7490;border:none;color:#fff;font-size:12px;font-weight:700;padding:11px;border-radius:8px;cursor:pointer;font-family:var(--font);">${id?'✓ Actualizar':'✓ Crear reporte'}</button>
+      ${id?'<button onclick="rpGenerarPdf()" style="background:#0B1F3A;border:none;color:#fff;font-size:12px;font-weight:700;padding:11px 14px;border-radius:8px;cursor:pointer;font-family:var(--font);">📄 PDF</button>':''}
+      <button onclick="cerrarEditorReporte()" style="flex:1;background:var(--off);border:1px solid var(--g1);color:var(--navy);font-size:12px;font-weight:700;padding:11px;border-radius:8px;cursor:pointer;font-family:var(--font);min-width:100px;">Cancelar</button>
+      <button onclick="guardarReporte()" style="flex:2;background:#0E7490;border:none;color:#fff;font-size:12px;font-weight:700;padding:11px;border-radius:8px;cursor:pointer;font-family:var(--font);min-width:120px;">${id?'✓ Actualizar':'✓ Crear reporte'}</button>
     </div>
   </div>`;
 
@@ -14494,6 +14513,424 @@ window.rpAbrirPegadoMagico = rpAbrirPegadoMagico;
 window.rpProbarParseo = rpProbarParseo;
 window.rpAplicarPegadoMagico = rpAplicarPegadoMagico;
 window.rpParsearTexto = rpParsearTexto;
+
+// ═══════════════════════════════════════════════════════════════════════
+// 📄 GENERADOR DE PDF DEL REPORTE DE OBRA
+// Mismo estilo visual que la cotización (navy #0B1F3A, azul #1E6FD9)
+// ═══════════════════════════════════════════════════════════════════════
+
+// Versión desde la lista (recibe ID directo, no abre editor)
+function rpGenerarPdfDirecto(reporteId){
+  const r = _reportes.find(x => x.id === reporteId);
+  if(!r){ showToast("⚠️ Reporte no encontrado"); return; }
+  _rpRenderizarPDF(r);
+}
+
+// Versión desde el editor (toma datos del formulario actual + fotos temp)
+function rpGenerarPdf(){
+  if(!_reporteEditId){ alert("⚠️ Guarda el reporte primero antes de generar PDF"); return; }
+  // Construir reporte temporal con valores actuales del formulario
+  const r = _reportes.find(x => x.id === _reporteEditId);
+  if(!r){ showToast("⚠️ Reporte no encontrado"); return; }
+  // Tomar los valores actuales del editor (no guardados aún)
+  const rTemp = Object.assign({}, r, {
+    tipo:           document.getElementById("rp-tipo")?.value || r.tipo,
+    folio:         (document.getElementById("rp-folio")?.value || r.folio || "").trim(),
+    fechaEmision:  (document.getElementById("rp-fecha-emision")?.value || r.fechaEmision || ""),
+    fechaEjecucion:(document.getElementById("rp-fecha-ejecucion")?.value || r.fechaEjecucion || "").trim(),
+    cliente:       (document.getElementById("rp-cliente")?.value || r.cliente || "").trim(),
+    atencion:      (document.getElementById("rp-atencion")?.value || r.atencion || "").trim(),
+    asunto:        (document.getElementById("rp-asunto")?.value || r.asunto || r.proyecto || "").trim(),
+    areaTrabajada: (document.getElementById("rp-area")?.value || r.areaTrabajada || "").trim(),
+    secciones:     (Array.isArray(_rpSeccionesTemp) && _rpSeccionesTemp.length) ? _rpSeccionesTemp.filter(s => s.titulo || s.texto) : (r.secciones || []),
+    fotos:         _rpFotosTemp && Object.keys(_rpFotosTemp).length ? _rpFotosTemp : (r.fotos || {antes:[],durante:[],despues:[]})
+  });
+  _rpRenderizarPDF(rTemp);
+}
+
+// Formato de fecha bonito en español
+function _rpFechaBonita(isoDate){
+  if(!isoDate) return "";
+  const meses = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+  try {
+    const d = new Date(isoDate + "T12:00:00");
+    return d.getDate() + " de " + meses[d.getMonth()] + " de " + d.getFullYear();
+  } catch(e){ return isoDate; }
+}
+
+// Convertir texto con bullets/líneas a HTML con <li>
+function _rpTextoAHtml(txt){
+  if(!txt) return "";
+  // Detectar si tiene bullets (•, *, -)
+  const lineas = txt.split("\n").map(l => l.trim()).filter(l => l);
+  if(lineas.length === 0) return "";
+
+  // Si más del 50% de las líneas son bullets, formatear como lista
+  const bulletLineas = lineas.filter(l => /^[•●▪\*\-]\s+/.test(l));
+  const esLista = bulletLineas.length >= lineas.length * 0.5 && lineas.length > 1;
+
+  if(esLista){
+    return '<ul style="margin:0;padding-left:18px;list-style:none;">' +
+      lineas.map(l => {
+        const limpia = l.replace(/^[•●▪\*\-]\s+/, "").trim();
+        return '<li style="position:relative;padding-left:14px;margin-bottom:5px;line-height:1.6;">' +
+               '<span style="position:absolute;left:0;top:0;color:#1E6FD9;font-weight:800;">▸</span>' +
+               escapeHtml(limpia) + '</li>';
+      }).join("") + '</ul>';
+  } else {
+    // Párrafo normal con saltos
+    return lineas.map(l => '<p style="margin:0 0 8px;line-height:1.65;">' + escapeHtml(l) + '</p>').join("");
+  }
+}
+
+// ── Render del PDF (HTML completo, abre en pestaña con print) ──
+function _rpRenderizarPDF(r){
+  const t = _tipoReporteInfo(r.tipo);
+  const fechaEmision = _rpFechaBonita(r.fechaEmision) || _rpFechaBonita(new Date().toISOString().slice(0,10));
+  const fechaEjecucion = r.fechaEjecucion || "";
+
+  // Obtener logo si existe
+  const logo = window.LOGO_B64 ? "data:image/png;base64,"+window.LOGO_B64 : "";
+
+  // ── Datos del cliente (caja con borde azul) ──
+  const datosCliente = [
+    {label:"Atención",  val:r.atencion},
+    {label:"Cliente",   val:r.cliente},
+    {label:"Ejecución", val:fechaEjecucion},
+    {label:"Asunto",    val:r.asunto},
+    {label:"Área",      val:r.areaTrabajada ? r.areaTrabajada + " m²" : ""}
+  ].filter(d => d.val);
+
+  const datosClienteHtml = datosCliente.map(d =>
+    `<tr>
+      <td style="color:#8A9AB8;font-weight:600;padding:3px 12px 3px 0;white-space:nowrap;vertical-align:top;width:90px;">${escapeHtml(d.label)}:</td>
+      <td style="color:#0B1F3A;font-weight:${d.label==='Cliente'||d.label==='Área'?'700':'500'};padding:3px 0;line-height:1.5;">${escapeHtml(d.val)}</td>
+    </tr>`
+  ).join("");
+
+  // ── Secciones del cuerpo ──
+  const seccionesHtml = (r.secciones || []).map((s, i) => {
+    const esResultados = (s.titulo || "").toLowerCase().includes("resultado");
+    const colorAccent = esResultados ? "#10B981" : "#0B1F3A";
+    const colorTitleText = esResultados ? "#10B981" : "#0B1F3A";
+
+    return `<div class="rp-seccion" style="margin-bottom:20px;break-inside:avoid;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+        <div style="width:26px;height:26px;background:${colorAccent};color:#fff;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;flex-shrink:0;">${i+1}</div>
+        <div style="font-size:13px;font-weight:800;color:${colorTitleText};letter-spacing:.5px;text-transform:uppercase;">${escapeHtml(s.titulo || "")}</div>
+      </div>
+      <div style="padding-left:36px;color:#1B3F72;font-size:11px;">
+        ${_rpTextoAHtml(s.texto || "")}
+      </div>
+    </div>`;
+  }).join("");
+
+  // ── Galería de fotos por categoría ──
+  const renderGaleriaCat = function(cat, label, color){
+    const fotos = (r.fotos && r.fotos[cat]) ? r.fotos[cat] : [];
+    if(!fotos.length) return "";
+    return `<div style="margin-bottom:14px;">
+      <div style="display:inline-block;font-size:9px;font-weight:800;color:#fff;background:${color};padding:3px 10px;border-radius:10px;letter-spacing:1.5px;margin-bottom:8px;">${label}</div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;">
+        ${fotos.map(f => `<div style="aspect-ratio:1;border-radius:5px;overflow:hidden;background:#000;border:1px solid #E2E8F2;">
+          <img src="${f.url}" style="width:100%;height:100%;object-fit:cover;display:block;" crossorigin="anonymous">
+        </div>`).join("")}
+      </div>
+    </div>`;
+  };
+
+  const totalFotos = ((r.fotos?.antes||[]).length + (r.fotos?.durante||[]).length + (r.fotos?.despues||[]).length);
+  const fotosHtml = totalFotos === 0 ? "" : `
+    <div class="rp-seccion" style="margin-bottom:20px;break-inside:avoid;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+        <div style="width:26px;height:26px;background:#0B1F3A;color:#fff;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;">📷</div>
+        <div style="font-size:13px;font-weight:800;color:#0B1F3A;letter-spacing:.5px;text-transform:uppercase;">Evidencia Fotográfica</div>
+      </div>
+      <div style="padding-left:36px;">
+        ${renderGaleriaCat("antes",   "⬛ ANTES",    "#6B7280")}
+        ${renderGaleriaCat("durante", "🟧 DURANTE",  "#F59E0B")}
+        ${renderGaleriaCat("despues", "🟩 DESPUÉS",  "#10B981")}
+      </div>
+    </div>`;
+
+  // ── Vinculación con cotización (badge en footer si existe) ──
+  const vincCotHtml = r.cotizacionFolio
+    ? `<div style="font-size:8.5px;color:#7C3AED;margin-top:4px;">🔗 Cotización vinculada: <strong>${escapeHtml(r.cotizacionFolio)}</strong></div>`
+    : '';
+
+  // ── Documento completo ──
+  const htmlDoc = `<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>${escapeHtml(r.folio || "Reporte")} - ${escapeHtml(r.cliente || "ROMSA")}</title>
+<style>
+@page { size: A4; margin: 0; }
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+body { font-family: 'Inter', -apple-system, system-ui, sans-serif; background: #E5E9F0; color: #0B1F3A; }
+
+.hoja {
+  width: 210mm; min-height: 297mm; background: #fff;
+  margin: 12px auto; box-shadow: 0 4px 20px rgba(11,31,58,.12);
+  position: relative; display: flex; flex-direction: column;
+  page-break-after: always;
+}
+.hoja:last-child { page-break-after: auto; }
+
+/* Header navy */
+.header {
+  background: linear-gradient(135deg, #0B1F3A 0%, #1B3F72 100%);
+  color: #fff; padding: 22mm 18mm 14mm; position: relative;
+}
+.header::after {
+  content:""; position:absolute; bottom:0; left:0; right:0; height:4px;
+  background: linear-gradient(90deg, #0B1F3A, #1E6FD9, #1B3F72);
+}
+.logo-wrap { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:14px; }
+.logo-img { height: 38px; opacity: 0.95; }
+.tipo-badge {
+  display:inline-block; font-size:8px; font-weight:800; letter-spacing:2.5px;
+  text-transform:uppercase; padding: 4px 12px; border-radius: 11px;
+  background:${t.color}; color:#fff;
+}
+.titulo-pdf {
+  font-size: 24px; font-weight: 900; letter-spacing: 0.3px;
+  text-transform:uppercase; line-height:1.15; margin-top: 14px;
+}
+.meta-row {
+  display:flex; justify-content:space-between; align-items:flex-end;
+  margin-top: 18px; gap: 20px;
+}
+.meta-col-label {
+  font-size: 7.5px; font-weight: 800; letter-spacing: 2.2px;
+  color: rgba(255,255,255,.45); text-transform:uppercase;
+}
+.meta-col-value {
+  font-size: 10.5px; font-weight: 700; color: #fff; margin-top: 3px;
+}
+.meta-col-value.mono { font-family: 'Courier New', monospace; font-size: 10px; }
+
+/* Cuerpo */
+.cuerpo { padding: 14mm 18mm; flex: 1; }
+
+.datos-cliente {
+  background: #F7F9FC; border-left: 3px solid #1E6FD9;
+  border-radius: 6px; padding: 12px 16px; margin-bottom: 18px;
+}
+.datos-cliente table { border-collapse: collapse; font-size: 11px; }
+
+/* Secciones */
+.rp-seccion p { margin-bottom: 8px; }
+
+/* Footer */
+.footer-pag {
+  position: absolute; left: 18mm; right: 18mm; bottom: 12mm;
+  border-top: 1px solid #E2E8F2; padding-top: 10px;
+  display: flex; justify-content: space-between; align-items: flex-end;
+  font-size: 8.5px; color: #4A5E7A;
+}
+.footer-brand {
+  font-size: 9px; font-weight: 700; color: #1E6FD9;
+}
+.footer-tagline { font-size: 8px; color: #8A9AB8; margin-top: 1px; }
+.footer-contact { text-align: right; line-height: 1.5; }
+.footer-contact a { color: #1E6FD9; text-decoration: none; }
+
+/* Toolbar (oculto al imprimir) */
+.toolbar {
+  position: fixed; top: 14px; right: 14px; z-index: 100;
+  background: #0B1F3A; padding: 10px 16px; border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.3);
+  display: flex; gap: 8px;
+}
+.toolbar button {
+  background: #1E6FD9; color: #fff; border: none;
+  font-family: inherit; font-size: 12px; font-weight: 700;
+  padding: 8px 14px; border-radius: 6px; cursor: pointer;
+}
+.toolbar button.alt { background: rgba(255,255,255,.12); }
+
+@media print {
+  body { background: #fff; }
+  .hoja { margin: 0; box-shadow: none; }
+  .toolbar { display: none !important; }
+}
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <button onclick="window.print()">🖨️ Imprimir / Guardar PDF</button>
+  <button class="alt" onclick="window.close()">Cerrar</button>
+</div>
+
+<div id="contenido-pdf">
+  <!-- Plantilla principal: lo que se distribuirá en hojas -->
+  <div id="seed-hoja">
+
+    <!-- HEADER -->
+    <div class="header">
+      <div class="logo-wrap">
+        ${logo ? '<img src="'+logo+'" class="logo-img" alt="ROMSA">' : '<div style="font-size:18px;font-weight:900;letter-spacing:2px;">ROMSA</div>'}
+        <div class="tipo-badge">${t.emoji} ${escapeHtml(t.label)}</div>
+      </div>
+      <div class="titulo-pdf">${escapeHtml(t.label)}</div>
+      <div class="meta-row">
+        <div>
+          <div class="meta-col-label">Folio</div>
+          <div class="meta-col-value mono">${escapeHtml(r.folio || "—")}</div>
+        </div>
+        <div style="text-align:right;">
+          <div class="meta-col-label">Fecha de emisión</div>
+          <div class="meta-col-value">${escapeHtml(fechaEmision)}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CUERPO -->
+    <div class="cuerpo" id="cuerpo-fuente">
+      <div class="datos-cliente">
+        <table>${datosClienteHtml}</table>
+      </div>
+
+      <div id="secciones-fuente">
+        ${seccionesHtml}
+        ${fotosHtml}
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ───────────────────────────────────────────────────────────────
+// DISTRIBUIDOR DINÁMICO de hojas A4 (igual estilo cotización)
+// ───────────────────────────────────────────────────────────────
+const HOJA_ALTO = 1123;       // px equivalentes a 297mm
+const HEADER_ALTO = 240;      // header navy aprox
+const FOOTER_ALTO = 88;       // footer aprox
+const PADDING_VERT = 90;      // padding cuerpo
+const CUERPO_DISPONIBLE = HOJA_ALTO - HEADER_ALTO - FOOTER_ALTO - PADDING_VERT;
+
+function buildFooter(pagNum, totPag){
+  return \`<div class="footer-pag">
+    <div>
+      <div class="footer-brand">ROMSA Industrial</div>
+      <div class="footer-tagline">Especialistas en recubrimientos industriales</div>
+      ${vincCotHtml}
+    </div>
+    <div class="footer-contact">
+      Mexicali, Baja California<br>
+      <a href="mailto:ventas@romsaindustrial.com">ventas@romsaindustrial.com</a><br>
+      Pág. \${pagNum} / \${totPag}
+    </div>
+  </div>\`;
+}
+
+function buildHeader(){
+  return document.getElementById("seed-hoja").querySelector(".header").outerHTML;
+}
+
+function buildHoja(headerHtml, contentItems, footerHtml){
+  return \`<div class="hoja">
+    \${headerHtml}
+    <div class="cuerpo">
+      \${contentItems.map(el => el.outerHTML).join("")}
+    </div>
+    \${footerHtml}
+  </div>\`;
+}
+
+function distribuir(){
+  const seed = document.getElementById("seed-hoja");
+  const datosCliente = seed.querySelector(".datos-cliente").outerHTML;
+  const secciones = Array.from(seed.querySelectorAll(".rp-seccion"));
+
+  // Medir cada sección creando hoja oculta de prueba
+  const sandbox = document.createElement("div");
+  sandbox.style.cssText = "position:absolute;left:-9999px;top:0;width:174mm;visibility:hidden;";
+  document.body.appendChild(sandbox);
+
+  const medirHTML = function(html){
+    sandbox.innerHTML = html;
+    const h = sandbox.scrollHeight;
+    return h;
+  };
+
+  // Datos cliente siempre va en página 1
+  let paginas = [];
+  let actual = [datosCliente]; // contenido de la página actual (HTML strings)
+  let actualAlto = medirHTML(datosCliente);
+
+  for(const sec of secciones){
+    const html = sec.outerHTML;
+    const h = medirHTML(html);
+
+    // Si cabe en la página actual, agregar
+    if(actualAlto + h <= CUERPO_DISPONIBLE){
+      actual.push(html);
+      actualAlto += h;
+    } else {
+      // No cabe → cerrar página actual y empezar una nueva
+      paginas.push(actual);
+      actual = [html];
+      actualAlto = h;
+    }
+  }
+  if(actual.length) paginas.push(actual);
+
+  sandbox.remove();
+
+  // Construir HTML final con todas las hojas
+  const totPag = paginas.length;
+  const headerHtml = buildHeader();
+
+  const hojasHtml = paginas.map((items, i) => {
+    return \`<div class="hoja">
+      \${i === 0 ? headerHtml : ""}
+      <div class="cuerpo" style="\${i > 0 ? 'padding-top: 22mm;' : ''}">
+        \${items.join("")}
+      </div>
+      \${buildFooter(i+1, totPag)}
+    </div>\`;
+  }).join("");
+
+  document.getElementById("contenido-pdf").innerHTML = hojasHtml;
+}
+
+// Ejecutar al cargar
+window.addEventListener("load", function(){
+  // Esperar a que las imágenes carguen (si hay fotos)
+  const imgs = document.querySelectorAll("img");
+  let pendientes = 0;
+  imgs.forEach(img => {
+    if(!img.complete){
+      pendientes++;
+      img.onload = img.onerror = () => {
+        pendientes--;
+        if(pendientes === 0) setTimeout(distribuir, 50);
+      };
+    }
+  });
+  if(pendientes === 0) setTimeout(distribuir, 50);
+});
+</scr` + `ipt>
+
+</body>
+</html>`;
+
+  // Abrir en pestaña nueva
+  const w = window.open("", "_blank");
+  if(!w){
+    alert("⚠️ Tu navegador bloqueó la ventana popup.\n\nPermite popups para este sitio y vuelve a intentar, o guarda el reporte primero.");
+    return;
+  }
+  w.document.write(htmlDoc);
+  w.document.close();
+}
+
+window.rpGenerarPdf = rpGenerarPdf;
+window.rpGenerarPdfDirecto = rpGenerarPdfDirecto;
 
 </script>
 
