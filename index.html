@@ -14657,10 +14657,10 @@ function _rpRenderizarPDF(r){
       ? _rpTextoAHtml(textoLimpio)
       : '<p style="margin:0;color:#94A3B8;font-style:italic;font-size:10.5px;">— Sin contenido en esta sección —</p>';
 
-    return `<div class="rp-seccion" style="margin-bottom:22px;break-inside:avoid;">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-        <div style="width:26px;height:26px;background:${colorAccent};color:#fff;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;flex-shrink:0;">${numero}</div>
-        <div style="font-size:13px;font-weight:800;color:${colorTitleText};letter-spacing:.5px;text-transform:uppercase;">${escapeHtml(s.titulo || "")}</div>
+    return `<div class="rp-seccion" style="margin-bottom:20px;break-inside:avoid;">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:11px;">
+        <div style="width:24px;height:24px;background:${colorAccent};color:#fff;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;font-family:'JetBrains Mono', monospace;letter-spacing:0;box-shadow:0 2px 6px ${colorAccent}33;">${numero}</div>
+        <div style="font-size:12.5px;font-weight:800;color:${colorTitleText};letter-spacing:.6px;text-transform:uppercase;">${escapeHtml(s.titulo || "")}</div>
       </div>
       <div style="padding-left:36px;color:#1B3F72;font-size:11px;">
         ${contenidoHtml}
@@ -14674,33 +14674,47 @@ function _rpRenderizarPDF(r){
 
   const seccionesHtml = seccionesAntes.map((s, i) => _rpRenderSeccionPDF(s, i+1)).join("");
 
-  // ── Galería de fotos por categoría — horizontal, sin emoji ──
+  // ── Galería de fotos por categoría — siempre 3 columnas para tamaño consistente ──
   const renderGaleriaCat = function(cat, label, color){
     const fotos = (r.fotos && r.fotos[cat]) ? r.fotos[cat] : [];
     if(!fotos.length) return "";
-    // Determinar columnas según cantidad: 1=center, 2=2cols, 3+=3cols
-    const cols = Math.min(fotos.length, 3);
-    return `<div style="margin-bottom:18px;">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
-        <div style="width:4px;height:14px;background:${color};border-radius:2px;"></div>
-        <div style="font-size:9.5px;font-weight:800;color:${color};letter-spacing:2px;text-transform:uppercase;">${label}</div>
+    // Construir filas de 3 (rellenar con slots vacíos si faltan)
+    const filasHtml = [];
+    for(let i = 0; i < fotos.length; i += 3){
+      const slots = [];
+      for(let j = 0; j < 3; j++){
+        const f = fotos[i+j];
+        if(f){
+          slots.push('<div style="aspect-ratio:4/3;border-radius:5px;overflow:hidden;background:#F1F5F9;border:1px solid #E2E8F2;box-shadow:0 1px 4px rgba(11,31,58,.08);">'
+            + '<img src="'+f.url+'" style="width:100%;height:100%;object-fit:cover;display:block;">'
+            + '</div>');
+        } else {
+          slots.push('<div></div>');
+        }
+      }
+      filasHtml.push('<div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:6px;'+(i>0?'margin-top:6px;':'')+'">'+slots.join('')+'</div>');
+    }
+    return `<div style="margin-bottom:14px;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:7px;">
+        <div style="width:3px;height:12px;background:${color};border-radius:2px;"></div>
+        <div style="font-size:9px;font-weight:800;color:${color};letter-spacing:1.8px;text-transform:uppercase;">${label}</div>
         <div style="flex:1;height:1px;background:linear-gradient(to right, ${color}33, transparent);margin-left:4px;"></div>
-        <div style="font-size:9px;color:#94A3B8;font-weight:600;">${fotos.length} ${fotos.length===1?'foto':'fotos'}</div>
+        <div style="font-size:8.5px;color:#94A3B8;font-weight:600;">${fotos.length} ${fotos.length===1?'foto':'fotos'}</div>
       </div>
-      <div style="display:grid;grid-template-columns:repeat(${cols}, 1fr);gap:8px;">
-        ${fotos.map(f => '<div style="aspect-ratio:4/3;border-radius:6px;overflow:hidden;background:#F1F5F9;border:1px solid #E2E8F2;box-shadow:0 1px 3px rgba(11,31,58,.06);">'
-          + '<img src="'+f.url+'" style="width:100%;height:100%;object-fit:cover;display:block;">'
-          + '</div>').join("")}
-      </div>
+      ${filasHtml.join("")}
     </div>`;
   };
 
   const totalFotos = ((r.fotos?.antes||[]).length + (r.fotos?.durante||[]).length + (r.fotos?.despues||[]).length);
   const fotosHtml = totalFotos === 0 ? "" : `
-    <div class="rp-seccion rp-fotos" style="margin-bottom:24px;break-inside:avoid;page-break-inside:avoid;">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
-        <div style="width:26px;height:26px;background:#0B1F3A;color:#fff;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;flex-shrink:0;" class="rp-num-fotos">F</div>
-        <div style="font-size:13px;font-weight:800;color:#0B1F3A;letter-spacing:.5px;text-transform:uppercase;">Evidencia Fotográfica</div>
+    <div class="rp-seccion rp-fotos" style="margin-bottom:22px;break-inside:avoid;page-break-inside:avoid;">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+        <div style="width:24px;height:24px;background:#0B1F3A;color:#fff;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 2px 6px rgba(11,31,58,.2);">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        </div>
+        <div style="font-size:12.5px;font-weight:800;color:#0B1F3A;letter-spacing:.6px;text-transform:uppercase;">Evidencia Fotográfica</div>
+        <div style="flex:1;height:1px;background:linear-gradient(to right, #E2E8F2, transparent);margin-left:4px;"></div>
+        <div style="font-size:9px;color:#94A3B8;font-weight:600;letter-spacing:0.3px;">${totalFotos} ${totalFotos===1?'imagen':'imágenes'}</div>
       </div>
       <div style="padding-left:36px;">
         ${renderGaleriaCat("antes",   "Antes",    "#475569")}
@@ -14722,7 +14736,7 @@ function _rpRenderizarPDF(r){
 <title>${escapeHtml(r.folio || "Reporte")} - ${escapeHtml(r.cliente || "ROMSA")}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 @page { size: A4; margin: 0; }
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -14801,15 +14815,48 @@ body { font-family: 'Inter', -apple-system, system-ui, sans-serif; background: #
 .footer-pag {
   position: absolute; left: 18mm; right: 18mm; bottom: 14mm;
   border-top: 1px solid #E2E8F2; padding-top: 12px;
-  display: flex; justify-content: space-between; align-items: flex-end;
+  display: flex; justify-content: space-between; align-items: center;
   font-size: 8.5px; color: #4A5E7A;
 }
-.footer-brand {
-  font-size: 9.5px; font-weight: 800; color: #1E6FD9; letter-spacing: 0.3px;
+.footer-left { display: flex; flex-direction: column; gap: 4px; }
+.footer-tagline { font-size: 7.5px; color: #94A3B8; letter-spacing: 0.4px; font-weight: 500; }
+.footer-contact { text-align: right; line-height: 1.6; font-size: 8px; }
+.footer-contact a { color: #1E6FD9; text-decoration: none; font-weight: 600; }
+.footer-loc { color: #64748B; font-weight: 500; }
+.footer-pag-num {
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-size: 8px; color: #64748B; font-weight: 600;
+  margin-top: 2px; letter-spacing: 0.5px;
 }
-.footer-tagline { font-size: 8px; color: #8A9AB8; margin-top: 2px; letter-spacing: 0.3px; }
-.footer-contact { text-align: right; line-height: 1.55; }
-.footer-contact a { color: #1E6FD9; text-decoration: none; }
+
+/* ── Líneas separadoras sutiles entre secciones ── */
+.rp-seccion + .rp-seccion {
+  border-top: 1px solid #F1F5F9;
+  padding-top: 18px;
+  margin-top: 2px;
+}
+
+/* Refinamiento de bullets en secciones */
+.rp-seccion ul { padding-left: 4px !important; }
+.rp-seccion ul li::before { font-size: 13px; opacity: 0.9; }
+
+/* Refinamiento tabla datos-cliente — tipografía variable */
+.datos-cliente td:first-child {
+  font-size: 9px;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: #94A3B8 !important;
+  font-weight: 700 !important;
+  padding-right: 16px !important;
+}
+
+/* Folio mono más distinguido */
+.meta-col-value.mono {
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-size: 10.5px;
+  letter-spacing: 0.8px;
+  font-weight: 600;
+}
 
 /* Toolbar (oculto al imprimir) */
 .toolbar {
@@ -14884,6 +14931,8 @@ body { font-family: 'Inter', -apple-system, system-ui, sans-serif; background: #
 // ───────────────────────────────────────────────────────────────
 // DISTRIBUIDOR DINÁMICO de hojas A4 (igual estilo cotización)
 // ───────────────────────────────────────────────────────────────
+window.__LOGO_AZUL__ = ${JSON.stringify(logoAzul || "")};
+
 const HOJA_ALTO = 1123;       // px equivalentes a 297mm
 const HEADER_ALTO = 240;      // header navy aprox
 const FOOTER_ALTO = 88;       // footer aprox
@@ -14891,16 +14940,20 @@ const PADDING_VERT = 90;      // padding cuerpo
 const CUERPO_DISPONIBLE = HOJA_ALTO - HEADER_ALTO - FOOTER_ALTO - PADDING_VERT;
 
 function buildFooter(pagNum, totPag){
+  const logoAzulFooter = window.__LOGO_AZUL__ || "";
+  const logoHtml = logoAzulFooter
+    ? '<img src="'+logoAzulFooter+'" style="height:18px;width:auto;max-width:130px;object-fit:contain;display:block;">'
+    : '<div style="font-size:11px;font-weight:800;color:#1E6FD9;letter-spacing:0.3px;">ROMSA Industrial</div>';
   return \`<div class="footer-pag">
-    <div>
-      <div class="footer-brand">ROMSA Industrial</div>
+    <div class="footer-left">
+      \${logoHtml}
       <div class="footer-tagline">Especialistas en recubrimientos industriales</div>
       ${vincCotHtml}
     </div>
     <div class="footer-contact">
-      Mexicali, Baja California<br>
-      <a href="mailto:ventas@romsaindustrial.com">ventas@romsaindustrial.com</a><br>
-      Pág. \${pagNum} / \${totPag}
+      <div class="footer-loc">Mexicali, Baja California</div>
+      <a href="mailto:ventas@romsaindustrial.com">ventas@romsaindustrial.com</a>
+      <div class="footer-pag-num">Pág. \${pagNum} <span style="color:#CBD5E1;">/</span> \${totPag}</div>
     </div>
   </div>\`;
 }
