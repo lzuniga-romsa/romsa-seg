@@ -14736,7 +14736,7 @@ function _rpRenderizarPDF(r){
 <title>${escapeHtml(r.folio || "Reporte")} - ${escapeHtml(r.cliente || "ROMSA")}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700;800&display=swap" rel="stylesheet">
 <style>
 @page { size: A4; margin: 0; }
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -14753,7 +14753,7 @@ body { font-family: 'Inter', -apple-system, system-ui, sans-serif; background: #
 /* Header navy */
 .header {
   background: linear-gradient(135deg, #0B1F3A 0%, #163057 50%, #1B3F72 100%);
-  color: #fff; padding: 22mm 18mm 16mm; position: relative;
+  color: #fff; padding: 20mm 18mm 14mm; position: relative;
   overflow: hidden;
 }
 .header::before {
@@ -14765,29 +14765,44 @@ body { font-family: 'Inter', -apple-system, system-ui, sans-serif; background: #
   content:""; position:absolute; bottom:0; left:0; right:0; height:4px;
   background: linear-gradient(90deg, #0B1F3A, #1E6FD9, #1B3F72);
 }
-.logo-wrap { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; gap: 20px; position:relative; z-index:2; }
-.logo-img { height: 34px; width: auto; opacity: 0.98; max-width: 220px; object-fit: contain; }
+
+/* Logo centrado */
+.logo-center {
+  display: flex; justify-content: center; align-items: center;
+  margin-bottom: 12px; position: relative; z-index: 2;
+}
+.logo-img {
+  height: 38px; width: auto; opacity: 0.98;
+  max-width: 240px; object-fit: contain;
+}
+
+/* Badge tipo, centrado debajo del logo, pequeño */
+.tipo-badge-wrap {
+  display: flex; justify-content: center; margin-bottom: 4px;
+  position: relative; z-index: 2;
+}
 .tipo-badge {
-  display:inline-block; font-size:8px; font-weight:800; letter-spacing:2.5px;
-  text-transform:uppercase; padding: 5px 14px; border-radius: 14px;
-  background:${t.color}; color:#fff;
+  display: inline-block;
+  font-size: 7.5px; font-weight: 800; letter-spacing: 2.2px;
+  text-transform: uppercase;
+  padding: 4px 11px; border-radius: 11px;
+  background: ${t.color}; color: #fff;
   box-shadow: 0 2px 8px rgba(0,0,0,.18);
 }
-.titulo-pdf {
-  font-size: 28px; font-weight: 900; letter-spacing: -0.3px;
-  line-height:1.1; margin-top: 18px; color:#fff;
-}
-.titulo-sub {
-  font-size: 11px; font-weight: 500; letter-spacing: 0.5px;
-  color: rgba(255,255,255,.6); margin-top: 6px;
-}
+
+/* (legacy — ya no se usa pero por si acaso) */
+.titulo-pdf { display: none; }
+.titulo-sub { display: none; }
+
+/* Folio + Fecha en footer del navy */
 .meta-row {
-  display:flex; justify-content:space-between; align-items:flex-end;
-  margin-top: 22px; gap: 20px;
+  display: flex; justify-content: space-between; align-items: flex-end;
+  margin-top: 16px; gap: 20px;
+  position: relative; z-index: 2;
 }
 .meta-col-label {
-  font-size: 7.5px; font-weight: 800; letter-spacing: 2.5px;
-  color: rgba(255,255,255,.45); text-transform:uppercase;
+  font-size: 7px; font-weight: 800; letter-spacing: 2.5px;
+  color: rgba(255,255,255,.4); text-transform: uppercase;
 }
 .meta-col-value {
   font-size: 11px; font-weight: 700; color: #fff; margin-top: 4px;
@@ -14796,6 +14811,27 @@ body { font-family: 'Inter', -apple-system, system-ui, sans-serif; background: #
 
 /* Cuerpo */
 .cuerpo { padding: 16mm 18mm; flex: 1; }
+
+/* Título del documento (en navy, ARRIBA de la caja de datos) */
+.titulo-doc {
+  font-family: 'Playfair Display', 'Inter', serif;
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.4px;
+  color: #0B1F3A;
+  line-height: 1.15;
+  margin-bottom: 18px;
+  padding-bottom: 14px;
+  position: relative;
+}
+.titulo-doc::after {
+  content: "";
+  position: absolute;
+  bottom: 0; left: 0;
+  width: 48px; height: 2px;
+  background: #1E6FD9;
+  border-radius: 1px;
+}
 
 .datos-cliente {
   background: linear-gradient(to right, #F7F9FC, #FAFBFD);
@@ -14892,13 +14928,17 @@ body { font-family: 'Inter', -apple-system, system-ui, sans-serif; background: #
   <!-- Plantilla principal: lo que se distribuirá en hojas -->
   <div id="seed-hoja">
 
-    <!-- HEADER -->
+    <!-- HEADER NAVY -->
     <div class="header">
-      <div class="logo-wrap">
-        ${logo ? '<img src="'+logo+'" class="logo-img" alt="ROMSA">' : '<div></div>'}
+      <!-- Logo centrado -->
+      <div class="logo-center">
+        ${logo ? '<img src="'+logo+'" class="logo-img" alt="ROMSA">' : ''}
+      </div>
+      <!-- Badge tipo justo debajo del logo, centrado, pequeño -->
+      <div class="tipo-badge-wrap">
         <div class="tipo-badge">${t.emoji} ${escapeHtml(t.label)}</div>
       </div>
-      <div class="titulo-pdf">${escapeHtml(t.label)}</div>
+      <!-- Folio y Fecha en columnas, parte inferior del navy -->
       <div class="meta-row">
         <div>
           <div class="meta-col-label">Folio</div>
@@ -14913,6 +14953,10 @@ body { font-family: 'Inter', -apple-system, system-ui, sans-serif; background: #
 
     <!-- CUERPO -->
     <div class="cuerpo" id="cuerpo-fuente">
+
+      <!-- Título principal en navy, ARRIBA de la caja de datos -->
+      <div class="titulo-doc">${escapeHtml(t.label)}</div>
+
       <div class="datos-cliente">
         <table>${datosClienteHtml}</table>
       </div>
