@@ -7248,7 +7248,17 @@ async function ejecutarFusionGrupo(gi){
       var btn = grupoEl.querySelector("button");
       if(btn){ btn.disabled = true; btn.textContent = "✓ Unificado"; btn.style.background = "#059669"; }
     }
-    if(typeof renderClientes === "function") renderClientes();
+    // Refrescar TODAS las vistas DOS VECES: ahora (con datos locales) y al 1.5s (cuando llega onSnapshot)
+    var refreshAll = function(){
+      if(typeof renderClientes === "function") renderClientes();
+      if(typeof renderListaCot === "function") renderListaCot();
+      if(typeof renderCotDashboard === "function") renderCotDashboard();
+      if(typeof renderListaCosteos === "function") renderListaCosteos();
+      if(typeof renderKPIsCosteo === "function") renderKPIsCosteo();
+    };
+    refreshAll();
+    setTimeout(refreshAll, 1200);
+    setTimeout(function(){ renderResultadosDuplicados(); }, 1500);
 
   } catch(err){
     console.error("[ROMSA] Error unificando:", err);
@@ -7497,12 +7507,20 @@ async function ejecutarFusionManual(){
       statusEl.innerHTML = "✅ Unificado: <strong>"+cotIds.length+"</strong> cotizaciones + <strong>"+costIds.length+"</strong> costeos → "+escapeHtml(nombreMaestro);
     }
 
-    // Limpiar selección y re-render
+    // Limpiar selección y refrescar (ahora + cuando llegue snapshot)
     _umSeleccionados = [];
+    var refreshAll = function(){
+      if(typeof renderClientes === "function") renderClientes();
+      if(typeof renderListaCot === "function") renderListaCot();
+      if(typeof renderCotDashboard === "function") renderCotDashboard();
+      if(typeof renderListaCosteos === "function") renderListaCosteos();
+      if(typeof renderKPIsCosteo === "function") renderKPIsCosteo();
+    };
+    refreshAll();
+    setTimeout(refreshAll, 1200);
     setTimeout(function(){
       renderListaUnificadorManual(document.getElementById("um-buscar")?.value || "");
-      if(typeof renderClientes === "function") renderClientes();
-    }, 800);
+    }, 1500);
 
   } catch(err){
     console.error("[ROMSA] Error unificación manual:", err);
