@@ -7059,8 +7059,12 @@ function abrirDetectorDuplicados(){
       + '</div>'
       + '<button onclick="cerrarDetectorDuplicados()" style="background:none;border:none;font-size:22px;color:var(--tx2);cursor:pointer;">×</button>'
     + '</div>'
+    + '<div style="padding:14px 18px;border-bottom:1px solid var(--g1);background:#F3E8FF;">'
+      + '<button onclick="abrirUnificadorManual()" style="width:100%;background:#7C3AED;border:none;color:#fff;font-size:12px;font-weight:700;padding:10px;border-radius:8px;cursor:pointer;font-family:var(--font);">✋ Unificar manualmente (elige tú los clientes)</button>'
+      + '<div style="font-size:10px;color:#6D28D9;margin-top:6px;text-align:center;">Para fusionar nombres muy distintos que el sistema no detectó automáticamente</div>'
+    + '</div>'
     + '<div style="padding:14px 18px;border-bottom:1px solid var(--g1);background:#FAFBFD;">'
-      + '<div style="font-size:11px;color:var(--tx2);margin-bottom:10px;line-height:1.5;">Nivel de detección — ajusta qué tan estricto es el agrupamiento:</div>'
+      + '<div style="font-size:11px;color:var(--tx2);margin-bottom:10px;line-height:1.5;">Nivel de detección automática — ajusta qué tan estricto es el agrupamiento:</div>'
       + '<div style="display:flex;gap:6px;flex-wrap:wrap;">'
         + '<button class="dd-nivel" data-u="0.9" onclick="cambiarNivelDuplicados(0.9)" style="flex:1;min-width:140px;background:#fff;border:1px solid var(--g1);font-size:10.5px;font-weight:700;padding:9px;border-radius:8px;cursor:pointer;font-family:var(--font);color:var(--tx);">Conservador<br><span style="font-size:8.5px;font-weight:500;color:var(--tx2);">Solo casi idénticos</span></button>'
         + '<button class="dd-nivel" data-u="0.72" onclick="cambiarNivelDuplicados(0.72)" style="flex:1;min-width:140px;background:#DC2626;border:1px solid #DC2626;font-size:10.5px;font-weight:700;padding:9px;border-radius:8px;cursor:pointer;font-family:var(--font);color:#fff;">Balanceado<br><span style="font-size:8.5px;font-weight:500;opacity:.85;">Recomendado</span></button>'
@@ -7259,6 +7263,267 @@ function cerrarDetectorDuplicados(){
   var m = document.getElementById("modal-duplicados");
   if(m) m.remove();
 }
+
+// ─────────────────────────────────────────────────────────────────
+// ✋ UNIFICADOR MANUAL — elegir 2+ clientes y fusionarlos
+// ─────────────────────────────────────────────────────────────────
+
+var _umSeleccionados = []; // array de claves normalizadas seleccionadas
+
+function abrirUnificadorManual(){
+  _umSeleccionados = [];
+
+  var ov = document.createElement("div");
+  ov.id = "modal-unificar-manual";
+  ov.style.cssText = "position:fixed;inset:0;background:rgba(11,31,58,.75);z-index:660;display:flex;align-items:flex-end;justify-content:center;";
+  ov.onclick = function(e){ if(e.target === ov) cerrarUnificadorManual(); };
+
+  ov.innerHTML = '<div style="background:#fff;width:100%;max-width:680px;max-height:92vh;border-radius:18px 18px 0 0;overflow-y:auto;display:flex;flex-direction:column;">'
+    + '<div style="padding:14px 18px;border-bottom:1px solid var(--g1);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#fff;z-index:2;">'
+      + '<div>'
+        + '<div style="font-size:9px;color:#7C3AED;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;">Unificación manual</div>'
+        + '<div style="font-size:15px;font-weight:800;color:var(--navy);">✋ Selecciona clientes a fusionar</div>'
+      + '</div>'
+      + '<button onclick="cerrarUnificadorManual()" style="background:none;border:none;font-size:22px;color:var(--tx2);cursor:pointer;">×</button>'
+    + '</div>'
+    + '<div style="padding:14px 18px;border-bottom:1px solid var(--g1);background:#F3E8FF;">'
+      + '<div style="font-size:11px;color:#5B21B6;line-height:1.55;">📋 Marca <strong>2 o más</strong> nombres que sean el mismo cliente. Después elige el nombre maestro y unifica.</div>'
+    + '</div>'
+    + '<div style="padding:12px 18px;border-bottom:1px solid var(--g1);background:#FAFBFD;">'
+      + '<input type="text" id="um-buscar" placeholder="🔍 Buscar nombre..." oninput="filtrarUnificadorManual(this.value)" style="width:100%;padding:9px 12px;border:1px solid var(--g1);border-radius:8px;font-family:var(--font);font-size:12px;background:#fff;">'
+    + '</div>'
+    + '<div id="um-lista" style="padding:8px 18px;flex:1;overflow-y:auto;"></div>'
+    + '<div id="um-footer" style="padding:14px 18px;border-top:1px solid var(--g1);background:#fff;position:sticky;bottom:0;display:none;">'
+      + '<div style="font-size:10px;color:var(--tx2);margin-bottom:4px;font-weight:600;">✓ Nombre maestro (todos se renombrarán a este):</div>'
+      + '<select id="um-maestro" style="width:100%;padding:10px;border:1px solid var(--g1);border-radius:8px;font-family:var(--font);font-size:12px;font-weight:700;color:var(--navy);margin-bottom:10px;background:#fff;"></select>'
+      + '<div id="um-resumen" style="font-size:10.5px;color:var(--tx2);margin-bottom:10px;text-align:center;"></div>'
+      + '<button onclick="ejecutarFusionManual()" style="width:100%;background:#7C3AED;border:none;color:#fff;font-size:12.5px;font-weight:700;padding:11px;border-radius:8px;cursor:pointer;font-family:var(--font);">🔗 Unificar seleccionados</button>'
+      + '<div id="um-status" style="font-size:10.5px;text-align:center;margin-top:8px;"></div>'
+    + '</div>'
+    + '</div>';
+
+  document.body.appendChild(ov);
+  renderListaUnificadorManual("");
+}
+
+function _umRecolectarTodos(){
+  // Devuelve lista de items normalizados: {norm, variantes:{texto:count}, cots:[], costs:[], cliId, count}
+  var nombres = _recolectarNombresClientes();
+  // Convertir a array y ordenar por uso (más usados primero)
+  return Object.keys(nombres).map(function(k){ return nombres[k]; })
+    .sort(function(a,b){ return b.count - a.count; });
+}
+
+function renderListaUnificadorManual(filtro){
+  var wrap = document.getElementById("um-lista");
+  if(!wrap) return;
+  var items = _umRecolectarTodos();
+  var filtroLower = (filtro||"").trim().toLowerCase();
+  if(filtroLower){
+    items = items.filter(function(it){
+      // Buscar en cualquier variante
+      return Object.keys(it.variantes).some(function(v){
+        return v.toLowerCase().indexOf(filtroLower) >= 0;
+      });
+    });
+  }
+  if(!items.length){
+    wrap.innerHTML = '<div style="text-align:center;padding:30px 14px;color:var(--tx2);font-size:11.5px;">Sin resultados</div>';
+    return;
+  }
+
+  var html = '<div style="font-size:10px;color:var(--tx2);margin-bottom:6px;">'+items.length+' nombre'+(items.length===1?'':'s')+' único'+(items.length===1?'':'s')+' encontrado'+(items.length===1?'':'s')+'</div>';
+  html += items.map(function(it){
+    var seleccionado = _umSeleccionados.indexOf(it.norm) >= 0;
+    // Nombre principal (la variante más usada)
+    var variantesArr = Object.keys(it.variantes).map(function(v){ return {texto:v, count:it.variantes[v]}; })
+      .sort(function(a,b){ return b.count - a.count; });
+    var principal = variantesArr[0].texto;
+    var otrasVar = variantesArr.slice(1);
+    var nCots = it.cots.length;
+    var nCosts = it.costs.length;
+    var yaEsCliente = !!it.cliId;
+
+    return '<div onclick="toggleSeleccionUM(\''+escapeHtml(it.norm).replace(/\'/g,"\\\\\'")+'\')" style="padding:10px 12px;margin-bottom:6px;border:'+(seleccionado?'2px solid #7C3AED':'1px solid var(--g1)')+';background:'+(seleccionado?'#F3E8FF':'#fff')+';border-radius:8px;cursor:pointer;display:flex;align-items:center;gap:10px;">'
+      + '<div style="width:18px;height:18px;border:2px solid '+(seleccionado?'#7C3AED':'#CBD5E1')+';border-radius:4px;display:flex;align-items:center;justify-content:center;background:'+(seleccionado?'#7C3AED':'#fff')+';flex-shrink:0;">'
+        + (seleccionado?'<span style="color:#fff;font-size:11px;font-weight:900;">✓</span>':'')
+      + '</div>'
+      + '<div style="flex:1;min-width:0;">'
+        + '<div style="font-size:12px;font-weight:700;color:var(--navy);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+escapeHtml(principal)+'</div>'
+        + (otrasVar.length?'<div style="font-size:9.5px;color:var(--tx3);margin-top:1px;">'+otrasVar.map(function(v){return escapeHtml(v.texto)+' ('+v.count+')';}).join(' · ')+'</div>':'')
+        + '<div style="display:flex;gap:4px;margin-top:4px;flex-wrap:wrap;">'
+          + (nCots?'<span style="font-size:8.5px;color:#7C3AED;background:rgba(124,58,237,.08);padding:1px 6px;border-radius:8px;font-weight:600;">📋 '+nCots+' cot</span>':'')
+          + (nCosts?'<span style="font-size:8.5px;color:#1E6FD9;background:rgba(30,111,217,.08);padding:1px 6px;border-radius:8px;font-weight:600;">📊 '+nCosts+' cost</span>':'')
+          + (yaEsCliente?'<span style="font-size:8.5px;color:#059669;background:rgba(16,185,129,.08);padding:1px 6px;border-radius:8px;font-weight:600;">✓ registrado</span>':'')
+        + '</div>'
+      + '</div>'
+      + '</div>';
+  }).join("");
+
+  wrap.innerHTML = html;
+  actualizarFooterUM();
+}
+
+function filtrarUnificadorManual(val){
+  renderListaUnificadorManual(val);
+}
+
+function toggleSeleccionUM(norm){
+  var idx = _umSeleccionados.indexOf(norm);
+  if(idx >= 0) _umSeleccionados.splice(idx,1);
+  else _umSeleccionados.push(norm);
+  var filtro = document.getElementById("um-buscar")?.value || "";
+  renderListaUnificadorManual(filtro);
+}
+
+function actualizarFooterUM(){
+  var footer = document.getElementById("um-footer");
+  var maestroSel = document.getElementById("um-maestro");
+  var resumen = document.getElementById("um-resumen");
+  if(!footer) return;
+
+  if(_umSeleccionados.length < 2){
+    footer.style.display = "none";
+    return;
+  }
+  footer.style.display = "block";
+
+  // Recolectar variantes de los seleccionados
+  var nombres = _recolectarNombresClientes();
+  var variantes = [];
+  var totalCots = 0, totalCosts = 0;
+  _umSeleccionados.forEach(function(norm){
+    var item = nombres[norm];
+    if(!item) return;
+    totalCots += item.cots.length;
+    totalCosts += item.costs.length;
+    Object.keys(item.variantes).forEach(function(v){
+      variantes.push({texto:v, count:item.variantes[v]});
+    });
+  });
+  variantes.sort(function(a,b){ return b.count - a.count || b.texto.length - a.texto.length; });
+
+  if(maestroSel){
+    maestroSel.innerHTML = variantes.map(function(v, i){
+      return '<option value="'+escapeHtml(v.texto).replace(/"/g,"&quot;")+'"'+(i===0?' selected':'')+'>'+escapeHtml(v.texto)+'</option>';
+    }).join("");
+  }
+
+  if(resumen){
+    resumen.innerHTML = '✋ <strong>'+_umSeleccionados.length+'</strong> grupos seleccionados · '
+      + '📋 '+totalCots+' cotizaciones · 📊 '+totalCosts+' costeos serán reescritas';
+  }
+}
+
+async function ejecutarFusionManual(){
+  if(_umSeleccionados.length < 2){
+    alert("⚠️ Selecciona al menos 2 nombres para unificar");
+    return;
+  }
+  var maestroSel = document.getElementById("um-maestro");
+  var statusEl = document.getElementById("um-status");
+  if(!maestroSel) return;
+  var nombreMaestro = maestroSel.value;
+  if(!nombreMaestro) return;
+
+  if(!confirm('¿Unificar TODOS los '+_umSeleccionados.length+' grupos seleccionados a "'+nombreMaestro+'"?\n\nSe reescribirán las cotizaciones y costeos asociados.')){
+    return;
+  }
+
+  if(typeof firebase !== "undefined" && firebase.auth && !firebase.auth().currentUser){
+    alert("⚠️ Tu sesión expiró. Recarga la página."); return;
+  }
+
+  if(statusEl){ statusEl.style.color = "#7C3AED"; statusEl.textContent = "⏳ Unificando..."; }
+
+  try {
+    // 1. Encontrar o crear el cliente maestro
+    var clienteMaestro = (_clientes||[]).find(function(c){
+      return _normalizarNombreCliente(c.nombreEmpresa) === _normalizarNombreCliente(nombreMaestro);
+    });
+    var clienteMaestroId;
+    if(clienteMaestro){
+      clienteMaestroId = clienteMaestro.id;
+      if(clienteMaestro.nombreEmpresa !== nombreMaestro){
+        await db.collection("clientes").doc(clienteMaestroId).update({nombreEmpresa:nombreMaestro});
+        clienteMaestro.nombreEmpresa = nombreMaestro;
+      }
+    } else {
+      var nuevoCliente = {
+        nombreEmpresa: nombreMaestro,
+        prefijo: _derivarPrefijo(nombreMaestro),
+        tipo: "Industrial",
+        activo: true,
+        creadoTs: Date.now()
+      };
+      var docRef = await db.collection("clientes").add(nuevoCliente);
+      clienteMaestroId = docRef.id;
+      nuevoCliente.id = clienteMaestroId;
+      _clientes.push(nuevoCliente);
+    }
+
+    // 2. Recolectar todas las cotizaciones y costeos de los seleccionados
+    var nombres = _recolectarNombresClientes();
+    var cotIds = [], costIds = [];
+    _umSeleccionados.forEach(function(norm){
+      var item = nombres[norm];
+      if(!item) return;
+      item.cots.forEach(function(id){ if(cotIds.indexOf(id)<0) cotIds.push(id); });
+      item.costs.forEach(function(id){ if(costIds.indexOf(id)<0) costIds.push(id); });
+    });
+
+    // 3. Reescribir cotizaciones
+    var batch = db.batch();
+    var nBatch = 0;
+    cotIds.forEach(function(id){
+      batch.update(cotRef.doc(id), {empresa:nombreMaestro, clienteId:clienteMaestroId});
+      nBatch++;
+      var localCot = (cotizaciones||[]).find(function(x){return x.id===id;});
+      if(localCot){ localCot.empresa = nombreMaestro; localCot.clienteId = clienteMaestroId; }
+    });
+    costIds.forEach(function(id){
+      batch.update(db.collection("costeos").doc(id), {cliente:nombreMaestro, clienteId:clienteMaestroId});
+      nBatch++;
+      if(typeof _costeoCosteos !== "undefined"){
+        var localCost = (_costeoCosteos||[]).find(function(x){return x.id===id;});
+        if(localCost){ localCost.cliente = nombreMaestro; localCost.clienteId = clienteMaestroId; }
+      }
+    });
+
+    if(nBatch > 0) await batch.commit();
+
+    if(statusEl){
+      statusEl.style.color = "#059669";
+      statusEl.innerHTML = "✅ Unificado: <strong>"+cotIds.length+"</strong> cotizaciones + <strong>"+costIds.length+"</strong> costeos → "+escapeHtml(nombreMaestro);
+    }
+
+    // Limpiar selección y re-render
+    _umSeleccionados = [];
+    setTimeout(function(){
+      renderListaUnificadorManual(document.getElementById("um-buscar")?.value || "");
+      if(typeof renderClientes === "function") renderClientes();
+    }, 800);
+
+  } catch(err){
+    console.error("[ROMSA] Error unificación manual:", err);
+    if(statusEl){
+      statusEl.style.color = "#DC2626";
+      statusEl.textContent = "⚠️ Error: " + (err.message||err);
+    }
+  }
+}
+
+function cerrarUnificadorManual(){
+  var m = document.getElementById("modal-unificar-manual");
+  if(m) m.remove();
+  _umSeleccionados = [];
+}
+
+window.abrirUnificadorManual = abrirUnificadorManual;
+window.cerrarUnificadorManual = cerrarUnificadorManual;
+window.toggleSeleccionUM = toggleSeleccionUM;
+window.filtrarUnificadorManual = filtrarUnificadorManual;
+window.ejecutarFusionManual = ejecutarFusionManual;
 
 window.abrirDetectorDuplicados = abrirDetectorDuplicados;
 window.cambiarNivelDuplicados = cambiarNivelDuplicados;
