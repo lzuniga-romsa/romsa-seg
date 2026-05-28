@@ -1773,7 +1773,8 @@ body.in-costeo #app{
             <div style="font-size:15px;font-weight:800;color:var(--navy);">🏢 Clientes</div>
             <div style="font-size:10.5px;color:var(--tx2);margin-top:2px;">Empresa · Contacto · Historial de cotizaciones y costeos</div>
           </div>
-          <div style="display:flex;gap:6px;">
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <button onclick="abrirDetectorDuplicados()" title="Detectar y unificar clientes duplicados" style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);color:#DC2626;font-size:10.5px;font-weight:700;padding:9px 12px;border-radius:8px;cursor:pointer;font-family:var(--font);">🔍 Detectar duplicados</button>
             <button id="btn-migrar-clientes" onclick="migrarClientesDeCotizaciones()" title="Importar clientes de cotizaciones existentes" style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.25);color:#D97706;font-size:10.5px;font-weight:700;padding:9px 12px;border-radius:8px;cursor:pointer;font-family:var(--font);display:none;">⚡ Importar de cotizaciones</button>
             <button onclick="abrirEditorCliente()" style="background:#7C3AED;border:none;color:#fff;font-size:12px;font-weight:700;padding:9px 14px;border-radius:8px;cursor:pointer;font-family:var(--font);">+ Nuevo cliente</button>
           </div>
@@ -3852,12 +3853,7 @@ function mostrarVC(o){
   if(bannerEl){ bannerEl.style.display=allDone?"flex":"none"; }
   // Mostrar botón descargar PDF si obra completada
   const footerEl = document.getElementById("vc-footer-btns");
-  if(footerEl && allDone){
-    footerEl.style.gridTemplateColumns = "1fr 1fr";
-    footerEl.innerHTML = `
-      <div class="vc-footer-btn" onclick="descargarPdfCliente('${o.id||""}')">⬇ Descargar Reporte de Obra</div>
-      <div class="vc-footer-btn primary" onclick="cerrarVC()">← Cerrar</div>`;
-  } else if(footerEl){
+  if(footerEl){
     footerEl.style.gridTemplateColumns = "1fr";
     footerEl.innerHTML = '<div class="vc-footer-btn primary" onclick="cerrarVC()">← Cerrar vista</div>';
   }
@@ -6933,6 +6929,341 @@ function _clienteCoincide(cliente, empresaTxt){
   if(!cliente || !empresaTxt) return false;
   return (cliente.nombreEmpresa||"").trim().toLowerCase() === (empresaTxt||"").trim().toLowerCase();
 }
+
+// ═══════════════════════════════════════════════════════════════════════
+// 🔍 DETECTOR DE CLIENTES DUPLICADOS
+// ═══════════════════════════════════════════════════════════════════════
+
+// Normaliza un nombre de empresa para comparar (quita acentos, sufijos legales, etc)
+function _normalizarNombreCliente(nombre){
+  if(!nombre) return "";
+  var s = nombre.toString().trim().toLowerCase();
+  // Quitar acentos
+  s = s.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  // Quitar sufijos legales comunes
+  s = s.replace(/\b(s\.?a\.?\s*de\s*c\.?v\.?|s\.?\s*de\s*r\.?l\.?|s\.?c\.?|sapi|s\.?a\.?p\.?i\.?|inc|llc|ltd|corp|co|sa|srl)\b/gi, "");
+  // Quitar puntuación y caracteres especiales
+  s = s.replace(/[.,;:''""\-_/\\()]/g, " ");
+  // Colapsar espacios múltiples
+  s = s.replace(/\s+/g, " ").trim();
+  return s;
+}
+
+// Calcula similitud entre 2 nombres normalizados (0 a 1)
+function _similitudNombres(a, b){
+  if(a === b) return 1;
+  if(!a || !b) return 0;
+  // Uno contiene al otro
+  if(a.indexOf(b) >= 0 || b.indexOf(a) >= 0){
+    var corto = Math.min(a.length, b.length);
+    var largo = Math.max(a.length, b.length);
+    return corto / largo; // qué tanto del largo cubre el corto
+  }
+  // Distancia de Levenshtein normalizada
+  var dist = _levenshtein(a, b);
+  var maxLen = Math.max(a.length, b.length);
+  return maxLen === 0 ? 0 : 1 - (dist / maxLen);
+}
+
+function _levenshtein(a, b){
+  var m = a.length, n = b.length;
+  if(m === 0) return n;
+  if(n === 0) return m;
+  var prev = [], cur = [];
+  for(var j = 0; j <= n; j++) prev[j] = j;
+  for(var i = 1; i <= m; i++){
+    cur[0] = i;
+    for(var k = 1; k <= n; k++){
+      var cost = a.charAt(i-1) === b.charAt(k-1) ? 0 : 1;
+      cur[k] = Math.min(prev[k]+1, cur[k-1]+1, prev[k-1]+cost);
+    }
+    for(var x = 0; x <= n; x++) prev[x] = cur[x];
+  }
+  return cur[n];
+}
+
+// Recolecta TODOS los nombres de cliente de todas las fuentes
+function _recolectarNombresClientes(){
+  var nombres = {}; // normalizado → {original, fuentes:{cot:[],cost:[],cli:id}, count}
+  function agregar(nombreOriginal, fuente, refId){
+    if(!nombreOriginal || !nombreOriginal.trim()) return;
+    var orig = nombreOriginal.trim();
+    var norm = _normalizarNombreCliente(orig);
+    if(!norm) return;
+    if(!nombres[norm]){
+      nombres[norm] = {norm:norm, variantes:{}, cots:[], costs:[], cliId:null, count:0};
+    }
+    nombres[norm].variantes[orig] = (nombres[norm].variantes[orig]||0) + 1;
+    nombres[norm].count++;
+    if(fuente === "cot") nombres[norm].cots.push(refId);
+    else if(fuente === "cost") nombres[norm].costs.push(refId);
+    else if(fuente === "cli") nombres[norm].cliId = refId;
+  }
+  // Cotizaciones
+  (cotizaciones||[]).forEach(function(c){ if(c.empresa) agregar(c.empresa, "cot", c.id); });
+  // Costeos
+  if(typeof _costeoCosteos !== "undefined"){
+    (_costeoCosteos||[]).forEach(function(co){ if(co.cliente||co.empresa) agregar(co.cliente||co.empresa, "cost", co.id); });
+  }
+  // Clientes registrados
+  (_clientes||[]).forEach(function(cl){ if(cl.nombreEmpresa) agregar(cl.nombreEmpresa, "cli", cl.id); });
+  return nombres;
+}
+
+// Encuentra grupos de duplicados según umbral
+function _detectarGruposDuplicados(umbral){
+  var nombres = _recolectarNombresClientes();
+  var keys = Object.keys(nombres);
+  var usados = {};
+  var grupos = [];
+
+  for(var i = 0; i < keys.length; i++){
+    if(usados[keys[i]]) continue;
+    var grupo = [nombres[keys[i]]];
+    usados[keys[i]] = true;
+    for(var j = i+1; j < keys.length; j++){
+      if(usados[keys[j]]) continue;
+      var sim = _similitudNombres(keys[i], keys[j]);
+      if(sim >= umbral){
+        grupo.push(nombres[keys[j]]);
+        usados[keys[j]] = true;
+      }
+    }
+    // Solo es duplicado si hay 2+ items O un item con varias variantes de texto
+    var totalVariantes = grupo.reduce(function(s,g){ return s + Object.keys(g.variantes).length; }, 0);
+    if(grupo.length > 1 || totalVariantes > 1){
+      grupos.push(grupo);
+    }
+  }
+  return grupos;
+}
+
+var _ddUmbral = 0.72; // nivel de detección (0.72 = balanceado)
+
+function abrirDetectorDuplicados(){
+  // Asegurar datos cargados
+  if(!cotizaciones || !cotizaciones.length){
+    if(typeof subscribeCotizaciones === "function") try{ subscribeCotizaciones(); }catch(e){}
+  }
+
+  var ov = document.createElement("div");
+  ov.id = "modal-duplicados";
+  ov.style.cssText = "position:fixed;inset:0;background:rgba(11,31,58,.7);z-index:650;display:flex;align-items:flex-end;justify-content:center;";
+  ov.onclick = function(e){ if(e.target === ov) cerrarDetectorDuplicados(); };
+
+  ov.innerHTML = '<div style="background:#fff;width:100%;max-width:720px;max-height:92vh;border-radius:18px 18px 0 0;overflow-y:auto;display:flex;flex-direction:column;">'
+    + '<div style="padding:14px 18px;border-bottom:1px solid var(--g1);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#fff;z-index:2;">'
+      + '<div>'
+        + '<div style="font-size:9px;color:#DC2626;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;">Unificación de clientes</div>'
+        + '<div style="font-size:15px;font-weight:800;color:var(--navy);">🔍 Detector de duplicados</div>'
+      + '</div>'
+      + '<button onclick="cerrarDetectorDuplicados()" style="background:none;border:none;font-size:22px;color:var(--tx2);cursor:pointer;">×</button>'
+    + '</div>'
+    + '<div style="padding:14px 18px;border-bottom:1px solid var(--g1);background:#FAFBFD;">'
+      + '<div style="font-size:11px;color:var(--tx2);margin-bottom:10px;line-height:1.5;">Nivel de detección — ajusta qué tan estricto es el agrupamiento:</div>'
+      + '<div style="display:flex;gap:6px;flex-wrap:wrap;">'
+        + '<button class="dd-nivel" data-u="0.9" onclick="cambiarNivelDuplicados(0.9)" style="flex:1;min-width:140px;background:#fff;border:1px solid var(--g1);font-size:10.5px;font-weight:700;padding:9px;border-radius:8px;cursor:pointer;font-family:var(--font);color:var(--tx);">Conservador<br><span style="font-size:8.5px;font-weight:500;color:var(--tx2);">Solo casi idénticos</span></button>'
+        + '<button class="dd-nivel" data-u="0.72" onclick="cambiarNivelDuplicados(0.72)" style="flex:1;min-width:140px;background:#DC2626;border:1px solid #DC2626;font-size:10.5px;font-weight:700;padding:9px;border-radius:8px;cursor:pointer;font-family:var(--font);color:#fff;">Balanceado<br><span style="font-size:8.5px;font-weight:500;opacity:.85;">Recomendado</span></button>'
+        + '<button class="dd-nivel" data-u="0.5" onclick="cambiarNivelDuplicados(0.5)" style="flex:1;min-width:140px;background:#fff;border:1px solid var(--g1);font-size:10.5px;font-weight:700;padding:9px;border-radius:8px;cursor:pointer;font-family:var(--font);color:var(--tx);">Agresivo<br><span style="font-size:8.5px;font-weight:500;color:var(--tx2);">Agrupa parecidos</span></button>'
+      + '</div>'
+    + '</div>'
+    + '<div id="dd-resultados" style="padding:16px 18px;flex:1;"></div>'
+    + '</div>';
+
+  document.body.appendChild(ov);
+  renderResultadosDuplicados();
+}
+
+function cambiarNivelDuplicados(u){
+  _ddUmbral = u;
+  document.querySelectorAll(".dd-nivel").forEach(function(b){
+    var activo = parseFloat(b.dataset.u) === u;
+    b.style.background = activo ? "#DC2626" : "#fff";
+    b.style.color = activo ? "#fff" : "var(--tx)";
+    b.style.border = activo ? "1px solid #DC2626" : "1px solid var(--g1)";
+    b.querySelectorAll("span").forEach(function(s){
+      s.style.color = activo ? "" : "var(--tx2)";
+      s.style.opacity = activo ? ".85" : "1";
+    });
+  });
+  renderResultadosDuplicados();
+}
+
+function renderResultadosDuplicados(){
+  var cont = document.getElementById("dd-resultados");
+  if(!cont) return;
+  var grupos = _detectarGruposDuplicados(_ddUmbral);
+
+  if(!grupos.length){
+    cont.innerHTML = '<div style="text-align:center;padding:40px 20px;color:var(--tx2);">'
+      + '<div style="font-size:40px;margin-bottom:10px;">✅</div>'
+      + '<div style="font-size:14px;font-weight:700;color:var(--navy);margin-bottom:4px;">Sin duplicados detectados</div>'
+      + '<div style="font-size:11px;">No se encontraron clientes duplicados con este nivel de detección.</div>'
+      + '</div>';
+    return;
+  }
+
+  var html = '<div style="font-size:11px;color:var(--tx2);margin-bottom:12px;"><strong>'+grupos.length+'</strong> grupo'+(grupos.length===1?"":"s")+' de posibles duplicados encontrado'+(grupos.length===1?"":"s")+'. Revisa y unifica cada uno:</div>';
+
+  grupos.forEach(function(grupo, gi){
+    // Sugerir nombre maestro: el más largo / más completo
+    var todasVariantes = [];
+    grupo.forEach(function(g){
+      Object.keys(g.variantes).forEach(function(v){
+        todasVariantes.push({texto:v, count:g.variantes[v]});
+      });
+    });
+    todasVariantes.sort(function(a,b){
+      // Preferir el que ya es cliente registrado, luego el más usado, luego el más largo
+      return b.count - a.count || b.texto.length - a.texto.length;
+    });
+    var sugerido = todasVariantes[0].texto;
+
+    var totalCots = grupo.reduce(function(s,g){ return s + g.cots.length; }, 0);
+    var totalCosts = grupo.reduce(function(s,g){ return s + g.costs.length; }, 0);
+    var yaEsCliente = grupo.some(function(g){ return g.cliId; });
+
+    html += '<div class="dd-grupo" data-gi="'+gi+'" style="border:1px solid var(--g1);border-radius:12px;padding:14px;margin-bottom:12px;background:#fff;">'
+      + '<div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;flex-wrap:wrap;">'
+        + '<span style="font-size:9px;font-weight:700;color:#DC2626;background:#FEE2E2;padding:3px 8px;border-radius:10px;">GRUPO '+(gi+1)+'</span>'
+        + (totalCots?'<span style="font-size:9px;color:#7C3AED;background:rgba(124,58,237,.08);padding:3px 8px;border-radius:10px;">📋 '+totalCots+' cotizaciones</span>':'')
+        + (totalCosts?'<span style="font-size:9px;color:#1E6FD9;background:rgba(30,111,217,.08);padding:3px 8px;border-radius:10px;">📊 '+totalCosts+' costeos</span>':'')
+        + (yaEsCliente?'<span style="font-size:9px;color:#059669;background:rgba(16,185,129,.08);padding:3px 8px;border-radius:10px;">✓ Ya registrado</span>':'')
+      + '</div>'
+      + '<div style="font-size:10px;color:var(--tx2);margin-bottom:6px;">Variantes encontradas:</div>'
+      + '<div style="display:flex;flex-direction:column;gap:4px;margin-bottom:12px;">'
+        + todasVariantes.map(function(v){
+            return '<div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--navy);background:#F7F9FC;padding:6px 10px;border-radius:6px;">'
+              + '<span style="font-weight:600;">'+escapeHtml(v.texto)+'</span>'
+              + '<span style="font-size:9px;color:var(--tx3);margin-left:auto;">×'+v.count+'</span>'
+              + '</div>';
+          }).join("")
+      + '</div>'
+      + '<div style="font-size:10px;color:var(--tx2);margin-bottom:4px;font-weight:600;">✓ Nombre maestro (todos se renombrarán a este):</div>'
+      + '<select class="dd-maestro" id="dd-maestro-'+gi+'" style="width:100%;padding:9px 11px;border:1px solid var(--g1);border-radius:8px;font-family:var(--font);font-size:12px;font-weight:700;color:var(--navy);margin-bottom:10px;background:#fff;">'
+        + todasVariantes.map(function(v){
+            return '<option value="'+escapeHtml(v.texto).replace(/"/g,"&quot;")+'"'+(v.texto===sugerido?' selected':'')+'>'+escapeHtml(v.texto)+'</option>';
+          }).join("")
+      + '</select>'
+      + '<button onclick="ejecutarFusionGrupo('+gi+')" style="width:100%;background:#DC2626;border:none;color:#fff;font-size:12px;font-weight:700;padding:10px;border-radius:8px;cursor:pointer;font-family:var(--font);">🔗 Unificar este grupo</button>'
+      + '<div id="dd-status-'+gi+'" style="font-size:10.5px;text-align:center;margin-top:8px;"></div>'
+      + '</div>';
+  });
+
+  cont.innerHTML = html;
+  // Guardar grupos en memoria para la fusión
+  _ddGruposActuales = grupos;
+}
+
+var _ddGruposActuales = [];
+
+async function ejecutarFusionGrupo(gi){
+  var grupo = _ddGruposActuales[gi];
+  if(!grupo){ return; }
+  var maestroEl = document.getElementById("dd-maestro-"+gi);
+  var statusEl = document.getElementById("dd-status-"+gi);
+  if(!maestroEl){ return; }
+  var nombreMaestro = maestroEl.value;
+  if(!nombreMaestro){ return; }
+
+  if(!confirm('¿Unificar todas las variantes a "'+nombreMaestro+'"?\n\nSe reescribirán las cotizaciones y costeos del grupo.')){
+    return;
+  }
+
+  if(typeof firebase !== "undefined" && firebase.auth && !firebase.auth().currentUser){
+    alert("⚠️ Tu sesión expiró. Recarga la página."); return;
+  }
+
+  if(statusEl){ statusEl.style.color = "#1E6FD9"; statusEl.textContent = "⏳ Unificando..."; }
+
+  try {
+    // 1. Encontrar o crear el cliente maestro
+    var clienteMaestro = (_clientes||[]).find(function(c){
+      return _normalizarNombreCliente(c.nombreEmpresa) === _normalizarNombreCliente(nombreMaestro);
+    });
+    var clienteMaestroId;
+    if(clienteMaestro){
+      clienteMaestroId = clienteMaestro.id;
+      // Actualizar el nombre exacto si difiere
+      if(clienteMaestro.nombreEmpresa !== nombreMaestro){
+        await db.collection("clientes").doc(clienteMaestroId).update({nombreEmpresa:nombreMaestro});
+        clienteMaestro.nombreEmpresa = nombreMaestro;
+      }
+    } else {
+      // Crear nuevo cliente maestro
+      var nuevoCliente = {
+        nombreEmpresa: nombreMaestro,
+        prefijo: _derivarPrefijo(nombreMaestro),
+        tipo: "Industrial",
+        activo: true,
+        creadoTs: Date.now()
+      };
+      var docRef = await db.collection("clientes").add(nuevoCliente);
+      clienteMaestroId = docRef.id;
+      nuevoCliente.id = clienteMaestroId;
+      _clientes.push(nuevoCliente);
+    }
+
+    // 2. Recolectar todas las cotizaciones y costeos del grupo
+    var cotIds = [], costIds = [];
+    grupo.forEach(function(g){
+      g.cots.forEach(function(id){ if(cotIds.indexOf(id)<0) cotIds.push(id); });
+      g.costs.forEach(function(id){ if(costIds.indexOf(id)<0) costIds.push(id); });
+    });
+
+    // 3. Reescribir cotizaciones (empresa + clienteId)
+    var batch = db.batch();
+    var nBatch = 0;
+    cotIds.forEach(function(id){
+      batch.update(cotRef.doc(id), {empresa:nombreMaestro, clienteId:clienteMaestroId});
+      nBatch++;
+      // Actualizar en memoria
+      var localCot = (cotizaciones||[]).find(function(x){return x.id===id;});
+      if(localCot){ localCot.empresa = nombreMaestro; localCot.clienteId = clienteMaestroId; }
+    });
+    // 4. Reescribir costeos (cliente + clienteId)
+    costIds.forEach(function(id){
+      batch.update(db.collection("costeos").doc(id), {cliente:nombreMaestro, clienteId:clienteMaestroId});
+      nBatch++;
+      if(typeof _costeoCosteos !== "undefined"){
+        var localCost = (_costeoCosteos||[]).find(function(x){return x.id===id;});
+        if(localCost){ localCost.cliente = nombreMaestro; localCost.clienteId = clienteMaestroId; }
+      }
+    });
+
+    if(nBatch > 0) await batch.commit();
+
+    if(statusEl){
+      statusEl.style.color = "#059669";
+      statusEl.textContent = "✅ Unificado: "+cotIds.length+" cotizaciones + "+costIds.length+" costeos → "+nombreMaestro;
+    }
+    // Deshabilitar el botón de este grupo
+    var grupoEl = document.querySelector('.dd-grupo[data-gi="'+gi+'"]');
+    if(grupoEl){
+      grupoEl.style.opacity = "0.5";
+      var btn = grupoEl.querySelector("button");
+      if(btn){ btn.disabled = true; btn.textContent = "✓ Unificado"; btn.style.background = "#059669"; }
+    }
+    if(typeof renderClientes === "function") renderClientes();
+
+  } catch(err){
+    console.error("[ROMSA] Error unificando:", err);
+    if(statusEl){
+      statusEl.style.color = "#DC2626";
+      statusEl.textContent = "⚠️ Error: " + (err.message||err);
+    }
+  }
+}
+
+function cerrarDetectorDuplicados(){
+  var m = document.getElementById("modal-duplicados");
+  if(m) m.remove();
+}
+
+window.abrirDetectorDuplicados = abrirDetectorDuplicados;
+window.cambiarNivelDuplicados = cambiarNivelDuplicados;
+window.ejecutarFusionGrupo = ejecutarFusionGrupo;
+window.cerrarDetectorDuplicados = cerrarDetectorDuplicados;
 
 // Editor crear/editar cliente
 function abrirEditorCliente(id){
