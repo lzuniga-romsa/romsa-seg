@@ -7444,9 +7444,25 @@ async function ejecutarFusionManual(){
     alert("⚠️ Tu sesión expiró. Recarga la página."); return;
   }
 
-  if(statusEl){ statusEl.style.color = "#7C3AED"; statusEl.textContent = "⏳ Unificando..."; }
+  // ── LOG VISIBLE: panel que muestra en vivo todo lo que pasa ──
+  if(statusEl){
+    statusEl.style.cssText = "font-size:10.5px;text-align:left;margin-top:8px;background:#0B1F3A;color:#67E8F9;padding:10px;border-radius:8px;font-family:monospace;line-height:1.5;max-height:240px;overflow-y:auto;";
+    statusEl.innerHTML = "⏳ Iniciando unificación...\n";
+  }
+  var log = function(msg, color){
+    if(!statusEl) return;
+    console.log("[ROMSA-UM]", msg);
+    var c = color || "#67E8F9";
+    statusEl.innerHTML += '<div style="color:'+c+';margin-top:2px;">'+msg+'</div>';
+    statusEl.scrollTop = statusEl.scrollHeight;
+  };
 
   try {
+    log("✓ Usuario autenticado: " + (firebase.auth().currentUser?.email || "?"));
+    log("✓ Es admin: " + (typeof isAdmin !== "undefined" ? isAdmin : "?"));
+    log("→ Nombre maestro: \"" + nombreMaestro + "\"");
+    log("→ Grupos seleccionados: " + _umSeleccionados.length);
+
     // 1. Encontrar o crear el cliente maestro
     var clienteMaestro = (_clientes||[]).find(function(c){
       return _normalizarNombreCliente(c.nombreEmpresa) === _normalizarNombreCliente(nombreMaestro);
@@ -7454,11 +7470,15 @@ async function ejecutarFusionManual(){
     var clienteMaestroId;
     if(clienteMaestro){
       clienteMaestroId = clienteMaestro.id;
+      log("✓ Cliente maestro YA existe (id: " + clienteMaestroId.slice(0,8) + "...)");
       if(clienteMaestro.nombreEmpresa !== nombreMaestro){
+        log("→ Renombrando cliente maestro a \"" + nombreMaestro + "\"");
         await db.collection("clientes").doc(clienteMaestroId).update({nombreEmpresa:nombreMaestro});
         clienteMaestro.nombreEmpresa = nombreMaestro;
+        log("✓ Cliente maestro renombrado", "#10B981");
       }
     } else {
+      log("→ Creando nuevo cliente maestro...");
       var nuevoCliente = {
         nombreEmpresa: nombreMaestro,
         prefijo: _derivarPrefijo(nombreMaestro),
@@ -7470,6 +7490,7 @@ async function ejecutarFusionManual(){
       clienteMaestroId = docRef.id;
       nuevoCliente.id = clienteMaestroId;
       _clientes.push(nuevoCliente);
+      log("✓ Cliente maestro creado (id: " + clienteMaestroId.slice(0,8) + "...)", "#10B981");
     }
 
     // 2. Recolectar todas las cotizaciones y costeos de los seleccionados
@@ -7477,37 +7498,72 @@ async function ejecutarFusionManual(){
     var cotIds = [], costIds = [];
     _umSeleccionados.forEach(function(norm){
       var item = nombres[norm];
-      if(!item) return;
+      if(!item){
+        log("⚠️ No se encontró el grupo: " + norm, "#F59E0B");
+        return;
+      }
+      log("→ Grupo \"" + norm + "\": " + item.cots.length + " cot, " + item.costs.length + " cost");
       item.cots.forEach(function(id){ if(cotIds.indexOf(id)<0) cotIds.push(id); });
       item.costs.forEach(function(id){ if(costIds.indexOf(id)<0) costIds.push(id); });
     });
 
-    // 3. Reescribir cotizaciones
-    var batch = db.batch();
-    var nBatch = 0;
-    cotIds.forEach(function(id){
-      batch.update(cotRef.doc(id), {empresa:nombreMaestro, clienteId:clienteMaestroId});
-      nBatch++;
-      var localCot = (cotizaciones||[]).find(function(x){return x.id===id;});
-      if(localCot){ localCot.empresa = nombreMaestro; localCot.clienteId = clienteMaestroId; }
-    });
-    costIds.forEach(function(id){
-      batch.update(db.collection("costeos").doc(id), {cliente:nombreMaestro, clienteId:clienteMaestroId});
-      nBatch++;
-      if(typeof _costeoCosteos !== "undefined"){
-        var localCost = (_costeoCosteos||[]).find(function(x){return x.id===id;});
-        if(localCost){ localCost.cliente = nombreMaestro; localCost.clienteId = clienteMaestroId; }
-      }
-    });
+    log("→ Total a actualizar: " + cotIds.length + " cot + " + costIds.length + " cost");
 
-    if(nBatch > 0) await batch.commit();
-
-    if(statusEl){
-      statusEl.style.color = "#059669";
-      statusEl.innerHTML = "✅ Unificado: <strong>"+cotIds.length+"</strong> cotizaciones + <strong>"+costIds.length+"</strong> costeos → "+escapeHtml(nombreMaestro);
+    if(cotIds.length === 0 && costIds.length === 0){
+      log("⚠️ No hay nada que actualizar — los grupos no tienen cotizaciones ni costeos", "#F59E0B");
+      return;
     }
 
-    // Limpiar selección y refrescar (ahora + cuando llegue snapshot)
+    // Verificar que cotRef exista
+    if(typeof cotRef === "undefined" || !cotRef){
+      log("❌ cotRef no está definido", "#EF4444");
+      return;
+    }
+
+    // 3. Reescribir en BATCHES de 500 (límite Firestore)
+    var todasOps = [];
+    cotIds.forEach(function(id){ todasOps.push({tipo:"cot", id:id}); });
+    costIds.forEach(function(id){ todasOps.push({tipo:"cost", id:id}); });
+
+    var BATCH_SIZE = 400;
+    var batchesNeeded = Math.ceil(todasOps.length / BATCH_SIZE);
+    log("→ Ejecutando " + batchesNeeded + " batch(es) de hasta " + BATCH_SIZE + " ops...");
+
+    var totalEjecutado = 0;
+    for(var bi = 0; bi < batchesNeeded; bi++){
+      var batch = db.batch();
+      var ops = todasOps.slice(bi*BATCH_SIZE, (bi+1)*BATCH_SIZE);
+      ops.forEach(function(op){
+        if(op.tipo === "cot"){
+          batch.update(cotRef.doc(op.id), {empresa:nombreMaestro, clienteId:clienteMaestroId});
+        } else {
+          batch.update(db.collection("costeos").doc(op.id), {cliente:nombreMaestro, clienteId:clienteMaestroId});
+        }
+      });
+      log("→ Batch " + (bi+1) + "/" + batchesNeeded + " (" + ops.length + " ops)... commit");
+      await batch.commit();
+      totalEjecutado += ops.length;
+      log("✓ Batch " + (bi+1) + " commit OK (" + totalEjecutado + "/" + todasOps.length + ")", "#10B981");
+    }
+
+    log("✅ COMMIT TOTAL EXITOSO — " + totalEjecutado + " operaciones", "#10B981");
+
+    // 4. Verificación: leer 1 doc para confirmar que se escribió
+    if(cotIds.length > 0){
+      log("→ Verificando primera cotización en Firestore...");
+      var verifDoc = await cotRef.doc(cotIds[0]).get();
+      if(verifDoc.exists){
+        var data = verifDoc.data();
+        log("✓ Verificación: empresa=\"" + data.empresa + "\", clienteId=" + (data.clienteId||"(none)").slice(0,8), "#10B981");
+        if(data.empresa !== nombreMaestro){
+          log("⚠️ ALERTA: el dato no se actualizó correctamente en Firestore", "#EF4444");
+        }
+      } else {
+        log("❌ El documento no existe", "#EF4444");
+      }
+    }
+
+    // 5. Limpiar selección y refrescar
     _umSeleccionados = [];
     var refreshAll = function(){
       if(typeof renderClientes === "function") renderClientes();
@@ -7517,16 +7573,20 @@ async function ejecutarFusionManual(){
       if(typeof renderKPIsCosteo === "function") renderKPIsCosteo();
     };
     refreshAll();
-    setTimeout(refreshAll, 1200);
+    log("→ UI refrescada", "#10B981");
+    setTimeout(function(){
+      refreshAll();
+      log("→ Re-refresh post-snapshot", "#10B981");
+    }, 1500);
     setTimeout(function(){
       renderListaUnificadorManual(document.getElementById("um-buscar")?.value || "");
-    }, 1500);
+    }, 1800);
 
   } catch(err){
-    console.error("[ROMSA] Error unificación manual:", err);
-    if(statusEl){
-      statusEl.style.color = "#DC2626";
-      statusEl.textContent = "⚠️ Error: " + (err.message||err);
+    console.error("[ROMSA-UM] Error completo:", err);
+    log("❌ ERROR: " + (err.code||"") + " " + (err.message||err), "#EF4444");
+    if(err.code === "permission-denied"){
+      log("→ Causa probable: las reglas de Firestore no permiten 'update'. Revisa Firebase Console → Firestore → Rules", "#F59E0B");
     }
   }
 }
