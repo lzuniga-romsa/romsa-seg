@@ -7426,6 +7426,9 @@ function actualizarFooterUM(){
 }
 
 async function ejecutarFusionManual(){
+  console.log("[ROMSA-UM] ===== ejecutarFusionManual LLAMADA =====");
+  alert("Iniciando unificación...\n\nSeleccionados: " + _umSeleccionados.length + "\n\nSi NO ves un panel negro abajo después de OK, dime.");
+
   if(_umSeleccionados.length < 2){
     alert("⚠️ Selecciona al menos 2 nombres para unificar");
     return;
@@ -7446,8 +7449,11 @@ async function ejecutarFusionManual(){
 
   // ── LOG VISIBLE: panel que muestra en vivo todo lo que pasa ──
   if(statusEl){
-    statusEl.style.cssText = "font-size:10.5px;text-align:left;margin-top:8px;background:#0B1F3A;color:#67E8F9;padding:10px;border-radius:8px;font-family:monospace;line-height:1.5;max-height:240px;overflow-y:auto;";
-    statusEl.innerHTML = "⏳ Iniciando unificación...\n";
+    statusEl.style.cssText = "font-size:11px;text-align:left;margin-top:10px;background:#0B1F3A;color:#67E8F9;padding:12px;border-radius:8px;font-family:'Courier New',monospace;line-height:1.6;max-height:300px;overflow-y:auto;border:2px solid #1E6FD9;box-shadow:0 4px 20px rgba(30,111,217,.4);";
+    statusEl.innerHTML = '<div style="color:#FCD34D;font-weight:800;margin-bottom:6px;">🔬 DEBUG LOG</div><div>⏳ Iniciando unificación...</div>';
+  } else {
+    alert("❌ ERROR: No se encontró el elemento #um-status\n\nEsto significa que el modal está mal renderizado. Cierra y vuelve a abrir el unificador.");
+    return;
   }
   var log = function(msg, color){
     if(!statusEl) return;
