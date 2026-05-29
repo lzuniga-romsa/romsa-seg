@@ -5644,9 +5644,11 @@ function subscribeCotizaciones(){
     ? cotRef.orderBy("ts","desc")
     : cotRef.where("creadoPorUid","==",currentUser.uid).orderBy("ts","desc");
   q.onSnapshot(function(snap){
-    cotizaciones=snap.docs.map(function(d){return d.data();});
-    if(document.getElementById("screen-cotizaciones")?.classList.contains("active"))
+    cotizaciones=snap.docs.map(function(d){return Object.assign({id:d.id},d.data());});
+    if(document.getElementById("screen-cotizaciones")?.classList.contains("active")){
       renderListaCot();
+      if(typeof renderClientes === "function") renderClientes();
+    }
   });
 }
 
@@ -7569,24 +7571,31 @@ async function ejecutarFusionManual(){
       }
     }
 
-    // 5. Limpiar selección y refrescar
+    // 5. Actualizar variables en memoria y refrescar UI sin esperar el snapshot
     _umSeleccionados = [];
-    var refreshAll = function(){
-      if(typeof renderClientes === "function") renderClientes();
-      if(typeof renderListaCot === "function") renderListaCot();
-      if(typeof renderCotDashboard === "function") renderCotDashboard();
-      if(typeof renderListaCosteos === "function") renderListaCosteos();
-      if(typeof renderKPIsCosteo === "function") renderKPIsCosteo();
-    };
-    refreshAll();
-    log("→ UI refrescada", "#10B981");
-    setTimeout(function(){
-      refreshAll();
-      log("→ Re-refresh post-snapshot", "#10B981");
-    }, 1500);
+    cotIds.forEach(function(id){
+      var idx = cotizaciones.findIndex(function(c){ return c.id === id; });
+      if(idx >= 0){
+        cotizaciones[idx].empresa   = nombreMaestro;
+        cotizaciones[idx].clienteId = clienteMaestroId;
+      }
+    });
+    costIds.forEach(function(id){
+      var idx = (_costeoCosteos||[]).findIndex(function(c){ return c.id === id; });
+      if(idx >= 0){
+        _costeoCosteos[idx].cliente   = nombreMaestro;
+        _costeoCosteos[idx].clienteId = clienteMaestroId;
+      }
+    });
+    if(typeof renderClientes === "function") renderClientes();
+    if(typeof renderListaCot === "function") renderListaCot();
+    if(typeof renderCotDashboard === "function") renderCotDashboard();
+    if(typeof renderListaCosteos === "function") renderListaCosteos();
+    if(typeof renderKPIsCosteo === "function") renderKPIsCosteo();
+    log("→ UI refrescada con datos locales", "#10B981");
     setTimeout(function(){
       renderListaUnificadorManual(document.getElementById("um-buscar")?.value || "");
-    }, 1800);
+    }, 300);
 
   } catch(err){
     console.error("[ROMSA-UM] Error completo:", err);
@@ -11174,7 +11183,7 @@ function subscribeCosteo(){
 
   // Costeos guardados (para el dashboard)
   costeoCosteosRef.orderBy("ts","desc").onSnapshot(snap=>{
-    _costeoCosteos = snap.docs.map(d=>d.data());
+    _costeoCosteos = snap.docs.map(d=>Object.assign({id:d.id},d.data()));
     renderKPIsCosteo();
     renderListaCosteos();
   }, err=>console.error("Costeos:", err));
@@ -14314,14 +14323,14 @@ async function abrirEditorReporte(id){
           console.log("[ROMSA] Sin uid, cargando todas (puede fallar por reglas)");
           snap = await cotRef.get();
         }
-        cotizaciones = snap.docs.map(d => d.data());
+        cotizaciones = snap.docs.map(d => Object.assign({id:d.id}, d.data()));
         console.log("[ROMSA] ✓ Cargadas " + cotizaciones.length + " cotizaciones en total");
         console.log("[ROMSA] Estados encontrados:", [...new Set(cotizaciones.map(c => c.estado))]);
       } catch(e){
         console.warn("[ROMSA] Fallback sin orderBy:", e);
         try {
           snap = await cotRef.get();
-          cotizaciones = snap.docs.map(d => d.data());
+          cotizaciones = snap.docs.map(d => Object.assign({id:d.id}, d.data()));
           console.log("[ROMSA] ✓ Cargadas " + cotizaciones.length + " cotizaciones (fallback)");
         } catch(e2){
           console.error("[ROMSA] Error final cargando cotizaciones:", e2);
