@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v27 -->
+<!-- v28 -->
 <html lang="es">
 <head>
 <meta charset="UTF-8">
@@ -1208,6 +1208,7 @@ body.in-costeo #app{
     <div class="snav" id="snav-cotizaciones" onclick="goScreen('cotizaciones')" style="display:none;">Cotizaciones</div>
     <div class="snav" id="snav-costeo" onclick="goScreen('costeo')" style="display:none;">Costeo</div>
     <div class="snav" id="snav-admin" onclick="goScreen('admin')" style="display:none;">Admin</div>
+    <div class="snav" id="snav-plantrabajo" onclick="goScreen('plantrabajo')">📋 Plan Trabajo</div>
   </div>
 
   <div id="main">
@@ -2641,6 +2642,132 @@ body.in-costeo #app{
 
   </div><!-- /screen-reportes -->
 
+
+  <!-- ═══════════════════════════════════════════════════════
+       PLAN DE TRABAJO SCREEN
+  ════════════════════════════════════════════════════════ -->
+  <div id="screen-plantrabajo" class="screen" style="padding:0;overflow-y:auto;background:var(--off);">
+    
+    <!-- Sub-tabs -->
+    <div style="background:var(--navy2);display:flex;overflow-x:auto;border-bottom:1px solid rgba(255,255,255,.05);flex-shrink:0;position:sticky;top:0;z-index:10;">
+      <button class="pt-tab active" data-tab="portada" onclick="ptTab(this,'portada')" style="flex-shrink:0;padding:11px 18px;background:none;border:none;border-bottom:2px solid var(--blue);color:var(--sky);font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;cursor:pointer;font-family:var(--font);">📋 Portada</button>
+      <button class="pt-tab" data-tab="actividades" onclick="ptTab(this,'actividades')" style="flex-shrink:0;padding:11px 18px;background:none;border:none;border-bottom:2px solid transparent;color:#3A5A7A;font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;cursor:pointer;font-family:var(--font);">📅 Actividades</button>
+      <button class="pt-tab" data-tab="gantt" onclick="ptTab(this,'gantt')" style="flex-shrink:0;padding:11px 18px;background:none;border:none;border-bottom:2px solid transparent;color:#3A5A7A;font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;cursor:pointer;font-family:var(--font);">📊 Diagrama Gantt</button>
+      <div style="margin-left:auto;display:flex;align-items:center;padding:0 14px;gap:8px;">
+        <button onclick="ptNuevo()" style="padding:5px 12px;background:var(--blue);color:#fff;border:none;border-radius:6px;font-size:10px;font-weight:700;cursor:pointer;font-family:var(--font);">+ Nuevo</button>
+        <button onclick="ptExportar()" style="padding:5px 12px;background:rgba(255,255,255,.07);color:#aac;border:1px solid rgba(255,255,255,.1);border-radius:6px;font-size:10px;font-weight:700;cursor:pointer;font-family:var(--font);">↓ PDF</button>
+      </div>
+    </div>
+
+    <!-- PORTADA TAB -->
+    <div id="pt-portada" class="pt-content" style="padding:16px;">
+      
+      <!-- Plan selector / lista -->
+      <div id="pt-lista" style="margin-bottom:16px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <div style="font-size:11px;font-weight:700;color:var(--tx2);letter-spacing:.5px;text-transform:uppercase;">Planes de Trabajo</div>
+          <select id="pt-select" onchange="ptCargar(this.value)" style="padding:5px 10px;border:1px solid var(--g1);border-radius:6px;font-size:12px;font-family:var(--font);color:var(--tx);background:var(--white);">
+            <option value="">— Seleccionar —</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Cover card -->
+      <div style="background:linear-gradient(135deg,#0B1F3A 0%,#1B3A6B 60%,#2A6FDB 100%);border-radius:14px;padding:28px 24px;color:#fff;margin-bottom:14px;position:relative;overflow:hidden;">
+        <div style="position:absolute;right:-30px;top:-30px;width:140px;height:140px;border-radius:50%;background:rgba(255,255,255,.04);"></div>
+        <div style="position:absolute;right:50px;bottom:-50px;width:180px;height:180px;border-radius:50%;background:rgba(255,255,255,.03);"></div>
+        
+        <!-- Logo -->
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;">
+          <img id="pt-cover-logo" src="" alt="ROMSA" style="height:20px;width:auto;filter:brightness(0) invert(1);">
+          <span id="pt-cot-badge" style="font-size:10px;font-weight:700;background:rgba(255,255,255,.15);padding:3px 10px;border-radius:20px;letter-spacing:.5px;"></span>
+        </div>
+        
+        <div style="font-size:9px;letter-spacing:3px;opacity:.6;margin-bottom:6px;">PLAN DE TRABAJO</div>
+        <div id="pt-titulo-display" style="font-size:20px;font-weight:900;letter-spacing:.5px;line-height:1.2;margin-bottom:4px;">—</div>
+        <div id="pt-subtitulo-display" style="font-size:12px;opacity:.7;"></div>
+        
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:20px;border-top:1px solid rgba(255,255,255,.15);padding-top:16px;">
+          <div><div style="font-size:8px;letter-spacing:1.5px;opacity:.55;">CLIENTE</div><div id="pt-cliente-display" style="font-size:13px;font-weight:700;margin-top:2px;">—</div></div>
+          <div><div style="font-size:8px;letter-spacing:1.5px;opacity:.55;">ATENCIÓN</div><div id="pt-atencion-display" style="font-size:13px;font-weight:700;margin-top:2px;">—</div></div>
+          <div><div style="font-size:8px;letter-spacing:1.5px;opacity:.55;">ÁREA</div><div id="pt-area-display" style="font-size:13px;font-weight:700;margin-top:2px;">—</div></div>
+          <div><div style="font-size:8px;letter-spacing:1.5px;opacity:.55;">PERIODO</div><div id="pt-periodo-display" style="font-size:11px;font-weight:700;margin-top:2px;">—</div></div>
+        </div>
+      </div>
+
+      <!-- Alcance -->
+      <div class="card" style="margin-bottom:14px;">
+        <div class="card-hd"><span class="card-ttl">Alcance del Proyecto</span><button onclick="ptEditarPortada()" style="padding:4px 10px;background:var(--blue-pale);color:var(--blue);border:none;border-radius:5px;font-size:10px;font-weight:700;cursor:pointer;font-family:var(--font);">✎ Editar</button></div>
+        <div class="card-body"><p id="pt-alcance-display" style="font-size:13px;color:var(--tx2);line-height:1.6;">—</p></div>
+      </div>
+
+      <!-- Edit form (hidden by default) -->
+      <div id="pt-edit-form" style="display:none;">
+        <div class="card" style="margin-bottom:14px;">
+          <div class="card-hd"><span class="card-ttl">✎ Editar Datos</span></div>
+          <div class="card-body" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <div style="grid-column:1/-1;"><label style="font-size:10px;font-weight:700;color:var(--tx2);">Nombre del Proyecto</label><input id="ptf-titulo" class="pt-input" placeholder="Nombre..."></div>
+            <div style="grid-column:1/-1;"><label style="font-size:10px;font-weight:700;color:var(--tx2);">Sistema / Subtítulo</label><input id="ptf-subtitulo" class="pt-input" placeholder="Sistema aplicado..."></div>
+            <div><label style="font-size:10px;font-weight:700;color:var(--tx2);">Cliente</label><input id="ptf-cliente" class="pt-input" placeholder="Empresa cliente..."></div>
+            <div><label style="font-size:10px;font-weight:700;color:var(--tx2);">Atención</label><input id="ptf-atencion" class="pt-input" placeholder="Contacto..."></div>
+            <div><label style="font-size:10px;font-weight:700;color:var(--tx2);">Área (m²)</label><input id="ptf-area" class="pt-input" type="number" placeholder="100"></div>
+            <div><label style="font-size:10px;font-weight:700;color:var(--tx2);">Cotización Ref.</label><input id="ptf-cotizacion" class="pt-input" placeholder="COT-2026-001"></div>
+            <div><label style="font-size:10px;font-weight:700;color:var(--tx2);">Fecha Inicio</label><input id="ptf-inicio" class="pt-input" type="date"></div>
+            <div><label style="font-size:10px;font-weight:700;color:var(--tx2);">Fecha Fin</label><input id="ptf-fin" class="pt-input" type="date"></div>
+            <div style="grid-column:1/-1;"><label style="font-size:10px;font-weight:700;color:var(--tx2);">Alcance del Proyecto</label><textarea id="ptf-alcance" class="pt-input" rows="3" style="resize:vertical;" placeholder="Descripción de los trabajos..."></textarea></div>
+            <div style="grid-column:1/-1;display:flex;gap:8px;justify-content:flex-end;padding-top:4px;">
+              <button onclick="ptCancelarEdit()" style="padding:8px 16px;background:var(--g1);color:var(--tx);border:none;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);">Cancelar</button>
+              <button onclick="ptGuardarPortada()" style="padding:8px 16px;background:var(--green);color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font);">✓ Guardar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /pt-portada -->
+
+    <!-- ACTIVIDADES TAB -->
+    <div id="pt-actividades" class="pt-content" style="display:none;padding:16px;">
+      
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <div style="font-size:11px;font-weight:700;color:var(--tx2);letter-spacing:.5px;text-transform:uppercase;">Plan de Ejecución</div>
+        <button onclick="ptAgregarEtapa()" style="padding:5px 12px;background:var(--blue);color:#fff;border:none;border-radius:6px;font-size:10px;font-weight:700;cursor:pointer;font-family:var(--font);">+ Etapa</button>
+      </div>
+
+      <div id="pt-etapas-container">
+        <!-- Etapas rendered by JS -->
+        <div style="text-align:center;padding:40px 20px;color:var(--tx3);font-size:13px;">
+          <div style="font-size:32px;margin-bottom:8px;">📅</div>
+          Selecciona o crea un plan de trabajo
+        </div>
+      </div>
+
+      <!-- Nota operativa -->
+      <div id="pt-nota-card" style="display:none;background:#FFF8E1;border:1px solid #FFE082;border-radius:10px;padding:14px 16px;margin-top:4px;display:flex;gap:10px;align-items:flex-start;">
+        <span style="font-size:16px;">⚠️</span>
+        <div>
+          <div style="font-weight:700;color:#E65100;font-size:12px;margin-bottom:3px;">Nota Operativa</div>
+          <div id="pt-nota-text" style="color:#5D4037;font-size:12px;line-height:1.5;">El área deberá permanecer libre de tránsito durante la ejecución. Respetar tiempos de fraguado.</div>
+        </div>
+      </div>
+
+    </div><!-- /pt-actividades -->
+
+    <!-- GANTT TAB -->
+    <div id="pt-gantt" class="pt-content" style="display:none;padding:16px;overflow-x:auto;">
+      
+      <div style="font-size:11px;font-weight:700;color:var(--tx2);letter-spacing:.5px;text-transform:uppercase;margin-bottom:12px;">Diagrama de Gantt</div>
+      
+      <div id="pt-gantt-container" style="min-width:600px;">
+        <div style="text-align:center;padding:40px 20px;color:var(--tx3);font-size:13px;">
+          <div style="font-size:32px;margin-bottom:8px;">📊</div>
+          Sin datos disponibles aún
+        </div>
+      </div>
+
+    </div><!-- /pt-gantt -->
+
+  </div><!-- /screen-plantrabajo -->
+
   </div><!-- /main -->
 
   <nav id="navbar">
@@ -2914,7 +3041,7 @@ var _L1="1shtWF/2Da4Vxw29EaCUtsDi3RXx+CQakr6DT5OoYI1PDu5vvMt89ZIMj1hg+/mQLBTj+jK
 var _L2="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";
 (function(){
   // Logo blanco original para topbar y vista cliente (fondo oscuro)
-  var logoBlanco="data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20xmlns%3Axlink%3D%22http%3A//www.w3.org/1999/xlink%22%20width%3D%221003px%22%20height%3D%22133px%22%20viewBox%3D%220%200%201003.2665725383849%20133.13596685194966%22%3E%0A%20%20%20%20%3Cg%20id%3D%220140d331-e6a8-4d1a-9eb5-258f5641f0fa%22%3E%0A%3Cg%20style%3D%22%22%3E%0A%09%09%3Cg%20id%3D%220140d331-e6a8-4d1a-9eb5-258f5641f0fa-child-0%22%3E%0A%3Cpath%20style%3D%22stroke%3A%20rgb%28193%2C193%2C193%29%3B%20stroke-opacity%3A%201.00%3B%20stroke-width%3A%200%3B%20stroke-dasharray%3A%20none%3B%20stroke-linecap%3A%20butt%3B%20stroke-dashoffset%3A%200%3B%20stroke-linejoin%3A%20miter%3B%20stroke-miterlimit%3A%204%3B%20fill%3A%20rgb%28255%2C255%2C255%29%3B%20fill-opacity%3A%201.00%3B%20fill-rule%3A%20nonzero%3B%20opacity%3A%201%3B%22%20transform%3D%22matrix%280.837442%20-0.000073%200.000073%200.837802%20501.633571%2066.568008%29%20matrix%281%200%200%201%200%200%29%20%20translate%28-599%2C%20-79.534099%29%22%20d%3D%22M%20692.38%20157.09%20C%20688.58%20154.77%20687.49%20152.52%20662.50%2095.31%20C%20652.12%2071.55%20643.31%2052.31%20642.91%2052.55%20C%20641.79%2053.25%20637.71%2067.54%20618.80%20137.00%20L%20613.49%20156.50%20L%20600.25%20156.78%20C%20592.96%20156.93%20587.00%20156.72%20587.00%20156.30%20C%20587.00%20155.11%20618.31%2042.04%20627.14%2011.31%20C%20628.29%207.34%20633.00%203.28%20637.43%202.45%20C%20641.00%201.78%20648.46%204.40%20650.65%207.09%20C%20651.87%208.59%20661.50%2029.90%20685.52%2084.24%20C%20693.72%20102.79%20700.76%20117.64%20701.16%20117.24%20C%20702.16%20116.24%20711.76%2095.09%20726.01%2062.50%20C%20743.25%2023.06%20749.91%208.77%20752.18%206.33%20C%20757.01%201.14%20764.70%200.91%20770.01%205.80%20C%20773.22%208.76%20773.12%208.43%20794.36%2085.50%20C%20809.20%20139.30%20813.00%20153.57%20813.00%20155.40%20C%20813.00%20156.79%20811.26%20157.00%20800.00%20157.00%20C%20792.85%20157.00%20787.00%20156.78%20787.00%20156.52%20C%20787.00%20155.52%20763.82%2072.07%20760.81%2062.22%20C%20759.08%2056.56%20757.33%2052.29%20756.93%2052.72%20C%20756.29%2053.40%20745.10%2078.46%20727.99%20117.50%20C%20716.60%20143.50%20710.37%20155.41%20707.21%20157.25%20C%20703.23%20159.56%20696.31%20159.49%20692.38%20157.09%20Z%20M%20209.24%2079.75%20L%20209.50%202.50%20L%20269.00%202.50%20C%20336.02%202.50%20337.65%202.63%20350.24%209.19%20C%20362.93%2015.79%20371.46%2027.26%20374.56%2041.88%20C%20376.39%2050.52%20376.36%2067.85%20374.49%2075.76%20C%20371.28%2089.41%20362.78%20100.64%20350.87%20106.99%20L%20344.76%20110.24%20L%20367.38%20132.88%20C%20379.82%20145.33%20390.00%20155.85%20390.00%20156.26%20C%20390.00%20156.67%20381.56%20156.97%20371.25%20156.93%20L%20352.50%20156.86%20L%20333.50%20135.48%20L%20314.50%20114.10%20L%20285.25%20114.05%20L%20256.00%20114.00%20L%20256.00%20102.09%20L%20256.00%2090.18%20L%20293.25%2089.84%20C%20329.89%2089.51%20330.58%2089.46%20335.23%2087.17%20C%20340.67%2084.49%20344.44%2080.41%20347.39%2074.00%20C%20349.04%2070.41%20349.46%2067.47%20349.48%2059.50%20C%20349.50%2050.53%20349.21%2048.91%20346.67%2043.74%20C%20345.12%2040.57%20342.32%2036.82%20340.47%2035.41%20C%20333.33%2029.96%20331.25%2029.74%20282.25%2029.25%20L%20237.00%2028.79%20L%20237.00%2092.89%20L%20237.00%20157.00%20L%20222.99%20157.00%20L%20208.99%20157.00%20L%20209.24%2079.75%20Z%20M%20456.00%20156.02%20C%20441.94%20153.95%20427.43%20145.65%20415.39%20132.76%20C%20405.11%20121.76%20399.34%20109.13%20396.39%2091.15%20C%20393.58%2074.06%20395.88%2058.31%20403.56%2042.11%20C%20407.42%2033.95%20409.28%2031.41%20416.83%2023.95%20C%20424.06%2016.81%20427.28%2014.46%20435.06%2010.65%20C%20450.09%203.27%20451.95%203.00%20487.96%203.01%20C%20505.31%203.01%20522.05%203.43%20525.16%203.94%20C%20549.59%207.94%20572.16%2028.22%20580.23%2053.42%20C%20582.71%2061.15%20583.73%2083.32%20582.09%2093.84%20C%20579.62%20109.78%20570.47%20126.83%20558.57%20137.69%20C%20550.37%20145.18%20543.15%20149.48%20532.26%20153.34%20L%20523.50%20156.46%20L%20492.50%20156.64%20C%20475.45%20156.74%20459.02%20156.46%20456.00%20156.02%20Z%20M%20516.42%20128.96%20C%20539.87%20125.57%20556.00%20105.41%20556.00%2079.50%20C%20556.00%2064.42%20550.98%2052.10%20540.92%2042.50%20C%20528.61%2030.77%20517.06%2028.27%20480.28%2029.39%20C%20457.81%2030.07%20453.39%2031.07%20443.28%2037.72%20C%20422.29%2051.53%20416.08%2083.33%20429.75%20107.00%20C%20435.40%20116.79%20446.94%20125.63%20458.00%20128.64%20C%20463.59%20130.16%20506.48%20130.40%20516.42%20128.96%20Z%20M%20830.00%20143.50%20L%20830.00%20130.00%20L%20892.62%20130.00%20L%20955.23%20130.00%20L%20960.00%20126.50%20C%20966.01%20122.09%20968.50%20117.22%20968.47%20109.96%20C%20968.43%20102.61%20964.61%2095.89%20958.71%2092.78%20C%20954.59%2090.60%20953.50%2090.54%20909.00%2089.95%20C%20865.24%2089.38%20863.25%2089.27%20857.08%2087.11%20C%20841.51%2081.67%20831.67%2069.78%20828.78%2052.95%20C%20827.33%2044.45%20828.74%2034.56%20832.65%2025.84%20C%20836.02%2018.33%20843.95%2010.82%20852.76%206.77%20C%20858.90%203.95%20860.78%203.61%20874.00%202.91%20C%20881.97%202.48%20910.44%202.11%20937.25%202.07%20L%20986.00%202.00%20L%20986.00%2015.40%20L%20986.00%2028.80%20L%20928.25%2029.20%20C%20864.65%2029.63%20866.14%2029.49%20860.73%2035.91%20C%20853.58%2044.40%20855.32%2057.87%20864.33%2063.84%20L%20868.35%2066.50%20L%20913.43%2067.09%20L%20958.50%2067.69%20L%20966.92%2070.53%20C%20984.81%2076.58%20992.38%2087.32%20993.67%20108.50%20C%20994.89%20128.62%20987.29%20143.75%20972.11%20151.45%20C%20961.20%20156.97%20960.81%20157.00%20892.79%20157.00%20L%20830.00%20157.00%20L%20830.00%20143.50%20Z%20M%20996.80%20153.78%20C%201000.93%20146.99%201029.44%2099.22%201049.50%2065.50%20C%201073.81%2024.62%201085.59%206.37%201090.14%202.54%20C%201092.95%200.17%201094.04%20-0.14%201097.94%200.30%20C%201103.73%200.95%201104.66%202.06%201119.84%2026.45%20C%201133.13%2047.83%201198.00%20155.76%201198.00%20156.52%20C%201198.00%20156.78%201190.81%20157.00%201182.03%20157.00%20L%201166.06%20157.00%20L%201154.49%20137.50%20L%201142.92%20118.00%20L%201106.96%20118.00%20C%201087.15%20118.00%201071.00%20117.61%201071.00%20117.13%20C%201071.00%20116.65%201073.55%20111.92%201076.66%20106.63%20L%201082.31%2097.00%20L%201097.41%2096.90%20C%201105.71%2096.85%201116.20%2096.51%201120.73%2096.15%20L%201128.96%2095.50%20L%201122.38%2084.00%20C%201110.91%2063.94%201096.91%2041.00%201096.14%2041.00%20C%201094.54%2041.00%201084.29%2057.76%201045.67%20123.50%20L%201026.29%20156.50%20L%201010.55%20156.78%20L%20994.80%20157.05%20L%20996.80%20153.78%20Z%20M%200.00%20134.00%20L%200.00%20115.00%20L%2094.00%20115.00%20L%20188.00%20115.00%20L%20188.00%20134.00%20L%20188.00%20153.00%20L%2094.00%20153.00%20L%200.00%20153.00%20L%200.00%20134.00%20Z%20M%200.00%2077.99%20L%200.00%2057.99%20L%2093.75%2058.24%20L%20187.50%2058.50%20L%20187.77%2078.25%20L%20188.04%2098.00%20L%2094.02%2098.00%20L%200.00%2098.00%20L%200.00%2077.99%20Z%20M%200.00%2021.00%20L%200.00%202.00%20L%2094.00%202.00%20L%20188.00%202.00%20L%20188.00%2021.00%20L%20188.00%2040.00%20L%2094.00%2040.00%20L%200.00%2040.00%20L%200.00%2021.00%20Z%22%20stroke-linecap%3D%22round%22%3E%3C/path%3E%0A%3C/g%3E%0A%3C/g%3E%0A%3C/g%3E%0A%0A%20%20%3C/svg%3E";
+  var logoBlanco="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA4MDAgMTA2Ij4KPHJlY3QgeD0iMCIgeT0iMSIgd2lkdGg9IjEyNSIgaGVpZ2h0PSIyNiIgcng9IjIiIGZpbGw9IiNGRkZGRkYiLz4KPHJlY3QgeD0iMCIgeT0iMzkiIHdpZHRoPSIxMjUiIGhlaWdodD0iMjciIHJ4PSIyIiBmaWxsPSIjRkZGRkZGIi8+CjxyZWN0IHg9IjAiIHk9Ijc2IiB3aWR0aD0iMTI1IiBoZWlnaHQ9IjI3IiByeD0iMiIgZmlsbD0iI0ZGRkZGRiIvPgo8cGF0aCBkPSJNIDE0MCwxIEwgMTQ4LDEgTCAyMjIsMiBMIDIyNiwzIEwgMjMyLDUgTCAyMzYsOCBMIDI0NCwxNSBMIDI0OCwyMyBMIDI0OSwyNiBMIDI1MCwzMiBMIDI1MSw5NSBMIDI1OCwxMDIgTCAyNTksMTA1IEwgMjM2LDEwNSBMIDIyNyw5NSBMIDIxOCw4NSBMIDIxMCw3NiBMIDE3Miw3NiBMIDE3MSwxOSBMIDE1OSwxOSBMIDE1OCwxMDUgTCAxNDEsMTA1IFoiIGZpbGw9IiNGRkZGRkYiLz4KPHBhdGggZD0iTSAyNjQsNDYgTCAyNjYsMzYgTCAyNzEsMjQgTCAyODMsMTEgTCAyODgsOCBMIDI5Myw2IEwgMjk4LDQgTCAzNDMsMiBMIDM1NCwzIEwgMzYwLDUgTCAzNjQsOCBMIDM2OSwxMSBMIDM3OCwxOSBMIDM4NSwzMSBMIDM4NywzNyBMIDM4OCw0MiBMIDM4OSw2MyBMIDM4Nyw3MSBMIDM4Miw4MiBMIDM3MCw5NSBMIDM2NCw5OSBMIDM1OCwxMDEgTCAzNTMsMTAzIEwgMzMzLDEwNCBMIDMxMCwxMDUgTCAzMDIsMTA0IEwgMjk4LDEwMyBMIDI5MywxMDAgTCAyODgsOTcgTCAyODMsOTMgTCAyNzUsODYgTCAyNjksNzUgTCAyNjYsNjQgTCAyNjUsNTcgWiIgZmlsbD0iI0ZGRkZGRiIvPgo8cGF0aCBkPSJNIDM5MiwxMDIgTCAzOTcsODQgTCA0MDMsNjIgTCA0MDgsNDQgTCA0MTMsMjYgTCA0MTksNyBMIDQyMiwzIEwgNDMwLDIgTCA0MzQsNSBMIDQzOCwxMyBMIDQ0MiwyMiBMIDQ1MCw0MCBMIDQ1NSw1MSBMIDQ1OSw2MCBMIDQ2Nyw3OCBMIDQ3Myw2OCBMIDQ3Nyw1OSBMIDQ4Miw0OCBMIDQ4OSwzMiBMIDQ5NiwxNiBMIDUwMSw1IEwgNTA2LDIgTCA1MTIsMiBMIDUxNSw2IEwgNTE5LDE4IEwgNTI1LDQwIEwgNTMwLDU4IEwgNTM2LDgwIEwgNTQxLDk4IEwgNTQyLDEwMSBMIDU0MywxMDQgTCA1MjcsMTA1IEwgNTI1LDEwMCBMIDUxOSw3OCBMIDUxNCw2MCBMIDUwOSw0MiBMIDUwNywzNiBMIDUwNiwzNSBMIDUwMSw0NiBMIDQ5Nyw1NSBMIDQ5Myw2NCBMIDQ4OSw3MyBMIDQ4NSw4MiBMIDQ3NSwxMDMgTCA0NzEsMTA2IEwgNDY0LDEwNiBMIDQ2MSwxMDMgTCA0NTUsOTEgTCA0NDgsNzUgTCA0NDQsNjYgTCA0MzcsNTAgTCA0MzMsNDEgTCA0MzEsMzYgTCA0MzAsMzUgTCA0MjcsNDQgTCA0MjIsNjIgTCA0MTYsODQgTCA0MTEsMTAyIEwgNDEwLDEwNSBMIDQwMCwxMDUgTCAzOTMsMTA0IFoiIGZpbGw9IiNGRkZGRkYiLz4KPHBhdGggZD0iTSA1NTMsMjcgTCA1NTUsMTkgTCA1NjAsMTEgTCA1NjYsNiBMIDU3Miw0IEwgNjQ4LDIgTCA2NTcsMSBMIDY1OCw1NiBMIDY2MSw2MiBMIDY2Miw2NSBMIDY2Myw3MiBMIDY2NCw3NyBMIDY2Myw4NCBMIDY1OSw5MyBMIDY1Niw5NyBMIDY1MiwxMDAgTCA2NDcsMTAyIEwgNjQzLDEwMyBMIDYzMywxMDQgTCA1NTgsMTA1IEwgNTU2LDEwNiBMIDU1NSwzOCBMIDU1NCwzMiBaIiBmaWxsPSIjRkZGRkZGIi8+CjxwYXRoIGQ9Ik0gNjY2LDEwMiBMIDY3MSw5MyBMIDY3NSw4NiBMIDY4MSw3NiBMIDY4Nyw2NiBMIDY5NCw1NCBMIDcwMCw0NCBMIDcwNSwzNiBMIDcxMSwyNiBMIDcxNywxNiBMIDcyMiw5IEwgNzMwLDAgTCA3MzQsMCBMIDczOCwzIEwgNzQ0LDEzIEwgNzQ5LDIxIEwgNzU1LDMxIEwgNzYxLDQxIEwgNzY3LDUxIEwgNzczLDYxIEwgNzc5LDcxIEwgNzg1LDgxIEwgNzkxLDkxIEwgNzk4LDEwMyBMIDc5OSwxMDQgTCA4MDAsMTA1IEwgNzgzLDEwNSBMIDc3OSwxMDQgTCA3NzIsOTIgTCA3NjYsODIgTCA3NjQsNzkgTCA3MjUsNzkgTCA3MTcsNzggTCA3MTYsNTQgTCA3MTAsNjQgTCA3MDQsNzQgTCA3MDAsODEgTCA2OTMsOTMgTCA2ODcsMTAzIEwgNjcwLDEwNSBMIDY2NywxMDQgWiIgZmlsbD0iI0ZGRkZGRiIvPgo8L3N2Zz4=";
   // Logo azul original para PDF (fondo blanco)
   window._romsaLogoAzul="data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20xmlns%3Axlink%3D%22http%3A//www.w3.org/1999/xlink%22%20width%3D%221003px%22%20height%3D%22133px%22%20viewBox%3D%220%200%201003.2665725383849%20133.13596685194966%22%3E%0A%20%20%20%20%3Cg%20id%3D%220140d331-e6a8-4d1a-9eb5-258f5641f0fa%22%3E%0A%3Cg%20style%3D%22%22%3E%0A%09%09%3Cg%20id%3D%220140d331-e6a8-4d1a-9eb5-258f5641f0fa-child-0%22%3E%0A%3Cpath%20style%3D%22stroke%3A%20rgb%28193%2C193%2C193%29%3B%20stroke-opacity%3A%201.00%3B%20stroke-width%3A%200%3B%20stroke-dasharray%3A%20none%3B%20stroke-linecap%3A%20butt%3B%20stroke-dashoffset%3A%200%3B%20stroke-linejoin%3A%20miter%3B%20stroke-miterlimit%3A%204%3B%20fill%3A%20rgb%2821%2C29%2C95%29%3B%20fill-opacity%3A%201.00%3B%20fill-rule%3A%20nonzero%3B%20opacity%3A%201%3B%22%20transform%3D%22matrix%280.837442%20-0.000073%200.000073%200.837802%20501.633571%2066.568008%29%20matrix%281%200%200%201%200%200%29%20%20translate%28-599%2C%20-79.534099%29%22%20d%3D%22M%20692.38%20157.09%20C%20688.58%20154.77%20687.49%20152.52%20662.50%2095.31%20C%20652.12%2071.55%20643.31%2052.31%20642.91%2052.55%20C%20641.79%2053.25%20637.71%2067.54%20618.80%20137.00%20L%20613.49%20156.50%20L%20600.25%20156.78%20C%20592.96%20156.93%20587.00%20156.72%20587.00%20156.30%20C%20587.00%20155.11%20618.31%2042.04%20627.14%2011.31%20C%20628.29%207.34%20633.00%203.28%20637.43%202.45%20C%20641.00%201.78%20648.46%204.40%20650.65%207.09%20C%20651.87%208.59%20661.50%2029.90%20685.52%2084.24%20C%20693.72%20102.79%20700.76%20117.64%20701.16%20117.24%20C%20702.16%20116.24%20711.76%2095.09%20726.01%2062.50%20C%20743.25%2023.06%20749.91%208.77%20752.18%206.33%20C%20757.01%201.14%20764.70%200.91%20770.01%205.80%20C%20773.22%208.76%20773.12%208.43%20794.36%2085.50%20C%20809.20%20139.30%20813.00%20153.57%20813.00%20155.40%20C%20813.00%20156.79%20811.26%20157.00%20800.00%20157.00%20C%20792.85%20157.00%20787.00%20156.78%20787.00%20156.52%20C%20787.00%20155.52%20763.82%2072.07%20760.81%2062.22%20C%20759.08%2056.56%20757.33%2052.29%20756.93%2052.72%20C%20756.29%2053.40%20745.10%2078.46%20727.99%20117.50%20C%20716.60%20143.50%20710.37%20155.41%20707.21%20157.25%20C%20703.23%20159.56%20696.31%20159.49%20692.38%20157.09%20Z%20M%20209.24%2079.75%20L%20209.50%202.50%20L%20269.00%202.50%20C%20336.02%202.50%20337.65%202.63%20350.24%209.19%20C%20362.93%2015.79%20371.46%2027.26%20374.56%2041.88%20C%20376.39%2050.52%20376.36%2067.85%20374.49%2075.76%20C%20371.28%2089.41%20362.78%20100.64%20350.87%20106.99%20L%20344.76%20110.24%20L%20367.38%20132.88%20C%20379.82%20145.33%20390.00%20155.85%20390.00%20156.26%20C%20390.00%20156.67%20381.56%20156.97%20371.25%20156.93%20L%20352.50%20156.86%20L%20333.50%20135.48%20L%20314.50%20114.10%20L%20285.25%20114.05%20L%20256.00%20114.00%20L%20256.00%20102.09%20L%20256.00%2090.18%20L%20293.25%2089.84%20C%20329.89%2089.51%20330.58%2089.46%20335.23%2087.17%20C%20340.67%2084.49%20344.44%2080.41%20347.39%2074.00%20C%20349.04%2070.41%20349.46%2067.47%20349.48%2059.50%20C%20349.50%2050.53%20349.21%2048.91%20346.67%2043.74%20C%20345.12%2040.57%20342.32%2036.82%20340.47%2035.41%20C%20333.33%2029.96%20331.25%2029.74%20282.25%2029.25%20L%20237.00%2028.79%20L%20237.00%2092.89%20L%20237.00%20157.00%20L%20222.99%20157.00%20L%20208.99%20157.00%20L%20209.24%2079.75%20Z%20M%20456.00%20156.02%20C%20441.94%20153.95%20427.43%20145.65%20415.39%20132.76%20C%20405.11%20121.76%20399.34%20109.13%20396.39%2091.15%20C%20393.58%2074.06%20395.88%2058.31%20403.56%2042.11%20C%20407.42%2033.95%20409.28%2031.41%20416.83%2023.95%20C%20424.06%2016.81%20427.28%2014.46%20435.06%2010.65%20C%20450.09%203.27%20451.95%203.00%20487.96%203.01%20C%20505.31%203.01%20522.05%203.43%20525.16%203.94%20C%20549.59%207.94%20572.16%2028.22%20580.23%2053.42%20C%20582.71%2061.15%20583.73%2083.32%20582.09%2093.84%20C%20579.62%20109.78%20570.47%20126.83%20558.57%20137.69%20C%20550.37%20145.18%20543.15%20149.48%20532.26%20153.34%20L%20523.50%20156.46%20L%20492.50%20156.64%20C%20475.45%20156.74%20459.02%20156.46%20456.00%20156.02%20Z%20M%20516.42%20128.96%20C%20539.87%20125.57%20556.00%20105.41%20556.00%2079.50%20C%20556.00%2064.42%20550.98%2052.10%20540.92%2042.50%20C%20528.61%2030.77%20517.06%2028.27%20480.28%2029.39%20C%20457.81%2030.07%20453.39%2031.07%20443.28%2037.72%20C%20422.29%2051.53%20416.08%2083.33%20429.75%20107.00%20C%20435.40%20116.79%20446.94%20125.63%20458.00%20128.64%20C%20463.59%20130.16%20506.48%20130.40%20516.42%20128.96%20Z%20M%20830.00%20143.50%20L%20830.00%20130.00%20L%20892.62%20130.00%20L%20955.23%20130.00%20L%20960.00%20126.50%20C%20966.01%20122.09%20968.50%20117.22%20968.47%20109.96%20C%20968.43%20102.61%20964.61%2095.89%20958.71%2092.78%20C%20954.59%2090.60%20953.50%2090.54%20909.00%2089.95%20C%20865.24%2089.38%20863.25%2089.27%20857.08%2087.11%20C%20841.51%2081.67%20831.67%2069.78%20828.78%2052.95%20C%20827.33%2044.45%20828.74%2034.56%20832.65%2025.84%20C%20836.02%2018.33%20843.95%2010.82%20852.76%206.77%20C%20858.90%203.95%20860.78%203.61%20874.00%202.91%20C%20881.97%202.48%20910.44%202.11%20937.25%202.07%20L%20986.00%202.00%20L%20986.00%2015.40%20L%20986.00%2028.80%20L%20928.25%2029.20%20C%20864.65%2029.63%20866.14%2029.49%20860.73%2035.91%20C%20853.58%2044.40%20855.32%2057.87%20864.33%2063.84%20L%20868.35%2066.50%20L%20913.43%2067.09%20L%20958.50%2067.69%20L%20966.92%2070.53%20C%20984.81%2076.58%20992.38%2087.32%20993.67%20108.50%20C%20994.89%20128.62%20987.29%20143.75%20972.11%20151.45%20C%20961.20%20156.97%20960.81%20157.00%20892.79%20157.00%20L%20830.00%20157.00%20L%20830.00%20143.50%20Z%20M%20996.80%20153.78%20C%201000.93%20146.99%201029.44%2099.22%201049.50%2065.50%20C%201073.81%2024.62%201085.59%206.37%201090.14%202.54%20C%201092.95%200.17%201094.04%20-0.14%201097.94%200.30%20C%201103.73%200.95%201104.66%202.06%201119.84%2026.45%20C%201133.13%2047.83%201198.00%20155.76%201198.00%20156.52%20C%201198.00%20156.78%201190.81%20157.00%201182.03%20157.00%20L%201166.06%20157.00%20L%201154.49%20137.50%20L%201142.92%20118.00%20L%201106.96%20118.00%20C%201087.15%20118.00%201071.00%20117.61%201071.00%20117.13%20C%201071.00%20116.65%201073.55%20111.92%201076.66%20106.63%20L%201082.31%2097.00%20L%201097.41%2096.90%20C%201105.71%2096.85%201116.20%2096.51%201120.73%2096.15%20L%201128.96%2095.50%20L%201122.38%2084.00%20C%201110.91%2063.94%201096.91%2041.00%201096.14%2041.00%20C%201094.54%2041.00%201084.29%2057.76%201045.67%20123.50%20L%201026.29%20156.50%20L%201010.55%20156.78%20L%20994.80%20157.05%20L%20996.80%20153.78%20Z%20M%200.00%20134.00%20L%200.00%20115.00%20L%2094.00%20115.00%20L%20188.00%20115.00%20L%20188.00%20134.00%20L%20188.00%20153.00%20L%2094.00%20153.00%20L%200.00%20153.00%20L%200.00%20134.00%20Z%20M%200.00%2077.99%20L%200.00%2057.99%20L%2093.75%2058.24%20L%20187.50%2058.50%20L%20187.77%2078.25%20L%20188.04%2098.00%20L%2094.02%2098.00%20L%200.00%2098.00%20L%200.00%2077.99%20Z%20M%200.00%2021.00%20L%200.00%202.00%20L%2094.00%202.00%20L%20188.00%202.00%20L%20188.00%2021.00%20L%20188.00%2040.00%20L%2094.00%2040.00%20L%200.00%2040.00%20L%200.00%2021.00%20Z%22%20stroke-linecap%3D%22round%22%3E%3C/path%3E%0A%3C/g%3E%0A%3C/g%3E%0A%3C/g%3E%0A%0A%20%20%3C/svg%3E";
   window._romsaLogoBlanco=logoBlanco;
@@ -3138,6 +3265,10 @@ function goScreen(n){
     if(!window._costeoAcceso){ showToast("🔒 Sin acceso a este módulo"); goScreen("obras"); return; }
     // Asegurar que el tab dashboard esté activo al entrar
     if(typeof switchCosteoTab==="function") switchCosteoTab("dashboard");
+  }
+  if(n==="plantrabajo"){
+    document.getElementById("app")?.classList.add("wide-mode");
+    if(_ptActual) ptRenderGantt(_ptActual);
   }
   if(n==="costeo-editor"){
     if(!window._costeoAcceso){ showToast("🔒 Sin acceso a este módulo"); goScreen("obras"); return; }
@@ -16059,7 +16190,19 @@ function distribuir(){
     // Si cabe en la página actual, agregar
     if(actualAlto + h <= CUERPO_DISPONIBLE){
       actual.push(html);
-      actualAlto += h;
+      actualAlto
+
+/* ── PLAN DE TRABAJO ── */
+.pt-tab{transition:color .2s,border-color .2s;}
+.pt-tab.active{color:var(--sky)!important;border-bottom-color:var(--blue)!important;}
+.pt-input{width:100%;padding:8px 10px;border:1px solid var(--g1);border-radius:7px;font-size:13px;font-family:var(--font);color:var(--tx);background:var(--white);margin-top:3px;outline:none;transition:border-color .15s;}
+.pt-input:focus{border-color:var(--blue);}
+.pt-etapa-hd{background:linear-gradient(90deg,var(--navy),var(--blue));color:#fff;padding:10px 14px;border-radius:8px 8px 0 0;display:flex;align-items:center;gap:8px;}
+.pt-act-row{display:grid;grid-template-columns:1fr 1.2fr .7fr;gap:0;border-bottom:1px solid var(--off2);padding:10px 12px;font-size:12px;}
+.pt-act-row:last-child{border-bottom:none;}
+.pt-gantt-bar{height:18px;border-radius:4px;box-shadow:0 1px 3px rgba(0,0,0,.15);}
+
+ += h;
     } else {
       // No cabe → cerrar página actual y empezar una nueva
       paginas.push(actual);
@@ -16121,6 +16264,302 @@ window.addEventListener("load", function(){
 
 window.rpGenerarPdf = rpGenerarPdf;
 window.rpGenerarPdfDirecto = rpGenerarPdfDirecto;
+
+
+
+// ═══════════════════════════════════════════
+// PLAN DE TRABAJO MODULE
+// ═══════════════════════════════════════════
+var _ptPlanes = [];
+var _ptActual = null;
+
+// SAMPLE data (replace with Firebase)
+var _ptEjemplo = {
+  id: "pt_demo_001",
+  titulo: "Reparación uretano cementicio PYCMAR Ensenada",
+  subtitulo: "Sistema de Uretano Cementicio – Rehabilitación de Piso Industrial",
+  alcance: "Retiro de recubrimiento existente, preparación de superficie, secado de concreto y aplicación de sistema uretano cementicio a 6mm de espesor.",
+  cliente: "PYCMAR",
+  atencion: "Ing. Responsable",
+  area: "100",
+  cotizacion: "COT-2026-041",
+  fechaInicio: "2026-04-11",
+  fechaFin: "2026-04-19",
+  nota: "El área deberá permanecer libre de tránsito. Esperar 16 horas de fraguado antes de mojar.",
+  etapas: [
+    { id:"e1", nombre:"Etapa 1", fechaInicio:"2026-04-11", fechaFin:"2026-04-13", area:"78.7 m²",
+      dias:[
+        { fecha:"11/04/2026", actividades:[
+          {accion:"Llegada e instalación",descripcion:"Preparación de herramienta, equipo y conexiones",horario:"10am–11am",epp:"Lentes, chaleco, botas, guantes"},
+          {accion:"Retiro de uretano cementicio",descripcion:"Demolición y retiro del recubrimiento existente",horario:"11am–2pm",epp:"Lentes, chaleco, botas, guantes"},
+          {accion:"Preparación de superficie",descripcion:"Escarificado y aspirado del concreto base",horario:"2pm–6pm",epp:"Lentes, chaleco, botas, guantes"},
+          {accion:"Secado y limpieza total",descripcion:"Aspirado final y secado con antorcha",horario:"6pm–7pm",epp:"Lentes, chaleco, botas, guantes"},
+        ]},
+        { fecha:"12/04/2026", actividades:[
+          {accion:"Instalación en área",descripcion:"Preparación de herramienta y equipo",horario:"10am–11am",epp:"Lentes, chaleco, botas, guantes"},
+          {accion:"Aplicación uretano 6mm",descripcion:"Mezcla y aplicación de Flowfresh RT",horario:"11am–3pm",epp:"Lentes, chaleco, botas, guantes"},
+          {accion:"Fraguado de material",descripcion:"Curado del sistema. Tráfico ligero 7am siguiente día",horario:"3pm–7am (+1)",epp:"Área restringida"},
+        ]},
+        { fecha:"13/04/2026", actividades:[
+          {accion:"Fraguado final",descripcion:"Curado montacargas. Sin tráfico pesado hasta completar 16h",horario:"Todo el día",epp:"Área restringida"},
+        ]},
+      ]
+    },
+    { id:"e2", nombre:"Etapa 2", fechaInicio:"2026-04-18", fechaFin:"2026-04-19", area:"21.3 m²",
+      dias:[
+        { fecha:"18/04/2026", actividades:[
+          {accion:"Llegada e instalación",descripcion:"Preparación de herramienta, equipo y conexiones",horario:"1pm–2pm",epp:"Lentes, chaleco, botas, guantes"},
+          {accion:"Retiro de uretano cementicio",descripcion:"Demolición y retiro del recubrimiento existente",horario:"2pm–4pm",epp:"Lentes, chaleco, botas, guantes"},
+          {accion:"Preparación de superficie",descripcion:"Escarificado y aspirado del concreto base",horario:"4pm–6pm",epp:"Lentes, chaleco, botas, guantes"},
+          {accion:"Secado y limpieza",descripcion:"Aspirado final y secado con antorcha",horario:"6pm–7pm",epp:"Lentes, chaleco, botas, guantes"},
+          {accion:"Aplicación uretano 6mm",descripcion:"Mezcla y aplicación de Flowfresh RT",horario:"7pm–8pm",epp:"Lentes, chaleco, botas, guantes"},
+          {accion:"Fraguado de material",descripcion:"Inicio de curado. Tráfico ligero 12pm día siguiente",horario:"8pm–12pm (+1)",epp:"Área restringida"},
+        ]},
+        { fecha:"19/04/2026", actividades:[
+          {accion:"Fraguado final / Entrega",descripcion:"Curado montacargas y entrega al cliente",horario:"Todo el día",epp:"Área restringida"},
+        ]},
+      ]
+    },
+  ]
+};
+
+function ptTab(btn, name){
+  document.querySelectorAll(".pt-tab").forEach(b=>b.classList.remove("active"));
+  btn.classList.add("active");
+  document.querySelectorAll(".pt-content").forEach(c=>c.style.display="none");
+  var el = document.getElementById("pt-"+name);
+  if(el) el.style.display="block";
+  if(name==="gantt" && _ptActual) ptRenderGantt(_ptActual);
+}
+
+function ptCargarDemo(){
+  _ptPlanes = [_ptEjemplo];
+  var sel = document.getElementById("pt-select");
+  if(sel){
+    sel.innerHTML = "<option value=''>— Seleccionar —</option>";
+    sel.innerHTML += "<option value='pt_demo_001'>PYCMAR Ensenada (demo)</option>";
+  }
+  ptCargar("pt_demo_001");
+}
+
+function ptCargar(id){
+  if(!id){ _ptActual=null; return; }
+  var plan = _ptPlanes.find(p=>p.id===id);
+  if(!plan) return;
+  _ptActual = plan;
+  ptRenderPortada(plan);
+  ptRenderActividades(plan);
+  ptRenderGantt(plan);
+  document.getElementById("pt-nota-card") && (document.getElementById("pt-nota-card").style.display="flex");
+  var notaEl = document.getElementById("pt-nota-text");
+  if(notaEl && plan.nota) notaEl.textContent = plan.nota;
+}
+
+function ptRenderPortada(p){
+  var set = function(id,v){ var e=document.getElementById(id); if(e) e.textContent=v||"—"; };
+  set("pt-titulo-display", p.titulo);
+  set("pt-subtitulo-display", p.subtitulo);
+  set("pt-cliente-display", p.cliente);
+  set("pt-atencion-display", p.atencion);
+  set("pt-area-display", (p.area||"—") + " m²");
+  set("pt-alcance-display", p.alcance);
+  set("pt-cot-badge", p.cotizacion || "");
+  var periodo = (p.fechaInicio||"") + (p.fechaFin ? " → " + p.fechaFin : "");
+  set("pt-periodo-display", periodo);
+  // Logo
+  var logoEl = document.getElementById("pt-cover-logo");
+  var srcLogo = document.getElementById("tb-logo-img");
+  if(logoEl && srcLogo) logoEl.src = srcLogo.src;
+}
+
+function ptRenderActividades(plan){
+  var cont = document.getElementById("pt-etapas-container");
+  if(!cont) return;
+  if(!plan.etapas || !plan.etapas.length){ cont.innerHTML="<div style='padding:30px;text-align:center;color:var(--tx3);'>Sin etapas registradas</div>"; return; }
+  var html = "";
+  plan.etapas.forEach(function(et, ei){
+    var etColor = ei===0 ? "#1B3A6B" : "#2A6FDB";
+    html += "<div style='margin-bottom:18px;border:1px solid var(--g1);border-radius:8px;overflow:hidden;box-shadow:var(--shadow);'>";
+    html += "<div class='pt-etapa-hd' style='background:"+etColor+";'>";
+    html += "<span style='font-weight:800;font-size:13px;'>"+et.nombre+"</span>";
+    html += "<span style='font-size:11px;opacity:.8;margin-left:6px;'>"+et.fechaInicio+" → "+et.fechaFin+"</span>";
+    if(et.area) html += "<span style='margin-left:auto;font-size:10px;background:rgba(255,255,255,.15);padding:2px 8px;border-radius:10px;'>"+et.area+"</span>";
+    html += "</div>";
+    
+    (et.dias||[]).forEach(function(dia){
+      html += "<div style='background:var(--navy2);padding:7px 12px;border-bottom:1px solid rgba(255,255,255,.04);display:flex;align-items:center;gap:8px;'>";
+      html += "<span style='font-size:12px;font-weight:700;color:var(--sky);'>"+dia.fecha+"</span>";
+      html += "</div>";
+      html += "<table style='width:100%;border-collapse:collapse;font-size:11px;'>";
+      html += "<thead><tr style='background:var(--off);'><th style='padding:6px 10px;text-align:left;color:var(--tx2);font-weight:700;border-bottom:1px solid var(--g1);'>Acción</th><th style='padding:6px 10px;text-align:left;color:var(--tx2);font-weight:700;border-bottom:1px solid var(--g1);'>Descripción</th><th style='padding:6px 10px;text-align:left;color:var(--tx2);font-weight:700;border-bottom:1px solid var(--g1);'>Horario</th><th style='padding:6px 10px;text-align:left;color:var(--tx2);font-weight:700;border-bottom:1px solid var(--g1);'>EPP</th></tr></thead><tbody>";
+      (dia.actividades||[]).forEach(function(act,ai){
+        var bg = ai%2===0?"var(--white)":"var(--off2)";
+        html += "<tr style='background:"+bg+";'>";
+        html += "<td style='padding:8px 10px;font-weight:600;color:var(--tx);border-bottom:1px solid var(--off2);'>"+act.accion+"</td>";
+        html += "<td style='padding:8px 10px;color:var(--tx2);border-bottom:1px solid var(--off2);'>"+act.descripcion+"</td>";
+        html += "<td style='padding:8px 10px;color:var(--blue);font-weight:700;border-bottom:1px solid var(--off2);white-space:nowrap;'>"+act.horario+"</td>";
+        html += "<td style='padding:8px 10px;border-bottom:1px solid var(--off2);'><span style='background:var(--blue-pale);color:var(--blue);padding:2px 6px;border-radius:4px;font-size:10px;font-weight:600;'>"+act.epp+"</span></td>";
+        html += "</tr>";
+      });
+      html += "</tbody></table>";
+    });
+    html += "</div>";
+  });
+  cont.innerHTML = html;
+}
+
+function ptRenderGantt(plan){
+  var cont = document.getElementById("pt-gantt-container");
+  if(!cont || !plan) return;
+  if(!plan.etapas || !plan.etapas.length){ cont.innerHTML="<div style='padding:30px;text-align:center;color:var(--tx3);'>Sin etapas disponibles</div>"; return; }
+  
+  // Collect all dates
+  var allDates = [];
+  var d = new Date(plan.fechaInicio);
+  var dEnd = new Date(plan.fechaFin);
+  while(d <= dEnd){
+    allDates.push(d.toISOString().slice(5,10).replace("-","/"));
+    d.setDate(d.getDate()+1);
+  }
+  
+  var etColors = ["#1B3A6B","#2A6FDB","#E8650A","#1A8A4A"];
+  var actColors = {
+    "movilizacion": "#1B3A6B",
+    "retiro": "#4A7BA7",
+    "preparacion": "#4A7BA7",
+    "aplicacion": "#E8650A",
+    "fraguado": "#1A8A4A",
+    "entrega": "#10B981",
+  };
+  
+  var html = "<table style='width:100%;border-collapse:collapse;font-size:11px;min-width:600px;'>";
+  html += "<thead><tr style='background:var(--navy);'><th style='padding:7px 12px;text-align:left;color:#fff;width:180px;font-size:10px;letter-spacing:.5px;'>ACTIVIDAD</th>";
+  allDates.forEach(function(d){ html += "<th style='padding:7px 5px;text-align:center;color:#fff;min-width:52px;font-size:10px;'>"+d+"</th>"; });
+  html += "</tr></thead><tbody>";
+  
+  // Build rows from etapas
+  var rows = [];
+  plan.etapas.forEach(function(et, ei){
+    var startDate = et.fechaInicio;
+    var endDate = et.fechaFin;
+    rows.push({ label: et.nombre+" — Ejecución", start: startDate, end: endDate, color: etColors[ei%etColors.length] });
+    
+    var diasConApp = et.dias ? et.dias.filter(function(d){ return (d.actividades||[]).some(function(a){ return a.accion.toLowerCase().indexOf("aplicac")>=0; }); }) : [];
+    if(diasConApp.length){
+      var appDia = diasConApp[0].fecha.split("/").slice(0,2).reverse().join("-");
+      var appFull = plan.fechaInicio.slice(0,5) + appDia;
+      rows.push({ label: "  Aplicación ("+et.nombre+")", start: appFull, end: appFull, color: "#E8650A" });
+    }
+    rows.push({ label: "  Fraguado ("+et.nombre+")", start: endDate, end: et.fechaFin, color: "#1A8A4A" });
+  });
+  
+  rows.forEach(function(row, ri){
+    html += "<tr style='background:"+(ri%2===0?"var(--white)":"var(--off2)") + ";'>";
+    html += "<td style='padding:6px 12px;font-weight:600;color:var(--tx);border-bottom:1px solid var(--g1);font-size:11px;'>"+row.label+"</td>";
+    allDates.forEach(function(dStr){
+      var dFull = plan.fechaInicio.slice(0,5) + dStr;
+      var active = dFull >= row.start && dFull <= row.end;
+      html += "<td style='padding:3px 3px;border-bottom:1px solid var(--g1);text-align:center;'>";
+      if(active) html += "<div class='pt-gantt-bar' style='background:"+row.color+";margin:0 2px;'></div>";
+      html += "</td>";
+    });
+    html += "</tr>";
+  });
+  
+  html += "</tbody></table>";
+  
+  // Legend
+  html += "<div style='display:flex;flex-wrap:wrap;gap:16px;margin-top:14px;'>";
+  [["#1B3A6B","Etapa"],["#E8650A","Aplicación"],["#1A8A4A","Fraguado"]].forEach(function(l){
+    html += "<div style='display:flex;align-items:center;gap:5px;font-size:10px;color:var(--tx2);'><div style='width:20px;height:8px;background:"+l[0]+";border-radius:2px;'></div>"+l[1]+"</div>";
+  });
+  html += "</div>";
+  
+  cont.innerHTML = html;
+}
+
+function ptEditarPortada(){
+  if(!_ptActual) return;
+  var p = _ptActual;
+  var setVal = function(id,v){ var e=document.getElementById(id); if(e) e.value=v||""; };
+  setVal("ptf-titulo", p.titulo);
+  setVal("ptf-subtitulo", p.subtitulo);
+  setVal("ptf-cliente", p.cliente);
+  setVal("ptf-atencion", p.atencion);
+  setVal("ptf-area", p.area);
+  setVal("ptf-cotizacion", p.cotizacion);
+  setVal("ptf-inicio", p.fechaInicio);
+  setVal("ptf-fin", p.fechaFin);
+  setVal("ptf-alcance", p.alcance);
+  document.getElementById("pt-edit-form").style.display="block";
+  document.getElementById("pt-edit-form").scrollIntoView({behavior:"smooth"});
+}
+
+function ptCancelarEdit(){
+  document.getElementById("pt-edit-form").style.display="none";
+}
+
+function ptGuardarPortada(){
+  if(!_ptActual) return;
+  var getVal = function(id){ var e=document.getElementById(id); return e?e.value:""; };
+  _ptActual.titulo = getVal("ptf-titulo");
+  _ptActual.subtitulo = getVal("ptf-subtitulo");
+  _ptActual.cliente = getVal("ptf-cliente");
+  _ptActual.atencion = getVal("ptf-atencion");
+  _ptActual.area = getVal("ptf-area");
+  _ptActual.cotizacion = getVal("ptf-cotizacion");
+  _ptActual.fechaInicio = getVal("ptf-inicio");
+  _ptActual.fechaFin = getVal("ptf-fin");
+  _ptActual.alcance = getVal("ptf-alcance");
+  ptRenderPortada(_ptActual);
+  document.getElementById("pt-edit-form").style.display="none";
+  if(typeof showToast==="function") showToast("✓ Plan actualizado");
+  // TODO: save to Firebase
+}
+
+function ptNuevo(){
+  var nuevo = {
+    id: "pt_" + Date.now(),
+    titulo: "Nuevo Plan de Trabajo",
+    subtitulo: "",
+    alcance: "",
+    cliente: "",
+    atencion: "",
+    area: "",
+    cotizacion: "",
+    fechaInicio: new Date().toISOString().slice(0,10),
+    fechaFin: "",
+    nota: "",
+    etapas: []
+  };
+  _ptPlanes.push(nuevo);
+  var sel = document.getElementById("pt-select");
+  if(sel){ var opt=document.createElement("option"); opt.value=nuevo.id; opt.textContent=nuevo.titulo; sel.appendChild(opt); sel.value=nuevo.id; }
+  ptCargar(nuevo.id);
+  setTimeout(ptEditarPortada, 100);
+}
+
+function ptAgregarEtapa(){
+  if(!_ptActual){ showToast&&showToast("Selecciona un plan primero"); return; }
+  var etNum = (_ptActual.etapas||[]).length + 1;
+  _ptActual.etapas = _ptActual.etapas || [];
+  _ptActual.etapas.push({
+    id: "et_"+Date.now(), nombre: "Etapa "+etNum,
+    fechaInicio: _ptActual.fechaInicio||"", fechaFin: _ptActual.fechaFin||"",
+    area: "", dias: [{ fecha: "Día 1", actividades: [] }]
+  });
+  ptRenderActividades(_ptActual);
+  if(typeof showToast==="function") showToast("✓ Etapa "+etNum+" agregada");
+}
+
+function ptExportar(){
+  if(typeof showToast==="function") showToast("📄 Exportar PDF próximamente");
+}
+
+// Init when screen is opened
+document.addEventListener("DOMContentLoaded", function(){
+  setTimeout(ptCargarDemo, 1000);
+});
 
 </script>
 
