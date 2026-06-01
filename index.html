@@ -1137,6 +1137,16 @@ body.in-costeo #app{
     <div class="mod-arrow" style="color:#67E8F9;">›</div>
   </div>
 
+  <!-- Módulo Plan de Trabajo -->
+  <div class="mod-card" onclick="selectModule('plantrabajo')" style="background:linear-gradient(135deg,#0B2444,#1B3A6B);border:1px solid rgba(42,111,219,.4);">
+    <div class="mod-icon" style="background:rgba(42,111,219,.2);color:#60A5FA;">📋</div>
+    <div class="mod-info">
+      <div class="mod-name" style="color:#fff;">Plan de Trabajo</div>
+      <div class="mod-desc" style="color:rgba(255,255,255,.6);">Genera y envía planes de ejecución al cliente</div>
+    </div>
+    <div class="mod-arrow" style="color:rgba(255,255,255,.4);">›</div>
+  </div>
+
   <!-- Módulo Costeo — Solo visible para usuarios autorizados -->
   <div id="mod-card-costeo" class="mod-card" onclick="selectModule('costeo')" style="display:none;background:linear-gradient(135deg,#1B3F72,#0B1F3A);border:1px solid rgba(96,165,250,.3);">
     <div class="mod-icon" style="background:rgba(96,165,250,.2);color:#60A5FA;">💰</div>
@@ -5737,6 +5747,8 @@ function selectModule(mod){
   } else if(mod === 'reportes'){
     goScreen('reportes');
     if(typeof cargarReportes === "function") cargarReportes();
+  } else if(mod === 'plantrabajo'){
+    goScreen('plantrabajo');
   }
 }
 
