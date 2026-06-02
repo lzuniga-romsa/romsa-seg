@@ -1351,6 +1351,15 @@ body.in-costeo #app{
       <!-- RESUMEN -->
       <div id="dtab-resumen" class="dtab-content" style="padding:16px;">
 
+        <div id="obra-pt-link" style="display:none;background:linear-gradient(90deg,#0B1F3A,#1B3A6B);border-radius:10px;padding:11px 14px;margin-bottom:10px;cursor:pointer;align-items:center;gap:10px;" onclick="(function(){var o=getO();if(!o||!o.cotizacionId)return;window.ptCrearDesdeCotizacion(o.cotizacionId);})();">
+          <div style="width:34px;height:34px;border-radius:8px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:16px;">📋</div>
+          <div style="flex:1;">
+            <div style="color:#fff;font-size:12px;font-weight:700;">Plan de Trabajo</div>
+            <div style="color:rgba(255,255,255,.6);font-size:10px;margin-top:1px;">Ver o crear el plan vinculado a esta obra</div>
+          </div>
+          <div style="color:#fff;font-size:16px;">›</div>
+        </div>
+
         <div class="card" style="margin-bottom:10px;">
           <div class="card-hd" style="display:flex;align-items:center;justify-content:space-between;">
             <span class="card-ttl">Progreso general</span>
@@ -2236,6 +2245,7 @@ body.in-costeo #app{
           <div style="display:flex;gap:8px;">
             <button onclick="guardarCot()" style="flex:1;background:#fff;border:1px solid var(--g1);color:var(--navy);font-size:12px;font-weight:700;padding:12px;border-radius:10px;cursor:pointer;font-family:var(--font);">💾 Solo guardar</button>
             <button onclick="exportarCotExcel()" style="flex:1;background:#217346;border:none;color:#fff;font-size:12px;font-weight:700;padding:12px;border-radius:10px;cursor:pointer;font-family:var(--font);">📊 Excel</button>
+            <button onclick="if(cotActivaId){window.ptCrearDesdeCotizacion(cotActivaId);}else{showToast('Guarda la cotización primero');}" style="flex:1;background:#1B3A6B;border:none;color:#fff;font-size:12px;font-weight:700;padding:12px;border-radius:10px;cursor:pointer;font-family:var(--font);">📋 Plan Trabajo</button>
           </div>
         </div>
 
@@ -2653,109 +2663,155 @@ body.in-costeo #app{
   </div><!-- /screen-reportes -->
 
 
-  
-
-
   <!-- ═══════════════════════════════════════════════════════
-       PLAN DE TRABAJO SCREEN — v2 (linked to cotizaciones, per-stage editing)
+       PLAN DE TRABAJO v3 — Templates, hourly Gantt, full features
   ════════════════════════════════════════════════════════ -->
   <div id="screen-plantrabajo" class="screen" style="padding:0;overflow-y:auto;background:var(--off);">
 
     <!-- VIEW 1: LIST OF PLANS -->
-    <div id="pt-view-lista" style="padding:14px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:10px;">
+    <div id="pt-view-lista" style="padding:18px 24px;max-width:1300px;margin:0 auto;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;gap:12px;">
         <div>
-          <h2 style="margin:0;font-size:18px;color:var(--navy);font-weight:800;">Planes de Trabajo</h2>
-          <div style="font-size:11px;color:var(--tx2);margin-top:2px;">Documentos enviados al cliente antes de iniciar obra</div>
+          <h2 style="margin:0;font-size:22px;color:var(--navy);font-weight:800;">Planes de Trabajo</h2>
+          <div style="font-size:12px;color:var(--tx2);margin-top:2px;">Documentos enviados al cliente antes de iniciar la obra</div>
         </div>
-        <button onclick="ptNuevoDesdeCotizacion()" style="padding:9px 14px;background:var(--blue);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font);white-space:nowrap;">+ Nuevo Plan</button>
+        <div style="display:flex;gap:8px;">
+          <button onclick="ptAbrirPlantillas()" style="padding:10px 16px;background:var(--white);color:var(--blue);border:1px solid var(--blue);border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font);">⚙ Plantillas</button>
+          <button onclick="ptNuevoDesdeCotizacion()" style="padding:10px 18px;background:var(--blue);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font);white-space:nowrap;box-shadow:0 2px 6px rgba(30,111,217,.25);">+ Nuevo Plan</button>
+        </div>
       </div>
 
-      <input id="pt-buscar-lista" oninput="ptFiltrarLista(this.value)" placeholder="🔍 Buscar por cliente, folio o proyecto..." style="width:100%;padding:10px 12px;border:1px solid var(--g1);border-radius:8px;font-size:13px;font-family:var(--font);margin-bottom:12px;outline:none;box-sizing:border-box;">
+      <input id="pt-buscar-lista" oninput="ptFiltrarLista(this.value)" placeholder="🔍 Buscar por cliente, folio o proyecto..." style="width:100%;padding:11px 14px;border:1px solid var(--g1);border-radius:9px;font-size:13px;font-family:var(--font);margin-bottom:14px;outline:none;box-sizing:border-box;background:var(--white);">
 
       <div id="pt-lista-container"></div>
     </div>
 
     <!-- VIEW 2: PLAN DETAIL / EDITOR -->
-    <div id="pt-view-detalle" style="display:none;">
+    <div id="pt-view-detalle" style="display:none;max-width:1300px;margin:0 auto;">
 
       <!-- Top bar -->
-      <div style="background:var(--navy);padding:10px 14px;display:flex;align-items:center;gap:10px;border-bottom:1px solid rgba(255,255,255,.05);position:sticky;top:0;z-index:10;">
-        <button onclick="ptVolverLista()" style="background:rgba(255,255,255,.08);color:#fff;border:none;border-radius:6px;padding:6px 10px;font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font);">← Volver</button>
+      <div style="background:var(--navy);padding:12px 24px;display:flex;align-items:center;gap:12px;border-bottom:1px solid rgba(255,255,255,.05);position:sticky;top:0;z-index:10;">
+        <button onclick="ptVolverLista()" style="background:rgba(255,255,255,.08);color:#fff;border:none;border-radius:6px;padding:7px 12px;font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font);">← Volver</button>
         <div style="flex:1;overflow:hidden;">
-          <div id="pt-det-titulo" style="color:#fff;font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Plan de Trabajo</div>
-          <div id="pt-det-cot" style="color:var(--sky);font-size:10px;font-weight:600;"></div>
+          <div id="pt-det-titulo" style="color:#fff;font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Plan de Trabajo</div>
+          <div id="pt-det-cot" style="color:var(--sky);font-size:10px;font-weight:600;margin-top:1px;"></div>
         </div>
-        <button onclick="ptExportarPDF()" style="background:var(--blue);color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:var(--font);">↓ PDF</button>
+        <span id="pt-save-indicator" style="color:#10B981;font-size:10px;font-weight:700;opacity:0;transition:opacity .3s;">✓ Guardado</span>
+        <button id="pt-btn-duplicar" onclick="ptDuplicar()" style="background:rgba(255,255,255,.08);color:#fff;border:none;border-radius:6px;padding:7px 12px;font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font);display:none;">⎘ Duplicar</button>
+        <button onclick="ptGuardarComoPlantilla()" id="pt-btn-templ" style="background:rgba(255,255,255,.08);color:#fff;border:none;border-radius:6px;padding:7px 12px;font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font);display:none;">⚙ Guardar como Plantilla</button>
+        <button onclick="ptExportarPDF()" style="background:var(--blue);color:#fff;border:none;border-radius:6px;padding:7px 14px;font-size:11px;font-weight:700;cursor:pointer;font-family:var(--font);">↓ PDF</button>
       </div>
 
       <!-- Sub-tabs -->
-      <div style="background:var(--navy2);display:flex;overflow-x:auto;border-bottom:1px solid rgba(255,255,255,.05);">
-        <button class="pt-tab active" data-tab="portada" onclick="ptTab(this,'portada')" style="flex-shrink:0;padding:10px 16px;background:none;border:none;border-bottom:2px solid var(--blue);color:var(--sky);font-size:10px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;cursor:pointer;font-family:var(--font);">📋 Portada</button>
-        <button class="pt-tab" data-tab="etapas" onclick="ptTab(this,'etapas')" style="flex-shrink:0;padding:10px 16px;background:none;border:none;border-bottom:2px solid transparent;color:#3A5A7A;font-size:10px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;cursor:pointer;font-family:var(--font);">📅 Etapas</button>
-        <button class="pt-tab" data-tab="gantt" onclick="ptTab(this,'gantt')" style="flex-shrink:0;padding:10px 16px;background:none;border:none;border-bottom:2px solid transparent;color:#3A5A7A;font-size:10px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;cursor:pointer;font-family:var(--font);">📊 Gantt</button>
+      <div style="background:var(--navy2);display:flex;border-bottom:1px solid rgba(255,255,255,.05);padding:0 24px;">
+        <button class="pt-tab active" data-tab="portada" onclick="ptTab(this,'portada')">📋 Portada</button>
+        <button class="pt-tab" data-tab="cronograma" onclick="ptTab(this,'cronograma')">📅 Cronograma</button>
+        <button class="pt-tab" data-tab="gantt" onclick="ptTab(this,'gantt')">📊 Gantt Horario</button>
+        <button class="pt-tab" data-tab="preview" onclick="ptTab(this,'preview')">👁 Vista Previa</button>
       </div>
 
       <!-- PORTADA TAB -->
-      <div id="pt-portada" class="pt-content" style="padding:14px;">
+      <div id="pt-portada" class="pt-content" style="padding:20px 24px;display:grid;grid-template-columns:1fr 1fr;gap:18px;">
 
-        <!-- Cover card (preview) -->
-        <div id="pt-cover" style="background:linear-gradient(135deg,#0B1F3A 0%,#1B3A6B 60%,#2A6FDB 100%);border-radius:14px;padding:26px 22px;color:#fff;margin-bottom:14px;position:relative;overflow:hidden;">
-          <div style="position:absolute;right:-30px;top:-30px;width:140px;height:140px;border-radius:50%;background:rgba(255,255,255,.04);"></div>
-          <div style="position:absolute;right:50px;bottom:-50px;width:180px;height:180px;border-radius:50%;background:rgba(255,255,255,.03);"></div>
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;position:relative;">
-            <img id="pt-cover-logo" src="" alt="ROMSA" style="height:22px;width:auto;">
-            <span id="pt-cot-badge" style="font-size:10px;font-weight:700;background:rgba(255,255,255,.15);padding:3px 10px;border-radius:20px;letter-spacing:.5px;"></span>
+        <!-- LEFT: Form -->
+        <div>
+          <div class="card" style="margin-bottom:14px;">
+            <div class="card-hd">
+              <span class="card-ttl">📝 Datos del Proyecto</span>
+              <span style="font-size:10px;color:var(--tx3);">Auto-guardado</span>
+            </div>
+            <div class="card-body" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+              <div style="grid-column:1/-1;"><label class="pt-lbl">Nombre del Proyecto *</label><input id="ptf-titulo" class="pt-input" oninput="ptActualizarCampo('titulo',this.value)"></div>
+              <div style="grid-column:1/-1;"><label class="pt-lbl">Sistema / Subtítulo</label><input id="ptf-subtitulo" class="pt-input" oninput="ptActualizarCampo('subtitulo',this.value)" placeholder="Ej: Sistema de Uretano Cementício"></div>
+              <div><label class="pt-lbl">Cliente / Empresa *</label><input id="ptf-cliente" class="pt-input" oninput="ptActualizarCampo('cliente',this.value)"></div>
+              <div><label class="pt-lbl">Atención (Contacto)</label><input id="ptf-atencion" class="pt-input" oninput="ptActualizarCampo('atencion',this.value)" placeholder="Ing. responsable"></div>
+              <div><label class="pt-lbl">Área (m²)</label><input id="ptf-area" class="pt-input" type="number" step="0.1" oninput="ptActualizarCampo('area',this.value)"></div>
+              <div><label class="pt-lbl">Cotización Vinculada</label><input id="ptf-cotizacion" class="pt-input" readonly style="background:var(--off);"></div>
+            </div>
           </div>
-          <div style="font-size:9px;letter-spacing:3px;opacity:.6;margin-bottom:6px;position:relative;">PLAN DE TRABAJO</div>
-          <div id="pt-titulo-display" style="font-size:19px;font-weight:900;line-height:1.2;margin-bottom:4px;position:relative;">—</div>
-          <div id="pt-subtitulo-display" style="font-size:12px;opacity:.7;position:relative;"></div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:18px;border-top:1px solid rgba(255,255,255,.15);padding-top:14px;position:relative;">
-            <div><div style="font-size:8px;letter-spacing:1.5px;opacity:.55;">CLIENTE</div><div id="pt-cliente-display" style="font-size:13px;font-weight:700;margin-top:2px;">—</div></div>
-            <div><div style="font-size:8px;letter-spacing:1.5px;opacity:.55;">ATENCIÓN</div><div id="pt-atencion-display" style="font-size:13px;font-weight:700;margin-top:2px;">—</div></div>
-            <div><div style="font-size:8px;letter-spacing:1.5px;opacity:.55;">ÁREA</div><div id="pt-area-display" style="font-size:13px;font-weight:700;margin-top:2px;">—</div></div>
-            <div><div style="font-size:8px;letter-spacing:1.5px;opacity:.55;">PERIODO</div><div id="pt-periodo-display" style="font-size:11px;font-weight:700;margin-top:2px;">—</div></div>
+
+          <div class="card" style="margin-bottom:14px;">
+            <div class="card-hd"><span class="card-ttl">📆 Fechas y Horarios</span></div>
+            <div class="card-body" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+              <div><label class="pt-lbl">Fecha Inicio</label><input id="ptf-inicio" class="pt-input" type="date" oninput="ptActualizarCampo('fechaInicio',this.value)"></div>
+              <div><label class="pt-lbl">Hora Inicio (típica)</label><input id="ptf-hora-inicio" class="pt-input" type="time" oninput="ptActualizarCampo('horaInicio',this.value)"></div>
+              <div><label class="pt-lbl">Fecha Fin</label><input id="ptf-fin" class="pt-input" type="date" oninput="ptActualizarCampo('fechaFin',this.value)"></div>
+              <div><label class="pt-lbl">Hora Fin (típica)</label><input id="ptf-hora-fin" class="pt-input" type="time" oninput="ptActualizarCampo('horaFin',this.value)"></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-hd"><span class="card-ttl">📄 Alcance y Notas</span></div>
+            <div class="card-body" style="display:grid;gap:10px;">
+              <div><label class="pt-lbl">Alcance del Proyecto</label><textarea id="ptf-alcance" class="pt-input" rows="4" style="resize:vertical;" oninput="ptActualizarCampo('alcance',this.value)" placeholder="Descripción detallada de los trabajos..."></textarea></div>
+              <div><label class="pt-lbl">Resumen Ejecutivo (página 2 del PDF)</label><textarea id="ptf-resumen" class="pt-input" rows="3" style="resize:vertical;" oninput="ptActualizarCampo('resumenEjecutivo',this.value)" placeholder="Resumen breve para el cliente: contexto, objetivo, beneficios..."></textarea></div>
+              <div><label class="pt-lbl">Nota Operativa</label><textarea id="ptf-nota" class="pt-input" rows="3" style="resize:vertical;" oninput="ptActualizarCampo('nota',this.value)" placeholder="Restricciones, recomendaciones de seguridad, condiciones del área..."></textarea></div>
+              <div><label class="pt-lbl">EPP base del proyecto</label><textarea id="ptf-epp" class="pt-input" rows="2" style="resize:vertical;" oninput="ptActualizarCampo('eppBase',this.value)" placeholder="Lentes, chaleco, botas, guantes de seguridad..."></textarea><div style="font-size:10px;color:var(--tx3);margin-top:3px;">Se usa como sugerencia al agregar actividades nuevas</div></div>
+            </div>
           </div>
         </div>
 
-        <!-- Editable form -->
-        <div class="card">
-          <div class="card-hd">
-            <span class="card-ttl">📝 Datos del Plan</span>
-            <span style="font-size:10px;color:var(--tx3);">Los cambios se guardan automáticamente</span>
+        <!-- RIGHT: Cover preview -->
+        <div>
+          <div style="font-size:11px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">📄 Vista previa de portada</div>
+          <div id="pt-cover" style="background:linear-gradient(135deg,#0B1F3A 0%,#1B3A6B 60%,#2A6FDB 100%);border-radius:14px;padding:30px 26px;color:#fff;position:relative;overflow:hidden;min-height:380px;box-shadow:0 8px 24px rgba(11,31,58,.2);">
+            <div style="position:absolute;right:-30px;top:-30px;width:160px;height:160px;border-radius:50%;background:rgba(255,255,255,.04);"></div>
+            <div style="position:absolute;right:50px;bottom:-50px;width:200px;height:200px;border-radius:50%;background:rgba(255,255,255,.03);"></div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;position:relative;">
+              <img id="pt-cover-logo" src="" alt="ROMSA" style="height:26px;width:auto;">
+              <span id="pt-cot-badge" style="font-size:10px;font-weight:700;background:rgba(255,255,255,.15);padding:4px 12px;border-radius:20px;letter-spacing:.5px;"></span>
+            </div>
+            <div style="font-size:10px;letter-spacing:3px;opacity:.6;margin-bottom:8px;position:relative;">PLAN DE TRABAJO</div>
+            <div id="pt-titulo-display" style="font-size:22px;font-weight:900;line-height:1.2;margin-bottom:6px;position:relative;">—</div>
+            <div id="pt-subtitulo-display" style="font-size:13px;opacity:.75;position:relative;"></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:24px;border-top:1px solid rgba(255,255,255,.15);padding-top:16px;position:relative;">
+              <div><div style="font-size:9px;letter-spacing:1.5px;opacity:.55;">CLIENTE</div><div id="pt-cliente-display" style="font-size:13px;font-weight:700;margin-top:2px;">—</div></div>
+              <div><div style="font-size:9px;letter-spacing:1.5px;opacity:.55;">ATENCIÓN</div><div id="pt-atencion-display" style="font-size:13px;font-weight:700;margin-top:2px;">—</div></div>
+              <div><div style="font-size:9px;letter-spacing:1.5px;opacity:.55;">ÁREA</div><div id="pt-area-display" style="font-size:13px;font-weight:700;margin-top:2px;">—</div></div>
+              <div><div style="font-size:9px;letter-spacing:1.5px;opacity:.55;">PERIODO</div><div id="pt-periodo-display" style="font-size:11px;font-weight:700;margin-top:2px;">—</div></div>
+            </div>
           </div>
-          <div class="card-body" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-            <div style="grid-column:1/-1;"><label class="pt-lbl">Nombre del Proyecto</label><input id="ptf-titulo" class="pt-input" oninput="ptActualizarCampo('titulo',this.value)"></div>
-            <div style="grid-column:1/-1;"><label class="pt-lbl">Sistema / Subtítulo</label><input id="ptf-subtitulo" class="pt-input" oninput="ptActualizarCampo('subtitulo',this.value)" placeholder="Ej: Sistema de Uretano Cementicio"></div>
-            <div><label class="pt-lbl">Cliente / Empresa</label><input id="ptf-cliente" class="pt-input" oninput="ptActualizarCampo('cliente',this.value)"></div>
-            <div><label class="pt-lbl">Atención</label><input id="ptf-atencion" class="pt-input" oninput="ptActualizarCampo('atencion',this.value)" placeholder="Ing. responsable"></div>
-            <div><label class="pt-lbl">Área (m²)</label><input id="ptf-area" class="pt-input" type="number" oninput="ptActualizarCampo('area',this.value)"></div>
-            <div><label class="pt-lbl">Cotización Ref.</label><input id="ptf-cotizacion" class="pt-input" readonly style="background:var(--off);"></div>
-            <div><label class="pt-lbl">Fecha Inicio</label><input id="ptf-inicio" class="pt-input" type="date" oninput="ptActualizarCampo('fechaInicio',this.value)"></div>
-            <div><label class="pt-lbl">Fecha Fin</label><input id="ptf-fin" class="pt-input" type="date" oninput="ptActualizarCampo('fechaFin',this.value)"></div>
-            <div style="grid-column:1/-1;"><label class="pt-lbl">Alcance del Proyecto</label><textarea id="ptf-alcance" class="pt-input" rows="3" style="resize:vertical;" oninput="ptActualizarCampo('alcance',this.value)" placeholder="Descripción del alcance..."></textarea></div>
-            <div style="grid-column:1/-1;"><label class="pt-lbl">Nota Operativa</label><textarea id="ptf-nota" class="pt-input" rows="2" style="resize:vertical;" oninput="ptActualizarCampo('nota',this.value)" placeholder="Restricciones, recomendaciones de seguridad..."></textarea></div>
+          <div style="background:var(--white);border:1px solid var(--g1);border-radius:10px;padding:14px;margin-top:12px;font-size:11px;color:var(--tx2);line-height:1.5;">
+            <div style="font-weight:700;color:var(--navy);margin-bottom:6px;font-size:12px;">📑 Estructura del PDF</div>
+            <div>• <b>Página 1:</b> Portada con datos generales</div>
+            <div>• <b>Página 2:</b> Resumen ejecutivo + alcance</div>
+            <div>• <b>Página 3+:</b> Cronograma por días con actividades</div>
+            <div>• <b>Última:</b> Diagrama de Gantt por horas</div>
           </div>
         </div>
 
       </div>
 
-      <!-- ETAPAS TAB -->
-      <div id="pt-etapas" class="pt-content" style="display:none;padding:14px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+      <!-- CRONOGRAMA TAB -->
+      <div id="pt-cronograma" class="pt-content" style="display:none;padding:20px 24px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
           <div>
-            <div style="font-size:14px;font-weight:800;color:var(--navy);">Etapas de Ejecución</div>
-            <div style="font-size:11px;color:var(--tx2);margin-top:2px;">Cada etapa contiene los días y actividades a ejecutar</div>
+            <div style="font-size:16px;font-weight:800;color:var(--navy);">Cronograma de Actividades</div>
+            <div style="font-size:11px;color:var(--tx2);margin-top:2px;">Define los días de trabajo con sus actividades, horarios y EPP</div>
           </div>
-          <button onclick="ptAgregarEtapa()" style="padding:7px 12px;background:var(--blue);color:#fff;border:none;border-radius:7px;font-size:11px;font-weight:700;cursor:pointer;font-family:var(--font);">+ Etapa</button>
+          <div style="display:flex;gap:8px;">
+            <button onclick="ptUsarPlantilla()" style="padding:8px 14px;background:var(--white);color:var(--blue);border:1px solid var(--blue);border-radius:7px;font-size:11px;font-weight:700;cursor:pointer;font-family:var(--font);">📋 Usar Plantilla</button>
+            <button onclick="ptAgregarDia()" style="padding:8px 14px;background:var(--blue);color:#fff;border:none;border-radius:7px;font-size:11px;font-weight:700;cursor:pointer;font-family:var(--font);">+ Día</button>
+          </div>
         </div>
-        <div id="pt-etapas-container"></div>
+        <div id="pt-dias-container"></div>
       </div>
 
       <!-- GANTT TAB -->
-      <div id="pt-gantt" class="pt-content" style="display:none;padding:14px;overflow-x:auto;">
-        <div style="font-size:14px;font-weight:800;color:var(--navy);margin-bottom:12px;">Diagrama de Gantt</div>
-        <div id="pt-gantt-container" style="min-width:500px;"></div>
+      <div id="pt-gantt" class="pt-content" style="display:none;padding:20px 24px;overflow-x:auto;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+          <div>
+            <div style="font-size:16px;font-weight:800;color:var(--navy);">Diagrama de Gantt — Timeline Horario</div>
+            <div style="font-size:11px;color:var(--tx2);margin-top:2px;">Visualización por franjas horarias como en el PDF de ejemplo</div>
+          </div>
+        </div>
+        <div id="pt-gantt-container"></div>
+      </div>
+
+      <!-- PREVIEW TAB -->
+      <div id="pt-preview" class="pt-content" style="display:none;padding:20px 24px;background:#E5E9F2;">
+        <div style="font-size:12px;color:var(--tx2);text-align:center;margin-bottom:14px;">↓ Vista previa exacta del PDF final ↓</div>
+        <div id="pt-preview-container"></div>
       </div>
 
     </div>
@@ -2763,17 +2819,39 @@ body.in-costeo #app{
   </div><!-- /screen-plantrabajo -->
 
   <!-- MODAL: Nuevo plan desde cotización -->
-  <div id="pt-modal-nuevo" style="display:none;position:fixed;inset:0;background:rgba(11,31,58,.7);z-index:9999;align-items:center;justify-content:center;padding:20px;">
-    <div style="background:#fff;border-radius:14px;max-width:520px;width:100%;max-height:80vh;display:flex;flex-direction:column;overflow:hidden;">
-      <div style="padding:16px 20px;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:space-between;">
-        <div><div style="font-size:14px;font-weight:800;">Nuevo Plan de Trabajo</div><div style="font-size:10px;opacity:.6;margin-top:2px;">Selecciona la cotización base</div></div>
-        <button onclick="ptCerrarModal()" style="background:rgba(255,255,255,.1);color:#fff;border:none;border-radius:6px;width:28px;height:28px;cursor:pointer;font-size:14px;">×</button>
+  <div id="pt-modal-nuevo" class="pt-modal-bg" style="display:none;">
+    <div class="pt-modal-box" style="max-width:560px;">
+      <div class="pt-modal-hd">
+        <div><div style="font-size:15px;font-weight:800;">Nuevo Plan de Trabajo</div><div style="font-size:11px;opacity:.6;margin-top:2px;">Selecciona la cotización base (recomendado)</div></div>
+        <button onclick="ptCerrarModal('pt-modal-nuevo')" class="pt-modal-close">×</button>
       </div>
-      <input id="pt-modal-search" oninput="ptModalFiltrar(this.value)" placeholder="🔍 Buscar cotización..." style="margin:14px 20px 8px;padding:9px 12px;border:1px solid var(--g1);border-radius:7px;font-size:13px;outline:none;font-family:var(--font);">
-      <div id="pt-modal-list" style="flex:1;overflow-y:auto;padding:0 12px 14px;"></div>
-      <div style="padding:10px 20px;background:var(--off);border-top:1px solid var(--g1);text-align:right;">
-        <button onclick="ptModalCrearVacio()" style="background:var(--g1);color:var(--tx);border:none;border-radius:7px;padding:8px 14px;font-size:11px;font-weight:700;cursor:pointer;font-family:var(--font);">+ Crear sin cotización</button>
+      <input id="pt-modal-search" oninput="ptModalFiltrar(this.value)" placeholder="🔍 Buscar cotización..." style="margin:16px 22px 8px;padding:10px 14px;border:1px solid var(--g1);border-radius:8px;font-size:13px;outline:none;font-family:var(--font);">
+      <div id="pt-modal-list" style="flex:1;overflow-y:auto;padding:0 14px 14px;"></div>
+      <div style="padding:12px 22px;background:var(--off);border-top:1px solid var(--g1);text-align:right;">
+        <button onclick="ptModalCrearVacio()" style="background:var(--g1);color:var(--tx);border:none;border-radius:7px;padding:9px 16px;font-size:11px;font-weight:700;cursor:pointer;font-family:var(--font);">+ Crear sin cotización</button>
       </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Usar plantilla -->
+  <div id="pt-modal-plantilla" class="pt-modal-bg" style="display:none;">
+    <div class="pt-modal-box" style="max-width:560px;">
+      <div class="pt-modal-hd">
+        <div><div style="font-size:15px;font-weight:800;">Usar Plantilla</div><div style="font-size:11px;opacity:.6;margin-top:2px;">Las actividades se agregarán al plan actual</div></div>
+        <button onclick="ptCerrarModal('pt-modal-plantilla')" class="pt-modal-close">×</button>
+      </div>
+      <div id="pt-modal-plantilla-list" style="flex:1;overflow-y:auto;padding:18px 22px;"></div>
+    </div>
+  </div>
+
+  <!-- MODAL: Gestionar plantillas (admin) -->
+  <div id="pt-modal-plantillas" class="pt-modal-bg" style="display:none;">
+    <div class="pt-modal-box" style="max-width:700px;max-height:85vh;">
+      <div class="pt-modal-hd">
+        <div><div style="font-size:15px;font-weight:800;">Plantillas Oficiales</div><div style="font-size:11px;opacity:.6;margin-top:2px;" id="pt-plantillas-subtitle">Solo administradores pueden editar</div></div>
+        <button onclick="ptCerrarModal('pt-modal-plantillas')" class="pt-modal-close">×</button>
+      </div>
+      <div id="pt-plantillas-list" style="flex:1;overflow-y:auto;padding:18px 22px;"></div>
     </div>
   </div>
 
@@ -3278,7 +3356,6 @@ function goScreen(n){
   }
   if(n==="plantrabajo"){
     document.getElementById("app")?.classList.add("wide-mode");
-    // Always start at list view when entering module
     var det=document.getElementById("pt-view-detalle");
     var lista=document.getElementById("pt-view-lista");
     if(det) det.style.display="none";
@@ -3397,6 +3474,8 @@ function abrirObra(id){
   document.querySelectorAll(".dtab").forEach((b,i)=>b.classList.toggle("active",i===0));
   renderResumen(o);
   updateClienteBtn();
+  var ptLink = document.getElementById("obra-pt-link");
+  if(ptLink) ptLink.style.display = (o && o.cotizacionId) ? "flex" : "none";
   loadBaPairs(o.id);
   // Cargar updates desde subcolección
   loadUpdates(o.id).then(()=>{ renderUpdFeed(getO()); renderResumen(getO()); });
@@ -16080,31 +16159,52 @@ body { font-family: 'Inter', -apple-system, system-ui, sans-serif; background: #
   .toolbar { display: none !important; }
 }
 
-/* ── PLAN DE TRABAJO v2 ── */
-.pt-tab{transition:color .2s,border-color .2s;}
+/* ── PLAN DE TRABAJO v3 ── */
+.pt-tab{flex-shrink:0;padding:12px 20px;background:none;border:none;border-bottom:2px solid transparent;color:#3A5A7A;font-size:10px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;cursor:pointer;font-family:var(--font);transition:color .15s,border-color .15s;}
+.pt-tab:hover{color:#6580A0;}
 .pt-tab.active{color:var(--sky)!important;border-bottom-color:var(--blue)!important;}
-.pt-lbl{display:block;font-size:10px;font-weight:700;color:var(--tx2);letter-spacing:.4px;text-transform:uppercase;margin-bottom:3px;}
-.pt-input{width:100%;padding:8px 10px;border:1px solid var(--g1);border-radius:7px;font-size:13px;font-family:var(--font);color:var(--tx);background:var(--white);outline:none;box-sizing:border-box;transition:border-color .15s;}
-.pt-input:focus{border-color:var(--blue);}
+.pt-lbl{display:block;font-size:10px;font-weight:700;color:var(--tx2);letter-spacing:.4px;text-transform:uppercase;margin-bottom:4px;}
+.pt-input{width:100%;padding:9px 11px;border:1px solid var(--g1);border-radius:7px;font-size:13px;font-family:var(--font);color:var(--tx);background:var(--white);outline:none;box-sizing:border-box;transition:border-color .15s,box-shadow .15s;}
+.pt-input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(30,111,217,.1);}
 .pt-input[readonly]{color:var(--tx2);cursor:not-allowed;}
-.pt-list-card{background:var(--white);border:1px solid var(--g1);border-radius:10px;padding:13px 14px;margin-bottom:8px;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:12px;}
-.pt-list-card:active{transform:scale(.98);border-color:var(--blue);}
-.pt-etapa-block{background:var(--white);border:1px solid var(--g1);border-radius:10px;margin-bottom:14px;overflow:hidden;box-shadow:var(--shadow);}
-.pt-etapa-hd{padding:10px 14px;display:flex;align-items:center;gap:8px;color:#fff;cursor:pointer;}
-.pt-etapa-hd input{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.2);color:#fff;font-weight:700;border-radius:5px;padding:4px 8px;font-size:13px;font-family:var(--font);outline:none;}
-.pt-etapa-hd input::placeholder{color:rgba(255,255,255,.5);}
-.pt-etapa-body{padding:12px;}
-.pt-dia-block{background:var(--off);border-radius:8px;padding:10px;margin-bottom:10px;border:1px solid var(--off2);}
-.pt-act-row{display:grid;grid-template-columns:1.2fr 1.5fr .8fr 1fr 32px;gap:6px;align-items:center;padding:6px 0;border-bottom:1px dashed var(--g1);}
-.pt-act-row:last-of-type{border-bottom:none;}
-.pt-act-row input{width:100%;padding:6px 8px;border:1px solid var(--g1);border-radius:5px;font-size:11px;font-family:var(--font);background:#fff;outline:none;box-sizing:border-box;}
-.pt-act-row input:focus{border-color:var(--blue);}
-.pt-mini-btn{background:transparent;border:none;color:var(--tx3);cursor:pointer;font-size:14px;padding:4px;border-radius:4px;}
-.pt-mini-btn:hover{background:var(--off2);color:var(--red);}
-.pt-gantt-bar{height:18px;border-radius:4px;box-shadow:0 1px 3px rgba(0,0,0,.15);}
-@media(max-width:600px){
-  .pt-act-row{grid-template-columns:1fr;gap:4px;padding:8px 0;}
-  .pt-act-row input{font-size:12px;}
+
+.pt-list-card{background:var(--white);border:1px solid var(--g1);border-radius:11px;padding:15px 18px;margin-bottom:9px;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:14px;}
+.pt-list-card:hover{border-color:var(--blue);transform:translateY(-1px);box-shadow:0 4px 12px rgba(30,111,217,.1);}
+
+.pt-dia-block{background:var(--white);border:1px solid var(--g1);border-radius:11px;margin-bottom:14px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.04);}
+.pt-dia-hd{padding:11px 16px;display:flex;align-items:center;gap:10px;background:linear-gradient(90deg,var(--navy),var(--blue));color:#fff;}
+.pt-dia-hd input{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.2);color:#fff;font-weight:600;border-radius:5px;padding:5px 9px;font-size:12px;font-family:var(--font);outline:none;}
+.pt-dia-hd input::placeholder{color:rgba(255,255,255,.5);}
+.pt-dia-hd input:focus{background:rgba(255,255,255,.22);border-color:rgba(255,255,255,.4);}
+.pt-dia-body{padding:14px;background:#FAFBFD;}
+
+.pt-act-table{width:100%;border-collapse:collapse;font-size:12px;background:#fff;border-radius:8px;overflow:hidden;border:1px solid var(--g1);}
+.pt-act-table thead th{background:var(--off);padding:9px 11px;text-align:left;font-size:10px;font-weight:700;color:var(--tx2);letter-spacing:.4px;text-transform:uppercase;border-bottom:1px solid var(--g1);}
+.pt-act-table tbody td{padding:6px 8px;border-bottom:1px solid var(--off2);vertical-align:top;}
+.pt-act-table tbody tr:last-child td{border-bottom:none;}
+.pt-act-table input{width:100%;padding:7px 9px;border:1px solid transparent;border-radius:5px;font-size:12px;font-family:var(--font);background:transparent;outline:none;box-sizing:border-box;transition:all .15s;color:var(--tx);}
+.pt-act-table input:hover{background:var(--off);}
+.pt-act-table input:focus{background:#fff;border-color:var(--blue);box-shadow:0 0 0 2px rgba(30,111,217,.15);}
+
+.pt-mini-btn{background:transparent;border:none;color:var(--tx3);cursor:pointer;font-size:14px;padding:5px;border-radius:5px;transition:all .12s;}
+.pt-mini-btn:hover{background:#FEE2E2;color:#DC2626;}
+
+.pt-gantt-bar{height:22px;border-radius:4px;box-shadow:0 1px 3px rgba(0,0,0,.18);position:relative;display:flex;align-items:center;justify-content:center;color:#fff;font-size:9px;font-weight:700;text-shadow:0 1px 2px rgba(0,0,0,.3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 4px;}
+
+.pt-modal-bg{position:fixed;inset:0;background:rgba(11,31,58,.72);z-index:9999;align-items:center;justify-content:center;padding:24px;}
+.pt-modal-bg[style*="display: flex"],.pt-modal-bg[style*="display:flex"]{display:flex!important;}
+.pt-modal-box{background:#fff;border-radius:16px;width:100%;max-height:80vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.3);}
+.pt-modal-hd{padding:18px 22px;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:space-between;}
+.pt-modal-close{background:rgba(255,255,255,.1);color:#fff;border:none;border-radius:7px;width:32px;height:32px;cursor:pointer;font-size:16px;}
+.pt-modal-close:hover{background:rgba(255,255,255,.2);}
+
+.pt-pdf-page{background:#fff;padding:40px 50px;margin:0 auto 16px;width:794px;min-height:1123px;box-shadow:0 4px 16px rgba(0,0,0,.15);box-sizing:border-box;font-family:var(--font);position:relative;color:#0B1F3A;}
+.pt-pdf-page .pdf-header{display:flex;align-items:center;justify-content:space-between;padding-bottom:14px;border-bottom:2px solid #1B3A6B;margin-bottom:24px;}
+.pt-pdf-page .pdf-header img{height:32px;}
+.pt-pdf-page .pdf-footer{position:absolute;bottom:24px;left:50px;right:50px;display:flex;justify-content:space-between;align-items:center;padding-top:12px;border-top:1px solid #E5E9F2;font-size:9px;color:#6B7A8D;}
+
+@media print {
+  .pt-pdf-page{box-shadow:none;page-break-after:always;}
 }
 
 </style>
@@ -16236,11 +16336,7 @@ function distribuir(){
     // Si cabe en la página actual, agregar
     if(actualAlto + h <= CUERPO_DISPONIBLE){
       actual.push(html);
-      actualAlto
-
-
-
- += h;
+      actualAlto += h;
     } else {
       // No cabe → cerrar página actual y empezar una nueva
       paginas.push(actual);
@@ -16304,53 +16400,104 @@ window.rpGenerarPdf = rpGenerarPdf;
 window.rpGenerarPdfDirecto = rpGenerarPdfDirecto;
 
 
-
-
-
-
 // ═══════════════════════════════════════════
-// PLAN DE TRABAJO v2 — Linked to cotizaciones
+// PLAN DE TRABAJO v3
+// Templates · Hourly Gantt · PDF Export · Per-cotización link
 // ═══════════════════════════════════════════
 var _ptPlanes = [];
+var _ptPlantillas = [];
 var _ptActual = null;
-var _ptUnsavedTimer = null;
+var _ptSaveTimer = null;
 var _ptListaFiltro = "";
 var _ptModalFiltro = "";
 
-// Firebase reference
-function _ptRef(){
-  if(typeof db !== "undefined" && db) return db.collection("planes_trabajo");
-  return null;
+// Time grid for Gantt (24h grid)
+var _ptHoras = [];
+for(var h=6; h<=22; h++) _ptHoras.push(h);
+
+function _ptRef(){ return (typeof db!=="undefined"&&db) ? db.collection("planes_trabajo") : null; }
+function _ptPlantillasRef(){ return (typeof db!=="undefined"&&db) ? db.collection("planes_trabajo_plantillas") : null; }
+
+function _ptEsAdmin(){ return (typeof isAdmin!=="undefined" && isAdmin) || (typeof currentUser!=="undefined" && currentUser && currentUser.email==="lzuniga@romsaindustrial.com"); }
+
+function _ptPuedeEditar(plan){
+  if(!plan) return false;
+  if(_ptEsAdmin()) return true;
+  if(!currentUser) return false;
+  return plan.creadoPorUid === currentUser.uid;
 }
 
-// ────────── LISTA ──────────
+// Built-in templates
+var _ptPlantillasBuiltIn = [
+  {
+    id: "tpl_uretano",
+    nombre: "Aplicación de Uretano Cementício",
+    descripcion: "Sistema de uretano cementício a 6mm — proceso típico de 2 días",
+    builtIn: true,
+    dias: [
+      { titulo: "Día 1 — Preparación y retiro", actividades: [
+        { accion: "Llegada e instalación", descripcion: "Preparación de herramienta, equipo y conexiones", horario: "10:00 – 11:00", epp: "Lentes, chaleco, botas, guantes" },
+        { accion: "Retiro de recubrimiento existente", descripcion: "Demolición con rotomartillo, bafer y disco de corte", horario: "11:00 – 14:00", epp: "Lentes, chaleco, botas, guantes" },
+        { accion: "Preparación de superficie", descripcion: "Escarificado y aspirado del concreto base", horario: "14:00 – 18:00", epp: "Lentes, chaleco, botas, guantes" },
+        { accion: "Secado y limpieza total", descripcion: "Aspirado final y secado con antorcha + thinner", horario: "18:00 – 19:00", epp: "Lentes, chaleco, botas, guantes" }
+      ]},
+      { titulo: "Día 2 — Aplicación y fraguado", actividades: [
+        { accion: "Instalación en área", descripcion: "Preparación de herramienta y equipo", horario: "10:00 – 11:00", epp: "Lentes, chaleco, botas, guantes" },
+        { accion: "Aplicación uretano 6mm", descripcion: "Mezcla y aplicación de Flowfresh RT", horario: "11:00 – 15:00", epp: "Lentes, chaleco, botas, guantes, careta" },
+        { accion: "Fraguado de material", descripcion: "Curado inicial. Tráfico ligero +16hrs", horario: "15:00 – 07:00 (+1)", epp: "Área restringida" }
+      ]}
+    ]
+  },
+  {
+    id: "tpl_epoxico",
+    nombre: "Aplicación de Sistema Epóxico",
+    descripcion: "Recubrimiento epóxico autonivelante — 3 días con curado",
+    builtIn: true,
+    dias: [
+      { titulo: "Día 1 — Preparación de superficie", actividades: [
+        { accion: "Llegada e instalación", descripcion: "Preparación de herramienta y conexiones", horario: "08:00 – 09:00", epp: "Lentes, chaleco, botas, guantes" },
+        { accion: "Preparación mecánica", descripcion: "Escarificado/granallado del sustrato", horario: "09:00 – 14:00", epp: "Lentes, chaleco, botas, guantes, mascarilla" },
+        { accion: "Aspirado y limpieza", descripcion: "Limpieza total del polvo y residuos", horario: "14:00 – 16:00", epp: "Lentes, chaleco, botas, guantes" }
+      ]},
+      { titulo: "Día 2 — Primer y autonivelante", actividades: [
+        { accion: "Aplicación de primer", descripcion: "Aplicación de imprimación epóxica", horario: "08:00 – 11:00", epp: "Lentes, chaleco, botas, guantes, careta" },
+        { accion: "Aplicación epóxico autonivelante", descripcion: "Vaciado y nivelado del sistema epóxico", horario: "13:00 – 18:00", epp: "Lentes, chaleco, botas, guantes, careta" }
+      ]},
+      { titulo: "Día 3 — Acabado y fraguado", actividades: [
+        { accion: "Inspección y retoques", descripcion: "Verificación de homogeneidad", horario: "08:00 – 10:00", epp: "Lentes, chaleco, botas, guantes" },
+        { accion: "Curado / entrega", descripcion: "Curado final 24h. Entrega de área", horario: "10:00 – 08:00 (+1)", epp: "Área restringida" }
+      ]}
+    ]
+  }
+];
+
+// ────────── DATA ──────────
 function ptCargarLista(){
   var ref = _ptRef();
-  if(!ref || !currentUser){
-    ptRenderLista();
-    return;
-  }
-  var q = (typeof isAdmin !== "undefined" && isAdmin)
-    ? ref.orderBy("ts","desc")
-    : ref.where("creadoPorUid","==",currentUser.uid).orderBy("ts","desc");
+  if(!ref || !currentUser){ ptRenderLista(); return; }
+  var q = _ptEsAdmin() ? ref.orderBy("ts","desc") : ref.where("creadoPorUid","==",currentUser.uid).orderBy("ts","desc");
   q.onSnapshot(function(snap){
     _ptPlanes = snap.docs.map(function(d){ return d.data(); });
     ptRenderLista();
-  }, function(err){
-    console.warn("Plan trabajo load error:", err);
-    ptRenderLista();
-  });
+  }, function(err){ console.warn("PT load error:",err); ptRenderLista(); });
 }
 
-function ptFiltrarLista(v){
-  _ptListaFiltro = (v||"").toLowerCase().trim();
-  ptRenderLista();
+function ptCargarPlantillas(){
+  var ref = _ptPlantillasRef();
+  if(!ref){ _ptPlantillas = _ptPlantillasBuiltIn.slice(); return; }
+  ref.get().then(function(snap){
+    var custom = snap.docs.map(function(d){ return d.data(); });
+    _ptPlantillas = _ptPlantillasBuiltIn.concat(custom);
+  }).catch(function(){ _ptPlantillas = _ptPlantillasBuiltIn.slice(); });
 }
+
+// ────────── LISTA ──────────
+function ptFiltrarLista(v){ _ptListaFiltro = (v||"").toLowerCase().trim(); ptRenderLista(); }
 
 function ptRenderLista(){
   var cont = document.getElementById("pt-lista-container");
   if(!cont) return;
-  var lista = _ptPlanes;
+  var lista = _ptPlanes.slice();
   if(_ptListaFiltro){
     lista = lista.filter(function(p){
       var t = ((p.titulo||"")+" "+(p.cliente||"")+" "+(p.cotizacionFolio||"")+" "+(p.atencion||"")).toLowerCase();
@@ -16358,55 +16505,60 @@ function ptRenderLista(){
     });
   }
   if(!lista.length){
-    cont.innerHTML = '<div style="text-align:center;padding:40px 20px;color:var(--tx3);font-size:13px;"><div style="font-size:42px;margin-bottom:10px;opacity:.4;">📋</div>'
-      +(_ptListaFiltro?'Sin resultados':'Aún no hay planes de trabajo. Crea uno desde una cotización.')+'</div>';
+    cont.innerHTML = '<div style="text-align:center;padding:60px 20px;color:var(--tx3);font-size:13px;background:var(--white);border-radius:12px;border:2px dashed var(--g1);">'
+      +'<div style="font-size:52px;margin-bottom:12px;opacity:.3;">📋</div>'
+      +'<div style="font-size:14px;color:var(--tx2);margin-bottom:6px;font-weight:700;">'+(_ptListaFiltro?'Sin resultados':'Aún no hay planes de trabajo')+'</div>'
+      +'<div style="font-size:12px;color:var(--tx3);">'+(_ptListaFiltro?'Prueba con otra búsqueda':'Crea el primero desde una cotización con el botón "+ Nuevo Plan"')+'</div>'
+      +'</div>';
     return;
   }
   var html = "";
   lista.forEach(function(p){
-    var estado = p.estado || "borrador";
-    var estadoColor = estado==="enviado"?"#10B981":estado==="aprobado"?"#1B3A6B":"#94A3B8";
-    var estadoLbl = estado==="enviado"?"Enviado":estado==="aprobado"?"Aprobado":"Borrador";
-    var nEtapas = (p.etapas||[]).length;
+    var nDias = (p.dias||[]).length;
+    var fecha = p.fechaInicio ? p.fechaInicio + (p.fechaFin?' → '+p.fechaFin:'') : 'Sin fechas';
+    var puedeEditar = _ptPuedeEditar(p);
     html += '<div class="pt-list-card" onclick="ptAbrirPlan(\''+p.id+'\')">'
-      + '<div style="width:40px;height:40px;border-radius:9px;background:var(--blue-pale);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">📋</div>'
+      + '<div style="width:46px;height:46px;border-radius:10px;background:linear-gradient(135deg,#1B3A6B,#2A6FDB);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;color:#fff;">📋</div>'
       + '<div style="flex:1;overflow:hidden;">'
-        + '<div style="font-size:13px;font-weight:700;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+escapeHtml(p.titulo||"Sin título")+'</div>'
-        + '<div style="font-size:11px;color:var(--tx2);margin-top:2px;">'+escapeHtml(p.cliente||"—")
-        + (p.cotizacionFolio?' · <span style="color:var(--blue);font-weight:600;">'+escapeHtml(p.cotizacionFolio)+'</span>':'')
+        + '<div style="font-size:14px;font-weight:700;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+escapeHtml(p.titulo||"Sin título")+'</div>'
+        + '<div style="font-size:11px;color:var(--tx2);margin-top:2px;">'+escapeHtml(p.cliente||"Sin cliente")
+        + (p.cotizacionFolio?' · <span style="color:var(--blue);font-weight:700;">📎 '+escapeHtml(p.cotizacionFolio)+'</span>':'')
         + '</div>'
-        + '<div style="display:flex;gap:8px;align-items:center;margin-top:4px;">'
-          + '<span style="font-size:9px;background:'+estadoColor+';color:#fff;padding:2px 7px;border-radius:10px;font-weight:700;letter-spacing:.3px;">'+estadoLbl+'</span>'
-          + '<span style="font-size:10px;color:var(--tx3);">'+nEtapas+' etapa'+(nEtapas===1?'':'s')+'</span>'
+        + '<div style="display:flex;gap:12px;align-items:center;margin-top:5px;font-size:10px;color:var(--tx3);">'
+          + '<span>📅 '+escapeHtml(fecha)+'</span>'
+          + '<span>📍 '+nDias+' día'+(nDias===1?'':'s')+'</span>'
+          + (p.area?'<span>📐 '+escapeHtml(p.area)+' m²</span>':'')
         + '</div>'
       + '</div>'
+      + (!puedeEditar?'<span style="font-size:9px;color:var(--tx3);background:var(--off);padding:3px 8px;border-radius:10px;font-weight:600;">Solo lectura</span>':'')
       + '<div style="color:var(--tx3);font-size:18px;">›</div>'
       + '</div>';
   });
   cont.innerHTML = html;
 }
 
-// ────────── MODAL NUEVO ──────────
+// ────────── MODAL: Nuevo desde cotización ──────────
 function ptNuevoDesdeCotizacion(){
   _ptModalFiltro = "";
-  document.getElementById("pt-modal-search").value = "";
+  var s = document.getElementById("pt-modal-search"); if(s) s.value = "";
   document.getElementById("pt-modal-nuevo").style.display = "flex";
   ptRenderModalCotizaciones();
 }
 
-function ptCerrarModal(){
-  document.getElementById("pt-modal-nuevo").style.display = "none";
+function ptCerrarModal(id){
+  var el = document.getElementById(id || "pt-modal-nuevo");
+  if(el) el.style.display = "none";
 }
 
-function ptModalFiltrar(v){
-  _ptModalFiltro = (v||"").toLowerCase().trim();
-  ptRenderModalCotizaciones();
-}
+function ptModalFiltrar(v){ _ptModalFiltro = (v||"").toLowerCase().trim(); ptRenderModalCotizaciones(); }
 
 function ptRenderModalCotizaciones(){
   var cont = document.getElementById("pt-modal-list");
   if(!cont) return;
-  var cots = (typeof cotizaciones !== "undefined" && cotizaciones) ? cotizaciones.slice() : [];
+  var cots = (typeof cotizaciones!=="undefined" && cotizaciones) ? cotizaciones.slice() : [];
+  // Filter out cotizaciones that already have a plan
+  var withPlan = {};
+  _ptPlanes.forEach(function(p){ if(p.cotizacionId) withPlan[p.cotizacionId]=p.id; });
   if(_ptModalFiltro){
     cots = cots.filter(function(c){
       var t = ((c.empresa||"")+" "+(c.folio||"")+" "+(c.proyecto||"")).toLowerCase();
@@ -16414,60 +16566,55 @@ function ptRenderModalCotizaciones(){
     });
   }
   if(!cots.length){
-    cont.innerHTML = '<div style="text-align:center;padding:30px 14px;color:var(--tx3);font-size:12px;">'
-      +(_ptModalFiltro?'Sin resultados':'No hay cotizaciones disponibles')+'</div>';
+    cont.innerHTML = '<div style="text-align:center;padding:30px 14px;color:var(--tx3);font-size:12px;">'+(_ptModalFiltro?'Sin resultados':'No hay cotizaciones disponibles')+'</div>';
     return;
   }
   var html = "";
-  cots.slice(0,30).forEach(function(c){
-    html += '<div onclick="ptModalSeleccionar(\''+c.id+'\')" style="padding:10px 12px;border:1px solid var(--g1);border-radius:8px;margin-bottom:6px;cursor:pointer;transition:all .15s;" onmouseover="this.style.borderColor=\'var(--blue)\';" onmouseout="this.style.borderColor=\'var(--g1)\';">'
-      + '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">'
-        + '<div style="font-size:12px;font-weight:700;color:var(--navy);">'+escapeHtml(c.empresa||"Sin empresa")+'</div>'
-        + '<div style="font-size:10px;color:var(--blue);font-weight:700;background:var(--blue-pale);padding:2px 7px;border-radius:10px;white-space:nowrap;">'+escapeHtml(c.folio||"")+'</div>'
+  cots.slice(0,40).forEach(function(c){
+    var existePlan = withPlan[c.id];
+    html += '<div onclick="'+(existePlan?'ptAbrirPlan(\''+existePlan+'\');ptCerrarModal(\'pt-modal-nuevo\');':'ptModalSeleccionar(\''+c.id+'\')')+'" style="padding:12px 14px;border:1px solid var(--g1);border-radius:9px;margin-bottom:7px;cursor:pointer;transition:all .12s;'+(existePlan?'background:#FFF8E1;':'')+'" onmouseover="this.style.borderColor=\'var(--blue)\';this.style.transform=\'translateY(-1px)\';" onmouseout="this.style.borderColor=\'var(--g1)\';this.style.transform=\'\';">'
+      + '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:4px;">'
+        + '<div style="font-size:13px;font-weight:700;color:var(--navy);">'+escapeHtml(c.empresa||"Sin empresa")+'</div>'
+        + '<div style="font-size:10px;color:var(--blue);font-weight:700;background:var(--blue-pale);padding:3px 9px;border-radius:10px;white-space:nowrap;">'+escapeHtml(c.folio||"")+'</div>'
       + '</div>'
-      + '<div style="font-size:11px;color:var(--tx2);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+escapeHtml(c.proyecto||c.descripcion||"")+'</div>'
+      + '<div style="font-size:11px;color:var(--tx2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+escapeHtml(c.proyecto||c.descripcion||"Sin proyecto")+'</div>'
+      + (existePlan?'<div style="font-size:10px;color:#D97706;font-weight:700;margin-top:5px;">⚠ Ya tiene un plan — clic para abrirlo</div>':'')
       + '</div>';
   });
   cont.innerHTML = html;
 }
 
 function ptModalSeleccionar(cotId){
-  var cot = (typeof cotizaciones !== "undefined") ? cotizaciones.find(function(c){return c.id===cotId;}) : null;
+  var cot = (typeof cotizaciones!=="undefined") ? cotizaciones.find(function(c){return c.id===cotId;}) : null;
   if(!cot){ showToast("⚠️ Cotización no encontrada"); return; }
-
-  var plan = {
-    id: "pt_"+Date.now(),
-    ts: Date.now(),
-    creadoPorUid: currentUser ? currentUser.uid : null,
-    creadoPor: currentUser ? (currentUser.email||"") : "",
-    estado: "borrador",
-    titulo: cot.proyecto || ("Plan de trabajo — "+(cot.empresa||"")),
-    subtitulo: "",
-    alcance: cot.descripcion || "",
-    cliente: cot.empresa || "",
-    atencion: cot.atencion || "",
-    area: cot.area || "",
-    cotizacionId: cot.id,
-    cotizacionFolio: cot.folio || "",
-    fechaInicio: new Date().toISOString().slice(0,10),
-    fechaFin: "",
-    nota: "El área deberá permanecer libre de tránsito durante la ejecución. Respetar tiempos de fraguado.",
-    etapas: []
-  };
-  ptCerrarModal();
+  var plan = _ptCrearPlanVacio();
+  plan.titulo = cot.proyecto || ("Plan de trabajo — "+(cot.empresa||""));
+  plan.alcance = cot.descripcion || "";
+  plan.cliente = cot.empresa || "";
+  plan.atencion = cot.atencion || "";
+  plan.area = cot.area || "";
+  plan.cotizacionId = cot.id;
+  plan.cotizacionFolio = cot.folio || "";
+  ptCerrarModal("pt-modal-nuevo");
   ptGuardar(plan, function(){ ptAbrirPlan(plan.id); });
 }
 
 function ptModalCrearVacio(){
-  var plan = {
-    id: "pt_"+Date.now(),
+  var plan = _ptCrearPlanVacio();
+  ptCerrarModal("pt-modal-nuevo");
+  ptGuardar(plan, function(){ ptAbrirPlan(plan.id); });
+}
+
+function _ptCrearPlanVacio(){
+  return {
+    id: "pt_"+Date.now()+"_"+Math.random().toString(36).slice(2,6),
     ts: Date.now(),
     creadoPorUid: currentUser ? currentUser.uid : null,
-    creadoPor: currentUser ? (currentUser.email||"") : "",
-    estado: "borrador",
+    creadoPor: currentUser ? (currentUser.email||currentUser.displayName||"") : "",
     titulo: "Nuevo Plan de Trabajo",
     subtitulo: "",
     alcance: "",
+    resumenEjecutivo: "",
     cliente: "",
     atencion: "",
     area: "",
@@ -16475,20 +16622,26 @@ function ptModalCrearVacio(){
     cotizacionFolio: "",
     fechaInicio: new Date().toISOString().slice(0,10),
     fechaFin: "",
-    nota: "",
-    etapas: []
+    horaInicio: "08:00",
+    horaFin: "17:00",
+    nota: "El área deberá permanecer libre de tránsito durante la ejecución. Respetar tiempos de fraguado.",
+    eppBase: "Lentes, chaleco, botas y guantes de seguridad",
+    dias: []
   };
-  ptCerrarModal();
-  ptGuardar(plan, function(){ ptAbrirPlan(plan.id); });
 }
 
-// ────────── ABRIR / GUARDAR ──────────
+// ────────── GUARDAR / CARGAR ──────────
 function ptAbrirPlan(id){
   var p = _ptPlanes.find(function(x){return x.id===id;});
   if(!p) return;
   _ptActual = p;
   document.getElementById("pt-view-lista").style.display = "none";
   document.getElementById("pt-view-detalle").style.display = "block";
+  // Show duplicar/template buttons if admin
+  var btnDup = document.getElementById("pt-btn-duplicar");
+  var btnTpl = document.getElementById("pt-btn-templ");
+  if(btnDup) btnDup.style.display = _ptEsAdmin() ? "" : "none";
+  if(btnTpl) btnTpl.style.display = _ptEsAdmin() ? "" : "none";
   ptRenderDetalle();
 }
 
@@ -16501,15 +16654,16 @@ function ptVolverLista(){
 function ptGuardar(plan, cb){
   if(!plan) plan = _ptActual;
   if(!plan) return;
+  plan.actualizadoTs = Date.now();
   var ref = _ptRef();
   if(ref){
     ref.doc(plan.id).set(plan).then(function(){
-      // local update
       var idx = _ptPlanes.findIndex(function(x){return x.id===plan.id;});
       if(idx>=0) _ptPlanes[idx]=plan; else _ptPlanes.unshift(plan);
+      _ptIndicador(true);
       if(cb) cb();
     }).catch(function(e){
-      console.warn("Save error:",e);
+      console.warn("PT save error:",e);
       showToast("⚠️ Error al guardar");
       if(cb) cb();
     });
@@ -16520,11 +16674,18 @@ function ptGuardar(plan, cb){
   }
 }
 
+function _ptIndicador(ok){
+  var el = document.getElementById("pt-save-indicator");
+  if(!el) return;
+  el.style.opacity = "1";
+  setTimeout(function(){ el.style.opacity = "0"; }, 1200);
+}
+
 function ptGuardarDebounced(){
-  if(_ptUnsavedTimer) clearTimeout(_ptUnsavedTimer);
-  _ptUnsavedTimer = setTimeout(function(){
-    ptGuardar(_ptActual);
-  }, 800);
+  if(!_ptActual) return;
+  if(!_ptPuedeEditar(_ptActual)){ showToast("🔒 Solo el creador o admin pueden editar"); return; }
+  if(_ptSaveTimer) clearTimeout(_ptSaveTimer);
+  _ptSaveTimer = setTimeout(function(){ ptGuardar(_ptActual); }, 700);
 }
 
 function ptActualizarCampo(campo, valor){
@@ -16534,15 +16695,33 @@ function ptActualizarCampo(campo, valor){
   ptGuardarDebounced();
 }
 
+function ptDuplicar(){
+  if(!_ptActual) return;
+  var orig = _ptActual;
+  var nuevo = JSON.parse(JSON.stringify(orig));
+  nuevo.id = "pt_"+Date.now()+"_"+Math.random().toString(36).slice(2,6);
+  nuevo.ts = Date.now();
+  nuevo.titulo = "(Copia) "+orig.titulo;
+  nuevo.creadoPorUid = currentUser ? currentUser.uid : null;
+  nuevo.creadoPor = currentUser ? (currentUser.email||"") : "";
+  nuevo.cotizacionId = "";
+  nuevo.cotizacionFolio = "";
+  ptGuardar(nuevo, function(){
+    showToast("✓ Plan duplicado");
+    ptAbrirPlan(nuevo.id);
+  });
+}
+
 // ────────── TABS ──────────
 function ptTab(btn, name){
   document.querySelectorAll(".pt-tab").forEach(function(b){b.classList.remove("active");});
   btn.classList.add("active");
   document.querySelectorAll(".pt-content").forEach(function(c){c.style.display="none";});
   var el = document.getElementById("pt-"+name);
-  if(el) el.style.display="block";
+  if(el) el.style.display = (name==="portada"?"grid":"block");
   if(name==="gantt") ptRenderGantt();
-  if(name==="etapas") ptRenderEtapas();
+  if(name==="cronograma") ptRenderDias();
+  if(name==="preview") ptRenderPreview();
 }
 
 // ────────── RENDER DETALLE ──────────
@@ -16550,15 +16729,23 @@ function ptRenderDetalle(){
   if(!_ptActual) return;
   document.getElementById("pt-det-titulo").textContent = _ptActual.titulo || "Plan de Trabajo";
   document.getElementById("pt-det-cot").textContent = _ptActual.cotizacionFolio ? "Cotización: "+_ptActual.cotizacionFolio : "Sin cotización vinculada";
-  // Form values
-  var fields = ["titulo","subtitulo","cliente","atencion","area","cotizacionFolio","fechaInicio","fechaFin","alcance","nota"];
-  fields.forEach(function(k){
-    var inputId = "ptf-" + (k==="cotizacionFolio"?"cotizacion": k==="fechaInicio"?"inicio": k==="fechaFin"?"fin": k);
-    var el = document.getElementById(inputId);
+  var mapping = {
+    titulo:"ptf-titulo", subtitulo:"ptf-subtitulo", cliente:"ptf-cliente", atencion:"ptf-atencion",
+    area:"ptf-area", cotizacionFolio:"ptf-cotizacion", fechaInicio:"ptf-inicio", fechaFin:"ptf-fin",
+    horaInicio:"ptf-hora-inicio", horaFin:"ptf-hora-fin",
+    alcance:"ptf-alcance", resumenEjecutivo:"ptf-resumen", nota:"ptf-nota", eppBase:"ptf-epp"
+  };
+  Object.keys(mapping).forEach(function(k){
+    var el = document.getElementById(mapping[k]);
     if(el) el.value = _ptActual[k] || "";
   });
+  // Disable inputs if read-only
+  var readonly = !_ptPuedeEditar(_ptActual);
+  document.querySelectorAll("#pt-portada .pt-input").forEach(function(i){
+    if(i.id !== "ptf-cotizacion") i.readOnly = readonly;
+  });
   ptRenderPortadaCover();
-  ptRenderEtapas();
+  ptRenderDias();
 }
 
 function ptRenderPortadaCover(){
@@ -16568,207 +16755,591 @@ function ptRenderPortadaCover(){
   set("pt-subtitulo-display", p.subtitulo);
   set("pt-cliente-display", p.cliente);
   set("pt-atencion-display", p.atencion);
-  set("pt-area-display", (p.area?p.area+" m²":"—"));
+  set("pt-area-display", p.area ? p.area+" m²" : "—");
   set("pt-cot-badge", p.cotizacionFolio || "");
-  var periodo = (p.fechaInicio?p.fechaInicio:"") + (p.fechaFin?" → "+p.fechaFin:"");
-  set("pt-periodo-display", periodo||"—");
+  var per = "";
+  if(p.fechaInicio) per = _ptFmtFecha(p.fechaInicio);
+  if(p.fechaFin) per += " → "+_ptFmtFecha(p.fechaFin);
+  set("pt-periodo-display", per || "—");
   var logoEl = document.getElementById("pt-cover-logo");
   var srcLogo = document.getElementById("tb-logo-img");
   if(logoEl && srcLogo && srcLogo.src) logoEl.src = srcLogo.src;
 }
 
-// ────────── ETAPAS (editable per stage) ──────────
-function ptAgregarEtapa(){
+function _ptFmtFecha(iso){
+  if(!iso) return "";
+  try{
+    var d = new Date(iso+"T12:00:00");
+    return d.toLocaleDateString('es-MX',{day:'2-digit',month:'2-digit',year:'numeric'});
+  }catch(e){ return iso; }
+}
+
+// ────────── CRONOGRAMA (DÍAS) ──────────
+function ptAgregarDia(){
   if(!_ptActual) return;
-  _ptActual.etapas = _ptActual.etapas || [];
-  var n = _ptActual.etapas.length + 1;
-  _ptActual.etapas.push({
-    id: "et_"+Date.now(),
-    nombre: "Etapa "+n,
-    fechaInicio: _ptActual.fechaInicio || "",
-    fechaFin: "",
-    area: "",
-    dias: [{
-      id: "d_"+Date.now(),
-      fecha: "",
-      actividades: [{ accion:"", descripcion:"", horario:"", herramientas:"", epp:"" }]
-    }]
+  if(!_ptPuedeEditar(_ptActual)){ showToast("🔒 Sin permisos"); return; }
+  _ptActual.dias = _ptActual.dias || [];
+  var ultimaFecha = _ptActual.fechaInicio || new Date().toISOString().slice(0,10);
+  if(_ptActual.dias.length){
+    var last = _ptActual.dias[_ptActual.dias.length-1];
+    if(last.fecha){
+      try{ var d = new Date(last.fecha+"T12:00:00"); d.setDate(d.getDate()+1); ultimaFecha = d.toISOString().slice(0,10); }catch(e){}
+    }
+  }
+  _ptActual.dias.push({
+    id: "d_"+Date.now()+"_"+Math.random().toString(36).slice(2,5),
+    fecha: ultimaFecha,
+    titulo: "Día "+(_ptActual.dias.length+1),
+    actividades: [{ accion:"", descripcion:"", horario:"", epp: _ptActual.eppBase||"" }]
   });
-  ptRenderEtapas();
+  ptRenderDias();
   ptGuardarDebounced();
 }
 
-function ptEliminarEtapa(idx){
-  if(!_ptActual || !_ptActual.etapas) return;
-  if(!confirm("¿Eliminar esta etapa?")) return;
-  _ptActual.etapas.splice(idx,1);
-  ptRenderEtapas();
+function ptEliminarDia(idx){
+  if(!confirm("¿Eliminar este día y sus actividades?")) return;
+  _ptActual.dias.splice(idx,1);
+  ptRenderDias();
   ptGuardarDebounced();
 }
 
-function ptAgregarDia(etIdx){
-  if(!_ptActual) return;
-  var et = _ptActual.etapas[etIdx]; if(!et) return;
-  et.dias = et.dias || [];
-  et.dias.push({
-    id: "d_"+Date.now(),
-    fecha: "",
-    actividades: [{ accion:"", descripcion:"", horario:"", herramientas:"", epp:"" }]
-  });
-  ptRenderEtapas();
-  ptGuardarDebounced();
-}
-
-function ptEliminarDia(etIdx, dIdx){
-  var et = _ptActual.etapas[etIdx]; if(!et) return;
-  if(!confirm("¿Eliminar este día?")) return;
-  et.dias.splice(dIdx,1);
-  ptRenderEtapas();
-  ptGuardarDebounced();
-}
-
-function ptAgregarActividad(etIdx, dIdx){
-  var et = _ptActual.etapas[etIdx]; if(!et) return;
-  var d = et.dias[dIdx]; if(!d) return;
+function ptAgregarActividad(dIdx){
+  var d = _ptActual.dias[dIdx]; if(!d) return;
   d.actividades = d.actividades || [];
-  d.actividades.push({ accion:"", descripcion:"", horario:"", herramientas:"", epp:"Lentes, chaleco, botas, guantes" });
-  ptRenderEtapas();
+  d.actividades.push({ accion:"", descripcion:"", horario:"", epp: _ptActual.eppBase||"" });
+  ptRenderDias();
   ptGuardarDebounced();
 }
 
-function ptEliminarActividad(etIdx, dIdx, aIdx){
-  var et = _ptActual.etapas[etIdx];
-  var d = et.dias[dIdx];
-  d.actividades.splice(aIdx,1);
-  ptRenderEtapas();
+function ptEliminarActividad(dIdx, aIdx){
+  _ptActual.dias[dIdx].actividades.splice(aIdx,1);
+  ptRenderDias();
   ptGuardarDebounced();
 }
 
-function ptCampoEtapa(etIdx, campo, valor){
-  if(!_ptActual.etapas[etIdx]) return;
-  _ptActual.etapas[etIdx][campo] = valor;
+function ptMoverDia(idx, dir){
+  if(!_ptActual.dias) return;
+  var nuevo = idx+dir;
+  if(nuevo<0 || nuevo>=_ptActual.dias.length) return;
+  var tmp = _ptActual.dias[idx];
+  _ptActual.dias[idx] = _ptActual.dias[nuevo];
+  _ptActual.dias[nuevo] = tmp;
+  ptRenderDias();
   ptGuardarDebounced();
 }
 
-function ptCampoDia(etIdx, dIdx, campo, valor){
-  if(!_ptActual.etapas[etIdx] || !_ptActual.etapas[etIdx].dias[dIdx]) return;
-  _ptActual.etapas[etIdx].dias[dIdx][campo] = valor;
+function ptCampoDia(idx, campo, valor){
+  if(!_ptActual.dias[idx]) return;
+  _ptActual.dias[idx][campo] = valor;
   ptGuardarDebounced();
 }
 
-function ptCampoActividad(etIdx, dIdx, aIdx, campo, valor){
-  var et = _ptActual.etapas[etIdx]; if(!et) return;
-  var d = et.dias[dIdx]; if(!d) return;
+function ptCampoActividad(dIdx, aIdx, campo, valor){
+  var d = _ptActual.dias[dIdx]; if(!d) return;
   var a = d.actividades[aIdx]; if(!a) return;
   a[campo] = valor;
   ptGuardarDebounced();
 }
 
-function ptRenderEtapas(){
-  var cont = document.getElementById("pt-etapas-container");
+function ptRenderDias(){
+  var cont = document.getElementById("pt-dias-container");
   if(!cont || !_ptActual) return;
-  if(!_ptActual.etapas || !_ptActual.etapas.length){
-    cont.innerHTML = '<div style="text-align:center;padding:40px 20px;color:var(--tx3);font-size:13px;background:var(--white);border:2px dashed var(--g1);border-radius:10px;">'
-      +'<div style="font-size:38px;margin-bottom:10px;opacity:.4;">📅</div>'
-      +'<div style="margin-bottom:14px;">Aún no hay etapas. Agrega la primera etapa de tu plan.</div>'
-      +'<button onclick="ptAgregarEtapa()" style="padding:9px 16px;background:var(--blue);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font);">+ Agregar Etapa</button>'
-      +'</div>';
+  if(!_ptActual.dias || !_ptActual.dias.length){
+    cont.innerHTML = '<div style="text-align:center;padding:50px 20px;color:var(--tx3);font-size:13px;background:var(--white);border:2px dashed var(--g1);border-radius:11px;">'
+      +'<div style="font-size:42px;margin-bottom:12px;opacity:.4;">📅</div>'
+      +'<div style="font-size:14px;color:var(--tx2);margin-bottom:14px;font-weight:600;">Aún no hay días en el cronograma</div>'
+      +'<div style="display:flex;gap:8px;justify-content:center;">'
+        +'<button onclick="ptUsarPlantilla()" style="padding:9px 16px;background:var(--white);color:var(--blue);border:1px solid var(--blue);border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font);">📋 Usar Plantilla</button>'
+        +'<button onclick="ptAgregarDia()" style="padding:9px 16px;background:var(--blue);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font);">+ Agregar Día</button>'
+      +'</div></div>';
     return;
   }
-  var colors = ["#1B3A6B","#2A6FDB","#E8650A","#1A8A4A","#7C3AED","#0E7490"];
   var html = "";
-  _ptActual.etapas.forEach(function(et, ei){
-    var c = colors[ei%colors.length];
-    html += '<div class="pt-etapa-block">'
-      + '<div class="pt-etapa-hd" style="background:linear-gradient(90deg,'+c+',rgba(0,0,0,.15) 100%),'+c+';">'
-        + '<input value="'+escapeHtml(et.nombre||"")+'" oninput="ptCampoEtapa('+ei+',\'nombre\',this.value)" placeholder="Etapa..." style="flex:0 0 130px;">'
-        + '<input type="date" value="'+escapeHtml(et.fechaInicio||"")+'" oninput="ptCampoEtapa('+ei+',\'fechaInicio\',this.value)" style="flex:0 0 130px;font-size:11px;" title="Fecha inicio">'
-        + '<input type="date" value="'+escapeHtml(et.fechaFin||"")+'" oninput="ptCampoEtapa('+ei+',\'fechaFin\',this.value)" style="flex:0 0 130px;font-size:11px;" title="Fecha fin">'
-        + '<input value="'+escapeHtml(et.area||"")+'" oninput="ptCampoEtapa('+ei+',\'area\',this.value)" placeholder="Área m²" style="flex:1;min-width:80px;">'
-        + '<button onclick="ptEliminarEtapa('+ei+')" style="background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:6px;width:30px;height:30px;cursor:pointer;font-size:14px;" title="Eliminar etapa">🗑️</button>'
+  _ptActual.dias.forEach(function(d, di){
+    html += '<div class="pt-dia-block">'
+      + '<div class="pt-dia-hd">'
+        + '<span style="font-size:11px;font-weight:700;opacity:.75;letter-spacing:.5px;">DÍA '+(di+1)+'</span>'
+        + '<input type="date" value="'+escapeHtml(d.fecha||"")+'" oninput="ptCampoDia('+di+',\'fecha\',this.value)" style="width:140px;" title="Fecha">'
+        + '<input value="'+escapeHtml(d.titulo||"")+'" oninput="ptCampoDia('+di+',\'titulo\',this.value)" placeholder="Título del día (opcional)" style="flex:1;">'
+        + '<button onclick="ptMoverDia('+di+',-1)" '+(di===0?'disabled':'')+' style="background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:5px;width:28px;height:28px;cursor:pointer;'+(di===0?'opacity:.3;cursor:not-allowed':'')+'" title="Subir">↑</button>'
+        + '<button onclick="ptMoverDia('+di+',1)" '+(di===_ptActual.dias.length-1?'disabled':'')+' style="background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:5px;width:28px;height:28px;cursor:pointer;'+(di===_ptActual.dias.length-1?'opacity:.3;cursor:not-allowed':'')+'" title="Bajar">↓</button>'
+        + '<button onclick="ptEliminarDia('+di+')" style="background:rgba(239,68,68,.2);border:none;color:#fff;border-radius:5px;width:28px;height:28px;cursor:pointer;" title="Eliminar día">🗑</button>'
       + '</div>'
-      + '<div class="pt-etapa-body">';
-    // Dias
-    (et.dias||[]).forEach(function(d, di){
-      html += '<div class="pt-dia-block">'
-        + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">'
-          + '<span style="font-size:11px;font-weight:700;color:var(--tx2);">📆 DÍA</span>'
-          + '<input value="'+escapeHtml(d.fecha||"")+'" oninput="ptCampoDia('+ei+','+di+',\'fecha\',this.value)" placeholder="11/04/2026 o descripción" style="flex:1;padding:5px 8px;border:1px solid var(--g1);border-radius:5px;font-size:11px;font-family:var(--font);outline:none;">'
-          + '<button onclick="ptEliminarDia('+ei+','+di+')" class="pt-mini-btn" title="Eliminar día">🗑️</button>'
-        + '</div>'
-        // Headers
-        + '<div class="pt-act-row" style="background:var(--white);border-radius:5px;padding:4px 0;font-size:9px;font-weight:700;color:var(--tx2);letter-spacing:.4px;text-transform:uppercase;border-bottom:1px solid var(--g1);">'
-          + '<div style="padding:0 6px;">Acción</div>'
-          + '<div style="padding:0 6px;">Descripción</div>'
-          + '<div style="padding:0 6px;">Horario</div>'
-          + '<div style="padding:0 6px;">EPP / Seguridad</div>'
-          + '<div></div>'
-        + '</div>';
-      (d.actividades||[]).forEach(function(a, ai){
-        html += '<div class="pt-act-row">'
-          + '<input value="'+escapeHtml(a.accion||"")+'" oninput="ptCampoActividad('+ei+','+di+','+ai+',\'accion\',this.value)" placeholder="Acción">'
-          + '<input value="'+escapeHtml(a.descripcion||"")+'" oninput="ptCampoActividad('+ei+','+di+','+ai+',\'descripcion\',this.value)" placeholder="Descripción de la actividad">'
-          + '<input value="'+escapeHtml(a.horario||"")+'" oninput="ptCampoActividad('+ei+','+di+','+ai+',\'horario\',this.value)" placeholder="10am–2pm">'
-          + '<input value="'+escapeHtml(a.epp||"")+'" oninput="ptCampoActividad('+ei+','+di+','+ai+',\'epp\',this.value)" placeholder="Equipo de seguridad">'
-          + '<button onclick="ptEliminarActividad('+ei+','+di+','+ai+')" class="pt-mini-btn" title="Eliminar actividad">×</button>'
-        + '</div>';
-      });
-      html += '<button onclick="ptAgregarActividad('+ei+','+di+')" style="margin-top:6px;background:transparent;border:1px dashed var(--g1);color:var(--blue);font-size:10px;font-weight:700;padding:5px 10px;border-radius:5px;cursor:pointer;font-family:var(--font);">+ Actividad</button>';
-      html += '</div>';
+      + '<div class="pt-dia-body">'
+        + '<table class="pt-act-table">'
+          + '<thead><tr><th style="width:20%;">Acción</th><th style="width:35%;">Descripción</th><th style="width:18%;">Horario</th><th style="width:23%;">EPP / Seguridad</th><th style="width:4%;"></th></tr></thead>'
+          + '<tbody>';
+    (d.actividades||[]).forEach(function(a, ai){
+      html += '<tr>'
+        + '<td><input value="'+escapeHtml(a.accion||"")+'" oninput="ptCampoActividad('+di+','+ai+',\'accion\',this.value)" placeholder="Ej: Aplicación uretano"></td>'
+        + '<td><input value="'+escapeHtml(a.descripcion||"")+'" oninput="ptCampoActividad('+di+','+ai+',\'descripcion\',this.value)" placeholder="Descripción detallada..."></td>'
+        + '<td><input value="'+escapeHtml(a.horario||"")+'" oninput="ptCampoActividad('+di+','+ai+',\'horario\',this.value)" placeholder="08:00 – 14:00" style="font-variant-numeric:tabular-nums;"></td>'
+        + '<td><input value="'+escapeHtml(a.epp||"")+'" oninput="ptCampoActividad('+di+','+ai+',\'epp\',this.value)" placeholder="Lentes, chaleco..."></td>'
+        + '<td><button onclick="ptEliminarActividad('+di+','+ai+')" class="pt-mini-btn" title="Eliminar">×</button></td>'
+      + '</tr>';
     });
-    html += '<button onclick="ptAgregarDia('+ei+')" style="background:var(--blue-pale);border:none;color:var(--blue);font-size:11px;font-weight:700;padding:7px 12px;border-radius:6px;cursor:pointer;font-family:var(--font);">+ Día</button>'
+    html += '</tbody></table>'
+      + '<button onclick="ptAgregarActividad('+di+')" style="margin-top:10px;background:var(--blue-pale);border:none;color:var(--blue);font-size:11px;font-weight:700;padding:7px 13px;border-radius:6px;cursor:pointer;font-family:var(--font);">+ Actividad</button>'
       + '</div></div>';
   });
   cont.innerHTML = html;
 }
 
-// ────────── GANTT ──────────
+// ────────── GANTT HORARIO ──────────
 function ptRenderGantt(){
   var cont = document.getElementById("pt-gantt-container");
   if(!cont || !_ptActual) return;
-  if(!_ptActual.etapas || !_ptActual.etapas.length){
-    cont.innerHTML = '<div style="text-align:center;padding:30px;color:var(--tx3);font-size:13px;">Sin etapas disponibles. Agrega etapas en la pestaña anterior.</div>';
+  if(!_ptActual.dias || !_ptActual.dias.length){
+    cont.innerHTML = '<div style="text-align:center;padding:50px;color:var(--tx3);font-size:13px;background:var(--white);border-radius:11px;border:2px dashed var(--g1);">Sin días disponibles. Agrega días en la pestaña <b>Cronograma</b>.</div>';
     return;
   }
-  if(!_ptActual.fechaInicio || !_ptActual.fechaFin){
-    cont.innerHTML = '<div style="text-align:center;padding:30px;color:var(--tx3);font-size:13px;">Completa fecha de inicio y fin en la portada.</div>';
+  // Build hourly grid by day
+  var diasOrdenados = _ptActual.dias.slice().filter(function(d){return d.fecha;}).sort(function(a,b){return (a.fecha||"").localeCompare(b.fecha||"");});
+  if(!diasOrdenados.length){
+    cont.innerHTML = '<div style="text-align:center;padding:50px;color:var(--tx3);font-size:13px;background:var(--white);border-radius:11px;border:2px dashed var(--g1);">Asigna fechas a los días para ver el Gantt horario.</div>';
     return;
   }
-  var startD = new Date(_ptActual.fechaInicio+"T12:00:00");
-  var endD = new Date(_ptActual.fechaFin+"T12:00:00");
-  var allDates = [];
-  var d = new Date(startD);
-  while(d <= endD){
-    allDates.push({iso: d.toISOString().slice(0,10), label: ("0"+d.getDate()).slice(-2)+"/"+("0"+(d.getMonth()+1)).slice(-2)});
-    d.setDate(d.getDate()+1);
-  }
-  if(allDates.length>40){
-    cont.innerHTML='<div style="padding:20px;color:var(--tx2);font-size:12px;">Rango de fechas demasiado amplio para mostrar.</div>';return;
-  }
-  var colors = ["#1B3A6B","#2A6FDB","#E8650A","#1A8A4A","#7C3AED","#0E7490"];
-  var html = '<table style="width:100%;border-collapse:collapse;font-size:11px;min-width:'+(180+allDates.length*52)+'px;">';
-  html += '<thead><tr style="background:var(--navy);"><th style="padding:7px 10px;text-align:left;color:#fff;width:180px;font-size:10px;letter-spacing:.5px;">ETAPA</th>';
-  allDates.forEach(function(dt){ html+='<th style="padding:7px 4px;text-align:center;color:#fff;min-width:50px;font-size:10px;">'+dt.label+'</th>'; });
-  html += '</tr></thead><tbody>';
-  _ptActual.etapas.forEach(function(et, ei){
-    var c = colors[ei%colors.length];
-    html += '<tr style="background:'+(ei%2===0?"var(--white)":"var(--off2)")+';">';
-    html += '<td style="padding:8px 10px;font-weight:700;color:var(--tx);border-bottom:1px solid var(--g1);"><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:'+c+';margin-right:6px;"></span>'+escapeHtml(et.nombre||"Etapa")+'</td>';
-    allDates.forEach(function(dt){
-      var active = (et.fechaInicio && et.fechaFin) && dt.iso >= et.fechaInicio && dt.iso <= et.fechaFin;
-      html += '<td style="padding:3px;border-bottom:1px solid var(--g1);">';
-      if(active) html += '<div class="pt-gantt-bar" style="background:'+c+';margin:0 1px;"></div>';
-      html += '</td>';
+  // Action color mapping (by keyword)
+  var colorMap = function(accion){
+    var a = (accion||"").toLowerCase();
+    if(a.indexOf("instalac")>=0 || a.indexOf("llegada")>=0 || a.indexOf("movili")>=0) return "#1B3A6B";
+    if(a.indexOf("retiro")>=0 || a.indexOf("demoli")>=0) return "#4A7BA7";
+    if(a.indexOf("prepar")>=0 || a.indexOf("escarif")>=0) return "#0E7490";
+    if(a.indexOf("aplicac")>=0 || a.indexOf("aplic")>=0) return "#E8650A";
+    if(a.indexOf("fragua")>=0 || a.indexOf("curad")>=0) return "#1A8A4A";
+    if(a.indexOf("secad")>=0 || a.indexOf("limpiez")>=0) return "#7C3AED";
+    return "#6580A0";
+  };
+  // Parse horario like "08:00 – 14:00" or "8am – 2pm"
+  var parseHora = function(s){
+    if(!s) return null;
+    s = String(s).toLowerCase().replace(/\s/g,"").replace(/–|—|-/g,"-");
+    var m = s.match(/(\d{1,2})(?::(\d{2}))?(am|pm)?-(\d{1,2})(?::(\d{2}))?(am|pm)?/);
+    if(!m) return null;
+    var h1 = parseInt(m[1],10); var min1 = parseInt(m[2]||"0",10);
+    if(m[3]==="pm" && h1<12) h1+=12; if(m[3]==="am" && h1===12) h1=0;
+    var h2 = parseInt(m[4],10); var min2 = parseInt(m[5]||"0",10);
+    if(m[6]==="pm" && h2<12) h2+=12; if(m[6]==="am" && h2===12) h2=0;
+    return { start: h1+min1/60, end: h2+min2/60 };
+  };
+  // Determine hour range
+  var minH = 24, maxH = 0;
+  diasOrdenados.forEach(function(d){
+    (d.actividades||[]).forEach(function(a){
+      var h = parseHora(a.horario);
+      if(h){ if(h.start<minH) minH=Math.floor(h.start); if(h.end>maxH) maxH=Math.ceil(h.end); }
     });
-    html += '</tr>';
   });
-  html += '</tbody></table>';
+  if(minH>=maxH){ minH=7; maxH=20; }
+  minH = Math.max(0,minH-1); maxH = Math.min(24,maxH+1);
+  var horas = [];
+  for(var h=minH; h<maxH; h++) horas.push(h);
+
+  var html = '<div style="background:var(--white);border-radius:11px;border:1px solid var(--g1);overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.04);">';
+  html += '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:11px;min-width:'+(220+horas.length*70)+'px;">';
+  html += '<thead><tr style="background:var(--navy);"><th style="padding:10px 14px;text-align:left;color:#fff;width:220px;font-size:10px;letter-spacing:.5px;border-right:1px solid rgba(255,255,255,.1);">DÍA / ACTIVIDAD</th>';
+  horas.forEach(function(h){
+    var lbl = (h<10?"0":"") + h + ":00";
+    html += '<th style="padding:8px 4px;text-align:center;color:#fff;min-width:60px;font-size:10px;font-variant-numeric:tabular-nums;border-right:1px solid rgba(255,255,255,.05);">'+lbl+'</th>';
+  });
+  html += '</tr></thead><tbody>';
+
+  diasOrdenados.forEach(function(d, di){
+    var fechaFmt = _ptFmtFecha(d.fecha);
+    var nActs = (d.actividades||[]).length;
+    // Day separator row
+    html += '<tr><td colspan="'+(horas.length+1)+'" style="background:linear-gradient(90deg,var(--off),var(--white));padding:8px 14px;font-size:11px;font-weight:800;color:var(--navy);border-top:'+(di>0?'2px solid var(--g1)':'none')+';border-bottom:1px solid var(--g1);">📆 '+escapeHtml(d.titulo||("Día "+(di+1)))+' — <span style="color:var(--blue);">'+escapeHtml(fechaFmt)+'</span></td></tr>';
+    (d.actividades||[]).forEach(function(a, ai){
+      var hpos = parseHora(a.horario);
+      html += '<tr><td style="padding:7px 14px;border-bottom:1px solid var(--off2);font-weight:600;color:var(--tx);border-right:1px solid var(--g1);">'+escapeHtml(a.accion||"—")+'</td>';
+      // Cells
+      var rowHtml = "";
+      horas.forEach(function(h, hi){
+        if(hpos && h >= Math.floor(hpos.start) && h < Math.ceil(hpos.end)){
+          // Active hour
+          var width = "100%";
+          var label = "";
+          if(hi === horas.indexOf(Math.floor(hpos.start))){
+            // First cell of the bar: rendered with colspan effect
+          }
+          rowHtml += '<td style="padding:5px 2px;border-bottom:1px solid var(--off2);border-right:1px solid var(--off2);">';
+          rowHtml += '<div class="pt-gantt-bar" style="background:'+colorMap(a.accion)+';">';
+          if(h === Math.floor(hpos.start)){ rowHtml += escapeHtml(a.accion||"").substring(0,12); }
+          rowHtml += '</div></td>';
+        } else {
+          rowHtml += '<td style="padding:5px 2px;border-bottom:1px solid var(--off2);border-right:1px solid var(--off2);"></td>';
+        }
+      });
+      html += rowHtml + '</tr>';
+    });
+  });
+  html += '</tbody></table></div>';
+
+  // Legend
+  html += '<div style="padding:12px 18px;background:var(--off);border-top:1px solid var(--g1);display:flex;gap:18px;flex-wrap:wrap;align-items:center;">';
+  html += '<div style="font-size:10px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.5px;">Leyenda:</div>';
+  [
+    ["#1B3A6B","Movilización"],
+    ["#4A7BA7","Demolición/Retiro"],
+    ["#0E7490","Preparación"],
+    ["#E8650A","Aplicación"],
+    ["#7C3AED","Limpieza/Secado"],
+    ["#1A8A4A","Fraguado"]
+  ].forEach(function(l){
+    html += '<div style="display:flex;align-items:center;gap:6px;font-size:10px;color:var(--tx);"><div style="width:18px;height:10px;background:'+l[0]+';border-radius:3px;"></div>'+l[1]+'</div>';
+  });
+  html += '</div></div>';
   cont.innerHTML = html;
 }
 
-// ────────── EXPORTAR ──────────
+// ────────── PLANTILLAS ──────────
+function ptUsarPlantilla(){
+  document.getElementById("pt-modal-plantilla").style.display = "flex";
+  ptRenderModalPlantillas();
+}
+
+function ptRenderModalPlantillas(){
+  var cont = document.getElementById("pt-modal-plantilla-list");
+  if(!cont) return;
+  var html = "";
+  _ptPlantillas.forEach(function(t){
+    var nDias = (t.dias||[]).length;
+    html += '<div onclick="ptAplicarPlantilla(\''+t.id+'\')" style="padding:14px 16px;border:1px solid var(--g1);border-radius:9px;margin-bottom:8px;cursor:pointer;transition:all .15s;" onmouseover="this.style.borderColor=\'var(--blue)\';this.style.background=\'var(--blue-pale)\';" onmouseout="this.style.borderColor=\'var(--g1)\';this.style.background=\'#fff\';">'
+      + '<div style="display:flex;justify-content:space-between;align-items:start;gap:8px;">'
+        + '<div style="flex:1;">'
+          + '<div style="font-size:13px;font-weight:700;color:var(--navy);">'+escapeHtml(t.nombre||"")+'</div>'
+          + '<div style="font-size:11px;color:var(--tx2);margin-top:3px;">'+escapeHtml(t.descripcion||"")+'</div>'
+        + '</div>'
+        + '<span style="font-size:10px;background:var(--blue-pale);color:var(--blue);padding:3px 9px;border-radius:10px;font-weight:700;white-space:nowrap;">'+nDias+' día'+(nDias===1?'':'s')+'</span>'
+      + '</div>'
+      + '</div>';
+  });
+  cont.innerHTML = html;
+}
+
+function ptAplicarPlantilla(tplId){
+  if(!_ptActual) return;
+  var tpl = _ptPlantillas.find(function(t){return t.id===tplId;});
+  if(!tpl){ showToast("⚠️ Plantilla no encontrada"); return; }
+  if((_ptActual.dias||[]).length){
+    if(!confirm("Esto reemplazará los días actuales del plan. ¿Continuar?")) return;
+  }
+  // Build dias from template, with sequential dates from fechaInicio
+  var baseFecha = _ptActual.fechaInicio || new Date().toISOString().slice(0,10);
+  var d = new Date(baseFecha+"T12:00:00");
+  _ptActual.dias = (tpl.dias||[]).map(function(td, i){
+    var iso = d.toISOString().slice(0,10);
+    d.setDate(d.getDate()+1);
+    return {
+      id: "d_"+Date.now()+"_"+i,
+      fecha: iso,
+      titulo: td.titulo || ("Día "+(i+1)),
+      actividades: (td.actividades||[]).map(function(a){
+        return {
+          accion: a.accion||"", descripcion: a.descripcion||"",
+          horario: a.horario||"", epp: a.epp || _ptActual.eppBase||""
+        };
+      })
+    };
+  });
+  // Set sistema/subtitulo from template if empty
+  if(!_ptActual.subtitulo) _ptActual.subtitulo = tpl.nombre || "";
+  if(_ptActual.dias.length && !_ptActual.fechaFin){
+    var lastD = new Date(_ptActual.fechaInicio+"T12:00:00");
+    lastD.setDate(lastD.getDate() + _ptActual.dias.length - 1);
+    _ptActual.fechaFin = lastD.toISOString().slice(0,10);
+  }
+  ptCerrarModal("pt-modal-plantilla");
+  ptRenderDetalle();
+  ptGuardarDebounced();
+  showToast("✓ Plantilla aplicada: "+tpl.nombre);
+}
+
+// ────────── ADMIN: gestión de plantillas ──────────
+function ptAbrirPlantillas(){
+  document.getElementById("pt-modal-plantillas").style.display = "flex";
+  var subtitle = document.getElementById("pt-plantillas-subtitle");
+  if(subtitle) subtitle.textContent = _ptEsAdmin() ? "Puedes crear y eliminar plantillas personalizadas" : "Solo administradores pueden editar";
+  ptRenderPlantillasAdmin();
+}
+
+function ptRenderPlantillasAdmin(){
+  var cont = document.getElementById("pt-plantillas-list");
+  if(!cont) return;
+  var html = '<div style="margin-bottom:14px;font-size:11px;color:var(--tx2);font-weight:700;text-transform:uppercase;letter-spacing:.5px;">Plantillas Disponibles</div>';
+  _ptPlantillas.forEach(function(t){
+    var nDias = (t.dias||[]).length;
+    var puedeEliminar = !t.builtIn && _ptEsAdmin();
+    html += '<div style="padding:12px 14px;border:1px solid var(--g1);border-radius:9px;margin-bottom:7px;display:flex;align-items:center;gap:10px;">'
+      + '<div style="width:40px;height:40px;border-radius:9px;background:var(--blue-pale);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">'+(t.builtIn?'⚙':'📋')+'</div>'
+      + '<div style="flex:1;">'
+        + '<div style="font-size:13px;font-weight:700;color:var(--navy);">'+escapeHtml(t.nombre||"")+(t.builtIn?'<span style="font-size:9px;background:var(--off);color:var(--tx3);padding:2px 6px;border-radius:8px;margin-left:6px;font-weight:600;">Oficial</span>':'')+'</div>'
+        + '<div style="font-size:11px;color:var(--tx2);margin-top:2px;">'+escapeHtml(t.descripcion||"")+' · '+nDias+' día'+(nDias===1?'':'s')+'</div>'
+      + '</div>'
+      + (puedeEliminar?'<button onclick="ptEliminarPlantilla(\''+t.id+'\')" class="pt-mini-btn" title="Eliminar">🗑</button>':'')
+      + '</div>';
+  });
+  cont.innerHTML = html;
+}
+
+function ptGuardarComoPlantilla(){
+  if(!_ptActual || !_ptEsAdmin()){ showToast("🔒 Solo admins pueden crear plantillas"); return; }
+  if(!(_ptActual.dias||[]).length){ showToast("⚠️ El plan no tiene días para guardar"); return; }
+  var nombre = prompt("Nombre de la nueva plantilla:", _ptActual.subtitulo||_ptActual.titulo||"Nueva plantilla");
+  if(!nombre) return;
+  var desc = prompt("Descripción breve:", "Plantilla creada desde "+ (_ptActual.titulo||""));
+  var tpl = {
+    id: "tpl_"+Date.now(),
+    nombre: nombre,
+    descripcion: desc || "",
+    builtIn: false,
+    creadoPorUid: currentUser ? currentUser.uid : null,
+    creadoPor: currentUser ? (currentUser.email||"") : "",
+    ts: Date.now(),
+    dias: (_ptActual.dias||[]).map(function(d){
+      return {
+        titulo: d.titulo||"",
+        actividades: (d.actividades||[]).map(function(a){
+          return { accion:a.accion||"", descripcion:a.descripcion||"", horario:a.horario||"", epp:a.epp||"" };
+        })
+      };
+    })
+  };
+  var ref = _ptPlantillasRef();
+  if(ref){
+    ref.doc(tpl.id).set(tpl).then(function(){
+      _ptPlantillas.push(tpl);
+      showToast("✓ Plantilla guardada: "+nombre);
+    }).catch(function(e){ console.warn(e); showToast("⚠️ Error al guardar plantilla"); });
+  } else {
+    _ptPlantillas.push(tpl);
+    showToast("✓ Plantilla guardada (local)");
+  }
+}
+
+function ptEliminarPlantilla(id){
+  if(!_ptEsAdmin()) return;
+  if(!confirm("¿Eliminar esta plantilla?")) return;
+  var ref = _ptPlantillasRef();
+  if(ref){
+    ref.doc(id).delete().then(function(){
+      _ptPlantillas = _ptPlantillas.filter(function(t){return t.id!==id;});
+      ptRenderPlantillasAdmin();
+      showToast("🗑 Plantilla eliminada");
+    });
+  } else {
+    _ptPlantillas = _ptPlantillas.filter(function(t){return t.id!==id;});
+    ptRenderPlantillasAdmin();
+  }
+}
+
+// ────────── PREVIEW / PDF ──────────
+function ptRenderPreview(){
+  var cont = document.getElementById("pt-preview-container");
+  if(!cont || !_ptActual) return;
+  cont.innerHTML = _ptBuildPDFHTML(_ptActual);
+}
+
+function _ptBuildPDFHTML(p){
+  var logoSrc = (document.getElementById("tb-logo-img")||{}).src || "";
+  var contactoEmpresa = (window._homeTel ? "Tel. " + window._homeTel : "") + " · romsaindustrial.com";
+  var autorTxt = "Generado: " + _ptFmtFecha(new Date().toISOString().slice(0,10)) + (p.creadoPor?" — "+escapeHtml(p.creadoPor):"");
+
+  var header = '<div class="pdf-header"><img src="'+logoSrc+'" alt="ROMSA"/><div style="text-align:right;font-size:10px;color:#6B7A8D;font-weight:600;">PLAN DE TRABAJO<br><span style="color:#1B3A6B;font-weight:800;font-size:11px;">'+escapeHtml(p.cotizacionFolio||"")+'</span></div></div>';
+  var footer = function(pageNum, totalPages){
+    return '<div class="pdf-footer"><div>'+escapeHtml(contactoEmpresa)+'</div><div>'+escapeHtml(autorTxt)+'</div><div>Pág. '+pageNum+(totalPages?' de '+totalPages:'')+'</div></div>';
+  };
+
+  // Calculate pages
+  var totalPages = 2 + Math.max(1, Math.ceil((p.dias||[]).length / 2)) + 1; // portada + resumen + dias (~2 per page) + gantt
+
+  var html = "";
+
+  // PAGE 1 - PORTADA
+  html += '<div class="pt-pdf-page">'+header
+    + '<div style="height:80px;"></div>'
+    + '<div style="text-align:center;margin-top:60px;">'
+      + '<div style="font-size:11px;letter-spacing:4px;color:#6B7A8D;font-weight:700;margin-bottom:12px;">PLAN DE TRABAJO</div>'
+      + '<div style="font-size:28px;font-weight:900;color:#0B1F3A;line-height:1.15;max-width:600px;margin:0 auto;">'+escapeHtml(p.titulo||"")+'</div>'
+      + (p.subtitulo?'<div style="font-size:14px;color:#4A5E7A;margin-top:10px;font-weight:600;">'+escapeHtml(p.subtitulo)+'</div>':'')
+    + '</div>'
+    + '<div style="margin-top:80px;background:linear-gradient(135deg,#0B1F3A,#1B3A6B);color:#fff;border-radius:14px;padding:30px;">'
+      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">'
+        + _ptCoverField("CLIENTE", p.cliente)
+        + _ptCoverField("ATENCIÓN", p.atencion)
+        + _ptCoverField("ÁREA DE INTERVENCIÓN", (p.area?p.area+" m²":"—"))
+        + _ptCoverField("COTIZACIÓN REF.", p.cotizacionFolio||"—")
+        + _ptCoverField("PERIODO DE EJECUCIÓN", _ptFmtFecha(p.fechaInicio) + " → " + _ptFmtFecha(p.fechaFin))
+        + _ptCoverField("HORARIO TÍPICO", (p.horaInicio||"")+" – "+(p.horaFin||""))
+      + '</div>'
+    + '</div>'
+    + '<div style="margin-top:30px;font-size:11px;color:#4A5E7A;line-height:1.6;font-style:italic;text-align:center;padding:0 40px;">Este documento presenta el alcance, metodología de ejecución y cronograma de actividades para el proyecto.</div>'
+    + footer(1, totalPages) + '</div>';
+
+  // PAGE 2 - RESUMEN
+  html += '<div class="pt-pdf-page">'+header
+    + '<div style="font-size:18px;font-weight:800;color:#0B1F3A;margin-bottom:6px;">Resumen Ejecutivo</div>'
+    + '<div style="height:3px;width:48px;background:#1B3A6B;margin-bottom:18px;"></div>'
+    + (p.resumenEjecutivo
+        ? '<div style="font-size:12px;color:#3A4E68;line-height:1.7;margin-bottom:24px;">'+escapeHtml(p.resumenEjecutivo).replace(/\n/g,"<br>")+'</div>'
+        : '<div style="font-size:12px;color:#94A3B8;line-height:1.7;margin-bottom:24px;font-style:italic;">— Sin resumen ejecutivo definido —</div>')
+    + '<div style="font-size:14px;font-weight:800;color:#0B1F3A;margin-bottom:6px;">Alcance del Proyecto</div>'
+    + '<div style="height:3px;width:48px;background:#1B3A6B;margin-bottom:14px;"></div>'
+    + (p.alcance
+        ? '<div style="font-size:12px;color:#3A4E68;line-height:1.7;margin-bottom:24px;">'+escapeHtml(p.alcance).replace(/\n/g,"<br>")+'</div>'
+        : '<div style="font-size:12px;color:#94A3B8;line-height:1.7;margin-bottom:24px;font-style:italic;">— Sin alcance definido —</div>')
+    + (p.nota
+        ? '<div style="background:#FFF8E1;border-left:4px solid #D97706;border-radius:6px;padding:14px 18px;margin-top:20px;">'
+          + '<div style="font-size:11px;font-weight:800;color:#92400E;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">⚠ Nota Operativa</div>'
+          + '<div style="font-size:11px;color:#5D4037;line-height:1.6;">'+escapeHtml(p.nota).replace(/\n/g,"<br>")+'</div>'
+          + '</div>'
+        : '')
+    + (p.eppBase
+        ? '<div style="margin-top:20px;background:#EFF6FF;border-left:4px solid #1B3A6B;border-radius:6px;padding:14px 18px;">'
+          + '<div style="font-size:11px;font-weight:800;color:#1B3A6B;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">🦺 EPP del Proyecto</div>'
+          + '<div style="font-size:11px;color:#3A4E68;line-height:1.6;">'+escapeHtml(p.eppBase)+'</div>'
+          + '</div>'
+        : '')
+    + footer(2, totalPages) + '</div>';
+
+  // PAGES 3+ - CRONOGRAMA
+  var diasOrd = (p.dias||[]).slice().sort(function(a,b){return (a.fecha||"").localeCompare(b.fecha||"");});
+  var pageNum = 3;
+  var DIAS_POR_PAGINA = 2;
+  for(var i=0; i<diasOrd.length; i+=DIAS_POR_PAGINA){
+    var slice = diasOrd.slice(i, i+DIAS_POR_PAGINA);
+    html += '<div class="pt-pdf-page">'+header
+      + '<div style="font-size:18px;font-weight:800;color:#0B1F3A;margin-bottom:6px;">Cronograma de Actividades</div>'
+      + '<div style="height:3px;width:48px;background:#1B3A6B;margin-bottom:18px;"></div>';
+    slice.forEach(function(d, di){
+      html += '<div style="margin-bottom:22px;">'
+        + '<div style="background:linear-gradient(90deg,#1B3A6B,#2A6FDB);color:#fff;padding:8px 14px;border-radius:7px 7px 0 0;display:flex;align-items:center;gap:10px;">'
+          + '<span style="font-size:10px;font-weight:700;opacity:.85;letter-spacing:.5px;">'+escapeHtml(d.titulo||("Día "+(i+di+1)))+'</span>'
+          + '<span style="margin-left:auto;font-size:11px;font-weight:700;background:rgba(255,255,255,.18);padding:2px 9px;border-radius:10px;">'+escapeHtml(_ptFmtFecha(d.fecha))+'</span>'
+        + '</div>'
+        + '<table style="width:100%;border-collapse:collapse;font-size:10px;border:1px solid #E5E9F2;">'
+          + '<thead><tr style="background:#F4F6FA;"><th style="padding:6px 8px;text-align:left;color:#1B3A6B;font-weight:800;font-size:9px;text-transform:uppercase;border-bottom:1px solid #D1DCF0;">Acción</th><th style="padding:6px 8px;text-align:left;color:#1B3A6B;font-weight:800;font-size:9px;text-transform:uppercase;border-bottom:1px solid #D1DCF0;">Descripción</th><th style="padding:6px 8px;text-align:left;color:#1B3A6B;font-weight:800;font-size:9px;text-transform:uppercase;border-bottom:1px solid #D1DCF0;">Horario</th><th style="padding:6px 8px;text-align:left;color:#1B3A6B;font-weight:800;font-size:9px;text-transform:uppercase;border-bottom:1px solid #D1DCF0;">EPP</th></tr></thead>'
+          + '<tbody>';
+      (d.actividades||[]).forEach(function(a, ai){
+        html += '<tr style="background:'+(ai%2===0?'#fff':'#FAFBFD')+';">'
+          + '<td style="padding:7px 8px;font-weight:700;color:#0B1F3A;border-bottom:1px solid #EDF1F8;vertical-align:top;">'+escapeHtml(a.accion||"—")+'</td>'
+          + '<td style="padding:7px 8px;color:#3A4E68;border-bottom:1px solid #EDF1F8;vertical-align:top;line-height:1.5;">'+escapeHtml(a.descripcion||"")+'</td>'
+          + '<td style="padding:7px 8px;color:#1B3A6B;font-weight:700;border-bottom:1px solid #EDF1F8;vertical-align:top;font-variant-numeric:tabular-nums;white-space:nowrap;">'+escapeHtml(a.horario||"")+'</td>'
+          + '<td style="padding:7px 8px;color:#3A4E68;border-bottom:1px solid #EDF1F8;vertical-align:top;font-size:9px;">'+escapeHtml(a.epp||"")+'</td>'
+        + '</tr>';
+      });
+      html += '</tbody></table></div>';
+    });
+    html += footer(pageNum, totalPages) + '</div>';
+    pageNum++;
+  }
+
+  // LAST PAGE - GANTT HORARIO (simplified for PDF)
+  html += '<div class="pt-pdf-page">'+header
+    + '<div style="font-size:18px;font-weight:800;color:#0B1F3A;margin-bottom:6px;">Diagrama de Gantt</div>'
+    + '<div style="height:3px;width:48px;background:#1B3A6B;margin-bottom:14px;"></div>'
+    + _ptBuildGanttHTMLForPDF(p)
+    + footer(pageNum, totalPages) + '</div>';
+
+  return html;
+}
+
+function _ptCoverField(label, val){
+  return '<div><div style="font-size:9px;letter-spacing:2px;opacity:.6;margin-bottom:4px;">'+escapeHtml(label)+'</div><div style="font-size:13px;font-weight:700;">'+escapeHtml(val||"—")+'</div></div>';
+}
+
+function _ptBuildGanttHTMLForPDF(p){
+  var diasOrd = (p.dias||[]).slice().filter(function(d){return d.fecha;}).sort(function(a,b){return (a.fecha||"").localeCompare(b.fecha||"");});
+  if(!diasOrd.length) return '<div style="text-align:center;padding:30px;color:#94A3B8;font-size:11px;">Sin días con fecha asignada</div>';
+
+  var parseHora = function(s){
+    if(!s) return null;
+    s = String(s).toLowerCase().replace(/\s/g,"").replace(/–|—|-/g,"-");
+    var m = s.match(/(\d{1,2})(?::(\d{2}))?(am|pm)?-(\d{1,2})(?::(\d{2}))?(am|pm)?/);
+    if(!m) return null;
+    var h1 = parseInt(m[1],10); var min1 = parseInt(m[2]||"0",10);
+    if(m[3]==="pm" && h1<12) h1+=12; if(m[3]==="am" && h1===12) h1=0;
+    var h2 = parseInt(m[4],10); var min2 = parseInt(m[5]||"0",10);
+    if(m[6]==="pm" && h2<12) h2+=12; if(m[6]==="am" && h2===12) h2=0;
+    return { start: h1+min1/60, end: h2+min2/60 };
+  };
+  var colorMap = function(accion){
+    var a = (accion||"").toLowerCase();
+    if(a.indexOf("instalac")>=0 || a.indexOf("llegada")>=0 || a.indexOf("movili")>=0) return "#1B3A6B";
+    if(a.indexOf("retiro")>=0 || a.indexOf("demoli")>=0) return "#4A7BA7";
+    if(a.indexOf("prepar")>=0) return "#0E7490";
+    if(a.indexOf("aplicac")>=0) return "#E8650A";
+    if(a.indexOf("fragua")>=0 || a.indexOf("curad")>=0) return "#1A8A4A";
+    if(a.indexOf("secad")>=0 || a.indexOf("limpiez")>=0) return "#7C3AED";
+    return "#6580A0";
+  };
+  var minH=24, maxH=0;
+  diasOrd.forEach(function(d){
+    (d.actividades||[]).forEach(function(a){
+      var h = parseHora(a.horario);
+      if(h){ if(h.start<minH) minH=Math.floor(h.start); if(h.end>maxH) maxH=Math.ceil(h.end); }
+    });
+  });
+  if(minH>=maxH){minH=7;maxH=20;}
+  minH=Math.max(0,minH-1);maxH=Math.min(24,maxH+1);
+  var horas=[];for(var h=minH;h<maxH;h++) horas.push(h);
+
+  var html = '<table style="width:100%;border-collapse:collapse;font-size:9px;border:1px solid #D1DCF0;">';
+  html += '<thead><tr style="background:#0B1F3A;color:#fff;"><th style="padding:6px 8px;text-align:left;width:160px;font-size:9px;letter-spacing:.4px;">DÍA / ACTIVIDAD</th>';
+  horas.forEach(function(h){ var lbl=(h<10?"0":"")+h+":00"; html += '<th style="padding:6px 2px;text-align:center;font-size:8px;border-left:1px solid rgba(255,255,255,.1);min-width:28px;">'+lbl+'</th>'; });
+  html += '</tr></thead><tbody>';
+
+  diasOrd.forEach(function(d, di){
+    html += '<tr><td colspan="'+(horas.length+1)+'" style="background:#F4F6FA;padding:5px 8px;font-size:10px;font-weight:800;color:#0B1F3A;border-top:1px solid #D1DCF0;border-bottom:1px solid #D1DCF0;">📅 '+escapeHtml(d.titulo||("Día "+(di+1)))+' — '+escapeHtml(_ptFmtFecha(d.fecha))+'</td></tr>';
+    (d.actividades||[]).forEach(function(a){
+      var hpos = parseHora(a.horario);
+      html += '<tr><td style="padding:5px 8px;font-weight:700;color:#1B3A6B;font-size:9px;border-bottom:1px solid #EDF1F8;border-right:1px solid #D1DCF0;">'+escapeHtml((a.accion||"—").substring(0,28))+'</td>';
+      horas.forEach(function(h){
+        if(hpos && h>=Math.floor(hpos.start) && h<Math.ceil(hpos.end)){
+          html += '<td style="padding:3px 1px;border-bottom:1px solid #EDF1F8;border-right:1px solid #EDF1F8;"><div style="background:'+colorMap(a.accion)+';height:14px;border-radius:2px;"></div></td>';
+        } else {
+          html += '<td style="padding:3px 1px;border-bottom:1px solid #EDF1F8;border-right:1px solid #EDF1F8;"></td>';
+        }
+      });
+      html += '</tr>';
+    });
+  });
+  html += '</tbody></table>';
+  // Legend
+  html += '<div style="margin-top:14px;display:flex;gap:14px;flex-wrap:wrap;font-size:9px;color:#3A4E68;">';
+  [["#1B3A6B","Movilización"],["#4A7BA7","Demolición"],["#0E7490","Preparación"],["#E8650A","Aplicación"],["#7C3AED","Limpieza"],["#1A8A4A","Fraguado"]].forEach(function(l){
+    html += '<div style="display:flex;align-items:center;gap:5px;"><div style="width:16px;height:8px;background:'+l[0]+';border-radius:2px;"></div>'+l[1]+'</div>';
+  });
+  html += '</div>';
+  return html;
+}
+
 function ptExportarPDF(){
-  showToast("📄 Exportar PDF: próximamente");
+  if(!_ptActual){ showToast("⚠️ Abre un plan primero"); return; }
+  // Switch to preview tab to ensure render is loaded
+  var btn = document.querySelector('.pt-tab[data-tab="preview"]');
+  if(btn) btn.click();
+  setTimeout(function(){
+    var cont = document.getElementById("pt-preview-container");
+    if(!cont || !cont.innerHTML){ showToast("⚠️ Vista previa no disponible"); return; }
+    var w = window.open("","_blank");
+    if(!w){ showToast("⚠️ Habilita ventanas emergentes"); return; }
+    var title = (_ptActual.titulo||"Plan-de-trabajo").replace(/[^a-z0-9]/gi,"_");
+    w.document.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>'+title+'</title>'
+      +'<style>'
+      +'@page{size:A4;margin:0;}'
+      +'body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#E5E9F2;color:#0B1F3A;}'
+      +'.pt-pdf-page{background:#fff;padding:40px 50px;margin:0 auto;width:794px;min-height:1123px;box-shadow:0 4px 16px rgba(0,0,0,.15);box-sizing:border-box;position:relative;page-break-after:always;}'
+      +'.pt-pdf-page:last-child{page-break-after:auto;}'
+      +'.pdf-header{display:flex;align-items:center;justify-content:space-between;padding-bottom:14px;border-bottom:2px solid #1B3A6B;margin-bottom:24px;}'
+      +'.pdf-header img{height:32px;}'
+      +'.pdf-footer{position:absolute;bottom:24px;left:50px;right:50px;display:flex;justify-content:space-between;align-items:center;padding-top:12px;border-top:1px solid #E5E9F2;font-size:9px;color:#6B7A8D;}'
+      +'@media print{body{background:#fff;}.pt-pdf-page{box-shadow:none;margin:0;}}'
+      +'</style></head><body>'+cont.innerHTML
+      +'<script>setTimeout(function(){window.print();},500);</'+'script>'
+      +'</body></html>');
+    w.document.close();
+  }, 200);
 }
 
 // ────────── INIT ──────────
@@ -16776,18 +17347,33 @@ window.addEventListener("DOMContentLoaded", function(){
   setTimeout(function(){
     if(typeof db !== "undefined" && currentUser){
       ptCargarLista();
+      ptCargarPlantillas();
     }
   }, 1500);
 });
 
-// Reload list when auth changes
+// Reload on auth change
 (function(){
   var orig = window.onAuthReady || function(){};
   window.onAuthReady = function(){
     orig();
     ptCargarLista();
+    ptCargarPlantillas();
   };
 })();
+
+// Public API for cross-module access (from cotizaciones / obras)
+window.ptCrearDesdeCotizacion = function(cotId){
+  if(!cotId) return ptNuevoDesdeCotizacion();
+  // Switch to module first
+  if(typeof selectModule === "function") selectModule("plantrabajo");
+  setTimeout(function(){
+    // Check if exists
+    var existing = _ptPlanes.find(function(p){return p.cotizacionId===cotId;});
+    if(existing){ ptAbrirPlan(existing.id); return; }
+    ptModalSeleccionar(cotId);
+  }, 400);
+};
 
 </script>
 
