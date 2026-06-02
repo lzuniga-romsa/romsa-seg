@@ -2804,15 +2804,15 @@ body.in-costeo #app{
               <div class="pt-section-body">
                 <div class="pt-form-row">
                   <label class="pt-lbl">📄 Alcance del Proyecto <span style="color:#DC2626;">*</span></label>
-                  <textarea id="ptf-alcance" class="pt-input pt-input-lg" rows="5" style="resize:vertical;" oninput="ptActualizarCampo('alcance',this.value)" placeholder="Describe detalladamente los trabajos a realizar..."></textarea>
+                  <textarea id="ptf-alcance" class="pt-input pt-input-lg" rows="6" oninput="ptActualizarCampo('alcance',this.value)" placeholder="Describe detalladamente los trabajos a realizar..."></textarea>
                 </div>
                 <div class="pt-form-row">
                   <label class="pt-lbl">📌 Resumen Ejecutivo (página 2 del PDF)</label>
-                  <textarea id="ptf-resumen" class="pt-input" rows="3" style="resize:vertical;" oninput="ptActualizarCampo('resumenEjecutivo',this.value)" placeholder="Resumen breve para el cliente: contexto, objetivo, beneficios..."></textarea>
+                  <textarea id="ptf-resumen" class="pt-input" rows="4" oninput="ptActualizarCampo('resumenEjecutivo',this.value)" placeholder="Resumen breve para el cliente: contexto, objetivo, beneficios..."></textarea>
                 </div>
                 <div class="pt-form-row">
                   <label class="pt-lbl">⚠️ Nota Operativa</label>
-                  <textarea id="ptf-nota" class="pt-input" rows="3" style="resize:vertical;" oninput="ptActualizarCampo('nota',this.value)" placeholder="Restricciones, recomendaciones de seguridad, condiciones del área..."></textarea>
+                  <textarea id="ptf-nota" class="pt-input" rows="4" oninput="ptActualizarCampo('nota',this.value)" placeholder="Restricciones, recomendaciones de seguridad, condiciones del área..."></textarea>
                 </div>
                 <div class="pt-form-row">
                   <label class="pt-lbl">🦺 EPP base del proyecto</label>
@@ -2892,6 +2892,26 @@ body.in-costeo #app{
                 <button onclick="ptAgregarFila()" style="padding:8px 14px;background:var(--blue);color:#fff;border:none;border-radius:7px;font-size:11px;font-weight:700;cursor:pointer;font-family:var(--font);">+ Primera actividad</button>
               </div>
             </div>
+
+            <!-- Hour suggestions: every 30 minutes -->
+            <datalist id="pt-horas-list">
+              <option value="06:00"><option value="06:30">
+              <option value="07:00"><option value="07:30">
+              <option value="08:00"><option value="08:30">
+              <option value="09:00"><option value="09:30">
+              <option value="10:00"><option value="10:30">
+              <option value="11:00"><option value="11:30">
+              <option value="12:00"><option value="12:30">
+              <option value="13:00"><option value="13:30">
+              <option value="14:00"><option value="14:30">
+              <option value="15:00"><option value="15:30">
+              <option value="16:00"><option value="16:30">
+              <option value="17:00"><option value="17:30">
+              <option value="18:00"><option value="18:30">
+              <option value="19:00"><option value="19:30">
+              <option value="20:00"><option value="20:30">
+              <option value="21:00"><option value="21:30"><option value="22:00">
+            </datalist>
 
             <!-- Action sugestiones helper -->
             <datalist id="pt-acciones-list">
@@ -16283,11 +16303,13 @@ body { font-family: 'Inter', -apple-system, system-ui, sans-serif; background: #
 .pt-tab:hover{color:#6580A0;}
 .pt-tab.active{color:var(--sky)!important;border-bottom-color:var(--blue)!important;}
 
-.pt-lbl{display:block;font-size:11px;font-weight:700;color:var(--tx2);letter-spacing:.3px;margin-bottom:6px;}
-.pt-input{width:100%;padding:10px 13px;border:1.5px solid var(--g1);border-radius:8px;font-size:13px;font-family:var(--font);color:var(--tx);background:var(--white);outline:none;box-sizing:border-box;transition:border-color .15s,box-shadow .15s;}
+.pt-lbl{display:block;font-size:11px;font-weight:700;color:var(--tx2);letter-spacing:.4px;margin-bottom:8px;text-transform:uppercase;}
+.pt-input{width:100%;padding:12px 14px;border:1.5px solid var(--g1);border-radius:9px;font-size:14px;font-family:var(--font);color:var(--tx);background:var(--white);outline:none;box-sizing:border-box;transition:border-color .15s,box-shadow .15s;line-height:1.4;}
 .pt-input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(30,111,217,.12);}
-.pt-input[readonly]{color:var(--tx2);cursor:not-allowed;}
-.pt-input-lg{padding:14px 16px;font-size:15px;font-weight:600;}
+.pt-input[readonly]{color:var(--tx2);cursor:not-allowed;background:#F8FAFD;}
+.pt-input-lg{padding:16px 18px;font-size:16px;font-weight:600;line-height:1.4;}
+textarea.pt-input{font-family:var(--font);line-height:1.6;min-height:80px;}
+textarea.pt-input-lg{min-height:140px;font-weight:500;font-size:14px;}
 textarea.pt-input{font-weight:400;}
 select.pt-input{cursor:pointer;background-image:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="%236B7A8D" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>');background-repeat:no-repeat;background-position:right 12px center;padding-right:34px;appearance:none;-webkit-appearance:none;}
 
@@ -16307,15 +16329,16 @@ select.pt-input{cursor:pointer;background-image:url('data:image/svg+xml;utf8,<sv
 .pt-btn-secondary:hover{border-color:var(--blue);color:var(--blue);}
 
 /* Section cards */
-.pt-section-card{background:var(--white);border:1px solid var(--g1);border-radius:13px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.04);}
-.pt-section-hd{display:flex;align-items:center;gap:14px;padding:18px 22px;background:linear-gradient(90deg,#F8FAFD,#EFF4FB);border-bottom:1px solid var(--g1);}
-.pt-section-num{width:32px;height:32px;border-radius:9px;background:var(--blue);color:#fff;font-weight:800;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-.pt-section-ttl{font-size:15px;font-weight:800;color:var(--navy);}
-.pt-section-sub{font-size:11px;color:var(--tx2);margin-top:2px;}
-.pt-section-body{padding:22px;}
-.pt-form-row{margin-bottom:16px;}
+.pt-section-card{background:var(--white);border:1px solid var(--g1);border-radius:14px;overflow:hidden;box-shadow:0 2px 6px rgba(0,0,0,.04);}
+.pt-section-hd{display:flex;align-items:center;gap:16px;padding:22px 26px;background:linear-gradient(90deg,#F8FAFD,#EFF4FB);border-bottom:1px solid var(--g1);}
+.pt-section-num{width:36px;height:36px;border-radius:10px;background:var(--blue);color:#fff;font-weight:800;font-size:15px;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 2px 6px rgba(30,111,217,.3);}
+.pt-section-ttl{font-size:16px;font-weight:800;color:var(--navy);letter-spacing:-.2px;}
+.pt-section-sub{font-size:12px;color:var(--tx2);margin-top:3px;}
+.pt-section-body{padding:28px 26px;}
+.pt-form-row{margin-bottom:22px;}
 .pt-form-row:last-child{margin-bottom:0;}
-.pt-form-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.pt-form-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:18px 16px;}
+.pt-form-grid-2 > div{margin-bottom:0;}
 
 .pt-info-banner{background:#EFF6FF;border:1px solid #DBEAFE;border-radius:8px;padding:10px 14px;margin-top:14px;font-size:11px;color:#1E40AF;line-height:1.5;}
 
@@ -16370,6 +16393,13 @@ select.pt-input{cursor:pointer;background-image:url('data:image/svg+xml;utf8,<sv
   .pt-pdf-page{box-shadow:none;page-break-after:always;margin:0;}
   .pt-pdf-page:last-child{page-break-after:auto;}
 }
+
+
+/* Better visual rhythm for the wizard form */
+.pt-wiz-pane{animation:ptFadeIn .3s ease;}
+@keyframes ptFadeIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+.pt-wiz-nav{display:flex;justify-content:space-between;margin-top:24px;align-items:center;}
+.pt-section-body > .pt-form-row:first-child{margin-top:0;}
 
 </style>
 </head>
@@ -17095,8 +17125,8 @@ function ptRenderTablaActs(){
       + '<td><select onchange="ptCampoFila('+i+',\'dia\',this.value)">'+_ptDiaOptions(a.dia)+'</select></td>'
       + '<td><input list="pt-acciones-list" value="'+escapeHtml(a.accion||"")+'" oninput="ptCampoFila('+i+',\'accion\',this.value)" placeholder="Acción..."></td>'
       + '<td><input value="'+escapeHtml(a.descripcion||"")+'" oninput="ptCampoFila('+i+',\'descripcion\',this.value)" placeholder="Descripción detallada"></td>'
-      + '<td><select onchange="ptCampoFila('+i+',\'inicio\',this.value)">'+_ptHorasOptions(a.inicio||"",true)+'</select></td>'
-      + '<td><select onchange="ptCampoFila('+i+',\'fin\',this.value)">'+_ptHorasOptions(a.fin||"",true)+'</select></td>'
+      + '<td><input list="pt-horas-list" value="'+escapeHtml(a.inicio||"")+'" oninput="ptCampoFila('+i+',\'inicio\',this.value)" placeholder="08:00" style="font-variant-numeric:tabular-nums;"></td>'
+      + '<td><input list="pt-horas-list" value="'+escapeHtml(a.fin||"")+'" oninput="ptCampoFila('+i+',\'fin\',this.value)" placeholder="17:00" style="font-variant-numeric:tabular-nums;"></td>'
       + '<td><input value="'+escapeHtml(a.epp||"")+'" oninput="ptCampoFila('+i+',\'epp\',this.value)" placeholder="EPP requerido" '+(lastIdx?'data-last="1"':'')+'></td>'
       + '<td class="pt-cell-action"><button onclick="ptEliminarFila('+i+')" class="pt-mini-btn" title="Eliminar">×</button></td>'
       + '</tr>';
@@ -17200,9 +17230,7 @@ function ptRenderGanttLive(){
       html += '<div class="pt-gantt-live-row">'
         + '<div class="pt-gantt-live-label" title="'+escapeHtml(label)+'">'+escapeHtml(label||"—")+'</div>'
         + '<div class="pt-gantt-live-track">'
-          + '<div class="pt-gantt-live-bar" style="left:'+left.toFixed(1)+'%;width:'+width.toFixed(1)+'%;background:'+color+';" title="'+escapeHtml(a.inicio+" – "+a.fin)+'">'
-            + (width > 10 ? escapeHtml(a.inicio+"–"+a.fin) : '')
-          + '</div>'
+          + '<div class="pt-gantt-live-bar" style="left:'+left.toFixed(1)+'%;width:'+width.toFixed(1)+'%;background:'+color+';" title="'+escapeHtml(label+" — "+a.inicio+" a "+a.fin)+'"></div>'
         + '</div>'
       + '</div>';
     });
@@ -17369,7 +17397,7 @@ function _ptBuildPDFHTML(p){
   var fechaGen = _ptFmtFecha(new Date().toISOString().slice(0,10));
   var autorTxt = "Generado: " + fechaGen + (p.creadoPor?" — "+p.creadoPor:"");
 
-  // Group actividades by day for tables
+  // Group actividades by day
   var byDia = {};
   (p.actividades||[]).forEach(function(a){
     if(!a.dia) return;
@@ -17378,102 +17406,102 @@ function _ptBuildPDFHTML(p){
   });
   var diasOrd = Object.keys(byDia).sort();
 
-  // pages calc
-  var pagesNeeded = 2; // portada + resumen
+  // Pages: cover + resumen + cronograma pages + gantt
   var dPerPage = 2;
-  pagesNeeded += Math.ceil(diasOrd.length / dPerPage) || 1;
-  pagesNeeded += 1; // gantt
-  var totalPages = pagesNeeded;
+  var totalPages = 2 + Math.max(1, Math.ceil(diasOrd.length / dPerPage)) + 1;
 
   var header = function(){
-    return '<div class="pdf-header"><img src="'+escapeHtml(logoSrc)+'" alt="ROMSA"/><div style="text-align:right;font-size:10px;color:#6B7A8D;font-weight:600;">PLAN DE TRABAJO<br><span style="color:#1B3A6B;font-weight:800;font-size:11px;">'+escapeHtml(p.cotizacionFolio||"")+'</span></div></div>';
+    return '<div class="pdf-header">'
+      + '<img src="'+escapeHtml(logoSrc)+'" alt="ROMSA"/>'
+      + '<div class="pdf-hdr-meta"><div class="pdf-hdr-ttl">PLAN DE TRABAJO</div>'
+      + (p.cotizacionFolio?'<div class="pdf-hdr-folio">'+escapeHtml(p.cotizacionFolio)+'</div>':'')
+      + '</div></div>';
   };
   var footer = function(pageNum){
-    return '<div class="pdf-footer"><div>'+escapeHtml(contactoEmpresa)+'</div><div>'+escapeHtml(autorTxt)+'</div><div>Pág. '+pageNum+' de '+totalPages+'</div></div>';
+    return '<div class="pdf-footer">'
+      + '<div>'+escapeHtml(contactoEmpresa)+'</div>'
+      + '<div>'+escapeHtml(autorTxt)+'</div>'
+      + '<div>Pág. '+pageNum+' de '+totalPages+'</div>'
+      + '</div>';
   };
 
   var html = "";
 
-  // PAGE 1: PORTADA
+  // ═══ PAGE 1: PORTADA FORMAL — tabla limpia ═══
   html += '<div class="pt-pdf-page">'+header()
-    + '<div style="height:60px;"></div>'
-    + '<div style="text-align:center;margin-top:60px;">'
-      + '<div style="font-size:11px;letter-spacing:4px;color:#6B7A8D;font-weight:700;margin-bottom:14px;">PLAN DE TRABAJO</div>'
-      + '<div style="font-size:28px;font-weight:900;color:#0B1F3A;line-height:1.15;max-width:600px;margin:0 auto;">'+escapeHtml(p.titulo||"")+'</div>'
-      + (p.subtitulo?'<div style="font-size:14px;color:#4A5E7A;margin-top:10px;font-weight:600;">'+escapeHtml(p.subtitulo)+'</div>':'')
+    + '<div class="pdf-cover-body">'
+      + '<div class="pdf-cover-eyebrow">PLAN DE TRABAJO</div>'
+      + '<h1 class="pdf-cover-title">'+escapeHtml(p.titulo||"Sin título")+'</h1>'
+      + (p.subtitulo?'<div class="pdf-cover-sub">'+escapeHtml(p.subtitulo)+'</div>':'')
+      + '<div class="pdf-cover-divider"></div>'
+      + '<table class="pdf-data-table">'
+        + '<tr><td class="pdf-data-lbl">Cliente</td><td class="pdf-data-val">'+escapeHtml(p.cliente||"—")+'</td>'
+        + '<td class="pdf-data-lbl">Atención</td><td class="pdf-data-val">'+escapeHtml(p.atencion||"—")+'</td></tr>'
+        + '<tr><td class="pdf-data-lbl">Área de intervención</td><td class="pdf-data-val">'+escapeHtml(p.area?p.area+" m²":"—")+'</td>'
+        + '<td class="pdf-data-lbl">Cotización ref.</td><td class="pdf-data-val">'+escapeHtml(p.cotizacionFolio||"—")+'</td></tr>'
+        + '<tr><td class="pdf-data-lbl">Fecha de inicio</td><td class="pdf-data-val">'+escapeHtml(_ptFmtFecha(p.fechaInicio)||"—")+'</td>'
+        + '<td class="pdf-data-lbl">Fecha de fin</td><td class="pdf-data-val">'+escapeHtml(_ptFmtFecha(p.fechaFin)||"—")+'</td></tr>'
+        + '<tr><td class="pdf-data-lbl">Horario típico</td><td class="pdf-data-val" colspan="3">'+escapeHtml((p.horaInicio||"—")+" – "+(p.horaFin||"—"))+'</td></tr>'
+      + '</table>'
+      + (p.alcance ? '<div class="pdf-cover-alcance"><div class="pdf-cover-alcance-lbl">ALCANCE DEL PROYECTO</div><div class="pdf-cover-alcance-txt">'+escapeHtml(p.alcance).replace(/\n/g,"<br>")+'</div></div>' : '')
+      + '<div class="pdf-cover-foot">Este documento presenta el alcance, metodología de ejecución y cronograma de actividades para el proyecto.</div>'
     + '</div>'
-    + '<div style="margin-top:70px;background:linear-gradient(135deg,#0B1F3A,#1B3A6B);color:#fff;border-radius:14px;padding:32px 30px;">'
-      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">'
-        + _ptCoverField("CLIENTE", p.cliente)
-        + _ptCoverField("ATENCIÓN", p.atencion)
-        + _ptCoverField("ÁREA DE INTERVENCIÓN", (p.area?p.area+" m²":"—"))
-        + _ptCoverField("COTIZACIÓN REF.", p.cotizacionFolio||"—")
-        + _ptCoverField("PERIODO DE EJECUCIÓN", _ptFmtFecha(p.fechaInicio) + " → " + _ptFmtFecha(p.fechaFin))
-        + _ptCoverField("HORARIO TÍPICO", (p.horaInicio||"")+" – "+(p.horaFin||""))
-      + '</div>'
-    + '</div>'
-    + '<div style="margin-top:30px;font-size:11px;color:#4A5E7A;line-height:1.6;font-style:italic;text-align:center;padding:0 40px;">Este documento presenta el alcance, metodología de ejecución y cronograma de actividades para el proyecto.</div>'
     + footer(1) + '</div>';
 
-  // PAGE 2: RESUMEN
+  // ═══ PAGE 2: RESUMEN EJECUTIVO ═══
   html += '<div class="pt-pdf-page">'+header()
-    + '<div style="font-size:18px;font-weight:800;color:#0B1F3A;margin-bottom:6px;">Resumen Ejecutivo</div>'
-    + '<div style="height:3px;width:48px;background:#1B3A6B;margin-bottom:18px;"></div>'
+    + '<div class="pdf-section-ttl">Resumen Ejecutivo</div>'
+    + '<div class="pdf-section-bar"></div>'
     + (p.resumenEjecutivo
-        ? '<div style="font-size:12px;color:#3A4E68;line-height:1.7;margin-bottom:24px;">'+escapeHtml(p.resumenEjecutivo).replace(/\n/g,"<br>")+'</div>'
-        : '<div style="font-size:12px;color:#94A3B8;line-height:1.7;margin-bottom:24px;font-style:italic;">— Sin resumen ejecutivo definido —</div>')
-    + '<div style="font-size:14px;font-weight:800;color:#0B1F3A;margin-bottom:6px;">Alcance del Proyecto</div>'
-    + '<div style="height:3px;width:48px;background:#1B3A6B;margin-bottom:14px;"></div>'
-    + (p.alcance
-        ? '<div style="font-size:12px;color:#3A4E68;line-height:1.7;margin-bottom:24px;">'+escapeHtml(p.alcance).replace(/\n/g,"<br>")+'</div>'
-        : '<div style="font-size:12px;color:#94A3B8;line-height:1.7;margin-bottom:24px;font-style:italic;">— Sin alcance definido —</div>')
+        ? '<div class="pdf-prose">'+escapeHtml(p.resumenEjecutivo).replace(/\n/g,"<br>")+'</div>'
+        : '<div class="pdf-prose pdf-prose-empty">— Sin resumen ejecutivo definido —</div>')
     + (p.nota
-        ? '<div style="background:#FFF8E1;border-left:4px solid #D97706;border-radius:6px;padding:14px 18px;margin-top:20px;">'
-          + '<div style="font-size:11px;font-weight:800;color:#92400E;letter-spacing:.5px;margin-bottom:5px;">⚠ NOTA OPERATIVA</div>'
-          + '<div style="font-size:11px;color:#5D4037;line-height:1.6;">'+escapeHtml(p.nota).replace(/\n/g,"<br>")+'</div></div>'
+        ? '<div class="pdf-callout pdf-callout-warn">'
+          + '<div class="pdf-callout-ttl">⚠ NOTA OPERATIVA</div>'
+          + '<div class="pdf-callout-txt">'+escapeHtml(p.nota).replace(/\n/g,"<br>")+'</div></div>'
         : '')
     + (p.eppBase
-        ? '<div style="margin-top:14px;background:#EFF6FF;border-left:4px solid #1B3A6B;border-radius:6px;padding:14px 18px;">'
-          + '<div style="font-size:11px;font-weight:800;color:#1B3A6B;letter-spacing:.5px;margin-bottom:5px;">🦺 EPP DEL PROYECTO</div>'
-          + '<div style="font-size:11px;color:#3A4E68;line-height:1.6;">'+escapeHtml(p.eppBase)+'</div></div>'
+        ? '<div class="pdf-callout pdf-callout-info">'
+          + '<div class="pdf-callout-ttl">🦺 EPP DEL PROYECTO</div>'
+          + '<div class="pdf-callout-txt">'+escapeHtml(p.eppBase)+'</div></div>'
         : '')
     + footer(2) + '</div>';
 
-  // PAGES 3+: CRONOGRAMA
+  // ═══ PAGES 3+: CRONOGRAMA (horizontal, wide tables) ═══
   var pageNum = 3;
   if(!diasOrd.length){
     html += '<div class="pt-pdf-page">'+header()
-      + '<div style="font-size:18px;font-weight:800;color:#0B1F3A;margin-bottom:6px;">Cronograma</div>'
-      + '<div style="height:3px;width:48px;background:#1B3A6B;margin-bottom:14px;"></div>'
-      + '<div style="text-align:center;padding:60px 20px;color:#94A3B8;font-size:12px;font-style:italic;">— Sin actividades programadas —</div>'
+      + '<div class="pdf-section-ttl">Cronograma de Actividades</div>'
+      + '<div class="pdf-section-bar"></div>'
+      + '<div class="pdf-prose pdf-prose-empty">— Sin actividades programadas —</div>'
       + footer(pageNum) + '</div>';
     pageNum++;
   } else {
     for(var i=0; i<diasOrd.length; i+=dPerPage){
       var slice = diasOrd.slice(i, i+dPerPage);
       html += '<div class="pt-pdf-page">'+header()
-        + '<div style="font-size:18px;font-weight:800;color:#0B1F3A;margin-bottom:6px;">Cronograma de Actividades</div>'
-        + '<div style="height:3px;width:48px;background:#1B3A6B;margin-bottom:18px;"></div>';
+        + '<div class="pdf-section-ttl">Cronograma de Actividades</div>'
+        + '<div class="pdf-section-bar"></div>';
       slice.forEach(function(dia, di){
         var dayActs = byDia[dia];
-        html += '<div style="margin-bottom:22px;">'
-          + '<div style="background:linear-gradient(90deg,#1B3A6B,#2A6FDB);color:#fff;padding:9px 14px;border-radius:7px 7px 0 0;display:flex;align-items:center;gap:10px;">'
-            + '<span style="font-size:11px;font-weight:800;letter-spacing:.4px;">📅 DÍA '+(i+di+1)+'</span>'
-            + '<span style="margin-left:auto;font-size:12px;font-weight:700;background:rgba(255,255,255,.18);padding:3px 10px;border-radius:10px;">'+escapeHtml(_ptFmtFecha(dia))+'</span>'
+        html += '<div class="pdf-day-block">'
+          + '<div class="pdf-day-hd">'
+            + '<span class="pdf-day-num">DÍA '+(i+di+1)+'</span>'
+            + '<span class="pdf-day-fecha">'+escapeHtml(_ptFmtFecha(dia))+'</span>'
           + '</div>'
-          + '<table style="width:100%;border-collapse:collapse;font-size:10px;border:1px solid #E5E9F2;">'
-            + '<thead><tr style="background:#F4F6FA;">'
-              + '<th style="padding:7px 9px;text-align:left;color:#1B3A6B;font-weight:800;font-size:9px;letter-spacing:.4px;border-bottom:1px solid #D1DCF0;width:24%;">ACCIÓN</th>'
-              + '<th style="padding:7px 9px;text-align:left;color:#1B3A6B;font-weight:800;font-size:9px;letter-spacing:.4px;border-bottom:1px solid #D1DCF0;">DESCRIPCIÓN</th>'
-              + '<th style="padding:7px 9px;text-align:left;color:#1B3A6B;font-weight:800;font-size:9px;letter-spacing:.4px;border-bottom:1px solid #D1DCF0;width:15%;">HORARIO</th>'
-              + '<th style="padding:7px 9px;text-align:left;color:#1B3A6B;font-weight:800;font-size:9px;letter-spacing:.4px;border-bottom:1px solid #D1DCF0;width:22%;">EPP</th>'
+          + '<table class="pdf-cron-table">'
+            + '<thead><tr>'
+              + '<th style="width:18%;">Acción</th>'
+              + '<th>Descripción</th>'
+              + '<th style="width:12%;">Horario</th>'
+              + '<th style="width:22%;">Equipo de seguridad</th>'
             + '</tr></thead><tbody>';
         dayActs.forEach(function(a, ai){
-          html += '<tr style="background:'+(ai%2===0?'#fff':'#FAFBFD')+';">'
-            + '<td style="padding:8px 9px;font-weight:700;color:#0B1F3A;border-bottom:1px solid #EDF1F8;vertical-align:top;">'+escapeHtml(a.accion||"—")+'</td>'
-            + '<td style="padding:8px 9px;color:#3A4E68;border-bottom:1px solid #EDF1F8;vertical-align:top;line-height:1.5;">'+escapeHtml(a.descripcion||"")+'</td>'
-            + '<td style="padding:8px 9px;color:#1B3A6B;font-weight:700;border-bottom:1px solid #EDF1F8;vertical-align:top;font-variant-numeric:tabular-nums;white-space:nowrap;">'+escapeHtml((a.inicio||"")+" – "+(a.fin||""))+'</td>'
-            + '<td style="padding:8px 9px;color:#3A4E68;border-bottom:1px solid #EDF1F8;vertical-align:top;font-size:9px;">'+escapeHtml(a.epp||"")+'</td>'
+          html += '<tr>'
+            + '<td class="pdf-cron-action">'+escapeHtml(a.accion||"—")+'</td>'
+            + '<td class="pdf-cron-desc">'+escapeHtml(a.descripcion||"")+'</td>'
+            + '<td class="pdf-cron-time">'+escapeHtml((a.inicio||"")+" – "+(a.fin||""))+'</td>'
+            + '<td class="pdf-cron-epp">'+escapeHtml(a.epp||"")+'</td>'
           + '</tr>';
         });
         html += '</tbody></table></div>';
@@ -17483,10 +17511,10 @@ function _ptBuildPDFHTML(p){
     }
   }
 
-  // LAST PAGE: GANTT
+  // ═══ LAST PAGE: GANTT ═══
   html += '<div class="pt-pdf-page">'+header()
-    + '<div style="font-size:18px;font-weight:800;color:#0B1F3A;margin-bottom:6px;">Diagrama de Gantt — Timeline Horario</div>'
-    + '<div style="height:3px;width:48px;background:#1B3A6B;margin-bottom:14px;"></div>'
+    + '<div class="pdf-section-ttl">Diagrama de Gantt — Timeline Horario</div>'
+    + '<div class="pdf-section-bar"></div>'
     + _ptBuildGanttPDF(p)
     + footer(pageNum) + '</div>';
 
@@ -17553,32 +17581,85 @@ function ptExportarPDF(){
   showToast("📄 Generando PDF...");
   var pdfHTML = _ptBuildPDFHTML(_ptActual);
   var title = (_ptActual.titulo||"Plan-de-trabajo").replace(/[^a-zA-Z0-9]/g,"_");
-  var fullDoc = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>'+title+'</title>'
-    +'<style>'
-    +'@page{size:A4;margin:0;}'
-    +'*{box-sizing:border-box;}'
-    +'body{margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;background:#E5E9F2;color:#0B1F3A;}'
-    +'.pt-pdf-page{background:#fff;padding:40px 50px;margin:0 auto;width:794px;min-height:1123px;box-shadow:0 4px 16px rgba(0,0,0,.15);position:relative;page-break-after:always;}'
-    +'.pt-pdf-page:last-child{page-break-after:auto;}'
-    +'.pdf-header{display:flex;align-items:center;justify-content:space-between;padding-bottom:14px;border-bottom:2px solid #1B3A6B;margin-bottom:24px;}'
-    +'.pdf-header img{height:32px;}'
-    +'.pdf-footer{position:absolute;bottom:24px;left:50px;right:50px;display:flex;justify-content:space-between;align-items:center;padding-top:12px;border-top:1px solid #E5E9F2;font-size:9px;color:#6B7A8D;}'
-    +'@media print{body{background:#fff;}.pt-pdf-page{box-shadow:none;margin:0;}.no-print{display:none;}}'
-    +'.toolbar{position:fixed;top:10px;right:10px;background:#1B3A6B;color:#fff;padding:8px 14px;border-radius:8px;display:flex;gap:8px;align-items:center;font-size:12px;z-index:1000;}'
-    +'.toolbar button{background:#fff;color:#1B3A6B;border:none;padding:6px 12px;border-radius:6px;font-weight:700;cursor:pointer;font-size:12px;}'
-    +'</style></head><body>'
-    +'<div class="toolbar no-print"><span>📄 Plan listo. Usa Ctrl/Cmd+P o el botón:</span><button onclick="window.print()">🖨 Imprimir / Guardar PDF</button></div>'
-    +pdfHTML
-    +'</body></html>';
 
-  // Try opening new window first
-  var w = window.open("","_blank","width=900,height=1200");
+  var pdfStyles = "@page{size:A3 landscape;margin:0;}"
+    + "*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact;}"
+    + "body{margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;background:#E5E9F2;color:#0B1F3A;}"
+    // A3 landscape: 420mm x 297mm = 1587x1123px @ 96dpi
+    + ".pt-pdf-page{background:#fff;padding:32px 44px;margin:0 auto 14px;width:1587px;height:1123px;position:relative;page-break-after:always;overflow:hidden;}"
+    + ".pt-pdf-page:last-child{page-break-after:auto;}"
+    // Header
+    + ".pdf-header{display:flex;align-items:center;justify-content:space-between;padding-bottom:14px;border-bottom:2px solid #1B3A6B;margin-bottom:24px;}"
+    + ".pdf-header img{height:38px;width:auto;}"
+    + ".pdf-hdr-meta{text-align:right;}"
+    + ".pdf-hdr-ttl{font-size:11px;color:#6B7A8D;font-weight:700;letter-spacing:2px;}"
+    + ".pdf-hdr-folio{color:#1B3A6B;font-weight:800;font-size:13px;margin-top:3px;}"
+    // Footer
+    + ".pdf-footer{position:absolute;bottom:18px;left:44px;right:44px;display:flex;justify-content:space-between;align-items:center;padding-top:10px;border-top:1px solid #E5E9F2;font-size:10px;color:#6B7A8D;}"
+    // Cover
+    + ".pdf-cover-body{padding:30px 80px 0;}"
+    + ".pdf-cover-eyebrow{font-size:12px;letter-spacing:5px;color:#6B7A8D;font-weight:700;margin-bottom:14px;text-align:center;}"
+    + ".pdf-cover-title{font-size:36px;font-weight:900;color:#0B1F3A;line-height:1.15;text-align:center;margin:0 0 8px;letter-spacing:-.5px;}"
+    + ".pdf-cover-sub{font-size:16px;color:#4A5E7A;font-weight:600;text-align:center;margin-bottom:30px;}"
+    + ".pdf-cover-divider{height:3px;width:90px;background:#1B3A6B;margin:0 auto 32px;}"
+    + ".pdf-data-table{width:100%;border-collapse:collapse;margin-bottom:28px;border:1px solid #D1DCF0;}"
+    + ".pdf-data-table td{padding:14px 18px;border:1px solid #E5E9F2;vertical-align:middle;}"
+    + ".pdf-data-lbl{background:#F4F6FA;font-size:10px;font-weight:800;color:#1B3A6B;letter-spacing:.8px;text-transform:uppercase;width:18%;}"
+    + ".pdf-data-val{font-size:14px;font-weight:700;color:#0B1F3A;width:32%;}"
+    + ".pdf-cover-alcance{background:#F8FAFD;border-left:4px solid #1B3A6B;padding:16px 20px;margin-bottom:24px;border-radius:0 8px 8px 0;}"
+    + ".pdf-cover-alcance-lbl{font-size:10px;font-weight:800;color:#1B3A6B;letter-spacing:.8px;margin-bottom:8px;}"
+    + ".pdf-cover-alcance-txt{font-size:13px;color:#3A4E68;line-height:1.6;}"
+    + ".pdf-cover-foot{font-size:11px;color:#6B7A8D;font-style:italic;text-align:center;margin-top:20px;}"
+    // Section headers
+    + ".pdf-section-ttl{font-size:22px;font-weight:800;color:#0B1F3A;margin-bottom:8px;}"
+    + ".pdf-section-bar{height:3px;width:60px;background:#1B3A6B;margin-bottom:22px;}"
+    + ".pdf-prose{font-size:13px;color:#3A4E68;line-height:1.7;margin-bottom:24px;max-width:1100px;}"
+    + ".pdf-prose-empty{color:#94A3B8;font-style:italic;}"
+    // Callouts
+    + ".pdf-callout{padding:14px 20px;border-radius:8px;margin-bottom:14px;max-width:1100px;}"
+    + ".pdf-callout-ttl{font-size:11px;font-weight:800;letter-spacing:.6px;margin-bottom:6px;}"
+    + ".pdf-callout-txt{font-size:12px;line-height:1.6;}"
+    + ".pdf-callout-warn{background:#FFF8E1;border-left:5px solid #D97706;}"
+    + ".pdf-callout-warn .pdf-callout-ttl{color:#92400E;}"
+    + ".pdf-callout-warn .pdf-callout-txt{color:#5D4037;}"
+    + ".pdf-callout-info{background:#EFF6FF;border-left:5px solid #1B3A6B;}"
+    + ".pdf-callout-info .pdf-callout-ttl{color:#1B3A6B;}"
+    + ".pdf-callout-info .pdf-callout-txt{color:#3A4E68;}"
+    // Cronograma
+    + ".pdf-day-block{margin-bottom:22px;}"
+    + ".pdf-day-hd{background:linear-gradient(90deg,#1B3A6B,#2A6FDB);color:#fff;padding:10px 18px;border-radius:8px 8px 0 0;display:flex;align-items:center;}"
+    + ".pdf-day-num{font-size:12px;font-weight:800;letter-spacing:.6px;}"
+    + ".pdf-day-fecha{margin-left:auto;font-size:13px;font-weight:700;background:rgba(255,255,255,.18);padding:4px 12px;border-radius:12px;}"
+    + ".pdf-cron-table{width:100%;border-collapse:collapse;font-size:11px;border:1px solid #D1DCF0;}"
+    + ".pdf-cron-table th{background:#F4F6FA;padding:9px 12px;text-align:left;color:#1B3A6B;font-weight:800;font-size:10px;letter-spacing:.4px;border-bottom:1px solid #D1DCF0;text-transform:uppercase;}"
+    + ".pdf-cron-table td{padding:9px 12px;border-bottom:1px solid #EDF1F8;vertical-align:top;}"
+    + ".pdf-cron-table tr:nth-child(even) td{background:#FAFBFD;}"
+    + ".pdf-cron-action{font-weight:700;color:#0B1F3A;}"
+    + ".pdf-cron-desc{color:#3A4E68;line-height:1.5;}"
+    + ".pdf-cron-time{color:#1B3A6B;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap;}"
+    + ".pdf-cron-epp{color:#3A4E68;font-size:10px;}"
+    // Gantt
+    + ".pdf-gantt-table{width:100%;border-collapse:collapse;font-size:10px;border:1px solid #D1DCF0;}"
+    + ".pdf-gantt-table th{background:#0B1F3A;color:#fff;padding:7px 10px;text-align:left;font-size:9px;letter-spacing:.4px;}"
+    + ".pdf-gantt-table td{padding:5px 10px;border-bottom:1px solid #EDF1F8;border-right:1px solid #EDF1F8;vertical-align:middle;}"
+    // Print mode
+    + "@media print{body{background:#fff;}.pt-pdf-page{box-shadow:none;margin:0;page-break-after:always;}.no-print{display:none!important;}}"
+    + ".no-print{position:fixed;top:14px;right:14px;background:#1B3A6B;color:#fff;padding:10px 16px;border-radius:10px;display:flex;gap:10px;align-items:center;font-size:13px;z-index:1000;box-shadow:0 4px 12px rgba(0,0,0,.2);}"
+    + ".no-print button{background:#fff;color:#1B3A6B;border:none;padding:8px 16px;border-radius:7px;font-weight:800;cursor:pointer;font-size:13px;font-family:inherit;}"
+    + ".no-print button:hover{background:#F4F6FA;}";
+
+  var fullDoc = "<!DOCTYPE html><html><head><meta charset=\"utf-8\"><title>"+title+"</title>"
+    +"<style>"+pdfStyles+"</style></head><body>"
+    +"<div class=\"no-print\"><span>📄 Plan listo. Para PDF usa el botón:</span><button onclick=\"window.print()\">🖨 Imprimir / Guardar como PDF</button></div>"
+    +pdfHTML
+    +"</body></html>";
+
+  var w = window.open("","_blank","width=1400,height=900");
   if(w){
     w.document.write(fullDoc);
     w.document.close();
-    setTimeout(function(){ showToast("✓ PDF abierto. Usa Ctrl/Cmd+P para imprimir."); }, 500);
+    setTimeout(function(){ showToast("✓ PDF abierto. Configura impresora en A3 horizontal."); }, 500);
   } else {
-    // Fallback: download as HTML file
     var blob = new Blob([fullDoc], {type:"text/html;charset=utf-8"});
     var url = URL.createObjectURL(blob);
     var a = document.createElement("a");
@@ -17588,7 +17669,7 @@ function ptExportarPDF(){
     a.click();
     document.body.removeChild(a);
     setTimeout(function(){URL.revokeObjectURL(url);}, 1000);
-    showToast("✓ Descargado. Ábrelo e imprime para PDF.");
+    showToast("✓ Descargado. Ábrelo e imprime en A3 horizontal.");
   }
 }
 
