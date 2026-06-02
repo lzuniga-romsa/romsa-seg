@@ -2782,19 +2782,19 @@ body.in-costeo #app{
               <div class="pt-section-body">
                 <div class="pt-field">
                   <label class="pt-lbl">📄 Alcance del Proyecto <span class="pt-req">*</span></label>
-                  <textarea id="ptf-alcance" class="pt-input pt-input-lg pt-textarea" rows="5" oninput="ptActualizarCampo('alcance',this.value)" placeholder="Describe detalladamente los trabajos a realizar..."></textarea>
+                  <textarea id="ptf-alcance" class="pt-input pt-textarea pt-textarea-big" rows="8" oninput="ptActualizarCampo('alcance',this.value)" placeholder="Describe detalladamente los trabajos a realizar..."></textarea>
                 </div>
                 <div class="pt-field">
                   <label class="pt-lbl">📌 Resumen Ejecutivo <span class="pt-hint">(página 2 del PDF)</span></label>
-                  <textarea id="ptf-resumen" class="pt-input pt-textarea" rows="4" oninput="ptActualizarCampo('resumenEjecutivo',this.value)" placeholder="Resumen breve para el cliente: contexto, objetivo, beneficios..."></textarea>
+                  <textarea id="ptf-resumen" class="pt-input pt-textarea pt-textarea-big" rows="8" oninput="ptActualizarCampo('resumenEjecutivo',this.value)" placeholder="Resumen breve para el cliente: contexto, objetivo, beneficios..."></textarea>
                 </div>
                 <div class="pt-field">
                   <label class="pt-lbl">⚠️ Nota Operativa</label>
-                  <textarea id="ptf-nota" class="pt-input pt-textarea" rows="4" oninput="ptActualizarCampo('nota',this.value)" placeholder="Restricciones, recomendaciones de seguridad, condiciones del área..."></textarea>
+                  <textarea id="ptf-nota" class="pt-input pt-textarea pt-textarea-big" rows="8" oninput="ptActualizarCampo('nota',this.value)" placeholder="Restricciones, recomendaciones de seguridad, condiciones del área..."></textarea>
                 </div>
                 <div class="pt-field">
                   <label class="pt-lbl">🦺 EPP base del proyecto</label>
-                  <input id="ptf-epp" class="pt-input" oninput="ptActualizarCampo('eppBase',this.value)" placeholder="Lentes, chaleco, botas y guantes de seguridad">
+                  <textarea id="ptf-epp" class="pt-input pt-textarea pt-textarea-big" rows="6" oninput="ptActualizarCampo('eppBase',this.value)" placeholder="Lentes, chaleco, botas, guantes de seguridad, careta, mascarilla..."></textarea>
                   <div class="pt-hint" style="margin-top:6px;">Se usa como sugerencia al agregar actividades nuevas en el cronograma.</div>
                 </div>
               </div>
@@ -2845,14 +2845,15 @@ body.in-costeo #app{
             <table id="pt-tabla-acts" class="pt-excel-table">
               <thead>
                 <tr>
-                  <th style="width:42px;text-align:center;">#</th>
+                  <th style="width:38px;text-align:center;">#</th>
+                  <th style="width:62px;text-align:center;">Orden</th>
                   <th style="width:140px;">📅 Día</th>
                   <th style="width:180px;">🎯 Acción</th>
-                  <th style="min-width:260px;">📝 Descripción</th>
-                  <th style="width:100px;">🕐 Inicio</th>
-                  <th style="width:100px;">🕐 Fin</th>
-                  <th style="min-width:180px;">🦺 EPP</th>
-                  <th style="width:42px;"></th>
+                  <th style="min-width:240px;">📝 Descripción</th>
+                  <th style="width:95px;">🕐 Inicio</th>
+                  <th style="width:95px;">🕐 Fin</th>
+                  <th style="min-width:170px;">🦺 EPP</th>
+                  <th style="width:38px;"></th>
                 </tr>
               </thead>
               <tbody id="pt-tabla-acts-body"></tbody>
@@ -2906,14 +2907,6 @@ body.in-costeo #app{
           <option value="Entrega del área">
         </datalist>
 
-        <!-- Compact Gantt preview below table -->
-        <div style="background:var(--white);border:1px solid var(--g1);border-radius:11px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.04);">
-          <div style="padding:14px 18px;background:linear-gradient(90deg,#F8FAFD,#EFF4FB);border-bottom:1px solid var(--g1);display:flex;align-items:center;justify-content:space-between;">
-            <div style="font-size:13px;font-weight:800;color:var(--navy);">📊 Vista previa del Gantt</div>
-            <div style="font-size:11px;color:var(--tx2);">Se actualiza automáticamente</div>
-          </div>
-          <div id="pt-gantt-live" style="padding:18px;"></div>
-        </div>
 
       </div>
 
@@ -16391,6 +16384,26 @@ body { font-family: 'Inter', -apple-system, system-ui, sans-serif; background: #
 .pt-modal-close{background:rgba(255,255,255,.1);color:#fff;border:none;border-radius:7px;width:32px;height:32px;cursor:pointer;font-size:16px;}
 .pt-modal-close:hover{background:rgba(255,255,255,.2);}
 
+
+/* ── BIG TEXTAREAS (v6) ── */
+.pt-textarea-big{min-height:200px!important;font-size:14px;line-height:1.7;padding:16px 18px;font-weight:500;}
+.pt-textarea-big:focus{min-height:240px;}
+
+/* ── MOVE BUTTONS (v6) ── */
+.pt-cell-move{padding:0!important;text-align:center;vertical-align:middle;}
+.pt-move-btns{display:flex;flex-direction:column;gap:1px;align-items:center;justify-content:center;height:100%;padding:4px 0;}
+.pt-move-btn{background:var(--off);border:none;color:var(--navy);width:24px;height:18px;cursor:pointer;font-size:11px;border-radius:3px;display:flex;align-items:center;justify-content:center;transition:all .12s;line-height:1;}
+.pt-move-btn:hover:not(:disabled){background:var(--blue);color:#fff;}
+.pt-move-btn:disabled{opacity:.25;cursor:not-allowed;}
+
+/* ── BIG GANTT IMPROVEMENTS (v6) ── */
+.pt-gantt-full-table thead th{padding:10px 8px;font-size:9px;letter-spacing:.3px;}
+.pt-gantt-full-table thead th:first-child{min-width:190px;font-size:10px;letter-spacing:.4px;}
+.pt-gantt-full-table td.pt-gantt-day-row{padding:8px 12px;font-size:11px;letter-spacing:.3px;}
+.pt-gantt-full-table td.pt-gantt-action{padding:6px 10px;font-weight:600;font-size:10px;line-height:1.3;max-width:190px;}
+.pt-gantt-full-table td.pt-gantt-hour{height:24px;padding:3px 1px;}
+.pt-gantt-full-bar{height:14px!important;}
+
 </style>
 </head>
 <body>
@@ -16958,10 +16971,7 @@ function ptTab(btn, name){
     else if(name==="cronograma") el.style.display = "block";
     else el.style.display = "block";
   }
-  if(name==="cronograma"){
-    ptRenderTablaActs();
-    ptRenderGanttLive();
-  }
+  if(name==="cronograma") ptRenderTablaActs();
   if(name==="gantt") ptRenderGanttFull();
   if(name==="preview") ptRenderPreview();
 }
@@ -17004,7 +17014,17 @@ function ptRenderPortadaCover(){
   set("pt-periodo-display", per || "—");
   var logoEl = document.getElementById("pt-cover-logo");
   var srcLogo = document.getElementById("tb-logo-img");
-  if(logoEl && srcLogo && srcLogo.src) logoEl.src = srcLogo.src;
+  if(logoEl){
+    if(srcLogo && srcLogo.src){
+      logoEl.src = srcLogo.src;
+    } else if(typeof logoBlanco !== "undefined" && logoBlanco){
+      logoEl.src = logoBlanco;
+    } else {
+      // Fallback: try other logo elements
+      var alt = document.getElementById("vc-logo-img") || document.getElementById("login-logo-img");
+      if(alt && alt.src) logoEl.src = alt.src;
+    }
+  }
 }
 
 function _ptFmtFecha(iso){
@@ -17067,7 +17087,6 @@ function ptAgregarFila(){
     epp: _ptActual.eppBase || ""
   });
   ptRenderTablaActs();
-  ptRenderGanttLive();
   ptGuardarDebounced();
   // Focus first input of new row
   setTimeout(function(){
@@ -17085,7 +17104,21 @@ function ptEliminarFila(idx){
   if(!_ptActual.actividades[idx]) return;
   _ptActual.actividades.splice(idx, 1);
   ptRenderTablaActs();
-  ptRenderGanttLive();
+  ptGuardarDebounced();
+}
+
+
+
+// Move activity up/down
+function ptMoverFila(idx, dir){
+  if(!_ptActual || !_ptActual.actividades) return;
+  if(!_ptPuedeEditar(_ptActual)){ showToast("🔒 Sin permisos"); return; }
+  var nuevo = idx + dir;
+  if(nuevo < 0 || nuevo >= _ptActual.actividades.length) return;
+  var tmp = _ptActual.actividades[idx];
+  _ptActual.actividades[idx] = _ptActual.actividades[nuevo];
+  _ptActual.actividades[nuevo] = tmp;
+  ptRenderTablaActs();
   ptGuardarDebounced();
 }
 
@@ -17093,7 +17126,6 @@ function ptCampoFila(idx, campo, valor){
   if(!_ptActual.actividades[idx]) return;
   _ptActual.actividades[idx][campo] = valor;
   ptGuardarDebounced();
-  ptRenderGanttLive();
 }
 
 function ptRenderTablaActs(){
@@ -17113,8 +17145,13 @@ function ptRenderTablaActs(){
   var html = "";
   acts.forEach(function(a, i){
     var lastIdx = i === acts.length-1;
+    var firstIdx = i === 0;
     html += '<tr data-idx="'+i+'">'
       + '<td class="pt-cell-num">'+(i+1)+'</td>'
+      + '<td class="pt-cell-move"><div class="pt-move-btns">'
+        + '<button class="pt-move-btn" onclick="ptMoverFila('+i+',-1)" '+(firstIdx?'disabled':'')+' title="Subir">▲</button>'
+        + '<button class="pt-move-btn" onclick="ptMoverFila('+i+',1)" '+(lastIdx?'disabled':'')+' title="Bajar">▼</button>'
+      + '</div></td>'
       + '<td><select onchange="ptCampoFila('+i+',\'dia\',this.value)">'+_ptDiaOptions(a.dia)+'</select></td>'
       + '<td><input list="pt-acciones-list" value="'+escapeHtml(a.accion||"")+'" oninput="ptCampoFila('+i+',\'accion\',this.value)" placeholder="Acción..."></td>'
       + '<td><input value="'+escapeHtml(a.descripcion||"")+'" oninput="ptCampoFila('+i+',\'descripcion\',this.value)" placeholder="Descripción detallada"></td>'
