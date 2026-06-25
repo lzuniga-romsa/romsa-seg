@@ -10044,6 +10044,15 @@ function generarPdfCotEnVentana(cot, winRef){
   var logoB  = _logoBlancoDe(_modCot) || window._romsaLogoBlanco || '';
   var _tagline = _taglineDe(_modCot);
   var _esHome = _modCot === "home";
+  var _esRack = _modCot === "rackline";
+  // ── RACKLINE: filas compactas para que quepan muchos materiales en 1 hoja ──
+  var _padFila   = _esRack ? '6px 14px'  : '16px 20px';   // celda descripción
+  var _padCelda  = _esRack ? '6px 12px'  : '16px 16px';   // celdas numéricas
+  var _padThead  = _esRack ? '8px 14px'  : '12px 20px';
+  var _fsTitulo  = _esRack ? '11px'      : '12px';
+  var _mbTitulo  = _esRack ? '2px'       : '5px';
+  var _fsDesc    = _esRack ? '10px'      : '11px';
+  var _lhDesc    = _esRack ? '1.45'      : '1.7';
 
   // Leer opciones del PDF
   var inclProc         = document.getElementById('cot-incl-proc')?.checked === true;
@@ -10055,9 +10064,10 @@ function generarPdfCotEnVentana(cot, winRef){
   var pageBreakEn      = document.getElementById('cot-page-break')?.value || 'condiciones';
 
   // Datos contacto ROMSA (en modalidad HOME, usar tel/email específicos)
-  var _telDefault = _esHome ? (window._homeTel || '686 175 4812') : '686 138 3117';
+  var _telDefault = _esRack ? (window._racklineTel || '686 351 3988') : (_esHome ? (window._homeTel || '686 175 4812') : '686 138 3117');
   var rTel   = document.getElementById('cot-romsa-tel')?.value  || cot.romsaTel  || _telDefault;
   var rEmail = document.getElementById('cot-romsa-email')?.value|| cot.romsaEmail|| 'ventas@romsaindustrial.com';
+  if(_esRack && (!rEmail || !rEmail.trim() || rEmail.trim()==='ventas@romsaindustrial.com')) rEmail = 'ventas.rackline@gmail.com';
   var rWeb   = document.getElementById('cot-romsa-web')?.value  || cot.romsaWeb  || 'www.romsaindustrial.com';
   var vigencia = document.getElementById('cot-vigencia')?.value || cot.vigencia  || '30';
 
@@ -10095,21 +10105,22 @@ function generarPdfCotEnVentana(cot, winRef){
       tituloPartida = p.servicio || "Sin título";
     }
     return '<tr>'
-      +'<td style="padding:16px 20px;border-bottom:1px solid #EDF1F8;vertical-align:top;">'
-          +'<div style="font-size:12px;font-weight:700;color:#0B1F3A;margin-bottom:5px;">'+(i+1)+'. '+tituloPartida+'</div>'
-          +(p.desc?'<div style="font-size:11px;color:#4A5E7A;line-height:1.7;white-space:pre-wrap;">'+p.desc+'</div>':'')
+      +'<td style="padding:'+_padFila+';border-bottom:1px solid #EDF1F8;vertical-align:top;">'
+          +'<div style="font-size:'+_fsTitulo+';font-weight:700;color:#0B1F3A;margin-bottom:'+_mbTitulo+';">'+(i+1)+'. '+tituloPartida+'</div>'
+          +(p.desc?'<div style="font-size:'+_fsDesc+';color:#4A5E7A;line-height:'+_lhDesc+';white-space:pre-wrap;">'+p.desc+'</div>':'')
           +procHtml
         +'</td>'
-      +'<td style="padding:16px 16px;border-bottom:1px solid #EDF1F8;text-align:center;vertical-align:top;white-space:nowrap;">'
+      +'<td style="padding:'+_padCelda+';border-bottom:1px solid #EDF1F8;text-align:center;vertical-align:top;white-space:nowrap;">'
           +'<div style="font-size:13px;font-weight:700;color:#0B1F3A;">'+(p.qty||0).toLocaleString('es-MX')+' <span style="font-size:11px;font-weight:500;color:#4A5E7A;">'+(p.unit||'')+'</span></div>'
         +'</td>'
-      +'<td style="padding:16px 16px;border-bottom:1px solid #EDF1F8;text-align:right;vertical-align:top;white-space:nowrap;font-size:12px;color:#4A5E7A;">$'+fmtPeso(p.precio)+'</td>'
-      +'<td style="padding:16px 16px;border-bottom:1px solid #EDF1F8;text-align:right;vertical-align:top;white-space:nowrap;font-size:14px;font-weight:900;color:#0B1F3A;">$'+fmtPeso(st)+'</td>'
+      +'<td style="padding:'+_padCelda+';border-bottom:1px solid #EDF1F8;text-align:right;vertical-align:top;white-space:nowrap;font-size:12px;color:#4A5E7A;">$'+fmtPeso(p.precio)+'</td>'
+      +'<td style="padding:'+_padCelda+';border-bottom:1px solid #EDF1F8;text-align:right;vertical-align:top;white-space:nowrap;font-size:14px;font-weight:900;color:#0B1F3A;">$'+fmtPeso(st)+'</td>'
     +'</tr>';
   }).join('');
 
   // Condiciones
-  var _vigTxt = 'La presente propuesta tiene una vigencia de '+vigencia+' días naturales contados a partir de la fecha de emisión. Transcurrido dicho plazo, ROMSA Industrial se reserva el derecho de revisar los precios y condiciones ofertadas conforme a las variaciones de mercado en materiales, insumos y tipo de cambio. Para garantizar los precios aquí indicados, el cliente deberá aceptar formalmente la propuesta y emitir la orden de compra correspondiente dentro del periodo de vigencia.';
+  var _empresaVig = _esRack ? 'Rackline Storage Systems' : (_esHome ? 'HOME by ROMSA' : 'ROMSA Industrial');
+  var _vigTxt = 'La presente propuesta tiene una vigencia de '+vigencia+' días naturales contados a partir de la fecha de emisión. Transcurrido dicho plazo, '+_empresaVig+' se reserva el derecho de revisar los precios y condiciones ofertadas conforme a las variaciones de mercado en materiales, insumos y tipo de cambio. Para garantizar los precios aquí indicados, el cliente deberá aceptar formalmente la propuesta y emitir la orden de compra correspondiente dentro del periodo de vigencia.';
 
   // Cláusulas estándar: lista cruda (el filtro de eliminadas ocurre después)
   var eliminadas = (cot.clausulasEliminadas && Array.isArray(cot.clausulasEliminadas))
@@ -10235,8 +10246,11 @@ function generarPdfCotEnVentana(cot, winRef){
       +'<div style="height:2px;background:linear-gradient(90deg,#0B1F3A,#1E6FD9,#1B3F72);margin-bottom:12px;"></div>'
       +'<div style="display:flex;align-items:center;justify-content:space-between;">'
         +'<div>'
-          +(logo?'<img src="'+logo+'" style="height:'+(_esHome?'48':'20')+'px;width:auto;margin-bottom:5px;display:block;" alt="ROMSA">':'')
-          +(_esHome
+          +(logo?'<img src="'+logo+'" style="height:'+(_esRack?'40':(_esHome?'48':'20'))+'px;width:auto;margin-bottom:5px;display:block;" alt="ROMSA">':'')
+          +(_esRack
+            ? '<div style="font-size:9.5px;font-weight:700;color:#0C2340;">RACKLINE</div>'
+              +'<div style="font-size:8.5px;color:#8A9AB8;margin-top:1px;">Almacenamiento inteligente para la industria</div>'
+            : _esHome
             ? '<div style="font-size:9.5px;font-weight:700;color:#1E5BA8;">HOME by ROMSA</div>'
               +'<div style="font-size:8.5px;color:#8A9AB8;margin-top:1px;">Pisos Epóxicos</div>'
             : '<div style="font-size:9.5px;font-weight:700;color:#1E6FD9;">ROMSA Industrial</div>'
@@ -10246,8 +10260,8 @@ function generarPdfCotEnVentana(cot, winRef){
           +'<div style="font-size:8.5px;color:#4A5E7A;line-height:1.6;">'
             +'Mexicali, Baja California, México<br>'
             +'<a href="tel:'+rTel+'" style="color:#4A5E7A;text-decoration:none;">'+rTel+'</a><br>'
-            +'<a href="mailto:'+rEmail+'" style="color:#1E6FD9;text-decoration:none;">'+rEmail+'</a><br>'
-            +'<a href="https://'+rWeb+'" style="color:#1E6FD9;text-decoration:none;">'+rWeb+'</a>'
+            +'<a href="mailto:'+rEmail+'" style="color:#1E6FD9;text-decoration:none;">'+rEmail+'</a>'
+            +(_esRack ? '' : '<br><a href="https://'+rWeb+'" style="color:#1E6FD9;text-decoration:none;">'+rWeb+'</a>')
           +'</div>'
         +'</div>'
       +'</div>'
@@ -10322,7 +10336,7 @@ function generarPdfCotEnVentana(cot, winRef){
         +'<div style="position:absolute;right:60px;bottom:-80px;width:200px;height:200px;border-radius:50%;background:rgba(30,111,217,.06);"></div>'
         +'<div style="position:absolute;left:-40px;bottom:-60px;width:240px;height:240px;border-radius:50%;background:rgba(30,111,217,.05);"></div>'
         +'<div style="position:relative;z-index:2;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;">'
-          +(logoB?'<img src="'+logoB+'" style="height:'+(_esHome?'120':'48')+'px;width:auto;" alt="ROMSA">':'<div style="font-size:38px;font-weight:900;color:#fff;letter-spacing:-1.5px;">ROMSA</div>')
+          +(logoB?'<img src="'+logoB+'" style="height:'+(_esRack?'150':(_esHome?'120':'48'))+'px;width:auto;" alt="ROMSA">':'<div style="font-size:38px;font-weight:900;color:#fff;letter-spacing:-1.5px;">ROMSA</div>')
           +'<div style="display:flex;align-items:center;gap:12px;">'
             +'<div style="width:30px;height:1px;background:rgba(255,255,255,.2);"></div>'
             +'<div style="font-size:8.5px;font-weight:600;letter-spacing:3.5px;text-transform:uppercase;color:rgba(255,255,255,.45);">COTIZACIÓN TÉCNICA</div>'
@@ -10351,10 +10365,10 @@ function generarPdfCotEnVentana(cot, winRef){
         +brTabla
         +'<table style="width:100%;border-collapse:collapse;border:1px solid #E2E8F2;border-radius:10px;overflow:hidden;margin-bottom:24px;">'
           +'<thead><tr style="background:#0B1F3A;">'
-            +'<th style="padding:12px 20px;text-align:left;font-size:9px;font-weight:700;color:rgba(255,255,255,.65);letter-spacing:1.5px;text-transform:uppercase;">Descripción del servicio</th>'
-            +'<th style="padding:12px 16px;text-align:center;font-size:9px;font-weight:700;color:rgba(255,255,255,.65);letter-spacing:1.5px;text-transform:uppercase;white-space:nowrap;">Cantidad</th>'
-            +'<th style="padding:12px 16px;text-align:right;font-size:9px;font-weight:700;color:rgba(255,255,255,.65);letter-spacing:1.5px;text-transform:uppercase;white-space:nowrap;">P. Unit.</th>'
-            +'<th style="padding:12px 16px;text-align:right;font-size:9px;font-weight:700;color:rgba(255,255,255,.65);letter-spacing:1.5px;text-transform:uppercase;white-space:nowrap;">Total</th>'
+            +'<th style="padding:'+_padThead+';text-align:left;font-size:9px;font-weight:700;color:rgba(255,255,255,.65);letter-spacing:1.5px;text-transform:uppercase;">'+(_esRack?'Concepto / material':'Descripción del servicio')+'</th>'
+            +'<th style="padding:'+_padThead+';text-align:center;font-size:9px;font-weight:700;color:rgba(255,255,255,.65);letter-spacing:1.5px;text-transform:uppercase;white-space:nowrap;">Cantidad</th>'
+            +'<th style="padding:'+_padThead+';text-align:right;font-size:9px;font-weight:700;color:rgba(255,255,255,.65);letter-spacing:1.5px;text-transform:uppercase;white-space:nowrap;">P. Unit.</th>'
+            +'<th style="padding:'+_padThead+';text-align:right;font-size:9px;font-weight:700;color:rgba(255,255,255,.65);letter-spacing:1.5px;text-transform:uppercase;white-space:nowrap;">Total</th>'
           +'</tr></thead>'
           +'<tbody>'+filas+'</tbody>'
         +'</table>'
@@ -10500,6 +10514,13 @@ function generarPdfCotEnVentana(cot, winRef){
     +'})();'
     +'<\/script>'
     +'<\/body><\/html>';
+  // ── RACKLINE: identidad naranja (acento azul → ámbar), distinta de ROMSA ──
+  if(_esRack){
+    _pdfHtml = _pdfHtml
+      .split('background:#1E6FD9').join('background:#0C2340')   // círculos sólidos → navy (número blanco legible)
+      .split('#1E6FD9').join('#FF9E1B')                          // resto del acento azul → ámbar Rackline
+      .split('rgba(30,111,217,').join('rgba(255,158,27,');      // círculos/halos translúcidos → ámbar
+  }
   _inyectarPdf(_pdfHtml, title, winRef);
 }
 
