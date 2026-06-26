@@ -9225,7 +9225,7 @@ function cambiarModalidadCot(modalidad){
   var hint = document.getElementById("cot-modalidad-hint");
   if(hint){
     hint.textContent = modalidad === "rackline"
-      ? "📦 Modo RACKLINE activo — el PDF usará el logo Rackline Storage Systems, tel 686 351 3988, folio RACK- y la plantilla de condiciones \"RACKLINE\""
+      ? "📦 Modo RACKLINE activo — el PDF usará el logo Rackline Storage Systems, tel 686 351 3988, folio RACKLINE- y la plantilla de condiciones \"RACKLINE\""
       : modalidad === "home"
         ? "🏠 Modo HOME activo — el PDF usará el logo HOME by ROMSA, tagline residencial y tel 686 175 4812"
         : "🏭 Modo Industrial activo — el PDF usará el logo ROMSA industrial";
@@ -9348,14 +9348,14 @@ function _generarFolioHome(){
   return prefijo + String(maxNum+1).padStart(3,"0");
 }
 
-// ── Folio RACKLINE formato RACK-AAAAMMDD-NNN ─────────────
+// ── Folio RACKLINE formato RACKLINE-AAAAMMDD-NNN ─────────────
 function _generarFolioRackline(){
   var hoy = new Date();
   var yyyy = hoy.getFullYear();
   var mm = String(hoy.getMonth()+1).padStart(2,"0");
   var dd = String(hoy.getDate()).padStart(2,"0");
   var fechaStr = yyyy + mm + dd;
-  var prefijo = "RACK-" + fechaStr + "-";
+  var prefijo = "RACKLINE-" + fechaStr + "-";
   var maxNum = 0;
   (cotizaciones||[]).forEach(function(c){
     if(c.folio && c.folio.indexOf(prefijo) === 0){
@@ -9878,7 +9878,7 @@ async function guardarCot(){
   if(!fecha){showToast("⚠️ Selecciona la fecha");return null;}
 
   var tots=calcTotalesCot();
-  // Folio según modalidad: RACKLINE → RACK-…, HOME → HOME-…, Industrial → clásico
+  // Folio según modalidad: RACKLINE → RACKLINE-…, HOME → HOME-…, Industrial → clásico
   function _folioNuevoPorModalidad(){
     return _cotModalidad==="rackline" ? _generarFolioRackline()
          : _cotModalidad==="home" ? _generarFolioHome()
@@ -10220,10 +10220,10 @@ function generarPdfCotEnVentana(cot, winRef){
   var secDestinatario = !inclDestinatario ? '' :
     '<div style="margin-bottom:12px;">'
     +'<div style="font-size:8px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#8A9AB8;margin-bottom:4px;">Dirigido a</div>'
-    +'<div style="font-size:12px;color:#0B1F3A;font-weight:600;">'+(cot.empresa||'')+'</div>'
-    +'<div style="font-size:12px;color:#4A5E7A;font-weight:500;">Attn: '+cot.atencion+'</div>'
-    +((cot.email||cot.tel)?'<div style="font-size:10.5px;color:#8A9AB8;margin-top:2px;">'+(cot.email||'')+(cot.email&&cot.tel?' · ':'')+( cot.tel||'')+'</div>':'')
-    +(cot.rfc?'<div style="font-size:10px;color:#8A9AB8;margin-top:2px;">RFC: '+cot.rfc+'</div>':'')
+    +'<div style="font-size:10.5px;color:#0B1F3A;font-weight:600;">'+(cot.empresa||'')+'</div>'
+    +(cot.atencion?'<div style="font-size:9.5px;color:#4A5E7A;font-weight:500;">Atención: '+cot.atencion+'</div>':'')
+    +((cot.email||cot.tel)?'<div style="font-size:9.5px;color:#8A9AB8;margin-top:2px;">'+(cot.email||'')+(cot.email&&cot.tel?' · ':'')+( cot.tel||'')+'</div>':'')
+    +(cot.rfc?'<div style="font-size:9px;color:#8A9AB8;margin-top:2px;">RFC: '+cot.rfc+'</div>':'')
     +'</div>';
 
   var secIntro = !inclIntro ? '' :
@@ -11070,7 +11070,7 @@ function _ppt_construirSlide1(pptx, cot, partidas, sub, iva, total, lugarFecha, 
   slide.addText("DIRIGIDO A", {x:0.45, y:2.5, w:4, h:0.2, fontSize:8, bold:true, color: COLOR.txtFaint, fontFace:"Calibri", charSpacing:4});
   slide.addText(cot.empresa || "", {x:0.45, y:2.7, w:5.2, h:0.32, fontSize:14, bold:true, color: COLOR.navy, fontFace:"Calibri"});
   if(cot.atencion){
-    slide.addText("Attn: "+cot.atencion, {x:0.45, y:3.04, w:5.2, h:0.22, fontSize:11, color: COLOR.txtSec, fontFace:"Calibri"});
+    slide.addText("Atención: "+cot.atencion, {x:0.45, y:3.04, w:5.2, h:0.22, fontSize:10, color: COLOR.txtSec, fontFace:"Calibri"});
   }
   var contactoLineas = [];
   if(cot.email) contactoLineas.push(cot.email);
