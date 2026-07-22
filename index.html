@@ -2435,6 +2435,21 @@ async function crearObra(){
 function abrirObra(id){
   obraActivaId=id;
   const o=getO();if(!o)return;
+  // Migración automática: si es una obra vieja y ninguna etapa tiene peso asignado,
+  // repartir 100% equitativo entre todas y GUARDARLO (para que sea editable, no solo calculado al vuelo)
+  if(o.etapas && o.etapas.length){
+    const ningunaConPeso = o.etapas.every(e => !(e.peso!=null && e.peso>0));
+    if(ningunaConPeso){
+      const n=o.etapas.length;
+      const base=Math.floor(100/n);
+      let resto=100-(base*n);
+      o.etapas.forEach((e,i)=>{
+        e.peso = base + (i<resto?1:0);
+        if(e.avanceInterno==null) e.avanceInterno = (e.estado==="done") ? 100 : 0;
+      });
+      saveObra(o);
+    }
+  }
   document.getElementById("det-nom").textContent=o.nombre;
   document.getElementById("det-sub").textContent=o.cliente+" · "+(o.ubicacion||"");
   document.getElementById("det-svc").textContent=o.servicio;
@@ -2576,34 +2591,74 @@ function renderEtapasEditor(o){
   const etapas=o.etapas||[];
   if(!etapas.length){el.innerHTML='<div style="font-size:12px;color:var(--g3);padding:6px 0;">Sin etapas — agrega los pasos del proceso</div>';return;}
   const sumaPesos=etapas.reduce((s,e)=>s+(e.peso||0),0);
-  el.innerHTML=etapas.map((e,i)=>`
-    <div class="ee-row" style="align-items:center;">
-      <!-- Botones de orden -->
-      <div style="display:flex;flex-direction:column;gap:2px;margin-right:2px;flex-shrink:0;">
-        <button onclick="moverEtapa('${e.id}',-1)" ${i===0?'disabled':''} style="width:20px;height:20px;border-radius:4px;background:${i===0?'var(--off)':'var(--blue-dim)'};border:none;color:${i===0?'var(--g2)':'var(--blue)'};cursor:${i===0?'default':'pointer'};font-size:10px;display:flex;align-items:center;justify-content:center;padding:0;">▲</button>
-        <button onclick="moverEtapa('${e.id}',1)" ${i===etapas.length-1?'disabled':''} style="width:20px;height:20px;border-radius:4px;background:${i===etapas.length-1?'var(--off)':'var(--blue-dim)'};border:none;color:${i===etapas.length-1?'var(--g2)':'var(--blue)'};cursor:${i===etapas.length-1?'default':'pointer'};font-size:10px;display:flex;align-items:center;justify-content:center;padding:0;">▼</button>
-      </div>
-      <div class="ee-num">${e.num}</div>
-      <div style="flex:1;min-width:0;">
-        <div style="font-size:13px;font-weight:600;">${e.nombre}</div>
-        ${e.fechaCompletada?`<div style="font-size:10px;color:var(--g3);">Completada: ${e.fechaCompletada}</div>`:''}
-        ${(e.estado!=='done'&&e.estado!=='pendiente'&&e.avanceInterno)?`<div style="font-size:10px;color:var(--blue);">Avance interno: ${e.avanceInterno}%</div>`:''}
-      </div>
-      <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;justify-content:flex-end;">
-        <input type="number" min="0" max="100" value="${e.peso!=null?e.peso:0}" onchange="cambiarPesoEtapa('${e.id}',this.value)" style="width:48px;padding:5px 4px;font-size:12px;text-align:center;border-radius:6px;border:1px solid var(--stroke);font-family:var(--mono);" title="% peso de esta etapa en el total">
-        <button class="ee-status" style="background:${e.estado==='done'?'var(--green-dim)':e.estado==='active'?'var(--blue-dim)':'var(--off)'};color:${e.estado==='done'?'#0B7A5A':e.estado==='active'?'var(--blue)':'var(--g3)'};"
-          onclick="ciclarEtapa('${e.id}')">
-          ${e.estado==='done'?'✓ Listo':e.estado==='active'?'▶ Activa':'○ Pend.'}
-        </button>
+  el.innerHTML=etapas.map((e,i)=>{
+    const avanceActual = e.estado==="done" ? 100 : (e.avanceInterno||0);
+    return `
+    <div class="ee-row" style="align-items:flex-start;flex-direction:column;gap:8px;padding:12px;border-radius:10px;background:var(--off);margin-bottom:8px;">
+      <div style="display:flex;align-items:center;gap:8px;width:100%;">
+        <!-- Botones de orden -->
+        <div style="display:flex;flex-direction:column;gap:2px;flex-shrink:0;">
+          <button onclick="moverEtapa('${e.id}',-1)" ${i===0?'disabled':''} style="width:20px;height:20px;border-radius:4px;background:${i===0?'var(--off)':'var(--blue-dim)'};border:none;color:${i===0?'var(--g2)':'var(--blue)'};cursor:${i===0?'default':'pointer'};font-size:10px;display:flex;align-items:center;justify-content:center;padding:0;">▲</button>
+          <button onclick="moverEtapa('${e.id}',1)" ${i===etapas.length-1?'disabled':''} style="width:20px;height:20px;border-radius:4px;background:${i===etapas.length-1?'var(--off)':'var(--blue-dim)'};border:none;color:${i===etapas.length-1?'var(--g2)':'var(--blue)'};cursor:${i===etapas.length-1?'default':'pointer'};font-size:10px;display:flex;align-items:center;justify-content:center;padding:0;">▼</button>
+        </div>
+        <div class="ee-num">${e.num}</div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:13px;font-weight:600;">${e.nombre}</div>
+          ${e.fechaCompletada?`<div style="font-size:10px;color:var(--g3);">Completada: ${e.fechaCompletada}</div>`:''}
+        </div>
         <button onclick="showEditEtapa('${e.id}')" style="width:26px;height:26px;border-radius:6px;background:var(--blue-dim);border:none;color:var(--blue);cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0;" title="Editar nombre">✎</button>
         <button class="del-btn" onclick="delEtapa('${e.id}')" title="Eliminar">×</button>
       </div>
-    </div>`).join("")
+      <div style="display:flex;align-items:center;gap:10px;width:100%;padding-left:30px;flex-wrap:wrap;">
+        <div style="display:flex;align-items:center;gap:5px;">
+          <label style="font-size:10px;color:var(--tx2);font-weight:700;">Peso:</label>
+          <input type="number" min="0" max="100" value="${e.peso!=null?e.peso:0}" onchange="cambiarPesoEtapa('${e.id}',this.value)" style="width:52px;padding:5px 4px;font-size:12px;text-align:center;border-radius:6px;border:1px solid var(--stroke);font-family:var(--mono);" title="% que esta etapa representa del total de la obra">
+          <span style="font-size:11px;color:var(--tx2);">%</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:5px;flex:1;min-width:140px;">
+          <label style="font-size:10px;color:var(--tx2);font-weight:700;">Avance:</label>
+          <input type="range" min="0" max="100" step="5" value="${avanceActual}" oninput="this.nextElementSibling.textContent=this.value+'%'" onchange="cambiarAvanceEtapa('${e.id}',this.value)" style="flex:1;min-width:60px;">
+          <span style="font-family:var(--mono);font-size:12px;font-weight:700;color:var(--blue);min-width:34px;text-align:right;">${avanceActual}%</span>
+        </div>
+        <button class="ee-status" style="background:${e.estado==='done'?'var(--green-dim)':e.estado==='active'?'var(--blue-dim)':'var(--off)'};color:${e.estado==='done'?'#0B7A5A':e.estado==='active'?'var(--blue)':'var(--g3)'};flex-shrink:0;"
+          onclick="ciclarEtapa('${e.id}')">
+          ${e.estado==='done'?'✓ Listo':e.estado==='active'?'▶ Activa':'○ Pend.'}
+        </button>
+      </div>
+    </div>`;
+  }).join("")
     + `<div style="display:flex;align-items:center;justify-content:space-between;padding:9px 12px;border-radius:9px;background:${Math.round(sumaPesos)===100?'var(--green-dim)':'var(--red-dim)'};margin-top:10px;font-size:12px;font-weight:700;">
       <span style="color:var(--tx2);font-weight:600;">Suma de pesos:</span>
       <span style="font-family:var(--mono);color:${Math.round(sumaPesos)===100?'var(--green)':'var(--red)'};">${sumaPesos}%</span>
     </div>`;
 }
+
+// Cambiar el AVANCE INTERNO de una etapa directamente (sin publicar update con nota)
+function cambiarAvanceEtapa(id, valor){
+  const o=getO();if(!o)return;
+  withEditPermission(o,()=>{
+    const e=o.etapas.find(x=>x.id==id);if(!e)return;
+    const v=Math.max(0,Math.min(100,parseFloat(valor)||0));
+    e.avanceInterno=v;
+    const now=new Date();
+    if(v>=100 && e.estado!=="done"){
+      e.estado="done";
+      e.fechaCompletada=now.toLocaleDateString("es-MX");
+      e.horaCompletada=now.toLocaleTimeString("es-MX",{hour:"2-digit",minute:"2-digit"})+" hrs";
+    } else if(v<100 && e.estado==="done"){
+      e.estado="active"; delete e.fechaCompletada; delete e.horaCompletada;
+    } else if(v>0 && e.estado==="pendiente"){
+      e.estado="active";
+    }
+    recalcularPctPonderado(o);
+    document.getElementById("det-pct").textContent=o.pct+"%";
+    saveObra(o);
+    renderEtapasEditor(o);
+    renderResumen(o);
+    showToast("✅ Avance de \""+e.nombre+"\" actualizado a "+v+"% ("+o.pct+"% general)");
+  });
+}
+window.cambiarAvanceEtapa = cambiarAvanceEtapa;
 
 // Cambiar el peso de una etapa (desde el editor de obra ya creada)
 function cambiarPesoEtapa(id, valor){
@@ -2611,9 +2666,12 @@ function cambiarPesoEtapa(id, valor){
   withEditPermission(o,()=>{
     const e=o.etapas.find(x=>x.id==id);if(!e)return;
     e.peso=parseFloat(valor)||0;
+    recalcularPctPonderado(o);
+    document.getElementById("det-pct").textContent=o.pct+"%";
     saveObra(o);
     renderEtapasEditor(o);
-    recalcularPctPonderado(o);
+    renderResumen(o);
+    showToast("✅ Peso actualizado ("+o.pct+"% general)");
   });
 }
 window.cambiarPesoEtapa = cambiarPesoEtapa;
