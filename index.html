@@ -17172,15 +17172,13 @@ function _auRenderizarPDF(a){
   const fecha = _auFechaBonita(a.fecha);
   const logoBlanco = window._romsaLogoBlanco || "";
   const logoAzul = window._romsaLogoAzul || "";
-  const metaPartes = [a.ubicacion, fecha, a.contacto?("Atn. "+a.contacto):""].filter(Boolean);
-  const metaHtml = metaPartes.join(" &middot; ");
   const nivelHtml = n ? `<div class="au-seccion">
       <div class="au-secnum">01 &mdash; Diagnóstico general</div>
       <div style="display:flex;align-items:flex-start;gap:14px;background:#EEF2F7;border-left:2px solid #3B6FCE;padding:14px 18px;">
         <div style="font-size:26px;line-height:1;">${n.emoji}</div>
         <div>
           <div style="font-size:9px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:1.2px;">Nivel de conservación</div>
-          <div style="font-family:'Playfair Display',serif;font-size:16px;font-weight:600;color:#12233F;margin:3px 0 5px;">${escapeHtml(n.nombre)}</div>
+          <div style="font-size:17px;font-weight:700;color:#12233F;letter-spacing:-.1px;margin:3px 0 5px;">${escapeHtml(n.nombre)}</div>
           ${a.nivelNota?`<div style="font-size:11px;color:#4A5E7A;line-height:1.6;">${escapeHtml(a.nivelNota)}</div>`:''}
         </div>
       </div>
@@ -17227,8 +17225,7 @@ function _auRenderizarPDF(a){
         +'<div style="font-size:8px;color:rgba(255,255,255,.35);font-family:monospace;">'+escapeHtml(a.folio||"")+'</div>'
         +'<div style="font-size:8px;font-weight:700;color:#9CC0EE;letter-spacing:1px;text-transform:uppercase;">Auditoría técnica</div>'
       +'</div>'
-      +(logoBlanco?'<img src="'+logoBlanco+'" style="height:26px;width:auto;max-width:160px;object-fit:contain;">':'<div style="color:#fff;font-size:20px;font-weight:800;letter-spacing:1px;">ROMSA</div>')
-      +'<div style="font-size:9px;font-weight:700;color:#9CC0EE;letter-spacing:3px;text-transform:uppercase;margin-top:5px;">Industrial</div>'
+      +(logoBlanco?'<img src="'+logoBlanco+'" style="height:28px;width:auto;max-width:170px;object-fit:contain;">':'<div style="color:#fff;font-size:20px;font-weight:800;letter-spacing:1px;">ROMSA</div>')
     +'</div>';
   const footerHojaHtml =
     '<div class="au-hoja-footer" style="background:#12233F;padding:14px 18mm 10px;">'
@@ -17241,15 +17238,15 @@ function _auRenderizarPDF(a){
           +'<a href="mailto:ventas@romsaindustrial.com" style="color:#9CC0EE;font-weight:700;text-decoration:none;">ventas@romsaindustrial.com</a>'
         +'</div>'
       +'</div>'
-      +'<div style="display:flex;justify-content:space-between;font-size:7.5px;color:rgba(255,255,255,.3);padding-top:8px;font-family:monospace;">'
-        +'<span>Mexicali, Baja California</span>'
-        +'<span class="au-pagina-num">Página <span class="au-pag-actual">1</span> / <span class="au-pag-total">1</span></span>'
+      +'<div style="display:flex;justify-content:space-between;align-items:center;font-size:8px;color:rgba(255,255,255,.45);padding-top:8px;letter-spacing:.2px;">'
+        +'<span>'+(a.contacto?('Atención: '+escapeHtml(a.contacto)):'')+'</span>'
+        +'<span>Mexicali, Baja California a '+fecha+'</span>'
       +'</div>'
     +'</div>';
   const htmlDoc = `<!DOCTYPE html>
 <html lang="es"><head><meta charset="UTF-8">
 <title>${escapeHtml(a.folio||"Auditoría")} - ${escapeHtml(a.cliente||"ROMSA")}</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 @page{size:A4;margin:0;} *{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
 body{font-family:'Inter',sans-serif;background:#ECEFF4;color:#12233F;}
@@ -17270,9 +17267,8 @@ body{font-family:'Inter',sans-serif;background:#ECEFF4;color:#12233F;}
     <div id="au-footer-tpl" style="display:none;">${footerHojaHtml}</div>
     <div id="au-secciones-fuente" style="display:none;">
       <div class="au-seccion">
-        <div style="font-size:9px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:4px;">Diagnóstico preparado para</div>
-        <div style="font-family:'Playfair Display',serif;font-size:22px;font-weight:600;color:#12233F;margin-bottom:4px;">${escapeHtml(a.cliente||"")}</div>
-        <div style="font-size:11px;color:#64748B;margin-bottom:14px;">${metaHtml}</div>
+        <div style="font-size:9px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px;">Diagnóstico preparado para</div>
+        <div style="font-size:23px;font-weight:700;color:#12233F;letter-spacing:-.2px;margin-bottom:14px;">${escapeHtml(a.cliente||"")}</div>
         <div style="height:1px;background:linear-gradient(to right,#3B6FCE,transparent);margin-bottom:6px;"></div>
       </div>
       ${nivelHtml}
