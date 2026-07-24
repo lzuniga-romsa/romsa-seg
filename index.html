@@ -2931,7 +2931,7 @@ body.in-costeo #app{
       <div id="vc-servicio-badge" style="display:flex;justify-content:center;margin-top:11px;"></div>
     </div>
     <div style="width:32px;height:1px;background:rgba(255,255,255,.1);margin:0 auto 13px;"></div>
-    <div style="font-size:10px;color:rgba(255,255,255,.35);line-height:1.5;max-width:300px;margin:0 auto;">
+    <div style="font-size:9px;color:rgba(255,255,255,.35);line-height:1.4;white-space:nowrap;text-align:center;">
       Seguimiento de obra en tiempo real del proyecto ejecutado por ROMSA Industrial
     </div>
   </div>
@@ -4208,17 +4208,15 @@ function mostrarVC(o){
   const badgeEl=document.getElementById("vc-servicio-badge");
   if(badgeEl){
     badgeEl.innerHTML = o.servicio
-      ? `<div style="display:inline-flex;align-items:center;background:rgba(30,111,217,.18);border:1px solid rgba(30,111,217,.3);color:#60A5FA;font-size:10px;font-weight:600;padding:3px 11px;border-radius:20px;">${o.servicio}</div>`
+      ? `<div style="display:inline-flex;align-items:center;background:rgba(30,111,217,.18);border:1px solid rgba(30,111,217,.3);color:#60A5FA;font-size:8.5px;font-weight:600;padding:2px 9px;border-radius:20px;">${o.servicio}</div>`
       : "";
   }
   // Inject project identity block above resumen
   document.getElementById("vc-identity-block").innerHTML=`
-    <div style="margin-bottom:16px;display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">
-      <div>
-        <div style="font-size:18px;font-weight:800;color:#fff;letter-spacing:.5px;text-transform:uppercase;margin-bottom:4px;">${o.cliente||"—"}</div>
-        <div style="font-size:13px;font-weight:500;color:rgba(255,255,255,.5);letter-spacing:.2px;">${o.nombre}</div>
-      </div>
-      <div style="font-size:10px;color:rgba(255,255,255,.35);letter-spacing:.2px;text-align:right;white-space:nowrap;padding-top:3px;">Mexicali, Baja California a ${_fechaBonita}</div>
+    <div style="margin-bottom:20px;">
+      <div style="text-align:right;font-size:10px;color:rgba(255,255,255,.35);letter-spacing:.2px;margin-bottom:18px;">Mexicali, Baja California a ${_fechaBonita}</div>
+      <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">${o.cliente||"—"}</div>
+      <div style="font-size:15px;font-weight:700;color:#fff;letter-spacing:.2px;line-height:1.4;">${o.nombre}</div>
     </div>`;
 
   // Reporte resumen — siempre visible
@@ -4255,7 +4253,7 @@ function mostrarVC(o){
   if(rep.m2) items.unshift({l:"Superficie total",v:rep.m2.toFixed(2)+" "+(rep.unidad||"m²")});
   // Técnico: usar rep.tecnico si existe, sino el perfil del técnico que creó la obra
   const tecnicoNombre = rep.tecnico || o.creadoPor || "";
-  if(tecnicoNombre) items.push({l:"Técnico responsable",v:'<strong>'+tecnicoNombre+'</strong><br><small style="font-weight:400;opacity:.55;">Responsable técnico certificado ROMSA</small>'});
+  if(tecnicoNombre) items.push({l:"Supervisor de obra",v:'<strong>'+tecnicoNombre+'</strong><br><small style="font-weight:400;opacity:.55;">Responsable técnico certificado ROMSA</small>'});
   grid.innerHTML=items.map(i=>`
     <div class="vc-report-field">
       <div class="vc-rf-l">${i.l}</div>
