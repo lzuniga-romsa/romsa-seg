@@ -2928,10 +2928,10 @@ body.in-costeo #app{
       <div style="display:flex;justify-content:center;padding-top:4px;">
         <img id="vc-logo-img" alt="ROMSA" style="height:34px;width:auto;opacity:1;" src="">
       </div>
-      <div id="vc-servicio-badge" style="display:flex;justify-content:center;margin-top:11px;"></div>
+      <div id="vc-servicio-badge" style="display:flex;justify-content:center;margin-top:18px;"></div>
     </div>
-    <div style="width:32px;height:1px;background:rgba(255,255,255,.1);margin:0 auto 13px;"></div>
-    <div style="font-size:9px;color:rgba(255,255,255,.35);line-height:1.4;white-space:nowrap;text-align:center;">
+    <div style="width:32px;height:1px;background:rgba(255,255,255,.1);margin:0 auto 16px;"></div>
+    <div style="font-size:9px;color:rgba(255,255,255,.35);line-height:1.4;white-space:nowrap;text-align:center;margin-bottom:6px;">
       Seguimiento de obra en tiempo real del proyecto ejecutado por ROMSA Industrial
     </div>
   </div>
@@ -4213,9 +4213,9 @@ function mostrarVC(o){
   }
   // Inject project identity block above resumen
   document.getElementById("vc-identity-block").innerHTML=`
-    <div style="margin-bottom:20px;">
+    <div style="margin-top:10px;margin-bottom:20px;">
       <div style="text-align:right;font-size:10px;color:rgba(255,255,255,.35);letter-spacing:.2px;margin-bottom:18px;">Mexicali, Baja California a ${_fechaBonita}</div>
-      <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">${o.cliente||"—"}</div>
+      <div style="font-size:15px;font-weight:700;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.3px;margin-bottom:4px;">${o.cliente||"—"}</div>
       <div style="font-size:15px;font-weight:700;color:#fff;letter-spacing:.2px;line-height:1.4;">${o.nombre}</div>
     </div>`;
 
