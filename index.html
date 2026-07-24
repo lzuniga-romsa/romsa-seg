@@ -2926,8 +2926,9 @@ body.in-costeo #app{
         <div style="width:4px;height:4px;background:#10B981;border-radius:50%;animation:pulse-dot 1.5s ease-in-out infinite;"></div>EN VIVO
       </div>
       <div style="display:flex;justify-content:center;padding-top:4px;">
-        <img id="vc-logo-img" alt="ROMSA" style="height:22px;width:auto;opacity:1;" src="">
+        <img id="vc-logo-img" alt="ROMSA" style="height:34px;width:auto;opacity:1;" src="">
       </div>
+      <div id="vc-servicio-badge" style="display:flex;justify-content:center;margin-top:11px;"></div>
     </div>
     <div style="width:32px;height:1px;background:rgba(255,255,255,.1);margin:0 auto 13px;"></div>
     <div style="font-size:10px;color:rgba(255,255,255,.35);line-height:1.65;max-width:280px;margin:0 auto;">
@@ -4200,18 +4201,23 @@ function mostrarVC(o){
   const rep=o.reporte||{};
 
   // Header
-  const _meses=["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+  const _mesesLC=["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
   const _n=new Date();
-  const _fecha=_meses[_n.getMonth()]+" "+_n.getDate()+" de "+_n.getFullYear();
+  const _fechaBonita=_n.getDate()+" de "+_mesesLC[_n.getMonth()]+" de "+_n.getFullYear();
+  // Badge de servicio debajo del logo
+  const badgeEl=document.getElementById("vc-servicio-badge");
+  if(badgeEl){
+    badgeEl.innerHTML = o.servicio
+      ? `<div style="display:inline-flex;align-items:center;background:rgba(30,111,217,.18);border:1px solid rgba(30,111,217,.3);color:#60A5FA;font-size:10px;font-weight:600;padding:3px 11px;border-radius:20px;">${o.servicio}</div>`
+      : "";
+  }
   // Inject project identity block above resumen
   document.getElementById("vc-identity-block").innerHTML=`
     <div style="margin-bottom:16px;">
-      <div style="font-size:18px;font-weight:800;color:#fff;letter-spacing:.5px;text-transform:uppercase;margin-bottom:4px;">${o.cliente||"—"}</div>
-      <div style="font-size:13px;font-weight:500;color:rgba(255,255,255,.5);letter-spacing:.2px;">${o.nombre}</div>
-      <div style="display:flex;align-items:center;gap:8px;margin-top:9px;flex-wrap:wrap;">
-        <div style="display:inline-flex;align-items:center;background:rgba(30,111,217,.18);border:1px solid rgba(30,111,217,.3);color:#60A5FA;font-size:10px;font-weight:600;padding:3px 11px;border-radius:20px;">${o.servicio}</div>
-        <span style="font-size:10px;color:rgba(255,255,255,.25);">${_fecha}</span>
-        ${o.ubicacion?`<span style="font-size:10px;color:rgba(255,255,255,.18);">${o.ubicacion}, México</span>`:""}
+      <div style="font-size:10px;color:rgba(255,255,255,.35);letter-spacing:.2px;margin-bottom:12px;">Mexicali, Baja California a ${_fechaBonita}</div>
+      <div style="text-align:center;">
+        <div style="font-size:18px;font-weight:800;color:#fff;letter-spacing:.5px;text-transform:uppercase;margin-bottom:4px;">${o.cliente||"—"}</div>
+        <div style="font-size:13px;font-weight:500;color:rgba(255,255,255,.5);letter-spacing:.2px;">${o.nombre}</div>
       </div>
     </div>`;
 
@@ -17220,27 +17226,24 @@ function _auRenderizarPDF(a){
     </div>`;
   // Header y footer premium, se repiten idénticos en cada hoja (misma lógica que cotización)
   const headerHojaHtml =
-    '<div class="au-hoja-header" style="background:#12233F;padding:14px 18mm 16px;text-align:center;">'
-      +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">'
-        +'<div style="font-size:8px;color:rgba(255,255,255,.35);font-family:monospace;">'+escapeHtml(a.folio||"")+'</div>'
-        +'<div style="font-size:8px;font-weight:700;color:#9CC0EE;letter-spacing:1px;text-transform:uppercase;">Auditoría técnica</div>'
+    '<div class="au-hoja-header" style="background:linear-gradient(135deg,#0A1930 0%,#12233F 55%,#1C3A63 100%);padding:22px 18mm 28px;text-align:center;">'
+      +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">'
+        +'<div style="font-size:8.5px;color:#7FAEE8;font-family:monospace;font-weight:700;letter-spacing:.8px;">'+escapeHtml(a.folio||"")+'</div>'
+        +'<div style="font-size:8px;font-weight:700;color:#9CC0EE;letter-spacing:1.5px;text-transform:uppercase;">Auditoría técnica</div>'
       +'</div>'
-      +(logoBlanco?'<img src="'+logoBlanco+'" style="height:28px;width:auto;max-width:170px;object-fit:contain;">':'<div style="color:#fff;font-size:20px;font-weight:800;letter-spacing:1px;">ROMSA</div>')
+      +(logoBlanco?'<img src="'+logoBlanco+'" style="height:36px;width:auto;max-width:210px;object-fit:contain;">':'<div style="color:#fff;font-size:24px;font-weight:800;letter-spacing:1px;">ROMSA</div>')
     +'</div>';
   const footerHojaHtml =
-    '<div class="au-hoja-footer" style="background:#12233F;padding:14px 18mm 10px;">'
-      +'<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:14px;padding-bottom:10px;border-bottom:1px solid rgba(255,255,255,.12);">'
-        +'<div style="display:flex;align-items:center;gap:8px;">'
+    '<div class="au-hoja-footer" style="background:linear-gradient(135deg,#0A1930 0%,#12233F 60%,#16294A 100%);padding:18px 18mm 20px;">'
+      +'<div style="display:flex;justify-content:space-between;align-items:flex-end;">'
+        +'<div>'
+          +'<div style="font-size:7.5px;font-weight:700;color:rgba(255,255,255,.4);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;">Especialista en recubrimientos industriales</div>'
           +(logoBlanco?'<img src="'+logoBlanco+'" style="height:16px;width:auto;max-width:110px;object-fit:contain;">':'<div style="font-size:11px;font-weight:800;color:#fff;">ROMSA industrial</div>')
         +'</div>'
-        +'<div style="text-align:right;font-size:8px;color:rgba(255,255,255,.55);line-height:1.6;">'
-          +'¿Preguntas sobre este diagnóstico?<br>'
-          +'<a href="mailto:ventas@romsaindustrial.com" style="color:#9CC0EE;font-weight:700;text-decoration:none;">ventas@romsaindustrial.com</a>'
+        +'<div style="text-align:right;font-size:8.5px;line-height:1.7;">'
+          +'<div style="font-weight:700;color:#9CC0EE;">www.romsaindustrial.com</div>'
+          +'<a href="mailto:ventas@romsaindustrial.com" style="color:rgba(255,255,255,.55);text-decoration:none;">ventas@romsaindustrial.com</a>'
         +'</div>'
-      +'</div>'
-      +'<div style="display:flex;justify-content:space-between;align-items:center;font-size:8px;color:rgba(255,255,255,.45);padding-top:8px;letter-spacing:.2px;">'
-        +'<span>'+(a.contacto?('Atención: '+escapeHtml(a.contacto)):'')+'</span>'
-        +'<span>Mexicali, Baja California a '+fecha+'</span>'
       +'</div>'
     +'</div>';
   const htmlDoc = `<!DOCTYPE html>
@@ -17249,7 +17252,7 @@ function _auRenderizarPDF(a){
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 @page{size:A4;margin:0;} *{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
-body{font-family:'Inter',sans-serif;background:#ECEFF4;color:#12233F;}
+body{font-family:'Inter',sans-serif;background:#ECEFF4 radial-gradient(ellipse 900px 560px at 50% -8%,rgba(59,111,206,.10),transparent 60%),radial-gradient(ellipse 700px 500px at 100% 100%,rgba(59,111,206,.06),transparent 55%);color:#12233F;}
 .au-hoja{width:210mm;min-height:297mm;background:#fff;margin:16px auto;box-shadow:0 8px 32px rgba(11,31,58,.15);display:flex;flex-direction:column;page-break-after:always;}
 .au-hoja:last-child{page-break-after:auto;}
 .au-hoja-cuerpo{padding:20px 18mm;flex:1;}
@@ -17288,8 +17291,8 @@ body{font-family:'Inter',sans-serif;background:#ECEFF4;color:#12233F;}
     var footerTpl = document.getElementById("au-footer-tpl");
     if(!wrap || !source || !headerTpl || !footerTpl) return;
     var HOJA_ALTO = 1123;
-    var HEADER_ALTO = 108;
-    var FOOTER_ALTO = 92;
+    var HEADER_ALTO = 118;
+    var FOOTER_ALTO = 78;
     var PADDING_VERT = 40;
     var AREA_UTIL = HOJA_ALTO - HEADER_ALTO - FOOTER_ALTO - PADDING_VERT;
     var headerHTML = headerTpl.innerHTML;
