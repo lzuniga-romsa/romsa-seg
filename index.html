@@ -2931,8 +2931,8 @@ body.in-costeo #app{
       <div id="vc-servicio-badge" style="display:flex;justify-content:center;margin-top:11px;"></div>
     </div>
     <div style="width:32px;height:1px;background:rgba(255,255,255,.1);margin:0 auto 13px;"></div>
-    <div style="font-size:10px;color:rgba(255,255,255,.35);line-height:1.65;max-width:280px;margin:0 auto;">
-      Seguimiento en tiempo real del proyecto ejecutado por ROMSA Industrial. Control total, evidencia documentada y calidad garantizada.
+    <div style="font-size:10px;color:rgba(255,255,255,.35);line-height:1.5;max-width:300px;margin:0 auto;">
+      Seguimiento de obra en tiempo real del proyecto ejecutado por ROMSA Industrial
     </div>
   </div>
   <div class="vc-body">
@@ -4213,12 +4213,12 @@ function mostrarVC(o){
   }
   // Inject project identity block above resumen
   document.getElementById("vc-identity-block").innerHTML=`
-    <div style="margin-bottom:16px;">
-      <div style="font-size:10px;color:rgba(255,255,255,.35);letter-spacing:.2px;margin-bottom:12px;">Mexicali, Baja California a ${_fechaBonita}</div>
-      <div style="text-align:center;">
+    <div style="margin-bottom:16px;display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">
+      <div>
         <div style="font-size:18px;font-weight:800;color:#fff;letter-spacing:.5px;text-transform:uppercase;margin-bottom:4px;">${o.cliente||"—"}</div>
         <div style="font-size:13px;font-weight:500;color:rgba(255,255,255,.5);letter-spacing:.2px;">${o.nombre}</div>
       </div>
+      <div style="font-size:10px;color:rgba(255,255,255,.35);letter-spacing:.2px;text-align:right;white-space:nowrap;padding-top:3px;">Mexicali, Baja California a ${_fechaBonita}</div>
     </div>`;
 
   // Reporte resumen — siempre visible
@@ -17237,8 +17237,8 @@ function _auRenderizarPDF(a){
     '<div class="au-hoja-footer" style="background:linear-gradient(135deg,#0A1930 0%,#12233F 60%,#16294A 100%);padding:18px 18mm 20px;">'
       +'<div style="display:flex;justify-content:space-between;align-items:flex-end;">'
         +'<div>'
-          +'<div style="font-size:7.5px;font-weight:700;color:rgba(255,255,255,.4);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;">Especialista en recubrimientos industriales</div>'
           +(logoBlanco?'<img src="'+logoBlanco+'" style="height:16px;width:auto;max-width:110px;object-fit:contain;">':'<div style="font-size:11px;font-weight:800;color:#fff;">ROMSA industrial</div>')
+          +'<div style="font-size:8.5px;font-weight:700;color:#9CC0EE;letter-spacing:.2px;margin-top:8px;">Especialistas en Recubrimientos Industriales</div>'
         +'</div>'
         +'<div style="text-align:right;font-size:8.5px;line-height:1.7;">'
           +'<div style="font-weight:700;color:#9CC0EE;">www.romsaindustrial.com</div>'
