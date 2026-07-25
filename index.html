@@ -1459,6 +1459,16 @@ body.in-costeo #app{
               <input type="file" id="upd-cam" accept="image/*" capture="environment" style="display:none" onchange="handleUpdFoto(event)">
               <input type="file" id="upd-gal" accept="image/*" multiple style="display:none" onchange="handleUpdFoto(event)">
             </div>
+            <div>
+              <label class="flabel">Video del día <span style="font-weight:400;color:var(--tx3);">(máx. 60 seg, hasta 60MB)</span></label>
+              <div id="upd-video-preview" style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:7px;"></div>
+              <div style="display:flex;gap:8px;">
+                <button class="btn btn-ghost btn-sm" style="flex:1;" onclick="document.getElementById('upd-video-cam').click()">🎥 Grabar</button>
+                <button class="btn btn-ghost btn-sm" style="flex:1;" onclick="document.getElementById('upd-video-gal').click()">📁 Archivo</button>
+              </div>
+              <input type="file" id="upd-video-cam" accept="video/*" capture="environment" style="display:none" onchange="handleUpdVideo(event)">
+              <input type="file" id="upd-video-gal" accept="video/*" style="display:none" onchange="handleUpdVideo(event)">
+            </div>
             <button class="btn btn-primary btn-block" onclick="publicarUpdate()">📤 Publicar actualización</button>
           </div>
         </div>
@@ -3055,6 +3065,7 @@ let _baPairs = [];
 let _baPairsUnsub = null;
 let obraActivaId = null;
 let updFotos = [];
+let updVideos = [];
 let notaFotosBuffer = [];
 let _savingBA = false;
 let baPendingId = null, baPendingSlot = null;
@@ -3146,6 +3157,26 @@ async function uploadPhotosToStorage(photos, obraId, carpeta){
     if(!p) continue;
     if(p.startsWith("http")){ out.push(p); continue; } // ya está en Storage
     out.push(await uploadPhotoToStorage(p, obraId, carpeta));
+  }
+  return out;
+}
+const VIDEO_MAX_MB = 60;
+async function uploadVideoToStorage(file, obraId, carpeta){
+  if(!storage){ throw new Error("Storage no disponible; no se puede subir video."); }
+  const ext = (file.name.split(".").pop()||"mp4").toLowerCase().replace(/[^a-z0-9]/g,"") || "mp4";
+  const ts = Date.now();
+  const rand = Math.random().toString(36).slice(2,8);
+  const path = "obras/"+obraId+"/"+carpeta+"/video_"+ts+"_"+rand+"."+ext;
+  const ref = storage.ref().child(path);
+  const snap = await ref.put(file, {contentType:file.type||"video/mp4"});
+  return await snap.ref.getDownloadURL();
+}
+async function uploadVideosToStorage(files, obraId, carpeta){
+  const out=[];
+  for(const f of files){
+    if(!f) continue;
+    if(typeof f==="string" && f.startsWith("http")){ out.push(f); continue; } // ya está en Storage
+    out.push(await uploadVideoToStorage(f, obraId, carpeta));
   }
   return out;
 }
@@ -3855,6 +3886,29 @@ function renderUpdFotoPreview(){
       <button onclick="updFotos.splice(${i},1);renderUpdFotoPreview();" style="position:absolute;top:2px;right:2px;width:17px;height:17px;border-radius:50%;background:rgba(0,0,0,.7);border:none;color:#fff;font-size:10px;cursor:pointer;">×</button>
     </div>`).join("");
 }
+function handleUpdVideo(e){
+  Array.from(e.target.files).forEach(f=>{
+    if(!f.type.startsWith("video/")){ showToast("⚠️ El archivo seleccionado no es un video"); return; }
+    if(f.size > VIDEO_MAX_MB*1024*1024){ showToast(`⚠️ El video pesa más de ${VIDEO_MAX_MB}MB, elige uno más corto`); return; }
+    updVideos.push(f);
+    renderUpdVideoPreview();
+  });
+  e.target.value="";
+}
+function renderUpdVideoPreview(){
+  const el=document.getElementById("upd-video-preview");
+  if(!el) return;
+  el.innerHTML=updVideos.map((f,i)=>{
+    const url=URL.createObjectURL(f);
+    const sizeMb=(f.size/1024/1024).toFixed(1);
+    return `
+    <div style="position:relative;width:96px;flex-shrink:0;">
+      <video src="${url}" style="width:96px;height:58px;object-fit:cover;border-radius:7px;background:#000;" muted></video>
+      <div style="font-size:8.5px;color:var(--tx3);margin-top:2px;text-align:center;">${sizeMb}MB</div>
+      <button onclick="updVideos.splice(${i},1);renderUpdVideoPreview();" style="position:absolute;top:2px;right:2px;width:17px;height:17px;border-radius:50%;background:rgba(0,0,0,.7);border:none;color:#fff;font-size:10px;cursor:pointer;">×</button>
+    </div>`;
+  }).join("");
+}
 async function publicarUpdate(){
   const o=getO();if(!o)return;
   const nota=document.getElementById("upd-nota").value.trim();
@@ -3873,6 +3927,11 @@ async function publicarUpdate(){
     // Subir fotos a Firebase Storage (mejor calidad, sin límite 1MB de Firestore)
     const notaFotos = await uploadPhotosToStorage([...notaFotosBuffer], o.id, "notas");
     const fotos = await uploadPhotosToStorage([...updFotos], o.id, "updates");
+    let videos = [];
+    if(updVideos.length){
+      showToast("⏳ Subiendo video...");
+      videos = await uploadVideosToStorage([...updVideos], o.id, "updates");
+    }
     // Asegurar pesos persistidos antes de actualizar (retrocompat)
     if(!o.etapas.some(e=>typeof e.peso==="number")){
       const efectivos=_pesosEfectivos(o.etapas);
@@ -3897,7 +3956,7 @@ async function publicarUpdate(){
     const upd={
       id:updId, ts:updId,
       etapaId, etapaNombre:etapa?.nombre||"General",
-      pct, pctEtapa, nota, notaCliente, notaFotos, m2hoy, m2unit, fotos,
+      pct, pctEtapa, nota, notaCliente, notaFotos, m2hoy, m2unit, fotos, videos,
       fecha:now.toLocaleDateString("es-MX",{day:"numeric",month:"long",year:"numeric"}),
       fechaCorta:now.toLocaleDateString("es-MX"),
       hora:now.toLocaleTimeString("es-MX",{hour:"2-digit",minute:"2-digit"}),
@@ -3922,6 +3981,7 @@ async function publicarUpdate(){
     document.getElementById("upd-ajuste-manual-chk").checked=false;
     toggleAjusteManualPct(false);
     updFotos=[];renderUpdFotoPreview();
+    updVideos=[];renderUpdVideoPreview();
     renderEtapasEditor(o);
     renderUpdFeed(o);renderResumen(o);
     showToast("✅ Publicado — el cliente ya lo ve en tiempo real");
@@ -3954,6 +4014,14 @@ function renderUpdFeed(o){
           <div class="upd-foto">
             <img src="${src}" onclick="verImg('${src}')">
             <button class="upd-foto-del" onclick="delFotoUpdate(${u.id},${fi})" title="Borrar foto">×</button>
+          </div>`).join("")}
+      </div>`:''}
+      ${(u.videos||[]).length?`
+      <div style="display:flex;gap:5px;flex-wrap:wrap;padding:5px 3px;">
+        ${(u.videos||[]).map((src,vi)=>`
+          <div style="position:relative;">
+            <video src="${src}" controls style="width:150px;height:100px;object-fit:cover;border-radius:6px;background:#000;"></video>
+            <button class="upd-foto-del" onclick="delVideoUpdate(${u.id},${vi})" title="Borrar video">×</button>
           </div>`).join("")}
       </div>`:''}
       ${u.nota?`<div class="upd-nota">${u.nota}</div>`:''}
@@ -4005,6 +4073,13 @@ function delFotoUpdate(updId,fotoIdx){
   const u=o.updates.find(x=>x.id===updId);if(!u)return;
   u.fotos.splice(fotoIdx,1);
   saveObra(o);renderUpdFeed(o);showToast("🗑 Foto eliminada");
+}
+function delVideoUpdate(updId,videoIdx){
+  if(!confirm("¿Borrar este video?"))return;
+  const o=getO();if(!o)return;
+  const u=o.updates.find(x=>x.id===updId);if(!u||!u.videos)return;
+  u.videos.splice(videoIdx,1);
+  saveObra(o);renderUpdFeed(o);showToast("🗑 Video eliminado");
 }
 
 // ─── ANTES/DESPUÉS ────────────────────────────────
@@ -4325,6 +4400,9 @@ function mostrarVC(o){
               </div>`).join("")}
           </div>`;
         })():''}
+        ${(u.videos||[]).length?`<div style="display:flex;flex-direction:column;gap:4px;margin:0 0 3px;">
+          ${(u.videos||[]).map(src=>`<video src="${src}" controls playsinline preload="metadata" style="width:100%;max-height:220px;background:#000;display:block;"></video>`).join("")}
+        </div>`:''}
         ${u.nota?`<div class="vc-nota">${u.nota}</div>`:''}
         ${u.m2hoy?`<div style="margin:0 14px 8px;display:flex;align-items:center;gap:8px;"><span style="font-size:10px;font-weight:700;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.8px;">📐 Área trabajada:</span><span style="font-family:var(--mono);font-size:13px;font-weight:700;color:#fff;">${u.m2hoy} ${u.m2unit||'m²'}</span></div>`:''}
         ${u.notaCliente?`<div style="margin:0 14px 12px;background:rgba(30,111,217,.15);border:1px solid rgba(30,111,217,.25);border-radius:8px;padding:10px 13px;font-size:12px;color:#90C0FF;line-height:1.6;">
@@ -4519,6 +4597,7 @@ async function showPdfPreview(){
             if(fs.length===2) return `<div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:7px;break-inside:avoid;">${fs.map(src=>`<div style="aspect-ratio:4/3;overflow:hidden;border-radius:6px;border:1px solid #E2E8F2;"><img src="${src}" style="width:100%;height:100%;object-fit:cover;display:block;"></div>`).join("")}</div>`;
             return `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-bottom:7px;break-inside:avoid;">${fs.map(src=>`<div style="aspect-ratio:4/3;overflow:hidden;border-radius:6px;border:1px solid #E2E8F2;"><img src="${src}" style="width:100%;height:100%;object-fit:cover;display:block;"></div>`).join("")}</div>`;
           })():""}
+          ${(u.videos||[]).length?`<div style="font-size:9.5px;margin-top:5px;">${u.videos.map((src,vi)=>`<a href="${src}" target="_blank" style="color:#1E6FD9;text-decoration:none;font-weight:600;">🎥 Ver video ${u.videos.length>1?(vi+1):""}</a>`).join(" &nbsp;·&nbsp; ")}</div>`:""}
           ${u.nota?`<div style="font-size:11px;color:#475569;line-height:1.6;background:#F8FAFC;padding:8px 10px;border-radius:6px;">${u.nota}</div>`:""}
           ${u.notaCliente?`<div style="font-size:10.5px;color:#1E6FD9;background:#EEF6FF;padding:7px 10px;border-radius:6px;margin-top:6px;"><strong>Nota al cliente:</strong> ${u.notaCliente}</div>`:""}
           ${u.m2hoy?`<div style="font-size:9.5px;color:#64748B;margin-top:5px;">📐 Área trabajada: <strong>${u.m2hoy} ${u.m2unit||"m²"}</strong></div>`:""}
