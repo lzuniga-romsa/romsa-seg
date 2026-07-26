@@ -4504,13 +4504,14 @@ function _segDistribuirHojas(bloquesFuente, headerHojaHtml, footerHojaHtml){
   document.body.appendChild(medidor);
   const bloques = medidor.querySelectorAll(".seg-blk");
   const alturas = [];
-  bloques.forEach(b => alturas.push({html:b.outerHTML, alto:b.getBoundingClientRect().height}));
+  bloques.forEach(b => alturas.push({html:b.outerHTML, alto:b.getBoundingClientRect().height, forceBreak:b.hasAttribute("data-break")}));
   medidor.remove();
   const hojas = [];
   let actual = [], altoActual = 0;
   alturas.forEach(item => {
     const altoConMargen = item.alto + 12;
-    if(altoActual + altoConMargen > AREA_UTIL && actual.length > 0){ hojas.push(actual); actual = []; altoActual = 0; }
+    const debeForzar = item.forceBreak && actual.length > 0;
+    if((debeForzar || (altoActual + altoConMargen > AREA_UTIL)) && actual.length > 0){ hojas.push(actual); actual = []; altoActual = 0; }
     actual.push(item.html);
     altoActual += altoConMargen;
   });
@@ -4613,8 +4614,8 @@ async function showPdfPreview(){
       </div>
     </div>`;
   }
-  function mkItem(html){
-    return `<div class="seg-blk" style="padding-left:36px;margin-bottom:10px;">${html}</div>`;
+  function mkItem(html, forceBreak){
+    return `<div class="seg-blk"${forceBreak?' data-break="1"':''} style="padding-left:36px;margin-bottom:10px;">${html}</div>`;
   }
 
   // ── Datos del proyecto (caja con borde azul) ──
@@ -4657,18 +4658,21 @@ async function showPdfPreview(){
   }
 
   // ── Etapas: una tarjeta independiente por etapa (unidad mínima de paginación) ──
-  function etapaCardHtml(e){
+  function etapaCardHtml(e, idx){
     const eUpds=updates.filter(u=>u.etapaId==e.id);
     const estadoColor=e.estado==="done"?"#10B981":e.estado==="active"?"#1E6FD9":"#94A3B8";
     const estadoBg=e.estado==="done"?"#D1FAE5":e.estado==="active"?"#DBEAFE":"#F1F5F9";
     const estadoTxt=e.estado==="done"?"✓ Completada":e.estado==="active"?"▶ En proceso":"○ Pendiente";
     return `
-    <div style="border:1px solid #E7ECF3;border-radius:14px;overflow:hidden;box-shadow:0 1px 3px rgba(11,31,58,.03);">
-      <div style="background:#F8FAFC;border-bottom:1px solid #E7ECF3;padding:13px 18px;display:flex;align-items:center;justify-content:space-between;">
-        <div style="font-size:12.5px;font-weight:700;color:#0B1F3A;letter-spacing:.3px;">${e.nombre}</div>
-        <div style="font-size:9px;font-weight:700;color:${estadoColor};background:${estadoBg};padding:4px 11px;border-radius:20px;">${estadoTxt}</div>
+    <div style="margin-bottom:16px;">
+      <div style="font-size:9px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:2px;margin-bottom:5px;">Etapa ${(idx!==undefined?idx+1:"")}</div>
+      <div style="display:flex;align-items:baseline;justify-content:space-between;gap:14px;border-bottom:1px solid #E7ECF3;padding-bottom:10px;">
+        <div style="font-size:18px;font-weight:800;color:#0B1F3A;letter-spacing:-.2px;">${e.nombre}</div>
+        <div style="font-size:9px;font-weight:700;color:${estadoColor};background:${estadoBg};padding:4px 11px;border-radius:20px;white-space:nowrap;">${estadoTxt}</div>
       </div>
-      ${e.fechaCompletada?`<div style="padding:7px 18px;background:#FAFBFD;border-bottom:1px solid #F1F5F9;font-size:9.5px;color:#94A3B8;">Completada: ${e.fechaCompletada} ${e.horaCompletada||""}</div>`:""}
+    </div>
+    <div style="border:1px solid #E7ECF3;border-radius:14px;overflow:hidden;box-shadow:0 1px 3px rgba(11,31,58,.03);">
+      ${e.fechaCompletada?`<div style="padding:9px 18px;background:#FAFBFD;border-bottom:1px solid #F1F5F9;font-size:9.5px;color:#94A3B8;">Completada: ${e.fechaCompletada} ${e.horaCompletada||""}</div>`:""}
       ${eUpds.length?eUpds.map(u=>`
         <div style="padding:15px 18px;border-bottom:1px solid #F1F5F9;">
           <div style="font-size:10px;font-weight:700;color:#334155;letter-spacing:.3px;margin-bottom:10px;">${u.fecha}</div>
@@ -4715,7 +4719,7 @@ async function showPdfPreview(){
 
   bloquesFuente.push(mkSeccionHeader("Etapas y Evidencia"));
   if(etapas.length){
-    etapas.forEach(e => bloquesFuente.push(mkItem(etapaCardHtml(e))));
+    etapas.forEach((e, idx) => bloquesFuente.push(mkItem(etapaCardHtml(e, idx), true)));
   } else {
     bloquesFuente.push(mkItem('<div style="font-size:11px;color:#94A3B8;font-style:italic;">Sin etapas registradas</div>'));
   }
