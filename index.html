@@ -4492,12 +4492,14 @@ function contactarROMSA(){
 
 // ─── PDF REPORTE DE PROCESO DE OBRA ────────────────
 // ── Distribuidor de páginas: mide bloques y arma hojas A4 con header/footer repetidos ──
-function _segDistribuirHojas(bloquesFuente, headerHojaHtml, footerHojaHtml){
+function _segDistribuirHojas(bloquesFuente, headerHojaHtml, footerHojaHtml, headerContinuacionHtml){
   const HOJA_ALTO = 1123;
-  const HEADER_ALTO = 185;
+  const HEADER_ALTO_P1 = 185;
+  const HEADER_ALTO_CONT = headerContinuacionHtml ? 58 : 185;
   const FOOTER_ALTO = 90;
   const PADDING_VERT = 40;
-  const AREA_UTIL = HOJA_ALTO - HEADER_ALTO - FOOTER_ALTO - PADDING_VERT;
+  const AREA_UTIL_P1 = HOJA_ALTO - HEADER_ALTO_P1 - FOOTER_ALTO - PADDING_VERT;
+  const AREA_UTIL_CONT = HOJA_ALTO - HEADER_ALTO_CONT - FOOTER_ALTO - PADDING_VERT;
   const medidor = document.createElement("div");
   medidor.style.cssText = "position:absolute;left:-99999px;top:0;width:730px;visibility:hidden;font-family:Inter,-apple-system,system-ui,sans-serif;";
   medidor.innerHTML = bloquesFuente.join("");
@@ -4509,17 +4511,19 @@ function _segDistribuirHojas(bloquesFuente, headerHojaHtml, footerHojaHtml){
   const hojas = [];
   let actual = [], altoActual = 0;
   alturas.forEach(item => {
+    const areaUtilActual = hojas.length===0 ? AREA_UTIL_P1 : AREA_UTIL_CONT;
     const altoConMargen = item.alto + 12;
     const debeForzar = item.forceBreak && actual.length > 0;
-    if((debeForzar || (altoActual + altoConMargen > AREA_UTIL)) && actual.length > 0){ hojas.push(actual); actual = []; altoActual = 0; }
+    if((debeForzar || (altoActual + altoConMargen > areaUtilActual)) && actual.length > 0){ hojas.push(actual); actual = []; altoActual = 0; }
     actual.push(item.html);
     altoActual += altoConMargen;
   });
   if(actual.length) hojas.push(actual);
   if(!hojas.length) hojas.push([]);
-  return hojas.map(items =>
-    '<div class="seg-hoja">'+headerHojaHtml+'<div class="seg-hoja-cuerpo">'+items.join("")+'</div>'+footerHojaHtml+'</div>'
-  ).join("");
+  return hojas.map((items, idx) => {
+    const headerUsar = (idx===0 || !headerContinuacionHtml) ? headerHojaHtml : headerContinuacionHtml;
+    return '<div class="seg-hoja">'+headerUsar+'<div class="seg-hoja-cuerpo">'+items.join("")+'</div>'+footerHojaHtml+'</div>';
+  }).join("");
 }
 
 // ── CSS compartido del Reporte de Proceso de Obra (usado en preview y en impresión de respaldo) ──
@@ -4551,6 +4555,7 @@ const SEG_REPORTE_CSS = '<style>'
   + '.seg-meta-label{font-size:7px;font-weight:800;letter-spacing:2.5px;color:rgba(255,255,255,.4);text-transform:uppercase;}'
   + '.seg-meta-value{font-size:11px;font-weight:700;color:#fff;margin-top:4px;}'
   + '.seg-meta-value.mono{font-family:"JetBrains Mono",monospace;font-size:10.5px;letter-spacing:0.5px;color:#7FAEE8;}'
+  + '.seg-header-cont{background:#0B1F3A;padding:12px 32px;display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid #1E6FD9;}'
   // Título doc
   + '.seg-titulo-doc{font-family:Inter,sans-serif;font-size:23px;font-weight:800;letter-spacing:-0.4px;color:#0B1F3A;line-height:1.2;margin-bottom:4px;}'
   + '.seg-subtitulo{font-size:11px;color:#64748B;font-weight:500;margin-bottom:0;padding-bottom:14px;border-bottom:1px solid #F1F5F9;position:relative;}'
@@ -4678,16 +4683,14 @@ async function showPdfPreview(){
           <div style="font-size:10px;font-weight:700;color:#334155;letter-spacing:.3px;margin-bottom:10px;">${u.fecha}</div>
           ${(u.fotos||[]).length?(()=>{
             const fs=u.fotos||[];
-            if(fs.length===1) return `<div style="margin-bottom:4px;text-align:center;"><img src="${fs[0]}" style="max-width:40%;height:90px;width:auto;border-radius:7px;display:inline-block;object-fit:cover;border:1px solid #E7ECF3;"></div>`;
-            if(fs.length===2) return `<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:4px;">${fs.map(src=>`<div style="height:95px;overflow:hidden;border-radius:7px;border:1px solid #E7ECF3;"><img src="${src}" style="width:100%;height:100%;object-fit:cover;display:block;"></div>`).join("")}</div>`;
-            return `<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:4px;">${fs.map(src=>`<div style="height:78px;overflow:hidden;border-radius:7px;border:1px solid #E7ECF3;"><img src="${src}" style="width:100%;height:100%;object-fit:cover;display:block;"></div>`).join("")}</div>`;
+            const boxes = fs.map(src=>`<div style="width:108px;height:100px;overflow:hidden;border-radius:7px;border:1px solid #E7ECF3;background:#F8FAFC;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><img src="${src}" style="max-width:100%;max-height:100%;object-fit:contain;display:block;"></div>`).join("");
+            return `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:4px;">${boxes}</div>`;
           })():""}
           ${(u.fotos||[]).length?`<div style="text-align:center;font-size:9px;font-style:italic;color:#94A3B8;margin-bottom:8px;">${u.fecha}</div>`:""}
           ${(u.videos||[]).length?`<div style="font-size:9.5px;margin-bottom:8px;">${u.videos.map((src,vi)=>`<a href="${src}" target="_blank" style="color:#334155;text-decoration:underline;font-weight:600;">🎥 Ver video ${u.videos.length>1?(vi+1):""}</a>`).join(" &nbsp;·&nbsp; ")}</div>`:""}
           ${u.nota?`<div style="font-size:11px;color:#475569;line-height:1.7;background:#F8FAFC;padding:10px 12px;border-radius:8px;">${u.nota}</div>`:""}
           ${u.notaCliente?`<div style="font-size:10.5px;color:#334155;background:#F1F3F7;padding:9px 12px;border-radius:8px;margin-top:8px;"><strong>Nota al cliente:</strong> ${u.notaCliente}</div>`:""}
           ${u.m2hoy?`<div style="font-size:9.5px;color:#64748B;margin-top:7px;">📐 Área trabajada: <strong>${u.m2hoy} ${u.m2unit||"m²"}</strong></div>`:""}
-          ${u.tecnico?`<div style="font-size:9.5px;color:#94A3B8;margin-top:4px;">👷 ${u.tecnico}</div>`:""}
         </div>`).join("")
       :`<div style="padding:12px 18px;font-size:11px;color:#94A3B8;">Sin actualizaciones registradas</div>`}
     </div>`;
@@ -4761,6 +4764,12 @@ async function showPdfPreview(){
 
   const _titulo = "ROMSA – Reporte de Proceso de Obra – " + (o.nombre||"");
 
+  // Header delgado para hojas de continuación (página 2 en adelante)
+  const headerContinuacionHtml = `<div class="seg-header-cont">
+    <img src="${logoBlancoSeg}" style="height:17px;width:auto;max-width:120px;object-fit:contain;">
+    <div style="font-size:8px;font-weight:700;color:#7FAEE8;font-family:'JetBrains Mono',monospace;letter-spacing:.5px;">${segFolio}</div>
+  </div>`;
+
   const footerHojaHtml = `<div class="seg-footer" style="margin:0 32px 22px;">
     <div>
       <img src="${logoSrc}" style="height:18px;width:auto;max-width:130px;object-fit:contain;display:block;" alt="ROMSA">
@@ -4774,7 +4783,7 @@ async function showPdfPreview(){
   </div>`;
 
   // ── Distribuir bloques en hojas A4, repitiendo header+footer en cada una ──
-  const _hojasHtml = _segDistribuirHojas(bloquesFuente, headerHojaHtml, footerHojaHtml);
+  const _hojasHtml = _segDistribuirHojas(bloquesFuente, headerHojaHtml, footerHojaHtml, headerContinuacionHtml);
 
   // ── Generar HTML del documento ─────────────────────────────────
   var _previewBar = '<div id="preview-bar">'
