@@ -2,7 +2,6 @@
 const CACHE = 'romsa-v1';
 const ASSETS = [
   '/',
-  '/',
   'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap',
   'https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js',
   'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js',
@@ -50,6 +49,16 @@ self.addEventListener('fetch', e => {
         }
         return res;
       })
-      .catch(() => caches.match(e.request))
+      .catch(() =>
+        caches.match(e.request).then(cached => {
+          if(cached) return cached;
+          // Sin red y sin caché para esta petición: regresar una Response
+          // real en vez de undefined (evita "Failed to convert value to 'Response'")
+          return new Response(
+            'Sin conexión y sin copia guardada para este recurso.',
+            {status: 503, statusText: 'Service Unavailable', headers: {'Content-Type': 'text/plain; charset=utf-8'}}
+          );
+        })
+      )
   );
 });

@@ -2260,7 +2260,7 @@ window._abrirModalNuevaRepArea = function(){
     const sevOpts  = sevs.map(s=>'<option value="'+s+'"'+(s==="Moderada"?' selected':'')+'>'+s+'</option>').join("");
 
     const ov = document.createElement("div");
-  ov.className = "moverlay";
+  ov.className = "moverlay open";
   ov.id = "modal-arep";
   ov.style.cssText = "display:flex;position:fixed;inset:0;background:rgba(11,31,58,.6);z-index:600;align-items:flex-end;justify-content:center;";
   ov.onclick = (e)=>{ if(e.target===ov) _cerrarModalArep(); };
@@ -2791,7 +2791,7 @@ function moveCV(x,y){
 function endCV(){
   if(!CV.drawing)return;CV.drawing=false;
   if(CV.tmp){
-    if(CV.tmp.type==="rect"){
+    if(CV.tmp.type==="rect"||CV.tmp.type==="medir"){
       const sc=0.05;
       const w=parseFloat((Math.abs(CV.tmp.x2-CV.tmp.x1)*sc).toFixed(2));
       const h=parseFloat((Math.abs(CV.tmp.y2-CV.tmp.y1)*sc).toFixed(2));
