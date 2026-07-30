@@ -17734,19 +17734,34 @@ function bceAnalyzeLuminosity(img){
   cx.drawImage(img, 0, 0, sw, sh);
   const data = cx.getImageData(0, 0, sw, sh).data;
 
+  function lumAt(x, y){
+    const i = (y * sw + x) * 4;
+    return (0.299 * data[i] + 0.587 * data[i+1] + 0.114 * data[i+2]) / 255;
+  }
+
+  // Medimos DOS cosas por franja: brillo promedio (para calibrar el overlay)
+  // y densidad de bordes (diferencia entre píxeles vecinos). La densidad de
+  // bordes detecta "muchos objetos distintos" (autos, ventanas, texturas)
+  // mucho mejor que la varianza de brillo sola — un techo con luz/sombra
+  // despareja puede tener varianza de brillo alta pero pocos bordes reales,
+  // mientras que un estacionamiento lleno de autos tiene bordes por todos
+  // lados aunque el brillo promedio sea parecido. No es IA — es una medición
+  // determinística estándar de procesamiento de imagen (gradiente local).
   function zoneStats(y0f, y1f){
     const y0 = Math.floor(sh * y0f), y1 = Math.max(y0 + 1, Math.floor(sh * y1f));
-    let sum = 0, sumSq = 0, n = 0;
+    let sum = 0, sumSq = 0, n = 0, edgeSum = 0, edgeN = 0;
     for(let y = y0; y < y1; y++){
       for(let x = 0; x < sw; x++){
-        const i = (y * sw + x) * 4;
-        const lum = (0.299 * data[i] + 0.587 * data[i+1] + 0.114 * data[i+2]) / 255;
+        const lum = lumAt(x, y);
         sum += lum; sumSq += lum * lum; n++;
+        if(x < sw - 1) { edgeSum += Math.abs(lum - lumAt(x+1, y)); edgeN++; }
+        if(y < y1 - 1) { edgeSum += Math.abs(lum - lumAt(x, y+1)); edgeN++; }
       }
     }
     const mean = n ? sum / n : 0.5;
     const variance = n ? Math.max(0, sumSq / n - mean * mean) : 0;
-    return { mean, variance, std: Math.sqrt(variance) };
+    const edgeDensity = edgeN ? edgeSum / edgeN : 0;
+    return { mean, variance, std: Math.sqrt(variance), edgeDensity };
   }
 
   const top = zoneStats(0, 0.30);
@@ -17757,7 +17772,9 @@ function bceAnalyzeLuminosity(img){
     { zone: "bottom", ...bottom },
     { zone: "top", ...top },
   ];
-  candidates.sort((a, b) => a.variance - b.variance);
+  // La zona "segura" es la de MENOR densidad de bordes (menos detalle/objetos
+  // distintos) — no la de menor varianza de brillo.
+  candidates.sort((a, b) => a.edgeDensity - b.edgeDensity);
   const safe = candidates[0];
 
   // Overlay más fuerte si la zona elegida es clara (para que el texto blanco
@@ -17779,6 +17796,22 @@ function bceContrastColor(hex){
   const { r, g, b } = bceHexToRgb(hex);
   const lum = (0.299*r + 0.587*g + 0.114*b) / 255;
   return lum > 0.6 ? BCE_NAVY : "#FFFFFF";
+}
+// Canvas letterSpacing tiene soporte inconsistente entre navegadores — para
+// las etiquetas en mayúsculas (donde el espaciado sí se nota y aporta al
+// look premium) lo hacemos a mano, carácter por carácter.
+function bceTrackedWidth(ctx, text, spacing){
+  let w = 0;
+  for(const ch of text) w += ctx.measureText(ch).width + spacing;
+  return Math.max(0, w - spacing);
+}
+function bceFillTextTracked(ctx, text, x, y, spacing){
+  let cx = x;
+  const baseline = ctx.textBaseline;
+  for(const ch of text){
+    ctx.fillText(ch, cx, y);
+    cx += ctx.measureText(ch).width + spacing;
+  }
 }
 function bceWrapText(ctx, text, maxWidth){
   const words = String(text).split(/\s+/).filter(Boolean);
@@ -17836,18 +17869,19 @@ function cSolidCard(ctx, x, y, w, h, colorHex, glow){
 function cCategoryBadge(ctx, x, y, text, canvasW, align){
   if(!text) return 0;
   const fontPx = Math.max(9, canvasW * 0.014);
+  const spacing = fontPx * 0.09;
   ctx.save();
   ctx.font = `700 ${fontPx}px "Inter", Arial, sans-serif`;
+  const upper = text.toUpperCase();
+  const textW = bceTrackedWidth(ctx, upper, spacing);
   const padX = fontPx * 0.9, padY = fontPx * 0.55;
-  const textW = ctx.measureText(text.toUpperCase()).width;
   const boxW = textW + padX * 2, boxH = fontPx + padY * 2;
   const bx = align === "right" ? x - boxW : x;
   ctx.fillStyle = "rgba(30,111,217,.85)";
   ctx.fillRect(bx, y, boxW, boxH);
   ctx.fillStyle = "#FFFFFF";
   ctx.textBaseline = "middle";
-  ctx.letterSpacing = "1px";
-  ctx.fillText(text.toUpperCase(), bx + padX, y + boxH/2 + 1);
+  bceFillTextTracked(ctx, upper, bx + padX, y + boxH/2 + 1, spacing);
   ctx.restore();
   return boxH;
 }
@@ -17857,7 +17891,6 @@ function cTitle(ctx, x, y, maxWidth, text, fontPx, color, weight){
   ctx.font = `${weight||800} ${fontPx}px "Inter", Arial, sans-serif`;
   ctx.fillStyle = color;
   ctx.textBaseline = "top";
-  ctx.letterSpacing = "-0.3px";
   const lines = bceWrapText(ctx, text, maxWidth);
   const lineH = fontPx * 1.22;
   lines.forEach((line, i) => ctx.fillText(line, x, y + i * lineH));
@@ -17934,47 +17967,117 @@ function cWebsite(ctx, x, y, canvasW, colorHex, align){
   ctx.restore();
 }
 
+// Franja sólida fija para logo + sitio web — mismo patrón que ya usan los
+// PDFs de Auditoría y Reporte de Proceso. Garantiza contraste SIEMPRE, sin
+// depender de qué tan clara sea la foto en ese punto (antes el logo podía
+// caer sobre una zona clara y perder calidad visual/contraste).
+function cFooterStrip(ctx, w, h, side){
+  const stripH = h * 0.075;
+  const y = side === "top" ? 0 : h - stripH;
+  ctx.save();
+  ctx.fillStyle = BCE_NAVY;
+  ctx.fillRect(0, y, w, stripH);
+  ctx.restore();
+
+  const M = w * BCE_MARGIN;
+  const logoW = w * 0.11;
+  const img = BCE.logoVariant === "navy" ? BCE.logoNavyImg : BCE.logoWhiteImg;
+  const aspect = (img && img.naturalWidth) ? img.naturalHeight / img.naturalWidth : 0.2;
+  const logoH = logoW * aspect;
+  cLogo(ctx, M, y + (stripH - logoH) / 2, logoW, w);
+  cWebsite(ctx, w - M, y + stripH / 2 + w * 0.006, w, BCE_NAVY, "right");
+  return { stripH, y };
+}
+
 // ── PLANTILLAS ──────────────────────────────────────────────────
 // Cada plantilla es una función que decide POSICIÓN, TAMAÑO y ESTILO
 // de cada componente. El usuario no toca nada de esto.
 
+// Mide el contenido (badge + título + subtítulo + línea meta) ANTES de
+// dibujar nada. Así la franja/tarjeta se dimensiona para contener SIEMPRE
+// el texto completo, sin importar cuántos campos haya llenado el usuario.
+function bceMeasureContent(ctx, w, postType, titleFontPx, maxW, subFontPx, metaFontPx){
+  const f = BCE.fields;
+  let totalH = 0;
+  let badgeH = 0;
+  if(postType.badge){
+    badgeH = titleFontPx*0 + Math.max(9, w*0.014) * 1 + Math.max(9,w*0.014)*0.55*2;
+    totalH += badgeH;
+  }
+  ctx.save();
+  ctx.font = `800 ${titleFontPx}px "Inter", Arial, sans-serif`;
+  const titleLines = bceWrapText(ctx, f.titulo || "Título del proyecto", maxW);
+  ctx.restore();
+  const titleLineH = titleFontPx * 1.22;
+  const titleH = titleLines.length * titleLineH;
+  totalH += (badgeH ? w*0.018 : 0) + titleH;
+
+  let subH = 0;
+  if(f.subtitulo){
+    ctx.save();
+    ctx.font = `500 ${subFontPx}px "Inter", Arial, sans-serif`;
+    const subLines = bceWrapText(ctx, f.subtitulo, maxW);
+    ctx.restore();
+    subH = subLines.length * subFontPx * 1.3;
+    totalH += subH;
+  }
+  const meta = [f.cliente, f.ciudad, f.fecha].filter(Boolean).join("   ·   ");
+  let metaH = 0;
+  if(meta){ metaH = metaFontPx * 1.3; totalH += metaH; }
+
+  return { badgeH, titleH, subH, metaH, meta, totalH };
+}
+
 function tplCorporate(ctx, w, h, lum, postType){
   const M = w * BCE_MARGIN;
   const anchorBottom = lum.safeZone === "bottom";
-  const zoneH = h * 0.42;
+  const f = BCE.fields;
+  const textColor = "#FFFFFF";
+  const contentMaxW = w - M*2 - w*0.16;
+  const titleSize = w * (bceCurrentNetwork().orientation === "landscape" ? 0.052 : 0.042);
+  const subSize = w*0.024;
+  const metaSize = w*0.018;
+  const badgeGap = h*0.018;
+  const footerReserve = h * 0.075;
+
+  // 1. Medir TODO el contenido antes de decidir el tamaño de la franja
+  const meas = bceMeasureContent(ctx, w, postType, titleSize, contentMaxW, subSize, metaSize);
+
+  // 2. La franja se dimensiona para contener el contenido medido, con un
+  // mínimo estético — nunca al revés (ya no es un porcentaje adivinado).
+  // Si el texto va abajo, reservamos espacio para la franja fija del logo.
+  const padTop = h*0.035, padBottom = h*0.045;
+  const minZoneH = h * 0.28;
+  const zoneH = Math.max(minZoneH, Math.min(h*0.78, meas.totalH + padTop + padBottom + (anchorBottom ? footerReserve : 0)));
   const zoneY = anchorBottom ? h - zoneH : 0;
 
   cGradientOverlay(ctx, 0, zoneY, w, zoneH, BCE_NAVY, lum.overlayOpacity, anchorBottom ? "down" : "up");
 
-  const f = BCE.fields;
-  const textColor = "#FFFFFF";
-  let cursorY = anchorBottom ? h - zoneH * 0.72 : M * 0.9;
+  // 3. Dibujar el contenido — ahora garantizado dentro de la zona oscura
+  const contentBottom = anchorBottom ? (h - footerReserve - padBottom) : (zoneY + zoneH - padBottom);
+  let cursorY = contentBottom - meas.totalH;
 
   if(postType.badge){
     const bh = cCategoryBadge(ctx, M, cursorY, postType.badge, w);
-    cursorY += bh + h * 0.018;
+    cursorY += bh + badgeGap;
   }
-  const titleSize = w * (bceCurrentNetwork().orientation === "landscape" ? 0.052 : 0.042);
-  const titleRes = cTitle(ctx, M, cursorY, w - M*2 - w*0.16, f.titulo || "Título del proyecto", titleSize, textColor);
-  cursorY += titleRes.height + h*0.012;
+  const titleRes = cTitle(ctx, M, cursorY, contentMaxW, f.titulo || "Título del proyecto", titleSize, textColor);
+  cursorY += titleRes.height;
 
   if(f.subtitulo){
-    const subRes = cSubtitle(ctx, M, cursorY, w - M*2 - w*0.16, f.subtitulo, w*0.024, textColor);
-    cursorY += subRes.height + h*0.01;
+    const subRes = cSubtitle(ctx, M, cursorY, contentMaxW, f.subtitulo, subSize, textColor);
+    cursorY += subRes.height;
   }
-  const meta = [f.cliente, f.ciudad, f.fecha].filter(Boolean).join("   ·   ");
-  if(meta) cMetaLine(ctx, M, cursorY, meta, w*0.018, textColor);
+  if(meas.meta) cMetaLine(ctx, M, cursorY, meas.meta, metaSize, textColor);
 
-  // Métrica (si hay área)
+  // Métrica (si hay área) — en la esquina superior si el texto está abajo, y viceversa
   if(f.area){
-    cMetricBadge(ctx, w - M, h * 0.06, f.area, "m²", w, "right");
+    const metricY = anchorBottom ? h*0.06 : h - h*0.06 - w*0.052*1.6;
+    cMetricBadge(ctx, w - M, metricY, f.area, "m²", w, "right");
   }
 
-  // Logo + sitio web, esquina inferior derecha (fijos)
-  const logoW = w * 0.13;
-  const logoX = w - M - logoW, logoY = h - M*1.15 - logoW*0.2;
-  const lr = cLogo(ctx, logoX, logoY - logoW*0.2, logoW, w);
-  cWebsite(ctx, w - M, h - M*0.45, w, BCE_NAVY, "right");
+  // Logo + sitio web — franja sólida fija, contraste garantizado siempre
+  cFooterStrip(ctx, w, h, "bottom");
 }
 
 function tplEditorial(ctx, w, h, lum, postType){
@@ -17982,64 +18085,100 @@ function tplEditorial(ctx, w, h, lum, postType){
   const anchorBottom = lum.safeZone === "bottom";
   const f = BCE.fields;
 
-  ctx.save();
-  ctx.font = `700 ${w*0.014}px "Inter", Arial, sans-serif`;
   const eyebrow = postType.badge || "";
-  let topY = anchorBottom ? h * 0.62 : M;
-
-  if(eyebrow){
-    ctx.fillStyle = BCE_LIGHTBLUE;
-    ctx.textBaseline = "top";
-    ctx.letterSpacing = "2px";
-    ctx.fillText(eyebrow.toUpperCase(), M, topY);
-    topY += w*0.014*1.6 + h*0.012;
-  }
-  ctx.restore();
+  const eyebrowFontPx = w*0.014;
+  const eyebrowSpacing = eyebrowFontPx * 0.12;
+  const eyebrowH = eyebrow ? (eyebrowFontPx*1.6 + h*0.014) : 0;
 
   const titleSize = w * 0.05;
-  ctx.font = `800 ${titleSize}px "Inter", Arial, sans-serif`;
-  const lines = bceWrapText(ctx, f.titulo || "Título del proyecto", w*0.62);
-  const lineH = titleSize*1.22;
+  const subSize = w*0.024;
+  const metaSize = w*0.018;
+  const cardMaxW = w*0.62;
   const padX = w*0.032, padY = w*0.026;
-  const cardH = lines.length*lineH + padY*2 + (f.subtitulo ? w*0.024*1.35 + h*0.01 : 0);
-  const cardW = w*0.62 + padX*2;
-  const cardY = topY;
+
+  ctx.save();
+  ctx.font = `800 ${titleSize}px "Inter", Arial, sans-serif`;
+  const lines = bceWrapText(ctx, f.titulo || "Título del proyecto", cardMaxW);
+  ctx.restore();
+  const lineH = titleSize*1.22;
+  const titleH = lines.length*lineH;
+
+  let subH = 0;
+  if(f.subtitulo){
+    ctx.save();
+    ctx.font = `500 ${subSize}px "Inter", Arial, sans-serif`;
+    const subLines = bceWrapText(ctx, f.subtitulo, cardMaxW);
+    ctx.restore();
+    subH = subLines.length*subSize*1.35 + h*0.01;
+  }
+  const cardH = titleH + subH + padY*2;
+  const cardW = cardMaxW + padX*2;
+
+  const meta = [f.cliente, f.ciudad, f.fecha].filter(Boolean).join("   ·   ");
+  const metaBlockH = meta ? (h*0.02 + metaSize*1.3) : 0;
+
+  // Reservar espacio para la franja fija del logo/sitio web, y anclar TODO
+  // el bloque (eyebrow + tarjeta + meta) para que quepa sin desbordarse,
+  // sin importar cuánto contenido haya.
+  const footerReserve = h * 0.075;
+  const totalBlockH = eyebrowH + cardH + metaBlockH;
+  const blockTop = anchorBottom
+    ? Math.max(M, h - footerReserve - h*0.02 - totalBlockH)
+    : M;
+
+  if(eyebrow){
+    ctx.save();
+    ctx.font = `700 ${eyebrowFontPx}px "Inter", Arial, sans-serif`;
+    ctx.fillStyle = BCE_LIGHTBLUE;
+    ctx.textBaseline = "top";
+    bceFillTextTracked(ctx, eyebrow.toUpperCase(), M, blockTop, eyebrowSpacing);
+    ctx.restore();
+  }
+
+  const cardY = blockTop + eyebrowH;
   cSolidCard(ctx, M, cardY, cardW, cardH, BCE_NAVY, true);
 
   let ty = cardY + padY;
-  cTitle(ctx, M, ty, w*0.62, f.titulo || "Título del proyecto", titleSize, "#FFFFFF");
-  ty += lines.length*lineH;
+  cTitle(ctx, M, ty, cardMaxW, f.titulo || "Título del proyecto", titleSize, "#FFFFFF");
+  ty += titleH;
   if(f.subtitulo){
-    cSubtitle(ctx, M, ty + h*0.006, w*0.62, f.subtitulo, w*0.024, "#FFFFFF");
+    cSubtitle(ctx, M, ty + h*0.006, cardMaxW, f.subtitulo, subSize, "#FFFFFF");
   }
 
-  const meta = [f.cliente, f.ciudad, f.fecha].filter(Boolean).join("   ·   ");
-  if(meta) cMetaLine(ctx, M, cardY + cardH + h*0.02, meta, w*0.018, "#1B1B1F");
+  if(meta) cMetaLine(ctx, M, cardY + cardH + h*0.02, meta, metaSize, "#1B1B1F");
 
   if(f.area){
     cMetricBadge(ctx, w - M, M, f.area, "m²", w, "right");
   }
 
-  const logoW = w * 0.13;
-  cLogo(ctx, M, h - M - logoW*0.2, logoW, w);
-  cWebsite(ctx, w - M, h - M*0.6, w, "#FFFFFF", "right");
+  cFooterStrip(ctx, w, h, "bottom");
 }
 
 function tplMinimal(ctx, w, h, lum, postType){
   const M = w * BCE_MARGIN;
   const anchorBottom = lum.safeZone === "bottom";
   const f = BCE.fields;
-  const barH = h * 0.12;
+  const footerReserve = h * 0.075;
+  const titleSize = w * 0.028;
+  const titleMaxW = w*0.55;
+
+  ctx.save();
+  ctx.font = `600 ${titleSize}px "Inter", Arial, sans-serif`;
+  const lines = bceWrapText(ctx, f.titulo || "Título del proyecto", titleMaxW);
+  ctx.restore();
+
+  const lineH = titleSize * 1.25;
+  const titleH = lines.length * lineH;
+  const padV = h*0.02;
+  const barH = anchorBottom ? (footerReserve + titleH + padV*2) : (titleH + padV*2);
   const barY = anchorBottom ? h - barH : 0;
 
-  cGradientOverlay(ctx, 0, barY, w, barH, "#000000", 0.55, anchorBottom ? "down" : "up");
+  cGradientOverlay(ctx, 0, barY, w, barH, "#000000", 0.5, anchorBottom ? "down" : "up");
 
-  const titleSize = w * 0.028;
-  const textY = anchorBottom ? h - barH*0.68 : M*0.7;
-  cTitle(ctx, M, textY, w*0.6, f.titulo || "Título del proyecto", titleSize, "#FFFFFF", 600);
+  const textY = anchorBottom ? (h - footerReserve - padV - titleH) : (barY + padV);
+  cTitle(ctx, M, textY, titleMaxW, f.titulo || "Título del proyecto", titleSize, "#FFFFFF", 600);
 
-  const logoW = w * 0.10;
-  cLogo(ctx, w - M - logoW, anchorBottom ? h - barH*0.7 : M*0.6, logoW, w);
+  cFooterStrip(ctx, w, h, "bottom");
 }
 
 const BCE_TEMPLATE_FNS = { corporate: tplCorporate, editorial: tplEditorial, minimal: tplMinimal };
@@ -18106,6 +18245,8 @@ function tplTallOverride(ctx, w, h, lum, postType){
 function bceCompose(ctx, w, h){
   ctx.clearRect(0, 0, w, h);
   if(!BCE.img) return;
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
   cHero(ctx, w, h);
   if(!BCE.luminosity) BCE.luminosity = bceAnalyzeLuminosity(BCE.img);
   if(bceCurrentNetwork().orientation === "tall"){
