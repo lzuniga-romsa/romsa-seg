@@ -747,35 +747,38 @@ body.in-fotoeditor #app{
 
 /* ═══════════════ EDITOR DE FOTOS ═══════════════ */
 #screen-fotoeditor.active{display:flex;flex-direction:column;height:100dvh;background:#F4F3F7;}
-.fe-topbar{flex-shrink:0;display:flex;align-items:center;justify-content:space-between;padding:calc(env(safe-area-inset-top,0px) + 12px) 16px 12px;background:#1F1033;color:#fff;}
+.fe-topbar{flex-shrink:0;display:flex;align-items:center;justify-content:space-between;padding:calc(env(safe-area-inset-top,0px) + 12px) 16px 12px;background:linear-gradient(135deg,#0A1930 0%,#163057 55%,#1C3A63 100%);color:#fff;position:relative;overflow:hidden;}
+.fe-topbar::before{content:"";position:absolute;top:-30px;right:-30px;width:140px;height:140px;border-radius:50%;background:rgba(30,111,217,.16);pointer-events:none;}
+.fe-topbar::after{content:"";position:absolute;left:-25px;bottom:-45px;width:110px;height:110px;border-radius:50%;background:rgba(30,111,217,.08);pointer-events:none;}
+.fe-back,.fe-title{position:relative;z-index:2;}
 .fe-back{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);color:#fff;font-size:11px;font-weight:700;padding:7px 12px;border-radius:8px;cursor:pointer;font-family:inherit;}
 .fe-title{font-size:14px;font-weight:700;letter-spacing:.2px;}
 .fe-upload-wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:24px;}
-.fe-dropzone{border:2px dashed #C4B5FD;border-radius:16px;padding:48px 28px;text-align:center;cursor:pointer;background:#fff;max-width:360px;transition:border-color .15s,background .15s;}
-.fe-dropzone:hover{border-color:#6D28D9;background:#FAF8FF;}
+.fe-dropzone{border:2px dashed #9CC0EE;border-radius:16px;padding:48px 28px;text-align:center;cursor:pointer;background:#fff;max-width:360px;transition:border-color .15s,background .15s;}
+.fe-dropzone:hover{border-color:#0B1F3A;background:#F5F8FD;}
 .fe-editor-wrap{flex:1;display:flex;flex-direction:column;overflow-y:auto;overscroll-behavior:contain;}
-.fe-templates{display:flex;gap:8px;padding:12px 14px;overflow-x:auto;flex-shrink:0;background:#fff;border-bottom:1px solid #EBE8F0;}
-.fe-tpl-btn{flex-shrink:0;padding:8px 14px;border-radius:20px;font-size:11px;font-weight:700;border:1.5px solid #E2DBF5;background:#fff;color:#5B4B8A;cursor:pointer;white-space:nowrap;font-family:inherit;transition:all .15s;}
-.fe-tpl-btn.active{background:#4C1D95;border-color:#4C1D95;color:#fff;}
-.fe-canvas-area{flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:16px;background:#EDEAF3;}
-.fe-canvas-area canvas{max-width:100%;box-shadow:0 4px 24px rgba(76,29,149,.18);border-radius:2px;touch-action:none;background:#ccc;}
+.fe-templates{display:flex;gap:8px;padding:12px 14px;overflow-x:auto;flex-shrink:0;background:#fff;border-bottom:1px solid #E7ECF3;}
+.fe-tpl-btn{flex-shrink:0;padding:8px 14px;border-radius:20px;font-size:11px;font-weight:700;border:1.5px solid #D7E3F5;background:#fff;color:#3A5A82;cursor:pointer;white-space:nowrap;font-family:inherit;transition:all .15s;}
+.fe-tpl-btn.active{background:#0B1F3A;border-color:#0B1F3A;color:#fff;}
+.fe-canvas-area{flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:16px;background:#EDF1F7;}
+.fe-canvas-area canvas{max-width:100%;box-shadow:0 4px 24px rgba(11,31,58,.18);border-radius:2px;touch-action:none;background:#ccc;}
 .fe-controls{flex-shrink:0;padding:14px 16px 28px;background:#fff;display:flex;flex-direction:column;gap:12px;}
 .fe-ctrl-group{display:flex;flex-direction:column;gap:5px;}
 .fe-ctrl-row{display:flex;gap:12px;}
-.fe-ctrl-label{font-size:10px;font-weight:700;color:#7A7A82;text-transform:uppercase;letter-spacing:.5px;}
-.fe-textarea{border:1.5px solid #E2DBF5;border-radius:10px;padding:9px 11px;font-size:13px;font-family:inherit;resize:none;color:#1B1B1F;}
-.fe-textarea:focus{outline:none;border-color:#6D28D9;}
-input[type="range"]#fe-zoom,input[type="range"]#fe-textsize,input[type="range"]#fe-baropacity{accent-color:#6D28D9;width:100%;}
+.fe-ctrl-label{font-size:10px;font-weight:700;color:#7A8496;text-transform:uppercase;letter-spacing:.5px;}
+.fe-textarea{border:1.5px solid #D7E3F5;border-radius:10px;padding:9px 11px;font-size:13px;font-family:inherit;resize:none;color:#1B1B1F;}
+.fe-textarea:focus{outline:none;border-color:#0B1F3A;}
+input[type="range"]#fe-zoom,input[type="range"]#fe-textsize,input[type="range"]#fe-baropacity{accent-color:#0B1F3A;width:100%;}
 .fe-swatches{display:flex;gap:6px;}
 .fe-swatch{width:28px;height:28px;border-radius:50%;border:2px solid transparent;cursor:pointer;flex-shrink:0;position:relative;}
-.fe-swatch.active{border-color:#6D28D9;box-shadow:0 0 0 2px #fff,0 0 0 3px #6D28D9;}
-.fe-logo-swatch{width:28px;height:28px;border-radius:8px;border:2px solid #E2DBF5;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;}
-.fe-logo-swatch.active{border-color:#6D28D9;background:#F3EEFF;color:#6D28D9;}
-.fe-hint{font-size:11px;color:#9691A0;line-height:1.5;background:#F8F6FB;border-radius:8px;padding:9px 11px;}
+.fe-swatch.active{border-color:#0B1F3A;box-shadow:0 0 0 2px #fff,0 0 0 3px #0B1F3A;}
+.fe-logo-swatch{width:28px;height:28px;border-radius:8px;border:2px solid #D7E3F5;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;}
+.fe-logo-swatch.active{border-color:#0B1F3A;background:#EAF1FC;color:#0B1F3A;}
+.fe-hint{font-size:11px;color:#8A93A3;line-height:1.5;background:#F5F8FB;border-radius:8px;padding:9px 11px;}
 .fe-actions{display:flex;gap:8px;margin-top:2px;}
 .fe-btn{flex:1;padding:12px;border-radius:10px;font-size:12.5px;font-weight:700;border:none;cursor:pointer;font-family:inherit;}
-.fe-btn-ghost{background:#F1EEF7;color:#4C1D95;}
-.fe-btn-primary{background:#4C1D95;color:#fff;flex:1.3;}
+.fe-btn-ghost{background:#EEF3FA;color:#0B1F3A;}
+.fe-btn-primary{background:#0B1F3A;color:#fff;flex:1.3;}
 .cos-card-meta{font-size:10px;color:var(--tx2);margin-top:2px;}
 .cos-input{width:100%;padding:8px 10px;border:1px solid var(--g1);border-radius:6px;font-size:12px;font-family:var(--font);color:var(--navy);background:#fff;}
 .cos-input:focus{outline:none;border-color:#1E6FD9;}
@@ -906,38 +909,43 @@ input[type="range"]#fe-zoom,input[type="range"]#fe-textsize,input[type="range"]#
 /* ── SELECTOR DE MÓDULO ── */
 #module-selector{
   position:fixed;inset:0;background:#0B1829;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  z-index:999;padding:32px 24px;
+  display:flex;flex-direction:column;align-items:center;
+  z-index:999;padding:32px 24px calc(32px + env(safe-area-inset-bottom,0px));
+  overflow-y:auto;-webkit-overflow-scrolling:touch;
 }
 #module-selector.hidden{display:none;}
-.mod-logo{height:46px;width:auto;margin-bottom:32px;}
+.mod-logo{height:46px;width:auto;margin-bottom:32px;flex-shrink:0;}
 .mod-welcome{font-size:11px;color:rgba(255,255,255,.5);letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;font-weight:600;text-align:center;}
-.mod-welcome-title{font-size:18px;font-weight:800;color:#fff;letter-spacing:.3px;margin-bottom:32px;text-align:center;}
+.mod-welcome-title{font-size:18px;font-weight:800;color:#fff;letter-spacing:.3px;margin-bottom:28px;text-align:center;}
 .mod-sub{font-size:10px;color:rgba(255,255,255,.3);letter-spacing:1.8px;text-transform:uppercase;margin-bottom:40px;}
 .mod-title{font-size:13px;font-weight:700;color:rgba(255,255,255,.5);letter-spacing:1px;text-transform:uppercase;margin-bottom:16px;text-align:center;}
+.mod-grid{
+  display:grid;grid-template-columns:1fr 1fr;gap:11px;
+  width:100%;max-width:440px;
+}
 .mod-card{
-  width:100%;max-width:340px;
   background:rgba(255,255,255,.05);
   border:1.5px solid rgba(255,255,255,.1);
-  border-radius:18px;padding:20px;
-  display:flex;align-items:center;gap:16px;
-  cursor:pointer;margin-bottom:12px;
+  border-radius:16px;padding:16px 14px;
+  display:flex;flex-direction:column;align-items:flex-start;gap:10px;
+  cursor:pointer;
   transition:all .2s;
   -webkit-tap-highlight-color:transparent;
+  min-height:118px;
 }
-.mod-card:active{transform:scale(.97);border-color:var(--blue);}
+.mod-card:active{transform:scale(.96);border-color:var(--blue);}
 .mod-card.blue{border-color:rgba(30,111,217,.4);background:rgba(30,111,217,.12);}
 .mod-card.green{border-color:rgba(16,185,129,.3);background:rgba(16,185,129,.08);}
 .mod-card.purple{border-color:rgba(124,58,237,.4);background:rgba(124,58,237,.1);}
 .mod-card.purple:active{border-color:rgba(124,58,237,.7);}
-.mod-icon{width:48px;height:48px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;}
+.mod-icon{width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0;}
 .mod-icon.blue{background:rgba(30,111,217,.25);}
 .mod-icon.green{background:rgba(16,185,129,.2);}
 .mod-icon.purple{background:rgba(124,58,237,.25);}
 .mod-info{flex:1;}
-.mod-name{font-size:17px;font-weight:700;color:#fff;margin-bottom:3px;}
-.mod-desc{font-size:11px;color:rgba(255,255,255,.45);line-height:1.4;}
-.mod-arrow{font-size:20px;color:rgba(255,255,255,.3);flex-shrink:0;}
+.mod-name{font-size:13.5px;font-weight:700;color:#fff;margin-bottom:3px;line-height:1.2;}
+.mod-desc{font-size:10px;color:rgba(255,255,255,.45);line-height:1.35;}
+.mod-arrow{display:none;}
 
 /* ── LEVANTAMIENTOS FULL-SCREEN ── */
 #screen-levantamientos{
@@ -1138,80 +1146,80 @@ input[type="range"]#fe-zoom,input[type="range"]#fe-textsize,input[type="range"]#
   <div class="mod-welcome">Bienvenidos al</div>
   <div class="mod-welcome-title">CRM de ROMSA Industrial</div>
 
-  <div class="mod-card blue" onclick="selectModule('obras')">
-    <div class="mod-icon blue">🏗️</div>
-    <div class="mod-info">
-      <div class="mod-name">Seguimiento de Obras</div>
-      <div class="mod-desc">Avance, etapas, reportes y atención al cliente</div>
-    </div>
-    <div class="mod-arrow">›</div>
-  </div>
+  <div class="mod-grid">
 
-  <div class="mod-card green" onclick="selectModule('levantamientos')">
-    <div class="mod-icon green">📐</div>
-    <div class="mod-info">
-      <div class="mod-name">Levantamientos</div>
-      <div class="mod-desc">Medición de áreas, reparaciones y reporte técnico</div>
+    <!-- 1. Levantamientos -->
+    <div class="mod-card green" onclick="selectModule('levantamientos')">
+      <div class="mod-icon green">📐</div>
+      <div class="mod-info">
+        <div class="mod-name">Levantamientos</div>
+        <div class="mod-desc">Medición de áreas, reparaciones y reporte técnico</div>
+      </div>
     </div>
-    <div class="mod-arrow">›</div>
-  </div>
 
-  <div class="mod-card purple" onclick="selectModule('cotizaciones')">
-    <div class="mod-icon purple">📋</div>
-    <div class="mod-info">
-      <div class="mod-name">Cotizaciones</div>
-      <div class="mod-desc">Genera, personaliza y envía cotizaciones en PDF</div>
+    <!-- 2. Auditoría Técnica — Solo visible para admin -->
+    <div id="mod-card-auditoria" class="mod-card" onclick="selectModule('auditoria')" style="display:none;background:linear-gradient(135deg,#1E3A5F,#2C5282);border:1px solid rgba(147,197,253,.4);">
+      <div class="mod-icon" style="background:rgba(147,197,253,.2);color:#93C5FD;">🔍</div>
+      <div class="mod-info">
+        <div class="mod-name" style="color:#fff;">Auditoría Técnica</div>
+        <div class="mod-desc" style="color:rgba(255,255,255,.65);">Diagnóstico de piso, cortesía profesional al cliente</div>
+      </div>
     </div>
-    <div class="mod-arrow">›</div>
-  </div>
 
-  <!-- Módulo Reportes de Obra -->
-  <div class="mod-card" onclick="selectModule('reportes')" style="background:linear-gradient(135deg,#164E63,#0E7490);border:1px solid rgba(34,211,238,.35);">
-    <div class="mod-icon" style="background:rgba(34,211,238,.2);color:#67E8F9;">📊</div>
-    <div class="mod-info">
-      <div class="mod-name" style="color:#fff;">Reportes de Obra</div>
-      <div class="mod-desc" style="color:rgba(255,255,255,.65);">Genera reportes finales, de avance y entregas</div>
+    <!-- 3. Costeo — Solo visible para usuarios autorizados -->
+    <div id="mod-card-costeo" class="mod-card" onclick="selectModule('costeo')" style="display:none;background:linear-gradient(135deg,#1B3F72,#0B1F3A);border:1px solid rgba(96,165,250,.3);">
+      <div class="mod-icon" style="background:rgba(96,165,250,.2);color:#60A5FA;">💰</div>
+      <div class="mod-info">
+        <div class="mod-name" style="color:#fff;">Costeo <span style="font-size:8px;font-weight:700;letter-spacing:1px;color:#60A5FA;margin-left:4px;padding:1px 6px;border:1px solid rgba(96,165,250,.4);border-radius:10px;vertical-align:middle;">INTERNO</span></div>
+        <div class="mod-desc" style="color:rgba(255,255,255,.5);">Análisis de costos, materiales y utilidad</div>
+      </div>
     </div>
-    <div class="mod-arrow" style="color:#67E8F9;">›</div>
-  </div>
 
-  <!-- Módulo Costeo — Solo visible para usuarios autorizados -->
-  <div id="mod-card-costeo" class="mod-card" onclick="selectModule('costeo')" style="display:none;background:linear-gradient(135deg,#1B3F72,#0B1F3A);border:1px solid rgba(96,165,250,.3);">
-    <div class="mod-icon" style="background:rgba(96,165,250,.2);color:#60A5FA;">💰</div>
-    <div class="mod-info">
-      <div class="mod-name" style="color:#fff;">Costeo <span style="font-size:8px;font-weight:700;letter-spacing:1px;color:#60A5FA;margin-left:4px;padding:1px 6px;border:1px solid rgba(96,165,250,.4);border-radius:10px;vertical-align:middle;">INTERNO</span></div>
-      <div class="mod-desc" style="color:rgba(255,255,255,.5);">Análisis de costos, materiales y utilidad</div>
+    <!-- 4. Cotizaciones -->
+    <div class="mod-card purple" onclick="selectModule('cotizaciones')">
+      <div class="mod-icon purple">📋</div>
+      <div class="mod-info">
+        <div class="mod-name">Cotizaciones</div>
+        <div class="mod-desc">Genera, personaliza y envía cotizaciones en PDF</div>
+      </div>
     </div>
-    <div class="mod-arrow" style="color:#60A5FA;">›</div>
-  </div>
 
-  <!-- Módulo Contactos (al final del listado) -->
-  <div class="mod-card" onclick="selectModule('contactos')" style="background:linear-gradient(135deg,#7C2D12,#9A3412);border:1px solid rgba(245,158,11,.4);">
-    <div class="mod-icon" style="background:rgba(245,158,11,.25);color:#FCD34D;">👥</div>
-    <div class="mod-info">
-      <div class="mod-name" style="color:#fff;">Contactos</div>
-      <div class="mod-desc" style="color:rgba(255,255,255,.65);">Red profesional, leads y directorio de personas</div>
+    <!-- 5. Seguimiento de Obras -->
+    <div class="mod-card blue" onclick="selectModule('obras')">
+      <div class="mod-icon blue">🏗️</div>
+      <div class="mod-info">
+        <div class="mod-name">Seguimiento de Obras</div>
+        <div class="mod-desc">Avance, etapas, reportes y atención al cliente</div>
+      </div>
     </div>
-    <div class="mod-arrow" style="color:#FCD34D;">›</div>
-  </div>
 
-  <!-- Módulo Auditoría Técnica — Solo visible para admin -->
-  <div id="mod-card-auditoria" class="mod-card" onclick="selectModule('auditoria')" style="display:none;background:linear-gradient(135deg,#1E3A5F,#2C5282);border:1px solid rgba(147,197,253,.4);">
-    <div class="mod-icon" style="background:rgba(147,197,253,.2);color:#93C5FD;">🔍</div>
-    <div class="mod-info">
-      <div class="mod-name" style="color:#fff;">Auditoría Técnica</div>
-      <div class="mod-desc" style="color:rgba(255,255,255,.65);">Diagnóstico de piso, cortesía profesional al cliente</div>
+    <!-- 6. Reportes de Obra -->
+    <div class="mod-card" onclick="selectModule('reportes')" style="background:linear-gradient(135deg,#164E63,#0E7490);border:1px solid rgba(34,211,238,.35);">
+      <div class="mod-icon" style="background:rgba(34,211,238,.2);color:#67E8F9;">📊</div>
+      <div class="mod-info">
+        <div class="mod-name" style="color:#fff;">Reportes de Obra</div>
+        <div class="mod-desc" style="color:rgba(255,255,255,.65);">Genera reportes finales, de avance y entregas</div>
+      </div>
     </div>
-    <div class="mod-arrow" style="color:#93C5FD;">›</div>
-  </div>
-  <!-- Módulo Editor de Fotos -->
-  <div class="mod-card" onclick="selectModule('fotoeditor')" style="background:linear-gradient(135deg,#6D28D9,#4C1D95);border:1px solid rgba(196,181,253,.4);">
-    <div class="mod-icon" style="background:rgba(196,181,253,.22);color:#DDD6FE;">🖼️</div>
-    <div class="mod-info">
-      <div class="mod-name" style="color:#fff;">Editor de Fotos</div>
-      <div class="mod-desc" style="color:rgba(255,255,255,.65);">Fotos con diseño ROMSA para LinkedIn, Instagram y Facebook</div>
+
+    <!-- 7. Editor de Fotos -->
+    <div class="mod-card" onclick="selectModule('fotoeditor')" style="background:linear-gradient(135deg,#12274D,#0B1F3A);border:1px solid rgba(124,169,232,.4);">
+      <div class="mod-icon" style="background:rgba(124,169,232,.2);color:#9CC0EE;">🖼️</div>
+      <div class="mod-info">
+        <div class="mod-name" style="color:#fff;">Editor de Fotos</div>
+        <div class="mod-desc" style="color:rgba(255,255,255,.65);">Fotos con diseño ROMSA para LinkedIn, Instagram y Facebook</div>
+      </div>
     </div>
-    <div class="mod-arrow" style="color:#DDD6FE;">›</div>
+
+    <!-- 8. Contactos (utilidad general, al final del camino) -->
+    <div class="mod-card" onclick="selectModule('contactos')" style="background:linear-gradient(135deg,#7C2D12,#9A3412);border:1px solid rgba(245,158,11,.4);">
+      <div class="mod-icon" style="background:rgba(245,158,11,.25);color:#FCD34D;">👥</div>
+      <div class="mod-info">
+        <div class="mod-name" style="color:#fff;">Contactos</div>
+        <div class="mod-desc" style="color:rgba(255,255,255,.65);">Red profesional, leads y directorio de personas</div>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -4672,6 +4680,7 @@ const SEG_REPORTE_CSS = '<style>'
   // Header navy
   + '.seg-header{background:linear-gradient(135deg,#0A1930 0%,#163057 55%,#1C3A63 100%);color:#fff;padding:36px 32px 28px;position:relative;overflow:hidden;}'
   + '.seg-header::before{content:"";position:absolute;top:-40px;right:-40px;width:200px;height:200px;border-radius:50%;background:radial-gradient(circle,rgba(30,111,217,.18) 0%,transparent 70%);}'
+  + '.seg-header .seg-destello2{position:absolute;left:-30px;bottom:-40px;width:140px;height:140px;border-radius:50%;background:rgba(30,111,217,.09);pointer-events:none;}'
   + '.seg-header::after{content:"";position:absolute;bottom:0;left:0;right:0;height:4px;background:linear-gradient(90deg,#0B1F3A,#1E6FD9,#1B3F72);}'
   + '.seg-logo-center{display:flex;justify-content:center;align-items:center;margin-bottom:10px;position:relative;z-index:2;}'
   + '.seg-logo-img{height:42px;width:auto;max-width:260px;object-fit:contain;}'
@@ -4870,6 +4879,7 @@ async function showPdfPreview(){
 
   // ── HTML completo con diseño UNIFICADO (header + footer se repiten en cada hoja) ──
   const headerHojaHtml = `<div class="seg-header">
+      <div class="seg-destello2"></div>
       <div class="seg-logo-center">
         <img src="${logoBlancoSeg}" class="seg-logo-img" alt="ROMSA">
       </div>
@@ -17483,12 +17493,16 @@ function _auRenderizarPDF(a){
     </div>`;
   // Header y footer premium, se repiten idénticos en cada hoja (misma lógica que cotización)
   const headerHojaHtml =
-    '<div class="au-hoja-header" style="background:linear-gradient(135deg,#0A1930 0%,#12233F 55%,#1C3A63 100%);padding:22px 18mm 28px;text-align:center;">'
-      +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">'
+    '<div class="au-hoja-header" style="background:linear-gradient(135deg,#0A1930 0%,#12233F 55%,#1C3A63 100%);padding:22px 18mm 28px;text-align:center;position:relative;overflow:hidden;">'
+      +'<div style="position:absolute;right:-45px;top:-45px;width:190px;height:190px;border-radius:50%;background:rgba(30,111,217,.10);"></div>'
+      +'<div style="position:absolute;left:-35px;bottom:-55px;width:150px;height:150px;border-radius:50%;background:rgba(30,111,217,.07);"></div>'
+      +'<div style="position:relative;z-index:2;display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">'
         +'<div style="font-size:8.5px;color:#7FAEE8;font-family:monospace;font-weight:700;letter-spacing:.8px;">'+escapeHtml(a.folio||"")+'</div>'
         +'<div style="font-size:8px;font-weight:700;color:#9CC0EE;letter-spacing:1.5px;text-transform:uppercase;">Auditoría técnica</div>'
       +'</div>'
-      +(logoBlanco?'<img src="'+logoBlanco+'" style="height:36px;width:auto;max-width:210px;object-fit:contain;">':'<div style="color:#fff;font-size:24px;font-weight:800;letter-spacing:1px;">ROMSA</div>')
+      +'<div style="position:relative;z-index:2;">'
+        +(logoBlanco?'<img src="'+logoBlanco+'" style="height:36px;width:auto;max-width:210px;object-fit:contain;">':'<div style="color:#fff;font-size:24px;font-weight:800;letter-spacing:1px;">ROMSA</div>')
+      +'</div>'
     +'</div>';
   const footerHojaHtml =
     '<div class="au-hoja-footer" style="background:linear-gradient(135deg,#0A1930 0%,#12233F 60%,#16294A 100%);padding:18px 18mm 20px;">'
@@ -17921,6 +17935,26 @@ function feRenderToCtx(ctx, canvasW, canvasH){
     ctx.fillRect(cardX, cardY, cardW, cardH);
     ctx.restore();
 
+    // Destello sutil dentro de la tarjeta — solo si la tarjeta es un tono oscuro
+    // (regla del kit de marca: los destellos van sobre fondos navy/oscuros)
+    const cardLum = (0.299*cardRgb.r + 0.587*cardRgb.g + 0.114*cardRgb.b) / 255;
+    if(cardLum < 0.5){
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(cardX, cardY, cardW, cardH);
+      ctx.clip();
+      const glowR = cardH * 1.3;
+      const glow = ctx.createRadialGradient(
+        cardX + cardW * 0.92, cardY + cardH * 0.05, 0,
+        cardX + cardW * 0.92, cardY + cardH * 0.05, glowR
+      );
+      glow.addColorStop(0, "rgba(30,111,217,.20)");
+      glow.addColorStop(1, "rgba(30,111,217,0)");
+      ctx.fillStyle = glow;
+      ctx.fillRect(cardX, cardY, cardW, cardH);
+      ctx.restore();
+    }
+
     ctx.fillStyle = t.color;
     let ty = cardY + padY;
     lines.forEach(line => {
@@ -17967,7 +18001,7 @@ function feDrawSelectionOverlay(ctx, w, h){
   else if(el === "text") rect = feTextRect(w, h);
   if(!rect) return;
   ctx.save();
-  ctx.strokeStyle = "#6D28D9";
+  ctx.strokeStyle = "#0B1F3A";
   ctx.setLineDash([5, 4]);
   ctx.lineWidth = 1.5;
   ctx.strokeRect(rect.x, rect.y, rect.w, rect.h);
