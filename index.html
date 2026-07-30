@@ -17701,7 +17701,7 @@ const BCE_TEMPLATES = [
 ];
 
 // Margen estándar del sistema de grid (equivalente a 1 columna de 12) — del Kit de Marca
-const BCE_MARGIN = 0.065;
+const BCE_MARGIN = 0.075;
 const BCE_NAVY = "#0B1F3A";
 const BCE_LIGHTBLUE = "#7B9AD0";
 
@@ -17868,27 +17868,30 @@ function cSolidCard(ctx, x, y, w, h, colorHex, glow){
 }
 function cCategoryBadge(ctx, x, y, text, canvasW, align){
   if(!text) return 0;
-  const fontPx = Math.max(9, canvasW * 0.014);
-  const spacing = fontPx * 0.09;
+  // Etiqueta editorial minimalista — sin caja de "botón": una línea corta de
+  // acento arriba del texto, mismo lenguaje visual que el eyebrow de Editorial.
+  const fontPx = Math.max(9, canvasW * 0.0135);
+  const spacing = fontPx * 0.16;
   ctx.save();
-  ctx.font = `700 ${fontPx}px "Inter", Arial, sans-serif`;
+  ctx.font = `600 ${fontPx}px "Inter", Arial, sans-serif`;
   const upper = text.toUpperCase();
   const textW = bceTrackedWidth(ctx, upper, spacing);
-  const padX = fontPx * 0.9, padY = fontPx * 0.55;
-  const boxW = textW + padX * 2, boxH = fontPx + padY * 2;
-  const bx = align === "right" ? x - boxW : x;
-  ctx.fillStyle = "rgba(30,111,217,.85)";
-  ctx.fillRect(bx, y, boxW, boxH);
-  ctx.fillStyle = "#FFFFFF";
-  ctx.textBaseline = "middle";
-  bceFillTextTracked(ctx, upper, bx + padX, y + boxH/2 + 1, spacing);
+  const lineW = Math.min(textW, canvasW * 0.045);
+  const bx = align === "right" ? x - textW : x;
+  const lineX = align === "right" ? x - lineW : x;
+
+  ctx.fillStyle = BCE_LIGHTBLUE;
+  ctx.fillRect(lineX, y, lineW, Math.max(2, canvasW*0.0022));
+  ctx.fillStyle = BCE_LIGHTBLUE;
+  ctx.textBaseline = "top";
+  bceFillTextTracked(ctx, upper, bx, y + canvasW*0.012, spacing);
   ctx.restore();
-  return boxH;
+  return fontPx * 1.5 + canvasW*0.012;
 }
 function cTitle(ctx, x, y, maxWidth, text, fontPx, color, weight){
   if(!text) return { height: 0, lines: 0 };
   ctx.save();
-  ctx.font = `${weight||800} ${fontPx}px "Inter", Arial, sans-serif`;
+  ctx.font = `${weight||700} ${fontPx}px "Inter", Arial, sans-serif`;
   ctx.fillStyle = color;
   ctx.textBaseline = "top";
   const lines = bceWrapText(ctx, text, maxWidth);
@@ -17913,36 +17916,79 @@ function cSubtitle(ctx, x, y, maxWidth, text, fontPx, color){
 function cMetaLine(ctx, x, y, text, fontPx, color){
   if(!text) return { height: 0 };
   ctx.save();
-  ctx.font = `500 ${fontPx}px "Inter", Arial, sans-serif`;
+  ctx.font = `400 ${fontPx}px "Inter", Arial, sans-serif`;
   ctx.fillStyle = color;
-  ctx.globalAlpha = 0.75;
+  ctx.globalAlpha = 0.7;
   ctx.textBaseline = "top";
   ctx.fillText(text, x, y);
   ctx.restore();
   return { height: fontPx * 1.3 };
 }
+// Métrica integrada al flujo de información (no un badge flotante) — línea
+// de acento delgada + número + etiqueta, alineado a la izquierda como el
+// resto del bloque. Da una sensación de "dato de reporte formal" en vez de
+// un elemento gráfico compitiendo con la fotografía.
+function cMetricInline(ctx, x, y, value, unit, canvasW, color){
+  if(!value) return { height: 0 };
+  const lineW = canvasW * 0.05;
+  const gapAfterLine = canvasW * 0.014;
+  const numFont = canvasW * 0.034;
+  const labelFont = canvasW * 0.013;
+
+  ctx.save();
+  ctx.fillStyle = BCE_LIGHTBLUE;
+  ctx.fillRect(x, y, lineW, Math.max(2, canvasW*0.0022));
+
+  const numY = y + gapAfterLine;
+  ctx.font = `700 ${numFont}px "Inter", Arial, sans-serif`;
+  ctx.fillStyle = color;
+  ctx.textBaseline = "alphabetic";
+  const baseline = numY + numFont*0.8;
+  ctx.fillText(value, x, baseline);
+  const numW = ctx.measureText(value).width;
+
+  if(unit){
+    ctx.font = `600 ${labelFont}px "Inter", Arial, sans-serif`;
+    ctx.fillStyle = BCE_LIGHTBLUE;
+    ctx.fillText(unit.toUpperCase(), x + numW + canvasW*0.01, baseline);
+  }
+  ctx.restore();
+  return { height: gapAfterLine + numFont*0.95 };
+}
 function cMetricBadge(ctx, x, y, value, unit, canvasW, align){
   if(!value) return { width: 0, height: 0 };
-  const numFont = canvasW * 0.052, unitFont = canvasW * 0.018;
+  // ~25% más pequeño que la versión anterior, y sin caja sólida pesada —
+  // un scrim sutil + línea de acento delgada, estilo editorial.
+  const numFont = canvasW * 0.039;
+  const labelFont = canvasW * 0.0125;
+  const label = (unit || "").toUpperCase();
+  const labelSpacing = labelFont * 0.14;
+
   ctx.save();
-  ctx.font = `800 ${numFont}px "Inter", Arial, sans-serif`;
+  ctx.font = `700 ${numFont}px "Inter", Arial, sans-serif`;
   const numW = ctx.measureText(value).width;
-  ctx.font = `700 ${unitFont}px "Inter", Arial, sans-serif`;
-  const unitW = unit ? ctx.measureText(unit).width + canvasW*0.01 : 0;
-  const totalW = numW + unitW;
-  const padX = canvasW * 0.022, padY = canvasW * 0.018;
-  const boxW = totalW + padX * 2, boxH = numFont + padY * 2;
+  ctx.font = `600 ${labelFont}px "Inter", Arial, sans-serif`;
+  const labelW = label ? bceTrackedWidth(ctx, label, labelSpacing) : 0;
+  const contentW = Math.max(numW, labelW);
+  const padX = canvasW*0.018, padY = canvasW*0.015;
+  const boxW = contentW + padX*2 + canvasW*0.012;
+  const boxH = numFont + (label ? labelFont*1.6 : 0) + padY*2;
   const bx = align === "right" ? x - boxW : x;
-  cSolidCard(ctx, bx, y, boxW, boxH, BCE_NAVY, true);
-  ctx.font = `800 ${numFont}px "Inter", Arial, sans-serif`;
+
+  ctx.fillStyle = "rgba(11,31,58,.5)";
+  ctx.fillRect(bx, y, boxW, boxH);
+  ctx.fillStyle = BCE_LIGHTBLUE;
+  ctx.fillRect(bx, y, canvasW*0.0035, boxH);
+
   ctx.fillStyle = "#FFFFFF";
   ctx.textBaseline = "alphabetic";
-  const baseline = y + boxH/2 + numFont*0.34;
-  ctx.fillText(value, bx + padX, baseline);
-  if(unit){
-    ctx.font = `700 ${unitFont}px "Inter", Arial, sans-serif`;
+  const numBaseline = y + padY + numFont*0.76;
+  ctx.fillText(value, bx + padX + canvasW*0.012, numBaseline);
+
+  if(label){
+    ctx.font = `600 ${labelFont}px "Inter", Arial, sans-serif`;
     ctx.fillStyle = BCE_LIGHTBLUE;
-    ctx.fillText(unit, bx + padX + numW + canvasW*0.01, baseline);
+    bceFillTextTracked(ctx, label, bx + padX + canvasW*0.012, numBaseline + labelFont*0.9, labelSpacing);
   }
   ctx.restore();
   return { width: boxW, height: boxH, x: bx, y };
@@ -18026,11 +18072,12 @@ function bceMeasureContent(ctx, w, postType, titleFontPx, maxW, subFontPx, metaF
   let totalH = 0;
   let badgeH = 0;
   if(postType.badge){
-    badgeH = Math.max(9, w*0.014) + Math.max(9,w*0.014)*0.55*2;
+    const _bfp = Math.max(9, w*0.0135);
+    badgeH = _bfp * 1.5 + w*0.012;
     totalH += badgeH + gap;
   }
   ctx.save();
-  ctx.font = `800 ${titleFontPx}px "Inter", Arial, sans-serif`;
+  ctx.font = `700 ${titleFontPx}px "Inter", Arial, sans-serif`;
   const titleLines = bceWrapText(ctx, f.titulo || "Título del proyecto", maxW);
   ctx.restore();
   const titleLineH = titleFontPx * 1.22;
@@ -18050,7 +18097,10 @@ function bceMeasureContent(ctx, w, postType, titleFontPx, maxW, subFontPx, metaF
   let metaH = 0;
   if(meta){ metaH = metaFontPx * 1.3; totalH += gap*1.15 + metaH; }
 
-  return { badgeH, titleH, subH, metaH, meta, totalH, gap };
+  let metricH = 0;
+  if(f.area){ metricH = w*0.014 + w*0.034*1.15; totalH += gap*1.3 + metricH; }
+
+  return { badgeH, titleH, subH, metaH, metricH, meta, totalH, gap };
 }
 
 function tplCorporate(ctx, w, h, lum, postType){
@@ -18058,13 +18108,17 @@ function tplCorporate(ctx, w, h, lum, postType){
   const anchorBottom = lum.safeZone === "bottom";
   const f = BCE.fields;
   const textColor = "#FFFFFF";
-  const contentMaxW = w - M*2 - w*0.16;
   let titleSize = w * (bceCurrentNetwork().orientation === "landscape" ? 0.052 : 0.042);
   let subSize = w*0.024;
   let metaSize = w*0.018;
   const footerReserve = h * 0.075;
-  const padTop = h*0.035, padBottom = h*0.075;
+  const padTop = h*0.05, padBottom = h*0.075;
   const maxAvailable = h*0.78 - padTop - padBottom - (anchorBottom ? footerReserve : 0);
+
+  // El título ya usa todo el ancho disponible — la métrica ahora vive
+  // dentro del flujo de información (no como badge flotante), así que no
+  // compite por espacio horizontal con el título.
+  const contentMaxW = w - M*2;
 
   // 1. Medir con tamaños estándar
   let meas = bceMeasureContent(ctx, w, postType, titleSize, contentMaxW, subSize, metaSize);
@@ -18107,13 +18161,11 @@ function tplCorporate(ctx, w, h, lum, postType){
   if(meas.meta){
     cursorY += meas.gap * 1.15;
     cMetaLine(ctx, M, cursorY, meas.meta, metaSize, textColor);
+    cursorY += meas.metaH;
   }
-
-  // Métrica (si hay área) — SIEMPRE esquina superior derecha, posición fija
-  // y consistente (más premium que una posición que cambia según el caso).
-  // El texto ya reserva 16% de ancho a la derecha, así que nunca se cruzan.
   if(f.area){
-    cMetricBadge(ctx, w - M, h * 0.055, f.area, "m²", w, "right");
+    cursorY += meas.gap * 1.3;
+    cMetricInline(ctx, M, cursorY, f.area, "m²", w, textColor);
   }
 
   // Logo + sitio web — franja sólida fija, contraste garantizado siempre
@@ -18137,26 +18189,13 @@ function tplEditorial(ctx, w, h, lum, postType){
   let padY = w*0.032;
   const footerReserve = h * 0.075;
 
-  // El ancho de la tarjeta se calcula dejando espacio real para el badge de
-  // métrica (si existe), midiendo su ancho de verdad — no un estimado fijo.
-  // Así la tarjeta NUNCA choca con el badge, sin importar cuántos dígitos
-  // tenga el área.
-  let cardMaxW = w * 0.62;
-  if(f.area){
-    ctx.save();
-    ctx.font = `800 ${w*0.052}px "Inter", Arial, sans-serif`;
-    const numW = ctx.measureText(String(f.area)).width;
-    ctx.font = `700 ${w*0.018}px "Inter", Arial, sans-serif`;
-    const unitW = ctx.measureText("m²").width + w*0.01;
-    ctx.restore();
-    const badgeW = numW + unitW + w*0.022*2;
-    const availableW = w - M*2 - padX*2 - badgeW - w*0.035;
-    cardMaxW = Math.min(cardMaxW, Math.max(w*0.34, availableW));
-  }
+  // La tarjeta ya no necesita reservar espacio para un badge flotante —
+  // la métrica ahora vive dentro del flujo de información, alineada abajo.
+  const cardMaxW = w * 0.62;
 
   function medirBloqueEditorial(tSize, sSize, pY){
     ctx.save();
-    ctx.font = `800 ${tSize}px "Inter", Arial, sans-serif`;
+    ctx.font = `700 ${tSize}px "Inter", Arial, sans-serif`;
     const lines = bceWrapText(ctx, f.titulo || "Título del proyecto", cardMaxW);
     ctx.restore();
     const lineH = tSize*1.22;
@@ -18177,25 +18216,26 @@ function tplEditorial(ctx, w, h, lum, postType){
   let med = medirBloqueEditorial(titleSize, subSize, padY);
   const meta = [f.cliente, f.ciudad, f.fecha].filter(Boolean).join("   ·   ");
   let metaBlockH = meta ? (h*0.028 + metaSize*1.3) : 0;
+  const metricBlockH = f.area ? (h*0.024 + w*0.014 + w*0.034*0.95) : 0;
   const maxAvailable = h - footerReserve - h*0.03 - M;
 
-  // Si el bloque completo (eyebrow + tarjeta + meta) no cabe en el espacio
-  // disponible, reducir tipografía y padding proporcionalmente — nunca se
-  // traslapa, sin importar cuánto texto haya.
-  if(eyebrowH + med.cardH + metaBlockH > maxAvailable){
-    const shrink = Math.max(0.6, maxAvailable / (eyebrowH + med.cardH + metaBlockH));
+  // Si el bloque completo (eyebrow + tarjeta + meta + métrica) no cabe en el
+  // espacio disponible, reducir tipografía y padding proporcionalmente —
+  // nunca se traslapa, sin importar cuánto texto haya.
+  if(eyebrowH + med.cardH + metaBlockH + metricBlockH > maxAvailable){
+    const shrink = Math.max(0.6, maxAvailable / (eyebrowH + med.cardH + metaBlockH + metricBlockH));
     titleSize *= shrink; subSize *= shrink; padY *= shrink;
     med = medirBloqueEditorial(titleSize, subSize, padY);
   }
   const { lines, titleH, subH, cardH, lineH } = med;
   const cardW = cardMaxW + padX*2;
 
-  // Anclar TODO el bloque (eyebrow + tarjeta + meta) para que quepa sin
-  // desbordarse, ahora garantizado por el auto-ajuste de arriba.
-  const totalBlockH = eyebrowH + cardH + metaBlockH;
+  // Anclar TODO el bloque (eyebrow + tarjeta + meta + métrica) para que
+  // quepa sin desbordarse, ahora garantizado por el auto-ajuste de arriba.
+  const totalBlockH = eyebrowH + cardH + metaBlockH + metricBlockH;
   const blockTop = anchorBottom
     ? Math.max(M, h - footerReserve - h*0.02 - totalBlockH)
-    : M;
+    : M + h*0.025;
 
   if(eyebrow){
     ctx.save();
@@ -18216,10 +18256,13 @@ function tplEditorial(ctx, w, h, lum, postType){
     cSubtitle(ctx, M, ty + h*0.006, cardMaxW, f.subtitulo, subSize, "#FFFFFF");
   }
 
-  if(meta) cMetaLine(ctx, M, cardY + cardH + h*0.028, meta, metaSize, "#1B1B1F");
-
+  let belowY = cardY + cardH;
+  if(meta){
+    cMetaLine(ctx, M, belowY + h*0.028, meta, metaSize, "#1B1B1F");
+    belowY += h*0.028 + metaBlockH - h*0.028;
+  }
   if(f.area){
-    cMetricBadge(ctx, w - M, h * 0.055, f.area, "m²", w, "right");
+    cMetricInline(ctx, M, belowY + h*0.024, f.area, "m²", w, BCE_NAVY);
   }
 
   cFooterStrip(ctx, w, h, "bottom");
