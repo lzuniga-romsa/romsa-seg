@@ -18048,7 +18048,7 @@ function bceMeasureContent(ctx, w, postType, titleFontPx, maxW, subFontPx, metaF
   }
   const meta = [f.cliente, f.ciudad, f.fecha].filter(Boolean).join("   ·   ");
   let metaH = 0;
-  if(meta){ metaH = metaFontPx * 1.3; totalH += gap*0.7 + metaH; }
+  if(meta){ metaH = metaFontPx * 1.3; totalH += gap*1.15 + metaH; }
 
   return { badgeH, titleH, subH, metaH, meta, totalH, gap };
 }
@@ -18063,7 +18063,7 @@ function tplCorporate(ctx, w, h, lum, postType){
   let subSize = w*0.024;
   let metaSize = w*0.018;
   const footerReserve = h * 0.075;
-  const padTop = h*0.035, padBottom = h*0.045;
+  const padTop = h*0.035, padBottom = h*0.075;
   const maxAvailable = h*0.78 - padTop - padBottom - (anchorBottom ? footerReserve : 0);
 
   // 1. Medir con tamaños estándar
@@ -18105,7 +18105,7 @@ function tplCorporate(ctx, w, h, lum, postType){
     cursorY += subRes.height;
   }
   if(meas.meta){
-    cursorY += meas.gap * 0.7;
+    cursorY += meas.gap * 1.15;
     cMetaLine(ctx, M, cursorY, meas.meta, metaSize, textColor);
   }
 
@@ -18133,10 +18133,26 @@ function tplEditorial(ctx, w, h, lum, postType){
   let titleSize = w * 0.05;
   let subSize = w*0.024;
   const metaSize = w*0.018;
-  const cardMaxW = w*0.56;
   const padX = w*0.036;
   let padY = w*0.032;
   const footerReserve = h * 0.075;
+
+  // El ancho de la tarjeta se calcula dejando espacio real para el badge de
+  // métrica (si existe), midiendo su ancho de verdad — no un estimado fijo.
+  // Así la tarjeta NUNCA choca con el badge, sin importar cuántos dígitos
+  // tenga el área.
+  let cardMaxW = w * 0.62;
+  if(f.area){
+    ctx.save();
+    ctx.font = `800 ${w*0.052}px "Inter", Arial, sans-serif`;
+    const numW = ctx.measureText(String(f.area)).width;
+    ctx.font = `700 ${w*0.018}px "Inter", Arial, sans-serif`;
+    const unitW = ctx.measureText("m²").width + w*0.01;
+    ctx.restore();
+    const badgeW = numW + unitW + w*0.022*2;
+    const availableW = w - M*2 - padX*2 - badgeW - w*0.035;
+    cardMaxW = Math.min(cardMaxW, Math.max(w*0.34, availableW));
+  }
 
   function medirBloqueEditorial(tSize, sSize, pY){
     ctx.save();
