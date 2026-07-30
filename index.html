@@ -18059,19 +18059,29 @@ function tplCorporate(ctx, w, h, lum, postType){
   const f = BCE.fields;
   const textColor = "#FFFFFF";
   const contentMaxW = w - M*2 - w*0.16;
-  const titleSize = w * (bceCurrentNetwork().orientation === "landscape" ? 0.052 : 0.042);
-  const subSize = w*0.024;
-  const metaSize = w*0.018;
-  const badgeGap = h*0.018;
+  let titleSize = w * (bceCurrentNetwork().orientation === "landscape" ? 0.052 : 0.042);
+  let subSize = w*0.024;
+  let metaSize = w*0.018;
   const footerReserve = h * 0.075;
+  const padTop = h*0.035, padBottom = h*0.045;
+  const maxAvailable = h*0.78 - padTop - padBottom - (anchorBottom ? footerReserve : 0);
 
-  // 1. Medir TODO el contenido antes de decidir el tamaño de la franja
-  const meas = bceMeasureContent(ctx, w, postType, titleSize, contentMaxW, subSize, metaSize);
+  // 1. Medir con tamaños estándar
+  let meas = bceMeasureContent(ctx, w, postType, titleSize, contentMaxW, subSize, metaSize);
+
+  // 1b. Si el contenido no cabe en el espacio máximo disponible, reducir la
+  // tipografía proporcionalmente y volver a medir — así NUNCA se traslapa,
+  // sin importar cuánto texto escriba el usuario (con un piso de 62% para
+  // que nunca quede ilegible).
+  if(meas.totalH > maxAvailable){
+    const shrink = Math.max(0.62, maxAvailable / meas.totalH);
+    titleSize *= shrink; subSize *= shrink; metaSize *= shrink;
+    meas = bceMeasureContent(ctx, w, postType, titleSize, contentMaxW, subSize, metaSize);
+  }
 
   // 2. La franja se dimensiona para contener el contenido medido, con un
   // mínimo estético — nunca al revés (ya no es un porcentaje adivinado).
   // Si el texto va abajo, reservamos espacio para la franja fija del logo.
-  const padTop = h*0.035, padBottom = h*0.045;
   const minZoneH = h * 0.28;
   const zoneH = Math.max(minZoneH, Math.min(h*0.78, meas.totalH + padTop + padBottom + (anchorBottom ? footerReserve : 0)));
   const zoneY = anchorBottom ? h - zoneH : 0;
@@ -18099,12 +18109,11 @@ function tplCorporate(ctx, w, h, lum, postType){
     cMetaLine(ctx, M, cursorY, meas.meta, metaSize, textColor);
   }
 
-  // Métrica (si hay área) — en la esquina opuesta al texto, siempre con
-  // espacio de sobra respecto a la franja fija del logo (nunca se traslapan)
+  // Métrica (si hay área) — SIEMPRE esquina superior derecha, posición fija
+  // y consistente (más premium que una posición que cambia según el caso).
+  // El texto ya reserva 16% de ancho a la derecha, así que nunca se cruzan.
   if(f.area){
-    const metricH = w*0.052 + w*0.018*2;
-    const metricY = anchorBottom ? h*0.06 : Math.min(h - footerReserve - h*0.025 - metricH, zoneY + zoneH + h*0.03);
-    cMetricBadge(ctx, w - M, metricY, f.area, "m²", w, "right");
+    cMetricBadge(ctx, w - M, h * 0.055, f.area, "m²", w, "right");
   }
 
   // Logo + sitio web — franja sólida fija, contraste garantizado siempre
@@ -18121,37 +18130,52 @@ function tplEditorial(ctx, w, h, lum, postType){
   const eyebrowSpacing = eyebrowFontPx * 0.12;
   const eyebrowH = eyebrow ? (eyebrowFontPx*1.6 + h*0.02) : 0;
 
-  const titleSize = w * 0.05;
-  const subSize = w*0.024;
+  let titleSize = w * 0.05;
+  let subSize = w*0.024;
   const metaSize = w*0.018;
-  const cardMaxW = w*0.62;
-  const padX = w*0.036, padY = w*0.032;
+  const cardMaxW = w*0.56;
+  const padX = w*0.036;
+  let padY = w*0.032;
+  const footerReserve = h * 0.075;
 
-  ctx.save();
-  ctx.font = `800 ${titleSize}px "Inter", Arial, sans-serif`;
-  const lines = bceWrapText(ctx, f.titulo || "Título del proyecto", cardMaxW);
-  ctx.restore();
-  const lineH = titleSize*1.22;
-  const titleH = lines.length*lineH;
-
-  let subH = 0;
-  if(f.subtitulo){
+  function medirBloqueEditorial(tSize, sSize, pY){
     ctx.save();
-    ctx.font = `500 ${subSize}px "Inter", Arial, sans-serif`;
-    const subLines = bceWrapText(ctx, f.subtitulo, cardMaxW);
+    ctx.font = `800 ${tSize}px "Inter", Arial, sans-serif`;
+    const lines = bceWrapText(ctx, f.titulo || "Título del proyecto", cardMaxW);
     ctx.restore();
-    subH = subLines.length*subSize*1.35 + h*0.016;
+    const lineH = tSize*1.22;
+    const titleH = lines.length*lineH;
+
+    let subH = 0;
+    if(f.subtitulo){
+      ctx.save();
+      ctx.font = `500 ${sSize}px "Inter", Arial, sans-serif`;
+      const subLines = bceWrapText(ctx, f.subtitulo, cardMaxW);
+      ctx.restore();
+      subH = subLines.length*sSize*1.35 + h*0.016;
+    }
+    const cardH = titleH + subH + pY*2;
+    return { lines, titleH, subH, cardH, lineH };
   }
-  const cardH = titleH + subH + padY*2;
+
+  let med = medirBloqueEditorial(titleSize, subSize, padY);
+  const meta = [f.cliente, f.ciudad, f.fecha].filter(Boolean).join("   ·   ");
+  let metaBlockH = meta ? (h*0.028 + metaSize*1.3) : 0;
+  const maxAvailable = h - footerReserve - h*0.03 - M;
+
+  // Si el bloque completo (eyebrow + tarjeta + meta) no cabe en el espacio
+  // disponible, reducir tipografía y padding proporcionalmente — nunca se
+  // traslapa, sin importar cuánto texto haya.
+  if(eyebrowH + med.cardH + metaBlockH > maxAvailable){
+    const shrink = Math.max(0.6, maxAvailable / (eyebrowH + med.cardH + metaBlockH));
+    titleSize *= shrink; subSize *= shrink; padY *= shrink;
+    med = medirBloqueEditorial(titleSize, subSize, padY);
+  }
+  const { lines, titleH, subH, cardH, lineH } = med;
   const cardW = cardMaxW + padX*2;
 
-  const meta = [f.cliente, f.ciudad, f.fecha].filter(Boolean).join("   ·   ");
-  const metaBlockH = meta ? (h*0.028 + metaSize*1.3) : 0;
-
-  // Reservar espacio para la franja fija del logo/sitio web, y anclar TODO
-  // el bloque (eyebrow + tarjeta + meta) para que quepa sin desbordarse,
-  // sin importar cuánto contenido haya.
-  const footerReserve = h * 0.075;
+  // Anclar TODO el bloque (eyebrow + tarjeta + meta) para que quepa sin
+  // desbordarse, ahora garantizado por el auto-ajuste de arriba.
   const totalBlockH = eyebrowH + cardH + metaBlockH;
   const blockTop = anchorBottom
     ? Math.max(M, h - footerReserve - h*0.02 - totalBlockH)
@@ -18179,7 +18203,7 @@ function tplEditorial(ctx, w, h, lum, postType){
   if(meta) cMetaLine(ctx, M, cardY + cardH + h*0.028, meta, metaSize, "#1B1B1F");
 
   if(f.area){
-    cMetricBadge(ctx, w - M, M, f.area, "m²", w, "right");
+    cMetricBadge(ctx, w - M, h * 0.055, f.area, "m²", w, "right");
   }
 
   cFooterStrip(ctx, w, h, "bottom");
@@ -18293,6 +18317,7 @@ function bceCompose(ctx, w, h){
 // ═══════════════════════════════════════════════════════════════
 let _bceInited = false;
 
+let _bceFontsReady = null;
 function bceInit(){
   if(_bceInited) return;
   _bceInited = true;
@@ -18301,11 +18326,15 @@ function bceInit(){
   BCE.logoNavyImg = new Image();
   BCE.logoNavyImg.src = window._romsaLogoAzul || "";
   if(document.fonts && document.fonts.load){
-    Promise.all([
+    _bceFontsReady = Promise.all([
       document.fonts.load('800 40px "Inter"'),
+      document.fonts.load('700 40px "Inter"'),
+      document.fonts.load('600 30px "Inter"'),
       document.fonts.load('500 20px "Inter"'),
       document.fonts.load('700 16px "Inter"'),
     ]).catch(() => {});
+  } else {
+    _bceFontsReady = Promise.resolve();
   }
 
   // Pills de red social
@@ -18387,10 +18416,11 @@ function bceUiSelectTemplate(key){
   document.querySelectorAll("#fe-template-pills .fe-tpl-btn").forEach(b => b.classList.toggle("active", b.dataset.tpl === key));
 }
 
-function bceGoToPreview(){
+async function bceGoToPreview(){
   if(!BCE.img){ showToast("⚠️ Sube una foto primero"); bceGoToStep(1); return; }
   if(!BCE.fields.titulo){ showToast("⚠️ Escribe al menos un título"); return; }
   bceGoToStep(3);
+  if(_bceFontsReady) await _bceFontsReady;
   bceRenderPreview();
 }
 
@@ -18414,8 +18444,9 @@ function bceRenderPreview(){
   bceCompose(ctx, size.w, size.h);
 }
 
-function bceDownload(){
+async function bceDownload(){
   if(!BCE.img){ showToast("⚠️ Sube una foto primero"); return; }
+  if(_bceFontsReady) await _bceFontsReady;
   const net = bceCurrentNetwork();
   const canvas = document.createElement("canvas");
   canvas.width = net.w; canvas.height = net.h;
