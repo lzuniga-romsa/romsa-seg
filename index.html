@@ -753,27 +753,25 @@ body.in-fotoeditor #app{
 .fe-back,.fe-title{position:relative;z-index:2;}
 .fe-back{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);color:#fff;font-size:11px;font-weight:700;padding:7px 12px;border-radius:8px;cursor:pointer;font-family:inherit;}
 .fe-title{font-size:14px;font-weight:700;letter-spacing:.2px;}
+.fe-step-dots{position:relative;z-index:2;display:flex;gap:5px;}
+.fe-step-dots .dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.25);transition:background .2s;}
+.fe-step-dots .dot.active{background:#7B9AD0;}
+.fe-step{flex:1;display:flex;flex-direction:column;overflow-y:auto;overscroll-behavior:contain;min-height:0;}
 .fe-upload-wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:24px;}
 .fe-dropzone{border:2px dashed #9CC0EE;border-radius:16px;padding:48px 28px;text-align:center;cursor:pointer;background:#fff;max-width:360px;transition:border-color .15s,background .15s;}
 .fe-dropzone:hover{border-color:#0B1F3A;background:#F5F8FD;}
-.fe-editor-wrap{flex:1;display:flex;flex-direction:column;overflow-y:auto;overscroll-behavior:contain;}
-.fe-templates{display:flex;gap:8px;padding:12px 14px;overflow-x:auto;flex-shrink:0;background:#fff;border-bottom:1px solid #E7ECF3;}
+.fe-form-wrap{padding:16px;display:flex;flex-direction:column;gap:14px;}
+.fe-pill-row{display:flex;gap:8px;flex-wrap:wrap;}
 .fe-tpl-btn{flex-shrink:0;padding:8px 14px;border-radius:20px;font-size:11px;font-weight:700;border:1.5px solid #D7E3F5;background:#fff;color:#3A5A82;cursor:pointer;white-space:nowrap;font-family:inherit;transition:all .15s;}
 .fe-tpl-btn.active{background:#0B1F3A;border-color:#0B1F3A;color:#fff;}
 .fe-canvas-area{flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:16px;background:#EDF1F7;}
-.fe-canvas-area canvas{max-width:100%;box-shadow:0 4px 24px rgba(11,31,58,.18);border-radius:2px;touch-action:none;background:#ccc;}
+.fe-canvas-area canvas{max-width:100%;max-height:60vh;box-shadow:0 4px 24px rgba(11,31,58,.18);border-radius:2px;background:#ccc;}
 .fe-controls{flex-shrink:0;padding:14px 16px 28px;background:#fff;display:flex;flex-direction:column;gap:12px;}
 .fe-ctrl-group{display:flex;flex-direction:column;gap:5px;}
 .fe-ctrl-row{display:flex;gap:12px;}
 .fe-ctrl-label{font-size:10px;font-weight:700;color:#7A8496;text-transform:uppercase;letter-spacing:.5px;}
-.fe-textarea{border:1.5px solid #D7E3F5;border-radius:10px;padding:9px 11px;font-size:13px;font-family:inherit;resize:none;color:#1B1B1F;}
-.fe-textarea:focus{outline:none;border-color:#0B1F3A;}
-input[type="range"]#fe-zoom,input[type="range"]#fe-textsize,input[type="range"]#fe-baropacity{accent-color:#0B1F3A;width:100%;}
-.fe-swatches{display:flex;gap:6px;}
-.fe-swatch{width:28px;height:28px;border-radius:50%;border:2px solid transparent;cursor:pointer;flex-shrink:0;position:relative;}
-.fe-swatch.active{border-color:#0B1F3A;box-shadow:0 0 0 2px #fff,0 0 0 3px #0B1F3A;}
-.fe-logo-swatch{width:28px;height:28px;border-radius:8px;border:2px solid #D7E3F5;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;}
-.fe-logo-swatch.active{border-color:#0B1F3A;background:#EAF1FC;color:#0B1F3A;}
+.fe-input,.fe-select{border:1.5px solid #D7E3F5;border-radius:10px;padding:9px 11px;font-size:13px;font-family:inherit;color:#1B1B1F;background:#fff;width:100%;}
+.fe-input:focus,.fe-select:focus{outline:none;border-color:#0B1F3A;}
 .fe-hint{font-size:11px;color:#8A93A3;line-height:1.5;background:#F5F8FB;border-radius:8px;padding:9px 11px;}
 .fe-actions{display:flex;gap:8px;margin-top:2px;}
 .fe-btn{flex:1;padding:12px;border-radius:10px;font-size:12.5px;font-weight:700;border:none;cursor:pointer;font-family:inherit;}
@@ -2801,75 +2799,104 @@ input[type="range"]#fe-zoom,input[type="range"]#fe-textsize,input[type="range"]#
   <div id="screen-fotoeditor" class="screen fe-screen">
     <div class="fe-topbar">
       <button class="fe-back" onclick="volverSelector()">← Menú</button>
-      <div class="fe-title">Editor de Fotos ROMSA</div>
-      <div style="width:64px;"></div>
+      <div class="fe-title">Motor de Marca ROMSA</div>
+      <div class="fe-step-dots" id="fe-step-dots"><span class="dot active"></span><span class="dot"></span><span class="dot"></span></div>
     </div>
 
     <!-- Paso 1: subir foto -->
-    <div id="fe-upload-wrap" class="fe-upload-wrap">
-      <div class="fe-dropzone" id="fe-dropzone" onclick="document.getElementById('fe-file-input').click()">
-        <div style="font-size:40px;margin-bottom:8px;">🖼️</div>
-        <div style="font-weight:700;color:#1B1B1F;margin-bottom:4px;">Sube una foto para empezar</div>
-        <div style="font-size:12px;color:#7A7A82;">Toca aquí, o arrastra una imagen</div>
+    <div id="fe-step-1" class="fe-step">
+      <div class="fe-upload-wrap">
+        <div class="fe-dropzone" id="fe-dropzone" onclick="document.getElementById('fe-file-input').click()">
+          <div style="font-size:40px;margin-bottom:8px;">🖼️</div>
+          <div style="font-weight:700;color:#1B1B1F;margin-bottom:4px;">Sube una foto para empezar</div>
+          <div style="font-size:12px;color:#7A7A82;">Toca aquí, o arrastra una imagen</div>
+        </div>
+        <input type="file" id="fe-file-input" accept="image/*" style="display:none;" onchange="bceHandleUpload(event)">
       </div>
-      <input type="file" id="fe-file-input" accept="image/*" style="display:none;" onchange="feHandleUpload(event)">
     </div>
 
-    <!-- Paso 2: editor -->
-    <div id="fe-editor-wrap" class="fe-editor-wrap" style="display:none;">
+    <!-- Paso 2: información (el usuario da datos, no diseña) -->
+    <div id="fe-step-2" class="fe-step" style="display:none;">
+      <div class="fe-form-wrap">
 
-      <div class="fe-templates" id="fe-templates"><!-- generado por JS --></div>
+        <div class="fe-ctrl-group">
+          <label class="fe-ctrl-label">Red social</label>
+          <div class="fe-pill-row" id="fe-network-pills"></div>
+        </div>
 
+        <div class="fe-ctrl-group">
+          <label class="fe-ctrl-label">Tipo de publicación</label>
+          <select id="fe-posttype-select" class="fe-select" onchange="bceSetField('postType', this.value)"></select>
+        </div>
+
+        <div class="fe-ctrl-group">
+          <label class="fe-ctrl-label">Audiencia <span style="font-weight:400;text-transform:none;color:#A7AEBC;">(opcional, para mensajes futuros)</span></label>
+          <select id="fe-audience-select" class="fe-select"></select>
+        </div>
+
+        <div class="fe-ctrl-row">
+          <div class="fe-ctrl-group" style="flex:1;">
+            <label class="fe-ctrl-label">Título</label>
+            <input type="text" id="fe-f-titulo" class="fe-input" placeholder="Ej: Impermeabilización de cubierta" oninput="bceSetField('titulo', this.value)">
+          </div>
+        </div>
+        <div class="fe-ctrl-row">
+          <div class="fe-ctrl-group" style="flex:1;">
+            <label class="fe-ctrl-label">Subtítulo <span style="font-weight:400;text-transform:none;color:#A7AEBC;">(opcional)</span></label>
+            <input type="text" id="fe-f-subtitulo" class="fe-input" placeholder="Ej: Sistema de alto desempeño" oninput="bceSetField('subtitulo', this.value)">
+          </div>
+        </div>
+        <div class="fe-ctrl-row">
+          <div class="fe-ctrl-group" style="flex:1;">
+            <label class="fe-ctrl-label">Cliente</label>
+            <input type="text" id="fe-f-cliente" class="fe-input" placeholder="Ej: PIMSA" oninput="bceSetField('cliente', this.value)">
+          </div>
+          <div class="fe-ctrl-group" style="flex:1;">
+            <label class="fe-ctrl-label">Ciudad</label>
+            <input type="text" id="fe-f-ciudad" class="fe-input" placeholder="Ej: Mexicali" oninput="bceSetField('ciudad', this.value)">
+          </div>
+        </div>
+        <div class="fe-ctrl-row">
+          <div class="fe-ctrl-group" style="flex:1;">
+            <label class="fe-ctrl-label">Fecha</label>
+            <input type="text" id="fe-f-fecha" class="fe-input" placeholder="Ej: Julio 2026" oninput="bceSetField('fecha', this.value)">
+          </div>
+          <div class="fe-ctrl-group" style="flex:1;">
+            <label class="fe-ctrl-label">Área (m²)</label>
+            <input type="text" id="fe-f-area" class="fe-input" placeholder="Ej: 1,200" oninput="bceSetField('area', this.value)">
+          </div>
+        </div>
+        <div class="fe-ctrl-row">
+          <div class="fe-ctrl-group" style="flex:1;">
+            <label class="fe-ctrl-label">Producto aplicado <span style="font-weight:400;text-transform:none;color:#A7AEBC;">(opcional)</span></label>
+            <input type="text" id="fe-f-producto" class="fe-input" placeholder="Ej: Sistema epóxico Sherwin Williams" oninput="bceSetField('producto', this.value)">
+          </div>
+        </div>
+
+        <div class="fe-ctrl-group">
+          <label class="fe-ctrl-label">Estilo</label>
+          <div class="fe-pill-row" id="fe-template-pills"></div>
+        </div>
+
+        <button class="fe-btn fe-btn-primary" style="margin-top:6px;" onclick="bceGoToPreview()">Generar diseño →</button>
+      </div>
+    </div>
+
+    <!-- Paso 3: vista previa (el motor ya decidió todo) -->
+    <div id="fe-step-3" class="fe-step" style="display:none;">
       <div class="fe-canvas-area">
         <canvas id="fe-canvas"></canvas>
       </div>
-
       <div class="fe-controls">
-
+        <div class="fe-hint">✨ El motor analizó tu foto y decidió automáticamente dónde va el texto, el overlay y el contraste — según las reglas de marca de ROMSA. No hay nada que arrastrar.</div>
         <div class="fe-ctrl-group">
-          <label class="fe-ctrl-label">Texto sobre la foto</label>
-          <textarea id="fe-text-input" class="fe-textarea" rows="2" placeholder="Ej: Impermeabilización de cubierta — Mexicali, B.C." oninput="feUpdateText()"></textarea>
+          <label class="fe-ctrl-label">Formato de descarga</label>
+          <div class="fe-pill-row" id="fe-format-pills"></div>
         </div>
-
-        <div class="fe-ctrl-row">
-          <div class="fe-ctrl-group" style="flex:1;">
-            <label class="fe-ctrl-label">Zoom de la foto</label>
-            <input type="range" id="fe-zoom" min="100" max="220" value="100" oninput="feUpdatePhotoScale(this.value)">
-          </div>
-          <div class="fe-ctrl-group" style="flex:1;">
-            <label class="fe-ctrl-label">Tamaño de texto</label>
-            <input type="range" id="fe-textsize" min="20" max="64" value="42" oninput="feUpdateTextSize(this.value)">
-          </div>
-        </div>
-
-        <div class="fe-ctrl-row">
-          <div class="fe-ctrl-group" style="flex:1;">
-            <label class="fe-ctrl-label">Color de franja</label>
-            <div class="fe-swatches" id="fe-bar-swatches"></div>
-          </div>
-          <div class="fe-ctrl-group" style="flex:1;">
-            <label class="fe-ctrl-label">Opacidad franja</label>
-            <input type="range" id="fe-baropacity" min="0" max="100" value="72" oninput="feUpdateBarOpacity(this.value)">
-          </div>
-        </div>
-
-        <div class="fe-ctrl-row">
-          <div class="fe-ctrl-group" style="flex:1;">
-            <label class="fe-ctrl-label">Color de texto</label>
-            <div class="fe-swatches" id="fe-text-swatches"></div>
-          </div>
-          <div class="fe-ctrl-group" style="flex:1;">
-            <label class="fe-ctrl-label">Logo</label>
-            <div class="fe-swatches" id="fe-logo-swatches"></div>
-          </div>
-        </div>
-
-        <div class="fe-hint">💡 Arrastra la franja o el texto directamente sobre la foto para moverlos (usa la esquina para cambiar su tamaño). El logo y el sitio web son fijos — parte del patrón de marca — y solo cambian de color.</div>
-
         <div class="fe-actions">
-          <button class="fe-btn fe-btn-ghost" onclick="feReset()">↺ Restablecer</button>
-          <button class="fe-btn fe-btn-ghost" onclick="feChangePhoto()">🔄 Cambiar foto</button>
-          <button class="fe-btn fe-btn-primary" onclick="feDownload()">⬇ Descargar</button>
+          <button class="fe-btn fe-btn-ghost" onclick="bceBackToForm()">← Editar información</button>
+          <button class="fe-btn fe-btn-ghost" onclick="bceChangePhoto()">🔄 Cambiar foto</button>
+          <button class="fe-btn fe-btn-primary" onclick="bceDownload()">⬇ Descargar</button>
         </div>
       </div>
     </div>
@@ -6207,7 +6234,7 @@ function selectModule(mod){
     if(typeof cargarAuditorias === "function") cargarAuditorias();
   } else if(mod === 'fotoeditor'){
     goScreen('fotoeditor');
-    if(typeof feInit === "function") feInit();
+    if(typeof bceInit === "function") bceInit();
   }
 }
 
@@ -17630,99 +17657,537 @@ window.auGenerarPdf = auGenerarPdf;
 window.auGenerarPdfDirecto = auGenerarPdfDirecto;
 
 // ═══════════════════════════════════════════════════════════════
-// EDITOR DE FOTOS — plantillas de marca para redes sociales
+// BRAND COMPOSITION ENGINE — ROMSA Industrial (Fase 1)
+// El usuario da información. El motor decide el diseño.
 // ═══════════════════════════════════════════════════════════════
-const FE_TEMPLATES = [
-  { key: "linkedin", label: "LinkedIn",           w: 1200, h: 1200 },
-  { key: "ig_post",  label: "Instagram Post",     w: 1080, h: 1350 },
-  { key: "ig_story", label: "Instagram Historia", w: 1080, h: 1920 },
-  { key: "facebook", label: "Facebook",           w: 1200, h: 630  },
-];
-const FE_BAR_COLORS  = ["#0B1F3A", "#111111", "#FFFFFF", "#7B9AD0"];
-const FE_TEXT_COLORS = ["#FFFFFF", "#0B1F3A", "#111111"];
 
-let FE = {
-  inited: false,
-  templateKey: "linkedin",
+// ── Configuración: redes, tipos de publicación, plantillas ──────
+const BCE_NETWORKS = [
+  { key: "linkedin", label: "LinkedIn",         w: 1200, h: 1200, orientation: "square" },
+  { key: "ig_feed",  label: "Instagram Feed",    w: 1080, h: 1350, orientation: "portrait" },
+  { key: "ig_story", label: "Instagram Historia",w: 1080, h: 1920, orientation: "tall" },
+  { key: "facebook", label: "Facebook",          w: 1200, h: 630,  orientation: "landscape" },
+  { key: "x",        label: "X",                 w: 1200, h: 675,  orientation: "landscape" },
+  { key: "web_hero", label: "Website Hero",      w: 1920, h: 1080, orientation: "landscape" },
+];
+
+const BCE_POST_TYPES = [
+  { key: "caso_exito",          label: "Caso de éxito",        badge: "CASO DE ÉXITO" },
+  { key: "proyecto_terminado",  label: "Proyecto terminado",   badge: "PROYECTO TERMINADO" },
+  { key: "avance_obra",         label: "Avance de obra",       badge: "AVANCE DE OBRA" },
+  { key: "antes_despues",       label: "Antes / Después",      badge: "ANTES Y DESPUÉS" },
+  { key: "dato_tecnico",        label: "Dato técnico",         badge: "DATO TÉCNICO" },
+  { key: "cliente",             label: "Cliente",              badge: "CLIENTE" },
+  { key: "equipo",              label: "Equipo trabajando",    badge: "NUESTRO EQUIPO" },
+  { key: "producto",            label: "Producto",             badge: "PRODUCTO" },
+  { key: "promocion",           label: "Promoción",            badge: "PROMOCIÓN" },
+  { key: "testimonio",          label: "Testimonio",           badge: "TESTIMONIO" },
+  { key: "vacante",             label: "Vacante",               badge: "ESTAMOS CONTRATANDO" },
+  { key: "articulo",            label: "Artículo",             badge: "ARTÍCULO" },
+  { key: "evento",              label: "Evento",               badge: "EVENTO" },
+  { key: "impermeabilizacion",  label: "Impermeabilización",   badge: "IMPERMEABILIZACIÓN" },
+  { key: "epoxico",             label: "Recubrimiento epóxico",badge: "RECUBRIMIENTO EPÓXICO" },
+  { key: "pulido",              label: "Pulido",               badge: "PULIDO Y DENSIFICADO" },
+  { key: "rack",                label: "Rack",                 badge: "SISTEMAS DE RACK" },
+  { key: "mantenimiento",       label: "Mantenimiento",        badge: "MANTENIMIENTO" },
+];
+
+const BCE_AUDIENCES = ["General","CEO","Director de Planta","Facilities","Mantenimiento","Compras","Ingeniería","EHS","Arquitectos","Constructores"];
+
+const BCE_TEMPLATES = [
+  { key: "corporate", label: "Corporate" },
+  { key: "editorial", label: "Editorial" },
+  { key: "minimal",   label: "Minimal" },
+];
+
+// Margen estándar del sistema de grid (equivalente a 1 columna de 12) — del Kit de Marca
+const BCE_MARGIN = 0.065;
+const BCE_NAVY = "#0B1F3A";
+const BCE_LIGHTBLUE = "#7B9AD0";
+
+// ── Estado ────────────────────────────────────────────────────
+let BCE = {
   img: null,
-  logoWhiteImg: null,
-  logoNavyImg: null,
-  layout: null,
-  editScaleFactor: 1,   // px de canvas de edición por unidad de plantilla
-  dragging: null,       // {el, mode, startPx, startPy, startLayout}
+  networkKey: "linkedin",
+  templateKey: "corporate",
+  postTypeKey: "caso_exito",
+  logoVariant: "white",
+  fields: { titulo: "", subtitulo: "", cliente: "", ciudad: "", fecha: "", area: "", producto: "" },
+  luminosity: null,
 };
 
-function feFactoryLayout(){
-  return {
-    photo: { offX: 0.5, offY: 0.5, scale: 1 },
-    bar:   { x: 0, y: 0.50, w: 1, h: 0.50, opacity: 0.60, color: "#0B1F3A" },
-    logo:  { variant: "white" }, // posición y tamaño fijos — solo el color es ajustable
-    text:  { x: 0.065, y: 0.685, w: 0.62, size: 42, color: "#FFFFFF", value: "" },
-  };
+function bceCurrentNetwork(){ return BCE_NETWORKS.find(n => n.key === BCE.networkKey) || BCE_NETWORKS[0]; }
+function bceCurrentPostType(){ return BCE_POST_TYPES.find(p => p.key === BCE.postTypeKey) || BCE_POST_TYPES[0]; }
+
+// ── ANÁLISIS DE LUMINOSIDAD ───────────────────────────────────
+// No es "IA" — es una medición real y determinística: dividimos la
+// foto en 3 franjas horizontales (arriba/medio/abajo), medimos brillo
+// promedio y varianza (qué tan "ocupada"/detallada es cada franja), y
+// elegimos la franja más uniforme (arriba o abajo, nunca el medio,
+// donde casi siempre está el sujeto principal) para colocar el texto.
+function bceAnalyzeLuminosity(img){
+  const sw = 120;
+  const sh = Math.max(1, Math.round(sw * img.naturalHeight / img.naturalWidth));
+  const c = document.createElement("canvas");
+  c.width = sw; c.height = sh;
+  const cx = c.getContext("2d");
+  cx.drawImage(img, 0, 0, sw, sh);
+  const data = cx.getImageData(0, 0, sw, sh).data;
+
+  function zoneStats(y0f, y1f){
+    const y0 = Math.floor(sh * y0f), y1 = Math.max(y0 + 1, Math.floor(sh * y1f));
+    let sum = 0, sumSq = 0, n = 0;
+    for(let y = y0; y < y1; y++){
+      for(let x = 0; x < sw; x++){
+        const i = (y * sw + x) * 4;
+        const lum = (0.299 * data[i] + 0.587 * data[i+1] + 0.114 * data[i+2]) / 255;
+        sum += lum; sumSq += lum * lum; n++;
+      }
+    }
+    const mean = n ? sum / n : 0.5;
+    const variance = n ? Math.max(0, sumSq / n - mean * mean) : 0;
+    return { mean, variance, std: Math.sqrt(variance) };
+  }
+
+  const top = zoneStats(0, 0.30);
+  const middle = zoneStats(0.30, 0.70);
+  const bottom = zoneStats(0.70, 1);
+
+  const candidates = [
+    { zone: "bottom", ...bottom },
+    { zone: "top", ...top },
+  ];
+  candidates.sort((a, b) => a.variance - b.variance);
+  const safe = candidates[0];
+
+  // Overlay más fuerte si la zona elegida es clara (para que el texto blanco
+  // siga siendo legible); más suave si ya es oscura.
+  let overlayOpacity;
+  if(safe.mean > 0.62) overlayOpacity = 0.62;
+  else if(safe.mean > 0.42) overlayOpacity = 0.45;
+  else overlayOpacity = 0.28;
+
+  return { top, middle, bottom, safeZone: safe.zone, safeMean: safe.mean, overlayOpacity };
 }
 
-function feInit(){
-  if(FE.inited) return;
-  FE.inited = true;
-  FE.logoWhiteImg = new Image();
-  FE.logoWhiteImg.src = window._romsaLogoBlanco || "";
-  FE.logoNavyImg = new Image();
-  FE.logoNavyImg.src = window._romsaLogoAzul || "";
+// ── Utilidades ────────────────────────────────────────────────
+function bceHexToRgb(hex){
+  const c = String(hex).replace("#", "");
+  return { r: parseInt(c.substr(0,2),16), g: parseInt(c.substr(2,2),16), b: parseInt(c.substr(4,2),16) };
+}
+function bceContrastColor(hex){
+  const { r, g, b } = bceHexToRgb(hex);
+  const lum = (0.299*r + 0.587*g + 0.114*b) / 255;
+  return lum > 0.6 ? BCE_NAVY : "#FFFFFF";
+}
+function bceWrapText(ctx, text, maxWidth){
+  const words = String(text).split(/\s+/).filter(Boolean);
+  const lines = []; let cur = "";
+  words.forEach(w => {
+    const test = cur ? cur + " " + w : w;
+    if(ctx.measureText(test).width > maxWidth && cur){ lines.push(cur); cur = w; }
+    else cur = test;
+  });
+  if(cur) lines.push(cur);
+  return lines;
+}
+function bcePhotoRect(canvasW, canvasH){
+  const img = BCE.img;
+  const scale = Math.max(canvasW / img.naturalWidth, canvasH / img.naturalHeight);
+  const dw = img.naturalWidth * scale, dh = img.naturalHeight * scale;
+  return { dx: (canvasW - dw) / 2, dy: (canvasH - dh) / 2, dw, dh };
+}
 
-  // Precargar Inter en los pesos usados, para que el ajuste de línea del
-  // texto sea preciso desde el primer render (si no, arranca con la
-  // fuente de respaldo y las métricas cambian un instante después)
+// ── COMPONENTES (reutilizables, cada uno dibuja una pieza) ──────
+function cHero(ctx, w, h){
+  const p = bcePhotoRect(w, h);
+  ctx.drawImage(BCE.img, p.dx, p.dy, p.dw, p.dh);
+}
+function cGradientOverlay(ctx, x, y, w, h, colorHex, opacity, dir){
+  const rgb = bceHexToRgb(colorHex);
+  const grad = dir === "up"
+    ? ctx.createLinearGradient(0, y + h, 0, y)
+    : ctx.createLinearGradient(0, y, 0, y + h);
+  grad.addColorStop(0, `rgba(${rgb.r},${rgb.g},${rgb.b},0)`);
+  grad.addColorStop(1, `rgba(${rgb.r},${rgb.g},${rgb.b},${opacity})`);
+  ctx.save(); ctx.fillStyle = grad; ctx.fillRect(x, y, w, h); ctx.restore();
+}
+function cFullOverlay(ctx, w, h, colorHex, opacity){
+  const rgb = bceHexToRgb(colorHex);
+  ctx.save();
+  ctx.fillStyle = `rgba(${rgb.r},${rgb.g},${rgb.b},${opacity})`;
+  ctx.fillRect(0, 0, w, h);
+  ctx.restore();
+}
+function cSolidCard(ctx, x, y, w, h, colorHex, glow){
+  const rgb = bceHexToRgb(colorHex);
+  ctx.save();
+  ctx.fillStyle = `rgb(${rgb.r},${rgb.g},${rgb.b})`;
+  ctx.fillRect(x, y, w, h);
+  if(glow){
+    ctx.beginPath(); ctx.rect(x, y, w, h); ctx.clip();
+    const glowR = h * 1.3;
+    const g = ctx.createRadialGradient(x + w*0.92, y + h*0.08, 0, x + w*0.92, y + h*0.08, glowR);
+    g.addColorStop(0, "rgba(30,111,217,.20)"); g.addColorStop(1, "rgba(30,111,217,0)");
+    ctx.fillStyle = g; ctx.fillRect(x, y, w, h);
+  }
+  ctx.restore();
+}
+function cCategoryBadge(ctx, x, y, text, canvasW, align){
+  if(!text) return 0;
+  const fontPx = Math.max(9, canvasW * 0.014);
+  ctx.save();
+  ctx.font = `700 ${fontPx}px "Inter", Arial, sans-serif`;
+  const padX = fontPx * 0.9, padY = fontPx * 0.55;
+  const textW = ctx.measureText(text.toUpperCase()).width;
+  const boxW = textW + padX * 2, boxH = fontPx + padY * 2;
+  const bx = align === "right" ? x - boxW : x;
+  ctx.fillStyle = "rgba(30,111,217,.85)";
+  ctx.fillRect(bx, y, boxW, boxH);
+  ctx.fillStyle = "#FFFFFF";
+  ctx.textBaseline = "middle";
+  ctx.letterSpacing = "1px";
+  ctx.fillText(text.toUpperCase(), bx + padX, y + boxH/2 + 1);
+  ctx.restore();
+  return boxH;
+}
+function cTitle(ctx, x, y, maxWidth, text, fontPx, color, weight){
+  if(!text) return { height: 0, lines: 0 };
+  ctx.save();
+  ctx.font = `${weight||800} ${fontPx}px "Inter", Arial, sans-serif`;
+  ctx.fillStyle = color;
+  ctx.textBaseline = "top";
+  ctx.letterSpacing = "-0.3px";
+  const lines = bceWrapText(ctx, text, maxWidth);
+  const lineH = fontPx * 1.22;
+  lines.forEach((line, i) => ctx.fillText(line, x, y + i * lineH));
+  ctx.restore();
+  return { height: lines.length * lineH, lines: lines.length };
+}
+function cSubtitle(ctx, x, y, maxWidth, text, fontPx, color){
+  if(!text) return { height: 0 };
+  ctx.save();
+  ctx.font = `500 ${fontPx}px "Inter", Arial, sans-serif`;
+  ctx.fillStyle = color;
+  ctx.globalAlpha = 0.88;
+  ctx.textBaseline = "top";
+  const lines = bceWrapText(ctx, text, maxWidth);
+  const lineH = fontPx * 1.3;
+  lines.forEach((line, i) => ctx.fillText(line, x, y + i * lineH));
+  ctx.restore();
+  return { height: lines.length * lineH };
+}
+function cMetaLine(ctx, x, y, text, fontPx, color){
+  if(!text) return { height: 0 };
+  ctx.save();
+  ctx.font = `500 ${fontPx}px "Inter", Arial, sans-serif`;
+  ctx.fillStyle = color;
+  ctx.globalAlpha = 0.75;
+  ctx.textBaseline = "top";
+  ctx.fillText(text, x, y);
+  ctx.restore();
+  return { height: fontPx * 1.3 };
+}
+function cMetricBadge(ctx, x, y, value, unit, canvasW, align){
+  if(!value) return { width: 0, height: 0 };
+  const numFont = canvasW * 0.052, unitFont = canvasW * 0.018;
+  ctx.save();
+  ctx.font = `800 ${numFont}px "Inter", Arial, sans-serif`;
+  const numW = ctx.measureText(value).width;
+  ctx.font = `700 ${unitFont}px "Inter", Arial, sans-serif`;
+  const unitW = unit ? ctx.measureText(unit).width + canvasW*0.01 : 0;
+  const totalW = numW + unitW;
+  const padX = canvasW * 0.022, padY = canvasW * 0.018;
+  const boxW = totalW + padX * 2, boxH = numFont + padY * 2;
+  const bx = align === "right" ? x - boxW : x;
+  cSolidCard(ctx, bx, y, boxW, boxH, BCE_NAVY, true);
+  ctx.font = `800 ${numFont}px "Inter", Arial, sans-serif`;
+  ctx.fillStyle = "#FFFFFF";
+  ctx.textBaseline = "alphabetic";
+  const baseline = y + boxH/2 + numFont*0.34;
+  ctx.fillText(value, bx + padX, baseline);
+  if(unit){
+    ctx.font = `700 ${unitFont}px "Inter", Arial, sans-serif`;
+    ctx.fillStyle = BCE_LIGHTBLUE;
+    ctx.fillText(unit, bx + padX + numW + canvasW*0.01, baseline);
+  }
+  ctx.restore();
+  return { width: boxW, height: boxH, x: bx, y };
+}
+function cLogo(ctx, x, y, w, canvasW){
+  const img = BCE.logoVariant === "navy" ? BCE.logoNavyImg : BCE.logoWhiteImg;
+  if(!img || !img.complete || !img.naturalWidth) return { w: 0, h: 0 };
+  const aspect = img.naturalHeight / img.naturalWidth;
+  const h = w * aspect;
+  ctx.drawImage(img, x, y, w, h);
+  return { w, h };
+}
+function cWebsite(ctx, x, y, canvasW, colorHex, align){
+  const fontPx = Math.max(10, canvasW * 0.0125);
+  ctx.save();
+  ctx.fillStyle = bceContrastColor(colorHex);
+  ctx.globalAlpha = 0.85;
+  ctx.font = `500 ${fontPx}px "Inter", Arial, sans-serif`;
+  ctx.textAlign = align || "left";
+  ctx.textBaseline = "alphabetic";
+  ctx.fillText("www.romsaindustrial.com", x, y);
+  ctx.restore();
+}
+
+// ── PLANTILLAS ──────────────────────────────────────────────────
+// Cada plantilla es una función que decide POSICIÓN, TAMAÑO y ESTILO
+// de cada componente. El usuario no toca nada de esto.
+
+function tplCorporate(ctx, w, h, lum, postType){
+  const M = w * BCE_MARGIN;
+  const anchorBottom = lum.safeZone === "bottom";
+  const zoneH = h * 0.42;
+  const zoneY = anchorBottom ? h - zoneH : 0;
+
+  cGradientOverlay(ctx, 0, zoneY, w, zoneH, BCE_NAVY, lum.overlayOpacity, anchorBottom ? "down" : "up");
+
+  const f = BCE.fields;
+  const textColor = "#FFFFFF";
+  let cursorY = anchorBottom ? h - zoneH * 0.72 : M * 0.9;
+
+  if(postType.badge){
+    const bh = cCategoryBadge(ctx, M, cursorY, postType.badge, w);
+    cursorY += bh + h * 0.018;
+  }
+  const titleSize = w * (bceCurrentNetwork().orientation === "landscape" ? 0.052 : 0.042);
+  const titleRes = cTitle(ctx, M, cursorY, w - M*2 - w*0.16, f.titulo || "Título del proyecto", titleSize, textColor);
+  cursorY += titleRes.height + h*0.012;
+
+  if(f.subtitulo){
+    const subRes = cSubtitle(ctx, M, cursorY, w - M*2 - w*0.16, f.subtitulo, w*0.024, textColor);
+    cursorY += subRes.height + h*0.01;
+  }
+  const meta = [f.cliente, f.ciudad, f.fecha].filter(Boolean).join("   ·   ");
+  if(meta) cMetaLine(ctx, M, cursorY, meta, w*0.018, textColor);
+
+  // Métrica (si hay área)
+  if(f.area){
+    cMetricBadge(ctx, w - M, h * 0.06, f.area, "m²", w, "right");
+  }
+
+  // Logo + sitio web, esquina inferior derecha (fijos)
+  const logoW = w * 0.13;
+  const logoX = w - M - logoW, logoY = h - M*1.15 - logoW*0.2;
+  const lr = cLogo(ctx, logoX, logoY - logoW*0.2, logoW, w);
+  cWebsite(ctx, w - M, h - M*0.45, w, BCE_NAVY, "right");
+}
+
+function tplEditorial(ctx, w, h, lum, postType){
+  const M = w * BCE_MARGIN;
+  const anchorBottom = lum.safeZone === "bottom";
+  const f = BCE.fields;
+
+  ctx.save();
+  ctx.font = `700 ${w*0.014}px "Inter", Arial, sans-serif`;
+  const eyebrow = postType.badge || "";
+  let topY = anchorBottom ? h * 0.62 : M;
+
+  if(eyebrow){
+    ctx.fillStyle = BCE_LIGHTBLUE;
+    ctx.textBaseline = "top";
+    ctx.letterSpacing = "2px";
+    ctx.fillText(eyebrow.toUpperCase(), M, topY);
+    topY += w*0.014*1.6 + h*0.012;
+  }
+  ctx.restore();
+
+  const titleSize = w * 0.05;
+  ctx.font = `800 ${titleSize}px "Inter", Arial, sans-serif`;
+  const lines = bceWrapText(ctx, f.titulo || "Título del proyecto", w*0.62);
+  const lineH = titleSize*1.22;
+  const padX = w*0.032, padY = w*0.026;
+  const cardH = lines.length*lineH + padY*2 + (f.subtitulo ? w*0.024*1.35 + h*0.01 : 0);
+  const cardW = w*0.62 + padX*2;
+  const cardY = topY;
+  cSolidCard(ctx, M, cardY, cardW, cardH, BCE_NAVY, true);
+
+  let ty = cardY + padY;
+  cTitle(ctx, M, ty, w*0.62, f.titulo || "Título del proyecto", titleSize, "#FFFFFF");
+  ty += lines.length*lineH;
+  if(f.subtitulo){
+    cSubtitle(ctx, M, ty + h*0.006, w*0.62, f.subtitulo, w*0.024, "#FFFFFF");
+  }
+
+  const meta = [f.cliente, f.ciudad, f.fecha].filter(Boolean).join("   ·   ");
+  if(meta) cMetaLine(ctx, M, cardY + cardH + h*0.02, meta, w*0.018, "#1B1B1F");
+
+  if(f.area){
+    cMetricBadge(ctx, w - M, M, f.area, "m²", w, "right");
+  }
+
+  const logoW = w * 0.13;
+  cLogo(ctx, M, h - M - logoW*0.2, logoW, w);
+  cWebsite(ctx, w - M, h - M*0.6, w, "#FFFFFF", "right");
+}
+
+function tplMinimal(ctx, w, h, lum, postType){
+  const M = w * BCE_MARGIN;
+  const anchorBottom = lum.safeZone === "bottom";
+  const f = BCE.fields;
+  const barH = h * 0.12;
+  const barY = anchorBottom ? h - barH : 0;
+
+  cGradientOverlay(ctx, 0, barY, w, barH, "#000000", 0.55, anchorBottom ? "down" : "up");
+
+  const titleSize = w * 0.028;
+  const textY = anchorBottom ? h - barH*0.68 : M*0.7;
+  cTitle(ctx, M, textY, w*0.6, f.titulo || "Título del proyecto", titleSize, "#FFFFFF", 600);
+
+  const logoW = w * 0.10;
+  cLogo(ctx, w - M - logoW, anchorBottom ? h - barH*0.7 : M*0.6, logoW, w);
+}
+
+const BCE_TEMPLATE_FNS = { corporate: tplCorporate, editorial: tplEditorial, minimal: tplMinimal };
+
+// Formatos muy verticales (Instagram Historia, 9:16) necesitan recomposición,
+// no solo recorte — regla explícita: logo arriba, título centrado, degradado
+// vertical, sitio web abajo. Se aplica sin importar la plantilla elegida.
+function tplTallOverride(ctx, w, h, lum, postType){
+  const M = w * BCE_MARGIN;
+  const f = BCE.fields;
+
+  // Degradado vertical arriba y abajo para legibilidad en ambos extremos
+  cGradientOverlay(ctx, 0, 0, w, h*0.32, "#000000", 0.5, "up");
+  cGradientOverlay(ctx, 0, h*0.68, w, h*0.32, BCE_NAVY, lum.overlayOpacity, "down");
+
+  // Logo arriba, centrado
+  const logoW = w * 0.30;
+  const logoImg = BCE.logoVariant === "navy" ? BCE.logoNavyImg : BCE.logoWhiteImg;
+  const aspect = (logoImg && logoImg.naturalWidth) ? logoImg.naturalHeight/logoImg.naturalWidth : 0.2;
+  cLogo(ctx, (w - logoW)/2, M, logoW, w);
+
+  // Categoría + título centrados verticalmente en el tercio inferior
+  let cursorY = h * 0.72;
+  if(postType.badge){
+    ctx.save();
+    ctx.font = `700 ${w*0.02}px "Inter", Arial, sans-serif`;
+    const bw = ctx.measureText(postType.badge.toUpperCase()).width;
+    ctx.restore();
+    const bh = cCategoryBadge(ctx, (w - (bw + w*0.036))/2, cursorY, postType.badge, w);
+    cursorY += bh + h*0.02;
+  }
+  ctx.save();
+  ctx.font = `800 ${w*0.058}px "Inter", Arial, sans-serif`;
+  ctx.textAlign = "center";
+  const lines = bceWrapText(ctx, f.titulo || "Título del proyecto", w*0.82);
+  const lineH = w*0.058*1.22;
+  ctx.fillStyle = "#FFFFFF";
+  ctx.textBaseline = "top";
+  lines.forEach((line,i)=> ctx.fillText(line, w/2, cursorY + i*lineH));
+  ctx.restore();
+  cursorY += lines.length*lineH;
+
+  if(f.subtitulo){
+    ctx.save();
+    ctx.font = `500 ${w*0.026}px "Inter", Arial, sans-serif`;
+    ctx.textAlign = "center";
+    ctx.fillStyle = "#FFFFFF"; ctx.globalAlpha = 0.85;
+    ctx.textBaseline = "top";
+    const sl = bceWrapText(ctx, f.subtitulo, w*0.78);
+    sl.forEach((line,i)=> ctx.fillText(line, w/2, cursorY + h*0.012 + i*(w*0.026*1.3)));
+    ctx.restore();
+  }
+
+  // Sitio web al centro, hasta abajo
+  ctx.save();
+  ctx.textAlign = "center";
+  ctx.fillStyle = "#FFFFFF"; ctx.globalAlpha = 0.85;
+  ctx.font = `500 ${w*0.0155}px "Inter", Arial, sans-serif`;
+  ctx.fillText("www.romsaindustrial.com", w/2, h - M*0.7);
+  ctx.restore();
+}
+
+// ── COMPOSICIÓN PRINCIPAL ────────────────────────────────────────
+function bceCompose(ctx, w, h){
+  ctx.clearRect(0, 0, w, h);
+  if(!BCE.img) return;
+  cHero(ctx, w, h);
+  if(!BCE.luminosity) BCE.luminosity = bceAnalyzeLuminosity(BCE.img);
+  if(bceCurrentNetwork().orientation === "tall"){
+    tplTallOverride(ctx, w, h, BCE.luminosity, bceCurrentPostType());
+    return;
+  }
+  const fn = BCE_TEMPLATE_FNS[BCE.templateKey] || tplCorporate;
+  fn(ctx, w, h, BCE.luminosity, bceCurrentPostType());
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CONTROLADOR DE INTERFAZ — asistente de 3 pasos
+// ═══════════════════════════════════════════════════════════════
+let _bceInited = false;
+
+function bceInit(){
+  if(_bceInited) return;
+  _bceInited = true;
+  BCE.logoWhiteImg = new Image();
+  BCE.logoWhiteImg.src = window._romsaLogoBlanco || "";
+  BCE.logoNavyImg = new Image();
+  BCE.logoNavyImg.src = window._romsaLogoAzul || "";
   if(document.fonts && document.fonts.load){
     Promise.all([
-      document.fonts.load('560 40px "Inter"'),
+      document.fonts.load('800 40px "Inter"'),
       document.fonts.load('500 20px "Inter"'),
-    ]).then(() => feRender()).catch(() => {});
+      document.fonts.load('700 16px "Inter"'),
+    ]).catch(() => {});
   }
 
-  const tplWrap = document.getElementById("fe-templates");
-  tplWrap.innerHTML = FE_TEMPLATES.map(t =>
-    `<button class="fe-tpl-btn${t.key===FE.templateKey?' active':''}" data-tpl="${t.key}" onclick="feSelectTemplate('${t.key}')">${t.label}</button>`
+  // Pills de red social
+  document.getElementById("fe-network-pills").innerHTML = BCE_NETWORKS.map(n =>
+    `<button type="button" class="fe-tpl-btn${n.key===BCE.networkKey?' active':''}" data-net="${n.key}" onclick="bceUiSelectNetwork('${n.key}')">${n.label}</button>`
   ).join("");
 
-  document.getElementById("fe-bar-swatches").innerHTML = FE_BAR_COLORS.map(c =>
-    `<div class="fe-swatch" style="background:${c};border:1px solid #0002;" data-c="${c}" onclick="feSetBarColor('${c}')"></div>`
+  // Select de tipo de publicación
+  document.getElementById("fe-posttype-select").innerHTML = BCE_POST_TYPES.map(p =>
+    `<option value="${p.key}">${p.label}</option>`
   ).join("");
-  document.getElementById("fe-text-swatches").innerHTML = FE_TEXT_COLORS.map(c =>
-    `<div class="fe-swatch" style="background:${c};border:1px solid #0002;" data-c="${c}" onclick="feSetTextColor('${c}')"></div>`
+  document.getElementById("fe-posttype-select").value = BCE.postTypeKey;
+
+  // Select de audiencia
+  document.getElementById("fe-audience-select").innerHTML = BCE_AUDIENCES.map(a =>
+    `<option value="${a}">${a}</option>`
   ).join("");
-  document.getElementById("fe-logo-swatches").innerHTML =
-    `<div class="fe-logo-swatch" data-v="white" onclick="feSetLogoVariant('white')" style="background:#0B1F3A;color:#fff;">B</div>
-     <div class="fe-logo-swatch" data-v="navy" onclick="feSetLogoVariant('navy')" style="background:#fff;color:#0B1F3A;">N</div>`;
 
-  const canvas = document.getElementById("fe-canvas");
-  canvas.addEventListener("pointerdown", feOnPointerDown);
-  window.addEventListener("pointermove", feOnPointerMove);
-  window.addEventListener("pointerup", feOnPointerUp);
+  // Pills de plantilla/estilo
+  document.getElementById("fe-template-pills").innerHTML = BCE_TEMPLATES.map(t =>
+    `<button type="button" class="fe-tpl-btn${t.key===BCE.templateKey?' active':''}" data-tpl="${t.key}" onclick="bceUiSelectTemplate('${t.key}')">${t.label}</button>`
+  ).join("");
 
-  // Reset visual al volver a esta pantalla si no hay foto cargada
-  if(!FE.img){
-    document.getElementById("fe-upload-wrap").style.display = "flex";
-    document.getElementById("fe-editor-wrap").style.display = "none";
-  }
+  // Pills de formato de descarga
+  document.getElementById("fe-format-pills").innerHTML = ["PNG","JPG","WebP","PDF"].map((f,i) =>
+    `<button type="button" class="fe-tpl-btn${i===0?' active':''}" data-fmt="${f}" onclick="bceUiSelectFormat('${f}')">${f}</button>`
+  ).join("");
+
+  bceGoToStep(1);
 }
 
-function feHandleUpload(e){
+let _bceFormat = "PNG";
+function bceUiSelectFormat(f){
+  _bceFormat = f;
+  document.querySelectorAll("#fe-format-pills .fe-tpl-btn").forEach(b => b.classList.toggle("active", b.dataset.fmt === f));
+}
+
+function bceGoToStep(n){
+  [1,2,3].forEach(i => {
+    document.getElementById("fe-step-" + i).style.display = (i === n) ? "flex" : "none";
+  });
+  document.querySelectorAll("#fe-step-dots .dot").forEach((d,i) => d.classList.toggle("active", i === n-1));
+}
+
+function bceHandleUpload(e){
   const file = e.target.files && e.target.files[0];
   if(!file) return;
   const reader = new FileReader();
   reader.onload = (ev) => {
     const img = new Image();
     img.onload = () => {
-      FE.img = img;
-      FE.layout = feFactoryLayout();
-      document.getElementById("fe-text-input").value = "";
-      document.getElementById("fe-zoom").value = 100;
-      document.getElementById("fe-textsize").value = 42;
-      document.getElementById("fe-baropacity").value = 72;
-      document.getElementById("fe-upload-wrap").style.display = "none";
-      document.getElementById("fe-editor-wrap").style.display = "flex";
-      feHighlightSwatches();
-      feRender();
+      BCE.img = img;
+      BCE.luminosity = null;
+      bceGoToStep(2);
     };
     img.src = ev.target.result;
   };
@@ -17730,395 +18195,101 @@ function feHandleUpload(e){
   e.target.value = "";
 }
 
-function feChangePhoto(){
-  FE.img = null;
-  document.getElementById("fe-upload-wrap").style.display = "flex";
-  document.getElementById("fe-editor-wrap").style.display = "none";
+function bceChangePhoto(){
+  BCE.img = null;
+  document.getElementById("fe-file-input").value = "";
+  bceGoToStep(1);
 }
 
-function feCurrentTemplate(){
-  return FE_TEMPLATES.find(t => t.key === FE.templateKey) || FE_TEMPLATES[0];
+function bceSetField(name, value){
+  if(name === "postType"){ BCE.postTypeKey = value; return; }
+  BCE.fields[name] = value;
 }
 
-function feSelectTemplate(key){
-  FE.templateKey = key;
-  document.querySelectorAll(".fe-tpl-btn").forEach(b => b.classList.toggle("active", b.dataset.tpl === key));
-  FE.layout = feFactoryLayout();
-  document.getElementById("fe-zoom").value = 100;
-  document.getElementById("fe-textsize").value = 42;
-  document.getElementById("fe-baropacity").value = 72;
-  feHighlightSwatches();
-  feRender();
+function bceUiSelectNetwork(key){
+  BCE.networkKey = key;
+  document.querySelectorAll("#fe-network-pills .fe-tpl-btn").forEach(b => b.classList.toggle("active", b.dataset.net === key));
+}
+function bceUiSelectTemplate(key){
+  BCE.templateKey = key;
+  document.querySelectorAll("#fe-template-pills .fe-tpl-btn").forEach(b => b.classList.toggle("active", b.dataset.tpl === key));
 }
 
-function feReset(){
-  const txt = FE.layout ? FE.layout.text.value : "";
-  FE.layout = feFactoryLayout();
-  FE.layout.text.value = txt;
-  document.getElementById("fe-zoom").value = 100;
-  document.getElementById("fe-textsize").value = 42;
-  document.getElementById("fe-baropacity").value = 72;
-  feHighlightSwatches();
-  feRender();
-  showToast("↺ Diseño restablecido");
+function bceGoToPreview(){
+  if(!BCE.img){ showToast("⚠️ Sube una foto primero"); bceGoToStep(1); return; }
+  if(!BCE.fields.titulo){ showToast("⚠️ Escribe al menos un título"); return; }
+  bceGoToStep(3);
+  bceRenderPreview();
 }
 
-function feHighlightSwatches(){
-  if(!FE.layout) return;
-  document.querySelectorAll("#fe-bar-swatches .fe-swatch").forEach(el =>
-    el.classList.toggle("active", el.dataset.c.toUpperCase() === FE.layout.bar.color.toUpperCase()));
-  document.querySelectorAll("#fe-text-swatches .fe-swatch").forEach(el =>
-    el.classList.toggle("active", el.dataset.c.toUpperCase() === FE.layout.text.color.toUpperCase()));
-  document.querySelectorAll("#fe-logo-swatch, .fe-logo-swatch").forEach(el =>
-    el.classList.toggle("active", el.dataset.v === FE.layout.logo.variant));
+function bceBackToForm(){
+  bceGoToStep(2);
 }
 
-function feUpdateText(){
-  if(!FE.layout) return;
-  FE.layout.text.value = document.getElementById("fe-text-input").value;
-  feRender();
-}
-function feUpdatePhotoScale(v){
-  if(!FE.layout) return;
-  FE.layout.photo.scale = v / 100;
-  feRender();
-}
-function feUpdateTextSize(v){
-  if(!FE.layout) return;
-  FE.layout.text.size = parseInt(v, 10);
-  feRender();
-}
-function feUpdateBarOpacity(v){
-  if(!FE.layout) return;
-  FE.layout.bar.opacity = v / 100;
-  feRender();
-}
-function feSetBarColor(c){
-  if(!FE.layout) return;
-  FE.layout.bar.color = c;
-  feHighlightSwatches();
-  feRender();
-}
-function feSetTextColor(c){
-  if(!FE.layout) return;
-  FE.layout.text.color = c;
-  feHighlightSwatches();
-  feRender();
-}
-function feSetLogoVariant(v){
-  if(!FE.layout) return;
-  FE.layout.logo.variant = v;
-  feHighlightSwatches();
-  feRender();
-}
-
-// ── Utilidades geométricas ──────────────────────────────────────
-function fePhotoRect(canvasW, canvasH){
-  const img = FE.img;
-  const baseScale = Math.max(canvasW / img.naturalWidth, canvasH / img.naturalHeight);
-  const scale = baseScale * (FE.layout.photo.scale || 1);
-  const dw = img.naturalWidth * scale, dh = img.naturalHeight * scale;
-  const overflowX = Math.max(dw - canvasW, 0), overflowY = Math.max(dh - canvasH, 0);
-  const dx = -overflowX * FE.layout.photo.offX;
-  const dy = -overflowY * FE.layout.photo.offY;
-  return { dx, dy, dw, dh };
-}
-// Logo — SIEMPRE fijo (esquina inferior izquierda, mismo margen que el texto,
-// mismo tamaño relativo). Solo el color (variant) es ajustable por el usuario.
-const FE_MARGIN = 0.065;
-function feLogoRect(canvasW, canvasH){
-  const img = FE.layout.logo.variant === "navy" ? FE.logoNavyImg : FE.logoWhiteImg;
-  const aspect = (img && img.naturalWidth) ? img.naturalHeight / img.naturalWidth : 0.2;
-  const w = canvasW * 0.15;
-  const h = w * aspect;
-  const margin = canvasW * FE_MARGIN;
-  return { x: margin, y: canvasH - margin - h, w, h, img };
-}
-function feBarRect(canvasW, canvasH){
-  const b = FE.layout.bar;
-  return { x: b.x * canvasW, y: b.y * canvasH, w: b.w * canvasW, h: b.h * canvasH };
-}
-function feTextRect(canvasW, canvasH){
-  const t = FE.layout.text;
-  const bar = feBarRect(canvasW, canvasH);
-  return { x: t.x * canvasW, y: t.y * canvasH, w: t.w * canvasW, h: (bar.y + bar.h) - (t.y * canvasH) - canvasH * 0.09 };
-}
-
-// Sitio web — SIEMPRE fijo (misma esquina, mismo tamaño relativo). No forma
-// parte del sistema de arrastre/redimensión a propósito.
-const FE_WEBSITE = "www.romsaindustrial.com";
-function feWebsiteRect(canvasW, canvasH){
-  const bar = feBarRect(canvasW, canvasH);
-  const fontPx = Math.max(10, canvasW * 0.0125);
-  return {
-    x: bar.x + bar.w - canvasW * FE_MARGIN,
-    y: bar.y + bar.h - canvasH * 0.05,
-    fontPx,
-  };
-}
-function feContrastColor(hex){
-  const c = String(hex).replace("#", "");
-  const r = parseInt(c.substr(0, 2), 16), g = parseInt(c.substr(2, 2), 16), b = parseInt(c.substr(4, 2), 16);
-  const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-  return lum > 0.6 ? "#0B1F3A" : "#FFFFFF";
-}
-function feHexToRgb(hex){
-  const c = String(hex).replace("#", "");
-  return { r: parseInt(c.substr(0,2),16), g: parseInt(c.substr(2,2),16), b: parseInt(c.substr(4,2),16) };
-}
-
-function feWrapText(ctx, text, maxWidth){
-  const words = String(text).split(/\s+/).filter(Boolean);
-  const lines = [];
-  let cur = "";
-  words.forEach(w => {
-    const test = cur ? cur + " " + w : w;
-    if(ctx.measureText(test).width > maxWidth && cur){
-      lines.push(cur);
-      cur = w;
-    } else {
-      cur = test;
-    }
-  });
-  if(cur) lines.push(cur);
-  return lines;
-}
-
-// ── Render compartido (usado tanto en la vista de edición como en la exportación) ──
-function feRenderToCtx(ctx, canvasW, canvasH){
-  ctx.clearRect(0, 0, canvasW, canvasH);
-  if(!FE.img) return;
-
-  // Foto
-  const p = fePhotoRect(canvasW, canvasH);
-  ctx.drawImage(FE.img, p.dx, p.dy, p.dw, p.dh);
-
-  // Franja — degradado suave (estilo editorial premium), no un bloque plano
-  const bar = feBarRect(canvasW, canvasH);
-  const barRgb = feHexToRgb(FE.layout.bar.color);
-  const grad = ctx.createLinearGradient(0, bar.y, 0, bar.y + bar.h);
-  grad.addColorStop(0, `rgba(${barRgb.r},${barRgb.g},${barRgb.b},0)`);
-  grad.addColorStop(1, `rgba(${barRgb.r},${barRgb.g},${barRgb.b},${FE.layout.bar.opacity})`);
-  ctx.save();
-  ctx.fillStyle = grad;
-  ctx.fillRect(bar.x, bar.y, bar.w, bar.h);
-  ctx.restore();
-
-  // Logo — fijo, no editable en posición/tamaño
-  const logo = feLogoRect(canvasW, canvasH);
-  if(logo.img && logo.img.complete && logo.img.naturalWidth){
-    ctx.drawImage(logo.img, logo.x, logo.y, logo.w, logo.h);
-  }
-
-  // Texto — tarjeta sólida detrás del título (presencia premium) + tipografía
-  // Inter bold, grande y legible
-  const t = FE.layout.text;
-  const tr = feTextRect(canvasW, canvasH);
-  if(t.value){
-    const fontPx = t.size * (canvasW / 1200);
-    ctx.font = `800 ${fontPx}px "Inter", Arial, sans-serif`;
-    ctx.textBaseline = "top";
-    ctx.letterSpacing = "-0.2px";
-    const lines = feWrapText(ctx, t.value, tr.w);
-    const lineH = fontPx * 1.26;
-
-    const padX = canvasW * 0.032, padY = canvasW * 0.026;
-    const cardW = tr.w + padX * 2;
-    const cardH = lines.length * lineH + padY * 2;
-    const cardX = tr.x - padX;
-    const cardY = Math.max(0, tr.y - padY);
-
-    // Tarjeta sólida (mismo color que la franja, a opacidad completa)
-    const cardRgb = feHexToRgb(FE.layout.bar.color);
-    ctx.save();
-    ctx.fillStyle = `rgb(${cardRgb.r},${cardRgb.g},${cardRgb.b})`;
-    ctx.fillRect(cardX, cardY, cardW, cardH);
-    ctx.restore();
-
-    // Destello sutil dentro de la tarjeta — solo si la tarjeta es un tono oscuro
-    // (regla del kit de marca: los destellos van sobre fondos navy/oscuros)
-    const cardLum = (0.299*cardRgb.r + 0.587*cardRgb.g + 0.114*cardRgb.b) / 255;
-    if(cardLum < 0.5){
-      ctx.save();
-      ctx.beginPath();
-      ctx.rect(cardX, cardY, cardW, cardH);
-      ctx.clip();
-      const glowR = cardH * 1.3;
-      const glow = ctx.createRadialGradient(
-        cardX + cardW * 0.92, cardY + cardH * 0.05, 0,
-        cardX + cardW * 0.92, cardY + cardH * 0.05, glowR
-      );
-      glow.addColorStop(0, "rgba(30,111,217,.20)");
-      glow.addColorStop(1, "rgba(30,111,217,0)");
-      ctx.fillStyle = glow;
-      ctx.fillRect(cardX, cardY, cardW, cardH);
-      ctx.restore();
-    }
-
-    ctx.fillStyle = t.color;
-    let ty = cardY + padY;
-    lines.forEach(line => {
-      ctx.fillText(line, tr.x, ty);
-      ty += lineH;
-    });
-  }
-
-  // Sitio web — parte fija del patrón de marca, no es arrastrable ni editable
-  const wr = feWebsiteRect(canvasW, canvasH);
-  ctx.save();
-  ctx.fillStyle = feContrastColor(FE.layout.bar.color);
-  ctx.globalAlpha = 0.85;
-  ctx.font = `500 ${wr.fontPx}px "Inter", Arial, sans-serif`;
-  ctx.textAlign = "right";
-  ctx.textBaseline = "alphabetic";
-  ctx.fillText(FE_WEBSITE, wr.x, wr.y);
-  ctx.restore();
-}
-
-function feEditCanvasSize(){
-  const t = feCurrentTemplate();
+function bceEditCanvasSize(){
+  const net = bceCurrentNetwork();
   const maxDim = 460;
-  const scale = Math.min(maxDim / t.w, maxDim / t.h, 1);
-  return { w: Math.round(t.w * scale), h: Math.round(t.h * scale) };
+  const scale = Math.min(maxDim / net.w, maxDim / net.h, 1);
+  return { w: Math.round(net.w * scale), h: Math.round(net.h * scale) };
 }
 
-function feRender(){
-  if(!FE.img) return;
+function bceRenderPreview(){
   const canvas = document.getElementById("fe-canvas");
-  const size = feEditCanvasSize();
+  const size = bceEditCanvasSize();
   canvas.width = size.w;
   canvas.height = size.h;
   const ctx = canvas.getContext("2d");
-  feRenderToCtx(ctx, size.w, size.h);
-  feDrawSelectionOverlay(ctx, size.w, size.h);
+  bceCompose(ctx, size.w, size.h);
 }
 
-function feDrawSelectionOverlay(ctx, w, h){
-  if(!FE.dragging) return;
-  const el = FE.dragging.el;
-  let rect = null;
-  if(el === "bar") rect = feBarRect(w, h);
-  else if(el === "text") rect = feTextRect(w, h);
-  if(!rect) return;
-  ctx.save();
-  ctx.strokeStyle = "#0B1F3A";
-  ctx.setLineDash([5, 4]);
-  ctx.lineWidth = 1.5;
-  ctx.strokeRect(rect.x, rect.y, rect.w, rect.h);
-  ctx.restore();
-}
-
-// ── Interacción: arrastrar y redimensionar ──────────────────────
-function feCanvasPoint(e){
-  const canvas = document.getElementById("fe-canvas");
-  const rect = canvas.getBoundingClientRect();
-  const scaleX = canvas.width / rect.width, scaleY = canvas.height / rect.height;
-  return { px: (e.clientX - rect.left) * scaleX, py: (e.clientY - rect.top) * scaleY, w: canvas.width, h: canvas.height };
-}
-
-function feHitTest(px, py, w, h){
-  const HANDLE = 16;
-  const text = feTextRect(w, h);
-  const bar = feBarRect(w, h);
-  // Manijas de tamaño (esquina inferior derecha) tienen prioridad
-  if(feNear(px, py, text.x + text.w, text.y + text.h, HANDLE)) return { el: "text", mode: "resize" };
-  if(feNear(px, py, bar.x + bar.w, bar.y + bar.h, HANDLE)) return { el: "bar", mode: "resize" };
-  // Cuerpo de elementos (el texto está "arriba" visualmente)
-  if(feInRect(px, py, text)) return { el: "text", mode: "move" };
-  if(feInRect(px, py, bar)) return { el: "bar", mode: "move" };
-  return { el: "photo", mode: "move" };
-}
-function feNear(px, py, x, y, r){ return Math.abs(px - x) <= r && Math.abs(py - y) <= r; }
-function feInRect(px, py, r){ return px >= r.x && px <= r.x + r.w && py >= r.y && py <= r.y + r.h; }
-
-function feOnPointerDown(e){
-  if(!FE.img) return;
-  const pt = feCanvasPoint(e);
-  const hit = feHitTest(pt.px, pt.py, pt.w, pt.h);
-  FE.dragging = {
-    el: hit.el, mode: hit.mode,
-    startPx: pt.px, startPy: pt.py,
-    startLayout: JSON.parse(JSON.stringify(FE.layout)),
-    canvasW: pt.w, canvasH: pt.h,
-  };
-  e.preventDefault();
-}
-function feOnPointerMove(e){
-  if(!FE.dragging || !FE.img) return;
-  const canvas = document.getElementById("fe-canvas");
-  const rect = canvas.getBoundingClientRect();
-  const scaleX = canvas.width / rect.width, scaleY = canvas.height / rect.height;
-  const px = (e.clientX - rect.left) * scaleX, py = (e.clientY - rect.top) * scaleY;
-  const dx = (px - FE.dragging.startPx) / FE.dragging.canvasW;
-  const dy = (py - FE.dragging.startPy) / FE.dragging.canvasH;
-  const start = FE.dragging.startLayout;
-  const el = FE.dragging.el;
-
-  if(el === "photo"){
-    const p = fePhotoRect(FE.dragging.canvasW, FE.dragging.canvasH);
-    const overflowX = Math.max(p.dw - FE.dragging.canvasW, 1);
-    const overflowY = Math.max(p.dh - FE.dragging.canvasH, 1);
-    FE.layout.photo.offX = feClamp(start.photo.offX - (dx * FE.dragging.canvasW) / overflowX, 0, 1);
-    FE.layout.photo.offY = feClamp(start.photo.offY - (dy * FE.dragging.canvasH) / overflowY, 0, 1);
-  } else if(el === "bar"){
-    if(FE.dragging.mode === "move"){
-      FE.layout.bar.x = feClamp(start.bar.x + dx, -0.2, 1 - start.bar.w + 0.2);
-      FE.layout.bar.y = feClamp(start.bar.y + dy, 0, 1 - start.bar.h);
-    } else {
-      FE.layout.bar.w = feClamp(start.bar.w + dx, 0.1, 1.4);
-      FE.layout.bar.h = feClamp(start.bar.h + dy, 0.05, 0.6);
-    }
-  } else if(el === "text"){
-    if(FE.dragging.mode === "move"){
-      FE.layout.text.x = feClamp(start.text.x + dx, 0, 0.95);
-    } else {
-      FE.layout.text.w = feClamp(start.text.w + dx, 0.15, 0.95);
-    }
-  }
-  feRender();
-}
-function feOnPointerUp(){
-  FE.dragging = null;
-  feRender();
-}
-function feClamp(v, min, max){ return Math.max(min, Math.min(max, v)); }
-
-// ── Exportación a resolución completa ───────────────────────────
-function feDownload(){
-  if(!FE.img){ showToast("⚠️ Sube una foto primero"); return; }
-  const t = feCurrentTemplate();
+function bceDownload(){
+  if(!BCE.img){ showToast("⚠️ Sube una foto primero"); return; }
+  const net = bceCurrentNetwork();
   const canvas = document.createElement("canvas");
-  canvas.width = t.w;
-  canvas.height = t.h;
+  canvas.width = net.w; canvas.height = net.h;
   const ctx = canvas.getContext("2d");
-  feRenderToCtx(ctx, t.w, t.h);
+  bceCompose(ctx, net.w, net.h);
+
+  if(_bceFormat === "PDF"){
+    const dataUrl = canvas.toDataURL("image/png", 1.0);
+    const w = window.open("", "_blank");
+    if(!w){ showToast("⚠️ Activa ventanas emergentes para exportar a PDF"); return; }
+    w.document.write(
+      '<!DOCTYPE html><html><head><title>ROMSA — ' + (BCE.fields.titulo||'Publicación') + '</title>' +
+      '<style>@page{size:' + net.w + 'px ' + net.h + 'px;margin:0;} *{margin:0;padding:0;} img{width:100%;height:100%;display:block;}</style>' +
+      '</head><body><img src="' + dataUrl + '" onload="setTimeout(()=>window.print(),300)"></body></html>'
+    );
+    w.document.close();
+    return;
+  }
+
+  const mime = _bceFormat === "JPG" ? "image/jpeg" : _bceFormat === "WebP" ? "image/webp" : "image/png";
+  const ext = _bceFormat === "JPG" ? "jpg" : _bceFormat === "WebP" ? "webp" : "png";
   canvas.toBlob((blob) => {
     if(!blob){ showToast("⚠️ No se pudo generar la imagen"); return; }
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `ROMSA_${t.key}_${Date.now()}.png`;
+    a.download = `ROMSA_${net.key}_${Date.now()}.${ext}`;
     document.body.appendChild(a);
     a.click();
     a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 2000);
     showToast("⬇ Imagen descargada en alta resolución");
-  }, "image/png", 1.0);
+  }, mime, 0.95);
 }
 
-window.feInit = feInit;
-window.feHandleUpload = feHandleUpload;
-window.feChangePhoto = feChangePhoto;
-window.feSelectTemplate = feSelectTemplate;
-window.feReset = feReset;
-window.feUpdateText = feUpdateText;
-window.feUpdatePhotoScale = feUpdatePhotoScale;
-window.feUpdateTextSize = feUpdateTextSize;
-window.feUpdateBarOpacity = feUpdateBarOpacity;
-window.feSetBarColor = feSetBarColor;
-window.feSetTextColor = feSetTextColor;
-window.feSetLogoVariant = feSetLogoVariant;
-window.feDownload = feDownload;
+window.bceInit = bceInit;
+window.bceHandleUpload = bceHandleUpload;
+window.bceChangePhoto = bceChangePhoto;
+window.bceSetField = bceSetField;
+window.bceUiSelectNetwork = bceUiSelectNetwork;
+window.bceUiSelectTemplate = bceUiSelectTemplate;
+window.bceUiSelectFormat = bceUiSelectFormat;
+window.bceGoToPreview = bceGoToPreview;
+window.bceBackToForm = bceBackToForm;
+window.bceDownload = bceDownload;
+
 
 </script>
 
