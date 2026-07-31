@@ -777,6 +777,8 @@ body.in-fotoeditor #app{
 .fe-btn{flex:1;padding:12px;border-radius:10px;font-size:12.5px;font-weight:700;border:none;cursor:pointer;font-family:inherit;}
 .fe-btn-ghost{background:#EEF3FA;color:#0B1F3A;}
 .fe-btn-primary{background:#0B1F3A;color:#fff;flex:1.3;}
+.fe-copy-btn{background:#EEF3FA;color:#0B1F3A;border:none;border-radius:8px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;}
+.fe-textarea-copy{border:1.5px solid #D7E3F5;border-radius:10px;padding:10px 11px;font-size:12.5px;font-family:inherit;color:#3A4453;background:#FAFBFD;resize:vertical;line-height:1.5;margin-top:6px;}
 .cos-card-meta{font-size:10px;color:var(--tx2);margin-top:2px;}
 .cos-input{width:100%;padding:8px 10px;border:1px solid var(--g1);border-radius:6px;font-size:12px;font-family:var(--font);color:var(--navy);background:#fff;}
 .cos-input:focus{outline:none;border-color:#1E6FD9;}
@@ -2800,7 +2802,7 @@ body.in-fotoeditor #app{
     <div class="fe-topbar">
       <button class="fe-back" onclick="volverSelector()">← Menú</button>
       <div class="fe-title">Motor de Marca ROMSA</div>
-      <div class="fe-step-dots" id="fe-step-dots"><span class="dot active"></span><span class="dot"></span><span class="dot"></span></div>
+      <div class="fe-step-dots" id="fe-step-dots"><span class="dot active"></span><span class="dot"></span></div>
     </div>
 
     <!-- Paso 1: subir foto -->
@@ -2815,13 +2817,30 @@ body.in-fotoeditor #app{
       </div>
     </div>
 
-    <!-- Paso 2: información (el usuario da datos, no diseña) -->
+    <!-- Paso 2: vista previa en vivo + información (el usuario da datos, el motor decide el diseño) -->
     <div id="fe-step-2" class="fe-step" style="display:none;">
+
+      <div class="fe-canvas-area">
+        <canvas id="fe-canvas"></canvas>
+      </div>
+
       <div class="fe-form-wrap">
 
         <div class="fe-ctrl-group">
           <label class="fe-ctrl-label">Red social</label>
           <div class="fe-pill-row" id="fe-network-pills"></div>
+        </div>
+
+        <div class="fe-ctrl-group">
+          <label class="fe-ctrl-label">Estilo</label>
+          <div class="fe-pill-row" id="fe-template-pills"></div>
+        </div>
+
+        <div class="fe-ctrl-group">
+          <label class="fe-ctrl-label">Servicio <span style="font-weight:400;text-transform:none;color:#A7AEBC;">(rellena título y subtítulo — editables después)</span></label>
+          <select id="fe-service-select" class="fe-select" onchange="bceApplyService(this.value)">
+            <option value="">— Elegir servicio común —</option>
+          </select>
         </div>
 
         <div class="fe-ctrl-group">
@@ -2846,6 +2865,12 @@ body.in-fotoeditor #app{
             <input type="text" id="fe-f-subtitulo" class="fe-input" placeholder="Ej: Sistema de alto desempeño" oninput="bceSetField('subtitulo', this.value)">
           </div>
         </div>
+
+        <div class="fe-ctrl-group">
+          <label class="fe-ctrl-label">Posición del título <span style="font-weight:400;text-transform:none;color:#A7AEBC;">(el footer siempre queda fijo abajo)</span></label>
+          <div class="fe-pill-row" id="fe-titlepos-pills"></div>
+        </div>
+
         <div class="fe-ctrl-row">
           <div class="fe-ctrl-group" style="flex:1;">
             <label class="fe-ctrl-label">Cliente</label>
@@ -2873,28 +2898,22 @@ body.in-fotoeditor #app{
           </div>
         </div>
 
+        <div class="fe-hint">✨ El motor decide dónde va el texto, el overlay y el contraste. Tú solo puedes ajustar si el título va arriba o abajo — todo lo demás es automático.</div>
+
         <div class="fe-ctrl-group">
-          <label class="fe-ctrl-label">Estilo</label>
-          <div class="fe-pill-row" id="fe-template-pills"></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <label class="fe-ctrl-label" style="margin:0;">Texto para acompañar la publicación</label>
+            <button type="button" class="fe-copy-btn" onclick="bceCopyPostText()">📋 Copiar</button>
+          </div>
+          <textarea id="fe-post-copy" class="fe-textarea-copy" rows="5" readonly></textarea>
         </div>
 
-        <button class="fe-btn fe-btn-primary" style="margin-top:6px;" onclick="bceGoToPreview()">Generar diseño →</button>
-      </div>
-    </div>
-
-    <!-- Paso 3: vista previa (el motor ya decidió todo) -->
-    <div id="fe-step-3" class="fe-step" style="display:none;">
-      <div class="fe-canvas-area">
-        <canvas id="fe-canvas"></canvas>
-      </div>
-      <div class="fe-controls">
-        <div class="fe-hint">✨ El motor analizó tu foto y decidió automáticamente dónde va el texto, el overlay y el contraste — según las reglas de marca de ROMSA. No hay nada que arrastrar.</div>
         <div class="fe-ctrl-group">
           <label class="fe-ctrl-label">Formato de descarga</label>
           <div class="fe-pill-row" id="fe-format-pills"></div>
         </div>
+
         <div class="fe-actions">
-          <button class="fe-btn fe-btn-ghost" onclick="bceBackToForm()">← Editar información</button>
           <button class="fe-btn fe-btn-ghost" onclick="bceChangePhoto()">🔄 Cambiar foto</button>
           <button class="fe-btn fe-btn-primary" onclick="bceDownload()">⬇ Descargar</button>
         </div>
@@ -17694,6 +17713,23 @@ const BCE_POST_TYPES = [
 
 const BCE_AUDIENCES = ["General","CEO","Director de Planta","Facilities","Mantenimiento","Compras","Ingeniería","EHS","Arquitectos","Constructores"];
 
+// Catálogo de servicios comunes de ROMSA — mismas descripciones ya usadas en
+// la Presentación Corporativa y otros documentos del CRM, para consistencia
+// de marca. Al elegir uno se rellenan título Y subtítulo (ambos editables
+// después).
+const BCE_SERVICES = [
+  { title: "Sistema epóxico 100% sólidos", subtitle: "Recubrimiento de alto desempeño, denso y resistente a la abrasión para tráfico pesado." },
+  { title: "Recubrimiento poliuretano", subtitle: "Flexibilidad y resistencia química para superficies expuestas a vibración y cargas dinámicas." },
+  { title: "Uretano cementicio", subtitle: "Resistencia química y antiséptica superior para procesos sanitarios y choque térmico." },
+  { title: "Pulido y densificado de concreto (DPA)", subtitle: "Pulido mecánico con densificadores litio-silicato para una superficie compacta y de bajo mantenimiento." },
+  { title: "Reparaciones de concreto", subtitle: "Restauración estructural de losas y superficies dañadas por desgaste o impacto." },
+  { title: "Sello de juntas industriales", subtitle: "Protección contra agua, polvo, aceites y químicos que deterioran el concreto." },
+  { title: "Sello de Tilt-Up", subtitle: "Barrera contra humedad y contaminantes entre paneles prefabricados." },
+  { title: "Impermeabilización de cubierta", subtitle: "Aplicación de recubrimiento elastomérico de alto desempeño." },
+  { title: "Mantenimiento a cubierta", subtitle: "Inspección, limpieza y reparación preventiva de sistemas de techado." },
+  { title: "Sistemas de rack industrial", subtitle: "Diseño e instalación de estructuras de almacenaje para maximizar espacio y seguridad." },
+];
+
 const BCE_TEMPLATES = [
   { key: "corporate", label: "Corporate" },
   { key: "editorial", label: "Editorial" },
@@ -17714,6 +17750,7 @@ let BCE = {
   logoVariant: "white",
   fields: { titulo: "", subtitulo: "", cliente: "", ciudad: "", fecha: "", area: "", producto: "" },
   luminosity: null,
+  titlePosition: "auto", // "auto" | "top" | "bottom" — el footer siempre queda fijo abajo
 };
 
 function bceCurrentNetwork(){ return BCE_NETWORKS.find(n => n.key === BCE.networkKey) || BCE_NETWORKS[0]; }
@@ -18387,12 +18424,24 @@ function bceCompose(ctx, w, h){
   ctx.imageSmoothingQuality = "high";
   cHero(ctx, w, h);
   if(!BCE.luminosity) BCE.luminosity = bceAnalyzeLuminosity(BCE.img);
+
+  // El usuario puede forzar la posición del título (arriba/abajo) cuando el
+  // sistema automático elige una zona que tapa algo importante de la foto.
+  // El footer y el resto de las decisiones siguen siendo automáticos.
+  let lum = BCE.luminosity;
+  if(BCE.titlePosition === "top" || BCE.titlePosition === "bottom"){
+    const zoneStats = BCE.titlePosition === "top" ? lum.top : lum.bottom;
+    const mean = zoneStats.mean;
+    const overlayOpacity = mean > 0.62 ? 0.62 : (mean > 0.42 ? 0.45 : 0.28);
+    lum = { ...lum, safeZone: BCE.titlePosition, safeMean: mean, overlayOpacity };
+  }
+
   if(bceCurrentNetwork().orientation === "tall"){
-    tplTallOverride(ctx, w, h, BCE.luminosity, bceCurrentPostType());
+    tplTallOverride(ctx, w, h, lum, bceCurrentPostType());
     return;
   }
   const fn = BCE_TEMPLATE_FNS[BCE.templateKey] || tplCorporate;
-  fn(ctx, w, h, BCE.luminosity, bceCurrentPostType());
+  fn(ctx, w, h, lum, bceCurrentPostType());
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -18425,6 +18474,11 @@ function bceInit(){
     `<button type="button" class="fe-tpl-btn${n.key===BCE.networkKey?' active':''}" data-net="${n.key}" onclick="bceUiSelectNetwork('${n.key}')">${n.label}</button>`
   ).join("");
 
+  // Select de servicios comunes (rellena título + subtítulo)
+  document.getElementById("fe-service-select").innerHTML += BCE_SERVICES.map(s =>
+    `<option value="${s.title.replace(/"/g,'&quot;')}">${s.title}</option>`
+  ).join("");
+
   // Select de tipo de publicación
   document.getElementById("fe-posttype-select").innerHTML = BCE_POST_TYPES.map(p =>
     `<option value="${p.key}">${p.label}</option>`
@@ -18439,6 +18493,13 @@ function bceInit(){
   // Pills de plantilla/estilo
   document.getElementById("fe-template-pills").innerHTML = BCE_TEMPLATES.map(t =>
     `<button type="button" class="fe-tpl-btn${t.key===BCE.templateKey?' active':''}" data-tpl="${t.key}" onclick="bceUiSelectTemplate('${t.key}')">${t.label}</button>`
+  ).join("");
+
+  // Pills de posición del título (el footer siempre queda fijo)
+  document.getElementById("fe-titlepos-pills").innerHTML = [
+    ["auto","Automático"], ["top","Arriba"], ["bottom","Abajo"],
+  ].map(([key,label]) =>
+    `<button type="button" class="fe-tpl-btn${key==='auto'?' active':''}" data-pos="${key}" onclick="bceUiSelectTitlePosition('${key}')">${label}</button>`
   ).join("");
 
   // Pills de formato de descarga
@@ -18456,22 +18517,25 @@ function bceUiSelectFormat(f){
 }
 
 function bceGoToStep(n){
-  [1,2,3].forEach(i => {
+  [1,2].forEach(i => {
     document.getElementById("fe-step-" + i).style.display = (i === n) ? "flex" : "none";
   });
   document.querySelectorAll("#fe-step-dots .dot").forEach((d,i) => d.classList.toggle("active", i === n-1));
 }
 
-function bceHandleUpload(e){
+async function bceHandleUpload(e){
   const file = e.target.files && e.target.files[0];
   if(!file) return;
   const reader = new FileReader();
   reader.onload = (ev) => {
     const img = new Image();
-    img.onload = () => {
+    img.onload = async () => {
       BCE.img = img;
       BCE.luminosity = null;
       bceGoToStep(2);
+      if(_bceFontsReady) await _bceFontsReady;
+      bceRenderPreview();
+      bceGenerateCopy();
     };
     img.src = ev.target.result;
   };
@@ -18485,40 +18549,60 @@ function bceChangePhoto(){
   bceGoToStep(1);
 }
 
+// Vista previa en vivo: cada cambio de campo/opción vuelve a renderizar el
+// canvas y regenerar el texto de acompañamiento, con un pequeño retraso
+// para no saturar en dispositivos lentos mientras se escribe.
+let _bceRenderTimer = null;
+function bceLiveUpdate(){
+  clearTimeout(_bceRenderTimer);
+  _bceRenderTimer = setTimeout(() => {
+    bceRenderPreview();
+    bceGenerateCopy();
+  }, 120);
+}
+
 function bceSetField(name, value){
-  if(name === "postType"){ BCE.postTypeKey = value; return; }
+  if(name === "postType"){ BCE.postTypeKey = value; bceLiveUpdate(); return; }
   BCE.fields[name] = value;
+  bceLiveUpdate();
+}
+
+function bceApplyService(title){
+  if(!title) return;
+  const svc = BCE_SERVICES.find(s => s.title === title);
+  if(!svc) return;
+  BCE.fields.titulo = svc.title;
+  BCE.fields.subtitulo = svc.subtitle;
+  document.getElementById("fe-f-titulo").value = svc.title;
+  document.getElementById("fe-f-subtitulo").value = svc.subtitle;
+  bceLiveUpdate();
 }
 
 function bceUiSelectNetwork(key){
   BCE.networkKey = key;
   document.querySelectorAll("#fe-network-pills .fe-tpl-btn").forEach(b => b.classList.toggle("active", b.dataset.net === key));
+  bceLiveUpdate();
 }
 function bceUiSelectTemplate(key){
   BCE.templateKey = key;
   document.querySelectorAll("#fe-template-pills .fe-tpl-btn").forEach(b => b.classList.toggle("active", b.dataset.tpl === key));
+  bceLiveUpdate();
 }
-
-async function bceGoToPreview(){
-  if(!BCE.img){ showToast("⚠️ Sube una foto primero"); bceGoToStep(1); return; }
-  if(!BCE.fields.titulo){ showToast("⚠️ Escribe al menos un título"); return; }
-  bceGoToStep(3);
-  if(_bceFontsReady) await _bceFontsReady;
-  bceRenderPreview();
-}
-
-function bceBackToForm(){
-  bceGoToStep(2);
+function bceUiSelectTitlePosition(key){
+  BCE.titlePosition = key;
+  document.querySelectorAll("#fe-titlepos-pills .fe-tpl-btn").forEach(b => b.classList.toggle("active", b.dataset.pos === key));
+  bceLiveUpdate();
 }
 
 function bceEditCanvasSize(){
   const net = bceCurrentNetwork();
-  const maxDim = 460;
+  const maxDim = 900;
   const scale = Math.min(maxDim / net.w, maxDim / net.h, 1);
   return { w: Math.round(net.w * scale), h: Math.round(net.h * scale) };
 }
 
 function bceRenderPreview(){
+  if(!BCE.img) return;
   const canvas = document.getElementById("fe-canvas");
   const size = bceEditCanvasSize();
   canvas.width = size.w;
@@ -18527,8 +18611,62 @@ function bceRenderPreview(){
   bceCompose(ctx, size.w, size.h);
 }
 
+// ── Generador de texto de acompañamiento (basado en plantillas, no IA) ──
+// Arma un texto listo para pegar en la publicación, con tono y longitud
+// razonables según la red social — usando los datos que ya diste arriba.
+function bceGenerateCopy(){
+  const el = document.getElementById("fe-post-copy");
+  if(!el) return;
+  const f = BCE.fields;
+  const net = bceCurrentNetwork();
+  const postType = bceCurrentPostType();
+  const titulo = f.titulo || "Nuestro más reciente proyecto";
+
+  const datos = [];
+  if(f.cliente) datos.push(f.cliente);
+  if(f.ciudad) datos.push(f.ciudad);
+  const lugarCliente = datos.join(", ");
+  const areaTxt = f.area ? `${f.area} m²` : "";
+
+  let cuerpo = "";
+  if(net.key === "x"){
+    // X: corto y directo
+    cuerpo = `${titulo}${lugarCliente ? " — " + lugarCliente : ""}.${areaTxt ? " " + areaTxt + " intervenidos." : ""} #ROMSAIndustrial`;
+  } else if(net.key === "ig_story"){
+    cuerpo = `${titulo}\n${lugarCliente || "Mexicali, B.C."}\nDesliza para más info 👉`;
+  } else {
+    // LinkedIn / Instagram Feed / Facebook / Website: formato más completo
+    const linea1 = `${postType.badge ? postType.badge + ": " : ""}${titulo}`;
+    const linea2 = f.subtitulo || "";
+    const linea3 = [lugarCliente, areaTxt].filter(Boolean).join(" · ");
+    const cierre = net.key === "linkedin"
+      ? "En ROMSA Industrial seguimos comprometidos con la calidad y el desempeño en cada proyecto."
+      : "📍 Protegemos y mantenemos la infraestructura industrial de Mexicali y la región.";
+    const hashtags = net.key === "linkedin"
+      ? "#IndustriaEnMexicali #ROMSAIndustrial #MantenimientoIndustrial"
+      : "#ROMSAIndustrial #Mexicali #BajaCalifornia";
+
+    cuerpo = [linea1, linea2, linea3, "", cierre, "", hashtags].filter(l => l !== "" || true).join("\n").replace(/\n{3,}/g, "\n\n");
+  }
+  el.value = cuerpo.trim();
+}
+
+function bceCopyPostText(){
+  const el = document.getElementById("fe-post-copy");
+  if(!el || !el.value){ showToast("⚠️ No hay texto para copiar todavía"); return; }
+  el.select();
+  el.setSelectionRange(0, 999999);
+  try{
+    navigator.clipboard.writeText(el.value).then(() => showToast("📋 Texto copiado"));
+  }catch(e){
+    document.execCommand("copy");
+    showToast("📋 Texto copiado");
+  }
+}
+
 async function bceDownload(){
   if(!BCE.img){ showToast("⚠️ Sube una foto primero"); return; }
+  if(!BCE.fields.titulo){ showToast("⚠️ Escribe al menos un título"); return; }
   if(_bceFontsReady) await _bceFontsReady;
   const net = bceCurrentNetwork();
   const canvas = document.createElement("canvas");
@@ -18571,9 +18709,10 @@ window.bceChangePhoto = bceChangePhoto;
 window.bceSetField = bceSetField;
 window.bceUiSelectNetwork = bceUiSelectNetwork;
 window.bceUiSelectTemplate = bceUiSelectTemplate;
+window.bceUiSelectTitlePosition = bceUiSelectTitlePosition;
 window.bceUiSelectFormat = bceUiSelectFormat;
-window.bceGoToPreview = bceGoToPreview;
-window.bceBackToForm = bceBackToForm;
+window.bceApplyService = bceApplyService;
+window.bceCopyPostText = bceCopyPostText;
 window.bceDownload = bceDownload;
 
 
