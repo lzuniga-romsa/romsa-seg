@@ -18178,91 +18178,101 @@ function tplEditorial(ctx, w, h, lum, postType){
   const f = BCE.fields;
 
   const eyebrow = postType.badge || "";
-  const eyebrowFontPx = w*0.014;
-  const eyebrowSpacing = eyebrowFontPx * 0.12;
-  const eyebrowH = eyebrow ? (eyebrowFontPx*1.6 + h*0.02) : 0;
+  const eyebrowFontPx = w*0.0135;
+  const eyebrowSpacing = eyebrowFontPx * 0.16;
 
-  let titleSize = w * 0.05;
-  let subSize = w*0.024;
-  const metaSize = w*0.018;
-  const padX = w*0.036;
-  let padY = w*0.032;
+  let titleSize = w * 0.048;
+  let subSize = w*0.0225;
+  let metaSize = w*0.017;
+  let metricNumSize = w*0.032;
+  const cardMaxW = w * 0.6;
+  // Separación automática y consistente en los 4 lados — no un valor
+  // apretado. Todo el contenido (etiqueta, título, subtítulo, cliente/
+  // ciudad/fecha y métrica) vive DENTRO de una sola tarjeta, así el
+  // contraste queda garantizado siempre, sin importar qué tan clara sea
+  // la foto detrás.
+  let padX = w*0.042, padY = w*0.038;
+  const gapSm = h*0.018;
   const footerReserve = h * 0.075;
 
-  // La tarjeta ya no necesita reservar espacio para un badge flotante —
-  // la métrica ahora vive dentro del flujo de información, alineada abajo.
-  const cardMaxW = w * 0.62;
-
-  function medirBloqueEditorial(tSize, sSize, pY){
+  function medir(tSize, sSize, mSize, metricSize, pY){
     ctx.save();
     ctx.font = `700 ${tSize}px "Inter", Arial, sans-serif`;
-    const lines = bceWrapText(ctx, f.titulo || "Título del proyecto", cardMaxW);
+    const titleLines = bceWrapText(ctx, f.titulo || "Título del proyecto", cardMaxW);
     ctx.restore();
-    const lineH = tSize*1.22;
-    const titleH = lines.length*lineH;
+    const titleLineH = tSize*1.22;
+    const titleH = titleLines.length*titleLineH;
 
-    let subH = 0;
+    let subH = 0, subLines = [];
     if(f.subtitulo){
       ctx.save();
       ctx.font = `500 ${sSize}px "Inter", Arial, sans-serif`;
-      const subLines = bceWrapText(ctx, f.subtitulo, cardMaxW);
+      subLines = bceWrapText(ctx, f.subtitulo, cardMaxW);
       ctx.restore();
-      subH = subLines.length*sSize*1.35 + h*0.016;
+      subH = subLines.length*sSize*1.32;
     }
-    const cardH = titleH + subH + pY*2;
-    return { lines, titleH, subH, cardH, lineH };
+    const meta = [f.cliente, f.ciudad, f.fecha].filter(Boolean).join("   ·   ");
+    const metaH = meta ? mSize*1.3 : 0;
+    const metricH = f.area ? metricSize*0.95 : 0;
+
+    let total = (eyebrow ? eyebrowFontPx*1.4 + gapSm : 0) + titleH;
+    if(f.subtitulo) total += gapSm*0.6 + subH;
+    if(meta) total += gapSm + metaH;
+    if(f.area) total += gapSm*1.3 + metricH;
+
+    return { titleLines, titleH, titleLineH, subLines, subH, meta, metaH, metricH, total };
   }
 
-  let med = medirBloqueEditorial(titleSize, subSize, padY);
-  const meta = [f.cliente, f.ciudad, f.fecha].filter(Boolean).join("   ·   ");
-  let metaBlockH = meta ? (h*0.028 + metaSize*1.3) : 0;
-  const metricBlockH = f.area ? (h*0.024 + w*0.014 + w*0.034*0.95) : 0;
-  const maxAvailable = h - footerReserve - h*0.03 - M;
+  let med = medir(titleSize, subSize, metaSize, metricNumSize, padY);
+  const maxAvailable = h - footerReserve - h*0.04 - M*2;
 
-  // Si el bloque completo (eyebrow + tarjeta + meta + métrica) no cabe en el
-  // espacio disponible, reducir tipografía y padding proporcionalmente —
-  // nunca se traslapa, sin importar cuánto texto haya.
-  if(eyebrowH + med.cardH + metaBlockH + metricBlockH > maxAvailable){
-    const shrink = Math.max(0.6, maxAvailable / (eyebrowH + med.cardH + metaBlockH + metricBlockH));
-    titleSize *= shrink; subSize *= shrink; padY *= shrink;
-    med = medirBloqueEditorial(titleSize, subSize, padY);
+  // Si el contenido completo no cabe en el espacio disponible, reducir
+  // tipografía y padding proporcionalmente — nunca se traslapa ni queda
+  // apretado, sin importar cuánto texto haya.
+  const neededH = med.total + padY*2;
+  if(neededH > maxAvailable){
+    const shrink = Math.max(0.62, maxAvailable / neededH);
+    titleSize *= shrink; subSize *= shrink; metaSize *= shrink; metricNumSize *= shrink; padY *= shrink;
+    med = medir(titleSize, subSize, metaSize, metricNumSize, padY);
   }
-  const { lines, titleH, subH, cardH, lineH } = med;
+
+  const cardH = med.total + padY*2;
   const cardW = cardMaxW + padX*2;
-
-  // Anclar TODO el bloque (eyebrow + tarjeta + meta + métrica) para que
-  // quepa sin desbordarse, ahora garantizado por el auto-ajuste de arriba.
-  const totalBlockH = eyebrowH + cardH + metaBlockH + metricBlockH;
-  const blockTop = anchorBottom
-    ? Math.max(M, h - footerReserve - h*0.02 - totalBlockH)
+  const cardY = anchorBottom
+    ? Math.max(M, h - footerReserve - h*0.03 - cardH)
     : M + h*0.025;
 
+  cSolidCard(ctx, M, cardY, cardW, cardH, BCE_NAVY, true);
+
+  let ty = cardY + padY;
   if(eyebrow){
     ctx.save();
     ctx.font = `700 ${eyebrowFontPx}px "Inter", Arial, sans-serif`;
     ctx.fillStyle = BCE_LIGHTBLUE;
     ctx.textBaseline = "top";
-    bceFillTextTracked(ctx, eyebrow.toUpperCase(), M, blockTop, eyebrowSpacing);
+    bceFillTextTracked(ctx, eyebrow.toUpperCase(), M + padX, ty, eyebrowSpacing);
     ctx.restore();
+    ty += eyebrowFontPx*1.4 + gapSm;
   }
 
-  const cardY = blockTop + eyebrowH;
-  cSolidCard(ctx, M, cardY, cardW, cardH, BCE_NAVY, true);
+  cTitle(ctx, M + padX, ty, cardMaxW, f.titulo || "Título del proyecto", titleSize, "#FFFFFF");
+  ty += med.titleH;
 
-  let ty = cardY + padY;
-  cTitle(ctx, M, ty, cardMaxW, f.titulo || "Título del proyecto", titleSize, "#FFFFFF");
-  ty += titleH;
   if(f.subtitulo){
-    cSubtitle(ctx, M, ty + h*0.006, cardMaxW, f.subtitulo, subSize, "#FFFFFF");
+    ty += gapSm*0.6;
+    cSubtitle(ctx, M + padX, ty, cardMaxW, f.subtitulo, subSize, "#FFFFFF");
+    ty += med.subH;
   }
 
-  let belowY = cardY + cardH;
-  if(meta){
-    cMetaLine(ctx, M, belowY + h*0.028, meta, metaSize, "#1B1B1F");
-    belowY += h*0.028 + metaBlockH - h*0.028;
+  if(med.meta){
+    ty += gapSm;
+    cMetaLine(ctx, M + padX, ty, med.meta, metaSize, "#FFFFFF");
+    ty += med.metaH;
   }
+
   if(f.area){
-    cMetricInline(ctx, M, belowY + h*0.024, f.area, "m²", w, BCE_NAVY);
+    ty += gapSm*1.3;
+    cMetricInline(ctx, M + padX, ty, f.area, "m²", w, "#FFFFFF");
   }
 
   cFooterStrip(ctx, w, h, "bottom");
@@ -18283,13 +18293,14 @@ function tplMinimal(ctx, w, h, lum, postType){
 
   const lineH = titleSize * 1.25;
   const titleH = lines.length * lineH;
-  const padV = h*0.02;
-  const barH = anchorBottom ? (footerReserve + titleH + padV*2) : (titleH + padV*2);
+  // Margen consistente con el resto del sistema (nunca pegado al borde
+  // exacto de la imagen — un solo título, bien separado de los bordes).
+  const barH = anchorBottom ? (footerReserve + titleH + M*1.6) : (titleH + M*1.6);
   const barY = anchorBottom ? h - barH : 0;
 
-  cGradientOverlay(ctx, 0, barY, w, barH, "#000000", 0.5, anchorBottom ? "down" : "up");
+  cGradientOverlay(ctx, 0, barY, w, barH, "#000000", 0.58, anchorBottom ? "down" : "up");
 
-  const textY = anchorBottom ? (h - footerReserve - padV - titleH) : (barY + padV);
+  const textY = anchorBottom ? (h - footerReserve - M*0.8 - titleH) : (barY + M*0.8);
   cTitle(ctx, M, textY, titleMaxW, f.titulo || "Título del proyecto", titleSize, "#FFFFFF", 600);
 
   cFooterStrip(ctx, w, h, "bottom");
