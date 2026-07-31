@@ -940,6 +940,13 @@ body.in-fotoeditor #app{
   min-height:118px;
 }
 .mod-card:active{transform:scale(.96);border-color:var(--blue);}
+.mod-group-section{width:100%;max-width:440px;margin-top:26px;padding-top:22px;border-top:1px solid rgba(255,255,255,.08);display:flex;flex-direction:column;align-items:center;}
+.mod-group-label{font-size:10px;color:rgba(255,255,255,.4);letter-spacing:1.8px;text-transform:uppercase;font-weight:700;margin-bottom:4px;}
+.mod-group-sub{font-size:12px;color:rgba(255,255,255,.55);margin-bottom:14px;}
+.mod-group-logos{display:flex;gap:12px;width:100%;}
+.mod-group-logo-card{flex:1;background:rgba(255,255,255,.05);border:1.5px solid rgba(255,255,255,.1);border-radius:14px;padding:14px 10px;display:flex;align-items:center;justify-content:center;min-height:56px;}
+.mod-group-logo-img{max-width:100%;max-height:26px;width:auto;height:auto;object-fit:contain;}
+.mod-group-logo-img-home{max-height:34px;}
 .mod-card.blue{border-color:rgba(30,111,217,.4);background:rgba(30,111,217,.12);}
 .mod-card.green{border-color:rgba(16,185,129,.3);background:rgba(16,185,129,.08);}
 .mod-card.purple{border-color:rgba(124,58,237,.4);background:rgba(124,58,237,.1);}
@@ -1226,6 +1233,19 @@ body.in-fotoeditor #app{
       </div>
     </div>
 
+  </div>
+
+  <div class="mod-group-section">
+    <div class="mod-group-label">Grupo Industrial ROMSA</div>
+    <div class="mod-group-sub">Empresas asociadas</div>
+    <div class="mod-group-logos">
+      <div class="mod-group-logo-card">
+        <img class="mod-group-logo-img" id="mod-group-logo-rackline" alt="Rackline" src="">
+      </div>
+      <div class="mod-group-logo-card">
+        <img class="mod-group-logo-img mod-group-logo-img-home" id="mod-group-logo-home" alt="Home by Romsa" src="">
+      </div>
+    </div>
   </div>
 </div>
 
@@ -2874,6 +2894,17 @@ body.in-fotoeditor #app{
           </div>
         </div>
 
+        <div class="fe-ctrl-row" id="fe-impacto-fields" style="display:none;">
+          <div class="fe-ctrl-group" style="flex:1;">
+            <label class="fe-ctrl-label">Estadística <span style="font-weight:400;text-transform:none;color:#A7AEBC;">(ej. +40%)</span></label>
+            <input type="text" id="fe-f-estadistica" class="fe-input" placeholder="Ej: +40%" oninput="bceSetField('estadistica', this.value)">
+          </div>
+          <div class="fe-ctrl-group" style="flex:1;">
+            <label class="fe-ctrl-label">Leyenda de estadística</label>
+            <input type="text" id="fe-f-estadisticaCaption" class="fe-input" placeholder="Ej: Más capacidad" oninput="bceSetField('estadisticaCaption', this.value)">
+          </div>
+        </div>
+
         <div class="fe-ctrl-group">
           <label class="fe-ctrl-label">Posición del título <span style="font-weight:400;text-transform:none;color:#A7AEBC;">(el footer siempre queda fijo abajo)</span></label>
           <div class="fe-pill-row" id="fe-titlepos-pills"></div>
@@ -3251,6 +3282,8 @@ var _L2="kafzsnmd2/YONSS2vbN7/B3A9iKyNGwnV71WtSMPU/ajANyO1V/7YmM7QkQe1rGz2jiXIs3
   window._racklineWmIso="data:image/png;base64,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";
   var elems=["tb-logo-img","vc-logo-img","login-logo-img","mod-logo-img"];
   elems.forEach(function(id){var e=document.getElementById(id);if(e){e.src=logoBlanco;e.style.filter="none";}});
+  var _mglR=document.getElementById('mod-group-logo-rackline'); if(_mglR) _mglR.src = window._racklineLogoBlanco || "";
+  var _mglH=document.getElementById('mod-group-logo-home'); if(_mglH) _mglH.src = window._homeLogoBlancoIcono || window._homeLogoBlanco || "";
 })();
 // Logo injected separately to avoid JS parse issues
 // logos set by dedicated script tag below
@@ -17747,27 +17780,47 @@ const BCE_POST_TYPES = [
 
 const BCE_AUDIENCES = ["General","CEO","Director de Planta","Facilities","Mantenimiento","Compras","Ingeniería","EHS","Arquitectos","Constructores"];
 
-// Catálogo de servicios comunes de ROMSA — mismas descripciones ya usadas en
-// la Presentación Corporativa y otros documentos del CRM, para consistencia
-// de marca. Al elegir uno se rellenan título Y subtítulo (ambos editables
-// después).
-const BCE_SERVICES = [
-  { title: "Sistema epóxico 100% sólidos", subtitle: "Recubrimiento de alto desempeño, denso y resistente a la abrasión para tráfico pesado." },
-  { title: "Recubrimiento poliuretano", subtitle: "Flexibilidad y resistencia química para superficies expuestas a vibración y cargas dinámicas." },
-  { title: "Uretano cementicio", subtitle: "Resistencia química y antiséptica superior para procesos sanitarios y choque térmico." },
-  { title: "Pulido y densificado de concreto (DPA)", subtitle: "Pulido mecánico con densificadores litio-silicato para una superficie compacta y de bajo mantenimiento." },
-  { title: "Reparaciones de concreto", subtitle: "Restauración estructural de losas y superficies dañadas por desgaste o impacto." },
-  { title: "Sello de juntas industriales", subtitle: "Protección contra agua, polvo, aceites y químicos que deterioran el concreto." },
-  { title: "Sello de Tilt-Up", subtitle: "Barrera contra humedad y contaminantes entre paneles prefabricados." },
-  { title: "Impermeabilización de cubierta", subtitle: "Aplicación de recubrimiento elastomérico de alto desempeño." },
-  { title: "Mantenimiento a cubierta", subtitle: "Inspección, limpieza y reparación preventiva de sistemas de techado." },
-  { title: "Sistemas de rack industrial", subtitle: "Diseño e instalación de estructuras de almacenaje para maximizar espacio y seguridad." },
-];
+// Catálogo de servicios comunes — uno por línea de negocio, mismas
+// descripciones ya usadas en otros documentos del CRM donde aplica. Al
+// elegir uno se rellenan título Y subtítulo (ambos editables después).
+const BCE_SERVICES_BY_BRAND = {
+  industrial: [
+    { title: "Sistema epóxico 100% sólidos", subtitle: "Recubrimiento de alto desempeño, denso y resistente a la abrasión para tráfico pesado." },
+    { title: "Recubrimiento poliuretano", subtitle: "Flexibilidad y resistencia química para superficies expuestas a vibración y cargas dinámicas." },
+    { title: "Uretano cementicio", subtitle: "Resistencia química y antiséptica superior para procesos sanitarios y choque térmico." },
+    { title: "Pulido y densificado de concreto (DPA)", subtitle: "Pulido mecánico con densificadores litio-silicato para una superficie compacta y de bajo mantenimiento." },
+    { title: "Reparaciones de concreto", subtitle: "Restauración estructural de losas y superficies dañadas por desgaste o impacto." },
+    { title: "Sello de juntas industriales", subtitle: "Protección contra agua, polvo, aceites y químicos que deterioran el concreto." },
+    { title: "Sello de Tilt-Up", subtitle: "Barrera contra humedad y contaminantes entre paneles prefabricados." },
+    { title: "Impermeabilización de cubierta", subtitle: "Aplicación de recubrimiento elastomérico de alto desempeño." },
+    { title: "Mantenimiento a cubierta", subtitle: "Inspección, limpieza y reparación preventiva de sistemas de techado." },
+  ],
+  rackline: [
+    { title: "Rack selectivo", subtitle: "Acceso directo a cada tarima — ideal para inventarios con alta rotación de SKUs." },
+    { title: "Rack cantilever", subtitle: "Soporta cargas largas e irregulares como tubería, perfiles y madera." },
+    { title: "Rack dinámico", subtitle: "Sistema FIFO por gravedad: carga por un extremo, descarga por el opuesto." },
+    { title: "Rack push-back", subtitle: "Sistema LIFO de alta densidad, hasta 4 tarimas de profundidad por carril." },
+    { title: "Equipo de andén", subtitle: "Rampas, niveladores y topes que agilizan la carga y descarga de tráilers." },
+    { title: "Gancho retenedores", subtitle: "Evita que la mercancía se deslice o caiga durante el almacenaje y manejo." },
+    { title: "Rampas de acceso", subtitle: "Acceso seguro entre niveles y andenes para montacargas y personal." },
+    { title: "Accesorios de rack", subtitle: "Mallas, defensas y señalización que completan la seguridad del sistema." },
+  ],
+  home: [
+    { title: "Epóxico con flakes", subtitle: "Acabado decorativo antiderrapante con chips de color, ideal para garages y patios." },
+    { title: "Epóxico con riego de cuarzo", subtitle: "Textura antiderrapante de alta durabilidad con arena de cuarzo de color." },
+    { title: "Epóxico metálico", subtitle: "Efecto tridimensional tipo mármol, acabado premium para espacios de exhibición." },
+    { title: "Restauración de piso estampado", subtitle: "Recupera el color y sellado de piso estampado desgastado por el tiempo y el sol." },
+    { title: "Instalación de loseta", subtitle: "Nivelación profesional del piso — sin bordes chuecos ni piezas sueltas." },
+    { title: "Piso vinílico", subtitle: "Resistente al agua y cálido al tacto — ideal para remodelaciones rápidas." },
+    { title: "Microcemento", subtitle: "Acabado continuo y minimalista, sin juntas, para un look moderno." },
+  ],
+};
 
 const BCE_TEMPLATES = [
   { key: "corporate", label: "Corporate" },
   { key: "editorial", label: "Editorial" },
   { key: "minimal",   label: "Minimal" },
+  { key: "impacto",   label: "Impacto" },
 ];
 
 // Margen estándar del sistema de grid (equivalente a 1 columna de 12) — del Kit de Marca
@@ -17790,7 +17843,7 @@ let BCE = {
   templateKey: "corporate",
   postTypeKey: "caso_exito",
   logoVariant: "white",
-  fields: { titulo: "", subtitulo: "", cliente: "", ciudad: "", fecha: "", area: "", producto: "" },
+  fields: { titulo: "", subtitulo: "", cliente: "", ciudad: "", fecha: "", area: "", producto: "", estadistica: "", estadisticaCaption: "" },
   luminosity: null,
   titlePosition: "auto", // "auto" | "top" | "bottom" — el footer siempre queda fijo abajo
   labelColor: "#7B9AD0", // color de "AVANCE DE OBRA" / "CASO DE ÉXITO" etc.
@@ -18453,7 +18506,118 @@ function tplMinimal(ctx, w, h, lum, postType){
   cFooterStrip(ctx, w, h, "bottom");
 }
 
-const BCE_TEMPLATE_FNS = { corporate: tplCorporate, editorial: tplEditorial, minimal: tplMinimal };
+// Plantilla "Impacto" — lidera con una estadística grande (ej. "+40%"),
+// seguida de una leyenda corta, luego un titular y un párrafo de cuerpo.
+// A diferencia de las otras plantillas (que buscan la zona más "segura" de
+// la foto), aquí el contenido ocupa casi toda la altura del canvas, así que
+// se oscurece la foto de forma pareja arriba y abajo, dejando la franja
+// media más visible — funciona bien con fotos con mucho detalle (racks,
+// naves) que de por sí ya se ven bien oscurecidas.
+function tplImpacto(ctx, w, h, lum, postType){
+  const M = w * BCE_MARGIN;
+  const f = BCE.fields;
+  const footerReserve = h * 0.075;
+
+  // Oscurecimiento parejo arriba y abajo, más claro a la mitad
+  cGradientOverlay(ctx, 0, 0, w, h*0.46, BCE_NAVY, 0.5, "down");
+  cGradientOverlay(ctx, 0, h*0.52, w, h*0.48, BCE_NAVY, 0.62, "down");
+
+  const maxW = w - M*2;
+  let cursorY = M;
+
+  // Badge (respeta el estilo Línea/Badge activo)
+  if(postType.badge){
+    const bh = cCategoryBadge(ctx, M, cursorY, postType.badge, w, undefined, BCE.labelColor);
+    cursorY += bh + h*0.025;
+  }
+
+  // Estadística grande — la parte numérica en blanco, el símbolo/sufijo final
+  // (%, x, +, etc.) en el color de acento de la marca
+  if(f.estadistica){
+    let statFontPx = w * 0.15;
+    const statText = f.estadistica;
+    const m = statText.match(/^([+\-]?[\d.,]+)(.*)$/);
+    const lead = m ? m[1] : statText;
+    const trail = m ? m[2] : "";
+
+    ctx.save();
+    ctx.font = `800 ${statFontPx}px "Inter", Arial, sans-serif`;
+    let totalW = ctx.measureText(lead + trail).width;
+    if(totalW > maxW){
+      statFontPx *= maxW / totalW;
+      ctx.font = `800 ${statFontPx}px "Inter", Arial, sans-serif`;
+    }
+    ctx.textBaseline = "top";
+    ctx.fillStyle = "#FFFFFF";
+    ctx.fillText(lead, M, cursorY);
+    const leadW = ctx.measureText(lead).width;
+    ctx.fillStyle = BCE.labelColor;
+    ctx.fillText(trail, M + leadW, cursorY);
+    ctx.restore();
+
+    cursorY += statFontPx * 1.05;
+
+    if(f.estadisticaCaption){
+      const capFontPx = w * 0.0185;
+      ctx.save();
+      ctx.font = `700 ${capFontPx}px "Inter", Arial, sans-serif`;
+      ctx.fillStyle = "#FFFFFF";
+      ctx.globalAlpha = 0.75;
+      ctx.textBaseline = "top";
+      bceFillTextTracked(ctx, f.estadisticaCaption.toUpperCase(), M, cursorY + h*0.01, capFontPx*0.14);
+      ctx.restore();
+      cursorY += capFontPx*1.3 + h*0.01;
+    }
+  }
+
+  // Bloque inferior: línea de acento + titular + párrafo — anclado arriba
+  // del footer con el mismo margen de aire que el resto del sistema
+  let titleSize = w * 0.046;
+  let subSize = w * 0.021;
+  const bottomMaxW = w - M*2;
+
+  function medirBloqueInferior(_titleSize, _subSize){
+    ctx.save();
+    ctx.font = `700 ${_titleSize}px "Inter", Arial, sans-serif`;
+    const titleLines = bceWrapText(ctx, f.titulo || "Título del proyecto", bottomMaxW);
+    const titleH = titleLines.length * _titleSize * 1.22;
+    ctx.font = `500 ${_subSize}px "Inter", Arial, sans-serif`;
+    const subLines = f.subtitulo ? bceWrapText(ctx, f.subtitulo, bottomMaxW) : [];
+    const subH = subLines.length * _subSize * 1.3;
+    ctx.restore();
+    const lineH = h*0.028; // línea de acento + su gap
+    const gap = f.subtitulo ? h*0.014 : 0;
+    return { titleH, subH, total: lineH + titleH + gap + subH };
+  }
+
+  let med = medirBloqueInferior(titleSize, subSize);
+  const maxAvailable = h - footerReserve - h*0.06 - (h*0.52); // no invadir la mitad superior
+  if(med.total > maxAvailable){
+    const factor = Math.max(0.65, maxAvailable / med.total);
+    titleSize *= factor; subSize *= factor;
+    med = medirBloqueInferior(titleSize, subSize);
+  }
+
+  let by = h - footerReserve - h*0.055 - med.total;
+  by = Math.max(h*0.52, by);
+
+  // Línea de acento
+  ctx.fillStyle = BCE.labelColor;
+  ctx.fillRect(M, by, w*0.055, Math.max(2, w*0.0035));
+  by += h*0.028;
+
+  const rt = cTitle(ctx, M, by, bottomMaxW, f.titulo || "Título del proyecto", titleSize, "#FFFFFF", 800);
+  by += rt.height;
+
+  if(f.subtitulo){
+    by += h*0.014;
+    cSubtitle(ctx, M, by, bottomMaxW, f.subtitulo, subSize, "#FFFFFF");
+  }
+
+  cFooterStrip(ctx, w, h, "bottom");
+}
+
+const BCE_TEMPLATE_FNS = { corporate: tplCorporate, editorial: tplEditorial, minimal: tplMinimal, impacto: tplImpacto };
 
 // Formatos muy verticales (Instagram Historia, 9:16) necesitan recomposición,
 // no solo recorte — regla explícita: logo arriba, título centrado, degradado
@@ -18590,10 +18754,9 @@ function bceInit(){
     `<button type="button" class="fe-tpl-btn${n.key===BCE.networkKey?' active':''}" data-net="${n.key}" onclick="bceUiSelectNetwork('${n.key}')">${n.label}</button>`
   ).join("");
 
-  // Select de servicios comunes (rellena título + subtítulo)
-  document.getElementById("fe-service-select").innerHTML += BCE_SERVICES.map(s =>
-    `<option value="${s.title.replace(/"/g,'&quot;')}">${s.title}</option>`
-  ).join("");
+  // Select de servicios comunes (rellena título + subtítulo) — depende de
+  // la marca activa, se puede volver a llamar al cambiar de marca
+  bceRenderServiceOptions();
 
   // Select de tipo de publicación
   document.getElementById("fe-posttype-select").innerHTML = BCE_POST_TYPES.map(p =>
@@ -18716,13 +18879,24 @@ function bceSetField(name, value){
 
 function bceApplyService(title){
   if(!title) return;
-  const svc = BCE_SERVICES.find(s => s.title === title);
+  const lista = BCE_SERVICES_BY_BRAND[BCE.brand] || BCE_SERVICES_BY_BRAND.industrial;
+  const svc = lista.find(s => s.title === title);
   if(!svc) return;
   BCE.fields.titulo = svc.title;
   BCE.fields.subtitulo = svc.subtitle;
   document.getElementById("fe-f-titulo").value = svc.title;
   document.getElementById("fe-f-subtitulo").value = svc.subtitle;
   bceLiveUpdate();
+}
+
+// Reconstruye el desplegable de "Servicio" con el catálogo de la marca activa
+function bceRenderServiceOptions(){
+  const sel = document.getElementById("fe-service-select");
+  if(!sel) return;
+  const lista = BCE_SERVICES_BY_BRAND[BCE.brand] || BCE_SERVICES_BY_BRAND.industrial;
+  sel.innerHTML = '<option value="">— Elegir servicio común —</option>' + lista.map(s =>
+    `<option value="${s.title.replace(/"/g,'&quot;')}">${s.title}</option>`
+  ).join("");
 }
 
 function bceUiSelectNetwork(key){
@@ -18733,6 +18907,8 @@ function bceUiSelectNetwork(key){
 function bceUiSelectTemplate(key){
   BCE.templateKey = key;
   document.querySelectorAll("#fe-template-pills .fe-tpl-btn").forEach(b => b.classList.toggle("active", b.dataset.tpl === key));
+  const impactoFields = document.getElementById("fe-impacto-fields");
+  if(impactoFields) impactoFields.style.display = (key === "impacto") ? "" : "none";
   bceLiveUpdate();
 }
 function bceUiSelectTitlePosition(key){
@@ -18786,6 +18962,7 @@ function bceUiSelectBrand(brand){
   const titleEl = document.getElementById("fe-title");
   if(titleEl) titleEl.textContent = "Motor de Marca " + bc.label;
   bceRenderSwatches();
+  bceRenderServiceOptions();
 
   // El control de "solo ícono" únicamente aplica a marcas que tienen esa
   // versión disponible (por ahora HOME) — se oculta para las demás
