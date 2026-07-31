@@ -2960,6 +2960,11 @@ body.in-fotoeditor #app{
           </div>
         </div>
 
+        <div class="fe-ctrl-group" id="fe-minimal-fields" style="display:none;">
+          <label class="fe-ctrl-label">Título con acento de color <span style="font-weight:400;text-transform:none;color:#A7AEBC;">(opcional)</span></label>
+          <div class="fe-pill-row" id="fe-minimalacento-pills"></div>
+        </div>
+
         <div class="fe-ctrl-group">
           <label class="fe-ctrl-label">Posición del título <span style="font-weight:400;text-transform:none;color:#A7AEBC;">(el footer siempre queda fijo abajo)</span></label>
           <div class="fe-pill-row" id="fe-titlepos-pills"></div>
@@ -17906,6 +17911,7 @@ let BCE = {
   brand: "industrial", // "industrial" (ROMSA) | "rackline" | "home"
   logoIconOnly: false, // true = usar solo el ícono del logo (sin texto), donde exista
   badgeStyle: "line", // "line" (línea de acento, actual) | "badge" (etiqueta con fondo)
+  minimalAcento: false, // true = título con fondo de color en la plantilla Minimal
 };
 
 function bceCurrentNetwork(){ return BCE_NETWORKS.find(n => n.key === BCE.networkKey) || BCE_NETWORKS[0]; }
@@ -18573,6 +18579,7 @@ function tplMinimal(ctx, w, h, lum, postType){
   ctx.save();
   ctx.font = `600 ${titleSize}px "Inter", Arial, sans-serif`;
   const lines = bceWrapText(ctx, f.titulo || "Título del proyecto", titleMaxW);
+  const maxLineW = Math.max(...lines.map(l => ctx.measureText(l).width));
   ctx.restore();
 
   const lineH = titleSize * 1.25;
@@ -18585,7 +18592,32 @@ function tplMinimal(ctx, w, h, lum, postType){
   cGradientOverlaySmooth(ctx, w, h, barY, barH, "#000000", 0.58, anchorBottom);
 
   const textY = anchorBottom ? (h - footerReserve - M*0.8 - titleH) : (barY + M*0.8);
-  cTitle(ctx, M, textY, titleMaxW, f.titulo || "Título del proyecto", titleSize, "#FFFFFF", 600);
+
+  // Acento de color opcional detrás del título — para cuando Minimal se
+  // sienta "sin chiste" sin nada del color de marca. Es un rectángulo
+  // redondeado del color de acento, con el texto encima en un color que
+  // siempre tenga buen contraste contra ese fondo.
+  let titleColor = "#FFFFFF";
+  if(BCE.minimalAcento){
+    const padX = titleSize*0.45, padY = titleSize*0.32;
+    const boxX = M - padX*0.6, boxY = textY - padY;
+    const boxW = maxLineW + padX*1.2, boxH = titleH + padY*2;
+    const r = Math.min(boxH*0.18, w*0.012);
+    ctx.save();
+    ctx.fillStyle = BCE.labelColor;
+    ctx.beginPath();
+    ctx.moveTo(boxX+r, boxY);
+    ctx.arcTo(boxX+boxW, boxY, boxX+boxW, boxY+boxH, r);
+    ctx.arcTo(boxX+boxW, boxY+boxH, boxX, boxY+boxH, r);
+    ctx.arcTo(boxX, boxY+boxH, boxX, boxY, r);
+    ctx.arcTo(boxX, boxY, boxX+boxW, boxY, r);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+    titleColor = bceContrastColor(BCE.labelColor);
+  }
+
+  cTitle(ctx, M, textY, titleMaxW, f.titulo || "Título del proyecto", titleSize, titleColor, 600);
 
   cFooterStrip(ctx, w, h, "bottom");
 }
@@ -18758,12 +18790,13 @@ function tplTallOverride(ctx, w, h, lum, postType){
     ctx.restore();
   }
 
-  // Sitio web al centro, hasta abajo
+  // Sitio web al centro, hasta abajo — depende de la marca activa
   ctx.save();
   ctx.textAlign = "center";
   ctx.fillStyle = "#FFFFFF"; ctx.globalAlpha = 0.85;
   ctx.font = `500 ${w*0.0155}px "Inter", Arial, sans-serif`;
-  ctx.fillText("www.romsaindustrial.com", w/2, h - M*0.7);
+  const webActivo = (BCE_BRANDS[BCE.brand] || BCE_BRANDS.industrial).web;
+  ctx.fillText(webActivo, w/2, h - M*0.7);
   ctx.restore();
 }
 
@@ -18885,6 +18918,13 @@ function bceInit(){
     `<button type="button" class="fe-tpl-btn${key==='line'?' active':''}" data-badgestyle="${key}" onclick="bceUiSelectBadgeStyle('${key}')">${label}</button>`
   ).join("");
 
+  // Pills de acento de color para el título en Minimal (opcional)
+  document.getElementById("fe-minimalacento-pills").innerHTML = [
+    ["no","Sin acento"], ["si","Con acento"],
+  ].map(([key,label]) =>
+    `<button type="button" class="fe-tpl-btn${key==='no'?' active':''}" data-minacento="${key}" onclick="bceUiSelectMinimalAcento('${key}')">${label}</button>`
+  ).join("");
+
   // Pestañas de línea de negocio (ROMSA / RACKLINE / HOME) — siempre visibles
   document.getElementById("fe-brand-tabs").innerHTML = Object.keys(BCE_BRANDS).map(key =>
     `<button type="button" class="fe-brand-tab${key===BCE.brand?' active':''}" data-brand="${key}" onclick="bceUiSelectBrand('${key}')">${BCE_BRANDS[key].label}</button>`
@@ -19003,6 +19043,13 @@ function bceUiSelectTemplate(key){
   document.querySelectorAll("#fe-template-pills .fe-tpl-btn").forEach(b => b.classList.toggle("active", b.dataset.tpl === key));
   const impactoFields = document.getElementById("fe-impacto-fields");
   if(impactoFields) impactoFields.style.display = (key === "impacto") ? "" : "none";
+  const minimalFields = document.getElementById("fe-minimal-fields");
+  if(minimalFields) minimalFields.style.display = (key === "minimal") ? "" : "none";
+  bceLiveUpdate();
+}
+function bceUiSelectMinimalAcento(val){
+  BCE.minimalAcento = (val === "si");
+  document.querySelectorAll("#fe-minimalacento-pills .fe-tpl-btn").forEach(b => b.classList.toggle("active", b.dataset.minacento === val));
   bceLiveUpdate();
 }
 function bceUiSelectTitlePosition(key){
@@ -19219,6 +19266,7 @@ window.bceUiSelectDarken = bceUiSelectDarken;
 window.bceUiSelectBrand = bceUiSelectBrand;
 window.bceUiSelectLogoStyle = bceUiSelectLogoStyle;
 window.bceUiSelectBadgeStyle = bceUiSelectBadgeStyle;
+window.bceUiSelectMinimalAcento = bceUiSelectMinimalAcento;
 window.bceUiSelectFormat = bceUiSelectFormat;
 window.bceApplyService = bceApplyService;
 window.bceCopyPostText = bceCopyPostText;
