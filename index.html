@@ -779,6 +779,9 @@ body.in-fotoeditor #app{
 .fe-btn-primary{background:#0B1F3A;color:#fff;flex:1.3;}
 .fe-copy-btn{background:#EEF3FA;color:#0B1F3A;border:none;border-radius:8px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;}
 .fe-textarea-copy{border:1.5px solid #D7E3F5;border-radius:10px;padding:10px 11px;font-size:12.5px;font-family:inherit;color:#3A4453;background:#FAFBFD;resize:vertical;line-height:1.5;margin-top:6px;}
+.fe-swatch-row{display:flex;gap:8px;}
+.fe-swatch-btn{width:30px;height:30px;border-radius:50%;border:2px solid transparent;cursor:pointer;padding:0;position:relative;}
+.fe-swatch-btn.active{border-color:#0B1F3A;box-shadow:0 0 0 2px #fff,0 0 0 3px #0B1F3A;}
 .cos-card-meta{font-size:10px;color:var(--tx2);margin-top:2px;}
 .cos-input{width:100%;padding:8px 10px;border:1px solid var(--g1);border-radius:6px;font-size:12px;font-family:var(--font);color:var(--navy);background:#fff;}
 .cos-input:focus{outline:none;border-color:#1E6FD9;}
@@ -2869,6 +2872,18 @@ body.in-fotoeditor #app{
         <div class="fe-ctrl-group">
           <label class="fe-ctrl-label">Posición del título <span style="font-weight:400;text-transform:none;color:#A7AEBC;">(el footer siempre queda fijo abajo)</span></label>
           <div class="fe-pill-row" id="fe-titlepos-pills"></div>
+        </div>
+
+        <div class="fe-ctrl-row">
+          <div class="fe-ctrl-group" style="flex:1;">
+            <label class="fe-ctrl-label">Color de etiqueta <span style="font-weight:400;text-transform:none;color:#A7AEBC;">("AVANCE DE OBRA", etc.)</span></label>
+            <div class="fe-swatch-row" id="fe-labelcolor-swatches"></div>
+          </div>
+        </div>
+
+        <div class="fe-ctrl-group">
+          <label class="fe-ctrl-label">Oscurecer foto <span style="font-weight:400;text-transform:none;color:#A7AEBC;">(degradado azul adicional, opcional)</span></label>
+          <div class="fe-pill-row" id="fe-darken-pills"></div>
         </div>
 
         <div class="fe-ctrl-row">
@@ -17751,6 +17766,8 @@ let BCE = {
   fields: { titulo: "", subtitulo: "", cliente: "", ciudad: "", fecha: "", area: "", producto: "" },
   luminosity: null,
   titlePosition: "auto", // "auto" | "top" | "bottom" — el footer siempre queda fijo abajo
+  labelColor: "#7B9AD0", // color de "AVANCE DE OBRA" / "CASO DE ÉXITO" etc.
+  extraDarken: 0, // 0-100 — oscurecimiento adicional manual sobre toda la foto
 };
 
 function bceCurrentNetwork(){ return BCE_NETWORKS.find(n => n.key === BCE.networkKey) || BCE_NETWORKS[0]; }
@@ -17903,23 +17920,26 @@ function cSolidCard(ctx, x, y, w, h, colorHex, glow){
   }
   ctx.restore();
 }
-function cCategoryBadge(ctx, x, y, text, canvasW, align){
+function cCategoryBadge(ctx, x, y, text, canvasW, align, color){
   if(!text) return 0;
   // Etiqueta editorial minimalista — sin caja de "botón": una línea corta de
   // acento arriba del texto, mismo lenguaje visual que el eyebrow de Editorial.
   const fontPx = Math.max(9, canvasW * 0.0135);
   const spacing = fontPx * 0.16;
+  const labelColor = color || BCE_LIGHTBLUE;
   ctx.save();
   ctx.font = `600 ${fontPx}px "Inter", Arial, sans-serif`;
   const upper = text.toUpperCase();
   const textW = bceTrackedWidth(ctx, upper, spacing);
   const lineW = Math.min(textW, canvasW * 0.045);
-  const bx = align === "right" ? x - textW : x;
-  const lineX = align === "right" ? x - lineW : x;
+  let bx, lineX;
+  if(align === "right"){ bx = x - textW; lineX = x - lineW; }
+  else if(align === "center"){ bx = x - textW/2; lineX = x - lineW/2; }
+  else { bx = x; lineX = x; }
 
-  ctx.fillStyle = BCE_LIGHTBLUE;
+  ctx.fillStyle = labelColor;
   ctx.fillRect(lineX, y, lineW, Math.max(2, canvasW*0.0022));
-  ctx.fillStyle = BCE_LIGHTBLUE;
+  ctx.fillStyle = labelColor;
   ctx.textBaseline = "top";
   bceFillTextTracked(ctx, upper, bx, y + canvasW*0.012, spacing);
   ctx.restore();
@@ -18201,7 +18221,7 @@ function tplCorporate(ctx, w, h, lum, postType){
   let cursorY = contentBottom - meas.totalH;
 
   if(postType.badge){
-    const bh = cCategoryBadge(ctx, M, cursorY, postType.badge, w);
+    const bh = cCategoryBadge(ctx, M, cursorY, postType.badge, w, undefined, BCE.labelColor);
     cursorY += bh + meas.gap;
   }
   const titleRes = cTitle(ctx, M, cursorY, contentMaxW, f.titulo || "Título del proyecto", titleSize, textColor);
@@ -18297,7 +18317,7 @@ function tplEditorial(ctx, w, h, lum, postType){
   if(eyebrow){
     ctx.save();
     ctx.font = `700 ${eyebrowFontPx}px "Inter", Arial, sans-serif`;
-    ctx.fillStyle = BCE_LIGHTBLUE;
+    ctx.fillStyle = BCE.labelColor;
     ctx.textBaseline = "top";
     bceFillTextTracked(ctx, eyebrow.toUpperCase(), M + padX, ty, eyebrowSpacing);
     ctx.restore();
@@ -18378,11 +18398,7 @@ function tplTallOverride(ctx, w, h, lum, postType){
   // Categoría + título centrados verticalmente en el tercio inferior
   let cursorY = h * 0.72;
   if(postType.badge){
-    ctx.save();
-    ctx.font = `700 ${w*0.02}px "Inter", Arial, sans-serif`;
-    const bw = ctx.measureText(postType.badge.toUpperCase()).width;
-    ctx.restore();
-    const bh = cCategoryBadge(ctx, (w - (bw + w*0.036))/2, cursorY, postType.badge, w);
+    const bh = cCategoryBadge(ctx, w/2, cursorY, postType.badge, w, "center", BCE.labelColor);
     cursorY += bh + h*0.02;
   }
   ctx.save();
@@ -18423,6 +18439,15 @@ function bceCompose(ctx, w, h){
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = "high";
   cHero(ctx, w, h);
+
+  // Oscurecimiento adicional manual — un degradado azul sutil sobre TODA la
+  // foto (de arriba a abajo), independiente de las zonas automáticas. Para
+  // cuando el usuario quiere más presencia de marca sin importar qué tan
+  // clara sea la foto de por sí.
+  if(BCE.extraDarken > 0){
+    cGradientOverlay(ctx, 0, 0, w, h, BCE_NAVY, (BCE.extraDarken / 100) * 0.45, "down");
+  }
+
   if(!BCE.luminosity) BCE.luminosity = bceAnalyzeLuminosity(BCE.img);
 
   // El usuario puede forzar la posición del título (arriba/abajo) cuando el
@@ -18500,6 +18525,20 @@ function bceInit(){
     ["auto","Automático"], ["top","Arriba"], ["bottom","Abajo"],
   ].map(([key,label]) =>
     `<button type="button" class="fe-tpl-btn${key==='auto'?' active':''}" data-pos="${key}" onclick="bceUiSelectTitlePosition('${key}')">${label}</button>`
+  ).join("");
+
+  // Swatches de color de etiqueta — el azul claro original se pierde en
+  // algunas fotos, así que se puede cambiar a un tono con más contraste
+  const labelColors = ["#7B9AD0", "#FFFFFF", "#3D8BFF", "#0B1F3A"];
+  document.getElementById("fe-labelcolor-swatches").innerHTML = labelColors.map(c =>
+    `<button type="button" class="fe-swatch-btn${c===BCE.labelColor?' active':''}" data-color="${c}" style="background:${c};${c==='#FFFFFF'?'border-color:#D7E3F5;':''}" onclick="bceUiSelectLabelColor('${c}')"></button>`
+  ).join("");
+
+  // Pills de oscurecimiento adicional (degradado azul manual sobre toda la foto)
+  document.getElementById("fe-darken-pills").innerHTML = [
+    [0,"Ninguno"], [25,"Suave"], [50,"Medio"], [80,"Fuerte"],
+  ].map(([val,label]) =>
+    `<button type="button" class="fe-tpl-btn${val===0?' active':''}" data-darken="${val}" onclick="bceUiSelectDarken(${val})">${label}</button>`
   ).join("");
 
   // Pills de formato de descarga
@@ -18591,6 +18630,16 @@ function bceUiSelectTemplate(key){
 function bceUiSelectTitlePosition(key){
   BCE.titlePosition = key;
   document.querySelectorAll("#fe-titlepos-pills .fe-tpl-btn").forEach(b => b.classList.toggle("active", b.dataset.pos === key));
+  bceLiveUpdate();
+}
+function bceUiSelectLabelColor(hex){
+  BCE.labelColor = hex;
+  document.querySelectorAll("#fe-labelcolor-swatches .fe-swatch-btn").forEach(b => b.classList.toggle("active", b.dataset.color === hex));
+  bceLiveUpdate();
+}
+function bceUiSelectDarken(val){
+  BCE.extraDarken = val;
+  document.querySelectorAll("#fe-darken-pills .fe-tpl-btn").forEach(b => b.classList.toggle("active", Number(b.dataset.darken) === val));
   bceLiveUpdate();
 }
 
@@ -18710,6 +18759,8 @@ window.bceSetField = bceSetField;
 window.bceUiSelectNetwork = bceUiSelectNetwork;
 window.bceUiSelectTemplate = bceUiSelectTemplate;
 window.bceUiSelectTitlePosition = bceUiSelectTitlePosition;
+window.bceUiSelectLabelColor = bceUiSelectLabelColor;
+window.bceUiSelectDarken = bceUiSelectDarken;
 window.bceUiSelectFormat = bceUiSelectFormat;
 window.bceApplyService = bceApplyService;
 window.bceCopyPostText = bceCopyPostText;
