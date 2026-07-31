@@ -17766,7 +17766,7 @@ let BCE_LIGHTBLUE = "#7B9AD0";
 const BCE_BRANDS = {
   industrial: { navy: "#0B1F3A", accent: "#7B9AD0", accentAlt: "#3D8BFF", web: "www.romsaindustrial.com", label: "ROMSA" },
   rackline:   { navy: "#0C2340", accent: "#F5821F", accentAlt: "#FFB366", web: "www.rackline.com.mx",     label: "RACKLINE" },
-  home:       { navy: "#1E5BA8", accent: "#8FB4E3", accentAlt: "#5B9BD5", web: "www.romsaindustrial.com/home", label: "HOME by ROMSA" },
+  home:       { navy: "#0B1F3A", accent: "#C36F4A", accentAlt: "#1E5BA8", web: "www.romsaindustrial.com/home", label: "HOME by ROMSA" },
 };
 
 // ── Estado ────────────────────────────────────────────────────
@@ -18116,10 +18116,11 @@ function cFooterStrip(ctx, w, h, side){
   ctx.clip();
 
   // Degradado diagonal (mismo patrón que headers de Cotización/Auditoría/Reporte)
-  // — los tonos oscuro/claro se derivan del navy de la marca activa
+  // — sutil, misma proporción que el original de ROMSA (#0A1930→#0B1F3A→#1C3A63),
+  // derivado del navy de la marca activa para que no se vea "plano" en ninguna marca
   const nRgb = bceHexToRgb(BCE_NAVY);
-  const darker = `rgb(${Math.round(nRgb.r*0.55)},${Math.round(nRgb.g*0.55)},${Math.round(nRgb.b*0.55)})`;
-  const lighter = `rgb(${Math.round(nRgb.r+(255-nRgb.r)*0.28)},${Math.round(nRgb.g+(255-nRgb.g)*0.28)},${Math.round(nRgb.b+(255-nRgb.b)*0.28)})`;
+  const darker = `rgb(${Math.round(nRgb.r*0.85)},${Math.round(nRgb.g*0.85)},${Math.round(nRgb.b*0.85)})`;
+  const lighter = `rgb(${Math.round(nRgb.r+(255-nRgb.r)*0.15)},${Math.round(nRgb.g+(255-nRgb.g)*0.15)},${Math.round(nRgb.b+(255-nRgb.b)*0.15)})`;
   const grad = ctx.createLinearGradient(0, y, w * 0.5, y + stripH);
   grad.addColorStop(0, darker);
   grad.addColorStop(0.55, BCE_NAVY);
@@ -18142,14 +18143,24 @@ function cFooterStrip(ctx, w, h, side){
   ctx.fillStyle = g2;
   ctx.fillRect(0, y, w, stripH);
 
-  ctx.restore();
-
+  // Logo — se dibuja DENTRO del mismo recorte de la franja para que nunca
+  // se desborde, sin importar la proporción del logo (algunos, como el de
+  // HOME, son verticales: ícono arriba + texto abajo, muy distinto al
+  // wordmark horizontal de ROMSA/Rackline). Además se limita la altura al
+  // 70% de la franja con un piso de ancho mínimo legible.
   const M = w * BCE_MARGIN;
-  const logoW = w * 0.11;
+  let logoW = w * 0.11;
   const img = BCE.logoVariant === "navy" ? BCE.logoNavyImg : BCE.logoWhiteImg;
   const aspect = (img && img.naturalWidth) ? img.naturalHeight / img.naturalWidth : 0.2;
-  const logoH = logoW * aspect;
+  let logoH = logoW * aspect;
+  const maxLogoH = stripH * 0.7;
+  if(logoH > maxLogoH){
+    logoH = maxLogoH;
+    logoW = logoH / aspect;
+  }
   cLogo(ctx, M, y + (stripH - logoH) / 2, logoW, w);
+  ctx.restore();
+
   cWebsite(ctx, w - M, y + stripH / 2 + w * 0.006, w, BCE_NAVY, "right");
   return { stripH, y };
 }
@@ -18317,7 +18328,8 @@ function tplEditorial(ctx, w, h, lum, postType){
 
   let med = medir(titleSize, subSize, metricNumSize, padY);
   // Espacio disponible: reservamos el footer Y la línea de meta de abajo
-  const maxAvailable = h - footerReserve - metaRowH - h*0.06 - M*2;
+  // (más aire que antes para que el meta no quede pegado al footer)
+  const maxAvailable = h - footerReserve - metaRowH - h*0.08 - M*2;
 
   const neededH = med.total + padY*2;
   if(neededH > maxAvailable){
@@ -18329,7 +18341,7 @@ function tplEditorial(ctx, w, h, lum, postType){
   const cardH = med.total + padY*2;
   const cardW = cardMaxW + padX*2;
   const cardY = anchorBottom
-    ? Math.max(M, h - footerReserve - metaRowH - h*0.05 - cardH)
+    ? Math.max(M, h - footerReserve - metaRowH - h*0.07 - cardH)
     : M + h*0.025;
 
   cSolidCard(ctx, M, cardY, cardW, cardH, BCE_NAVY, true);
@@ -18363,7 +18375,7 @@ function tplEditorial(ctx, w, h, lum, postType){
   // Texto blanco + sombra suave (técnica de subtítulos de video) — se lee
   // bien sobre cualquier fondo sin necesitar una caja sólida.
   if(meta){
-    cMetaLineShadowed(ctx, M, h - footerReserve - h*0.035, meta, metaSize);
+    cMetaLineShadowed(ctx, M, h - footerReserve - h*0.055, meta, metaSize);
   }
 
   cFooterStrip(ctx, w, h, "bottom");
