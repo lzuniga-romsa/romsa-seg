@@ -18037,32 +18037,33 @@ function cGradientOverlay(ctx, x, y, w, h, colorHex, opacity, dir){
   grad.addColorStop(1, `rgba(${rgb.r},${rgb.g},${rgb.b},${opacity})`);
   ctx.save(); ctx.fillStyle = grad; ctx.fillRect(x, y, w, h); ctx.restore();
 }
-// Igual que cGradientOverlay, pero el desvanecido se extiende MUCHO más allá
-// de la zona de contenido (zoneY/zoneH), con una parada intermedia para que
-// la caída sea gradual — así toda la foto participa del degradado, en vez
-// de sentirse como un rectángulo con un corte visible donde termina.
+// Igual que cGradientOverlay, pero el desvanecido cubre TODO el canvas —
+// no solo la zona de contenido con un poco de margen. Máxima opacidad en el
+// borde de contenido, un punto intermedio donde antes terminaba la zona
+// vieja (para mantener buen contraste ahí), y transparente total en el
+// extremo opuesto del canvas. Así toda la foto participa del degradado, en
+// vez de sentirse como una franja/rectángulo con principio y fin marcados.
 function cGradientOverlaySmooth(ctx, w, h, zoneY, zoneH, colorHex, maxOpacity, anchorBottom){
   const rgb = bceHexToRgb(colorHex);
   const col = `${rgb.r},${rgb.g},${rgb.b}`;
-  // Cuánto más allá de la zona de contenido se extiende el desvanecido
-  const extra = Math.min(h - zoneH, zoneH * 1.1);
   if(anchorBottom){
-    const top = Math.max(0, zoneY - extra);
-    const span = h - top;
-    const solidStop = Math.min(0.97, extra / span);
-    const grad = ctx.createLinearGradient(0, top, 0, h);
+    // Contenido pegado abajo: transparente en y=0 (arriba de toda la foto),
+    // intermedio en zoneY (donde antes empezaba la zona oscura), máximo en h.
+    const midStop = Math.min(0.94, Math.max(0.06, zoneY / h));
+    const grad = ctx.createLinearGradient(0, 0, 0, h);
     grad.addColorStop(0, `rgba(${col},0)`);
-    grad.addColorStop(solidStop, `rgba(${col},${maxOpacity*0.5})`);
+    grad.addColorStop(midStop, `rgba(${col},${maxOpacity*0.5})`);
     grad.addColorStop(1, `rgba(${col},${maxOpacity})`);
-    ctx.save(); ctx.fillStyle = grad; ctx.fillRect(0, top, w, span); ctx.restore();
+    ctx.save(); ctx.fillStyle = grad; ctx.fillRect(0, 0, w, h); ctx.restore();
   } else {
-    const bottom = Math.min(h, zoneY + zoneH + extra);
-    const solidStop = Math.min(0.97, zoneH / bottom);
-    const grad = ctx.createLinearGradient(0, 0, 0, bottom);
+    // Contenido pegado arriba: máximo en y=0, intermedio donde antes
+    // terminaba la zona oscura, transparente en el fondo de toda la foto.
+    const midStop = Math.min(0.94, Math.max(0.06, (zoneY + zoneH) / h));
+    const grad = ctx.createLinearGradient(0, 0, 0, h);
     grad.addColorStop(0, `rgba(${col},${maxOpacity})`);
-    grad.addColorStop(solidStop, `rgba(${col},${maxOpacity*0.5})`);
+    grad.addColorStop(midStop, `rgba(${col},${maxOpacity*0.5})`);
     grad.addColorStop(1, `rgba(${col},0)`);
-    ctx.save(); ctx.fillStyle = grad; ctx.fillRect(0, 0, w, bottom); ctx.restore();
+    ctx.save(); ctx.fillStyle = grad; ctx.fillRect(0, 0, w, h); ctx.restore();
   }
 }
 function cFullOverlay(ctx, w, h, colorHex, opacity){
@@ -19031,10 +19032,10 @@ function bceUiSelectBrand(brand){
   BCE_LIGHTBLUE = bc.accent;
   BCE.labelColor = bc.accent;
 
-  // Para marcas con logo vertical (ícono + texto apilado, como HOME) el
-  // footer se ve mejor con solo el ícono por default — el usuario puede
-  // cambiar a "Completo" si lo prefiere con el toggle de abajo.
-  BCE.logoIconOnly = !!bc.hasIcono;
+  // El logo completo (con el nombre escrito) es el default para todas las
+  // marcas — el toggle de "solo ícono" sigue disponible para quien lo
+  // prefiera, pero ya no se fuerza automáticamente.
+  BCE.logoIconOnly = false;
 
   BCE.logoWhiteImg = new Image();
   BCE.logoWhiteImg.src = bceLogoSrc(brand, "blanco");
