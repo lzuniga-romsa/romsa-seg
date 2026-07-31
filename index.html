@@ -785,6 +785,34 @@ body.in-fotoeditor #app{
 .fe-brand-tabs{display:flex;gap:0;background:#EEF1F6;padding:4px;margin:0 12px 10px 12px;border-radius:10px;}
 .fe-brand-tab{flex:1;text-align:center;padding:8px 6px;border-radius:8px;border:none;background:transparent;font-size:12px;font-weight:700;color:#5A6472;cursor:pointer;font-family:inherit;transition:background .15s,color .15s;}
 .fe-brand-tab.active{background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.12);}
+.fe-cal-btn{background:#EEF1F6;border:none;border-radius:8px;width:34px;height:34px;font-size:15px;cursor:pointer;flex-shrink:0;margin:0 6px;}
+#screen-fotoeditor{position:relative;}
+.fe-cal-overlay{position:absolute;inset:0;background:#fff;z-index:20;overflow-y:auto;padding:14px 16px 30px;}
+.fe-cal-header{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+.fe-cal-close{background:#EEF1F6;border:none;border-radius:8px;padding:7px 12px;font-size:12px;font-weight:700;color:#0B1F3A;cursor:pointer;font-family:inherit;}
+.fe-cal-title{font-size:15px;font-weight:800;color:#1B1B1F;}
+.fe-cal-brandfilter{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;}
+.fe-cal-month-nav{display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:10px;}
+.fe-cal-nav-btn{background:#EEF1F6;border:none;border-radius:8px;width:30px;height:30px;font-size:16px;cursor:pointer;color:#0B1F3A;font-weight:700;}
+.fe-cal-month-label{font-size:13px;font-weight:700;color:#1B1B1F;min-width:130px;text-align:center;text-transform:capitalize;}
+.fe-cal-grid-dow{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:4px;}
+.fe-cal-grid-dow div{text-align:center;font-size:10px;font-weight:700;color:#9AA3B2;}
+.fe-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
+.fe-cal-day{min-height:52px;border-radius:8px;background:#F7F8FA;border:1px solid #EAEDF2;padding:4px 3px;cursor:pointer;display:flex;flex-direction:column;gap:2px;}
+.fe-cal-day.otro-mes{opacity:.35;}
+.fe-cal-day.hoy{border-color:#0B1F3A;border-width:1.5px;}
+.fe-cal-day-num{font-size:10px;color:#5A6472;font-weight:700;}
+.fe-cal-pill{font-size:7.5px;font-weight:800;color:#fff;border-radius:4px;padding:1px 3px;line-height:1.5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.fe-cal-daypanel{margin-top:14px;background:#F7F8FA;border-radius:12px;padding:14px;}
+.fe-cal-daypanel-title{font-size:12.5px;font-weight:800;color:#1B1B1F;margin-bottom:10px;text-transform:capitalize;}
+.fe-cal-entry-row{display:flex;gap:6px;align-items:center;margin-bottom:6px;}
+.fe-cal-entry-row select{flex:1;font-size:11px;padding:6px 8px;border-radius:7px;border:1.5px solid #E3E7EE;font-family:inherit;}
+.fe-cal-entry-remove{background:none;border:none;color:#DC2626;font-size:15px;cursor:pointer;padding:0 4px;}
+.fe-cal-entry-add{background:#0B1F3A;color:#fff;border:none;border-radius:7px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;margin-top:2px;font-family:inherit;}
+.fe-cal-rules-toggle{background:none;border:none;color:#5A6472;font-size:11.5px;font-weight:700;cursor:pointer;margin-top:16px;padding:6px 0;font-family:inherit;}
+.fe-cal-reglas{margin-top:8px;background:#F7F8FA;border-radius:12px;padding:12px;}
+.fe-cal-regla-dia{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.fe-cal-regla-dia-label{font-size:11px;font-weight:700;color:#1B1B1F;width:32px;flex-shrink:0;}
 .cos-card-meta{font-size:10px;color:var(--tx2);margin-top:2px;}
 .cos-input{width:100%;padding:8px 10px;border:1px solid var(--g1);border-radius:6px;font-size:12px;font-family:var(--font);color:var(--navy);background:#fff;}
 .cos-input:focus{outline:none;border-color:#1E6FD9;}
@@ -2828,10 +2856,37 @@ body.in-fotoeditor #app{
     <div class="fe-topbar">
       <button class="fe-back" onclick="volverSelector()">← Menú</button>
       <div class="fe-title" id="fe-title">Motor de Marca ROMSA</div>
+      <button class="fe-cal-btn" onclick="bceAbrirCalendario()" title="Calendario de publicaciones">📅</button>
       <div class="fe-step-dots" id="fe-step-dots"><span class="dot active"></span><span class="dot"></span></div>
     </div>
 
     <div class="fe-brand-tabs" id="fe-brand-tabs"></div>
+
+    <!-- Calendario de publicaciones (overlay) -->
+    <div id="fe-cal-overlay" class="fe-cal-overlay" style="display:none;">
+      <div class="fe-cal-header">
+        <button class="fe-cal-close" onclick="bceCerrarCalendario()">← Cerrar</button>
+        <div class="fe-cal-title">Calendario de publicaciones</div>
+      </div>
+
+      <div class="fe-cal-brandfilter" id="fe-cal-brandfilter"></div>
+
+      <div class="fe-cal-month-nav">
+        <button class="fe-cal-nav-btn" onclick="bceCalMoverMes(-1)">‹</button>
+        <div class="fe-cal-month-label" id="fe-cal-month-label"></div>
+        <button class="fe-cal-nav-btn" onclick="bceCalMoverMes(1)">›</button>
+      </div>
+
+      <div class="fe-cal-grid-dow">
+        <div>L</div><div>M</div><div>M</div><div>J</div><div>V</div><div>S</div><div>D</div>
+      </div>
+      <div class="fe-cal-grid" id="fe-cal-grid"></div>
+
+      <div class="fe-cal-daypanel" id="fe-cal-daypanel" style="display:none;"></div>
+
+      <button class="fe-cal-rules-toggle" onclick="bceCalToggleReglas()">⚙️ Editar reglas semanales por default</button>
+      <div id="fe-cal-reglas" class="fe-cal-reglas" style="display:none;"></div>
+    </div>
 
     <!-- Paso 1: subir foto -->
     <div id="fe-step-1" class="fe-step">
@@ -9413,11 +9468,11 @@ function renderListaCot(){
     var estBadge = '<span class="badge" style="background:'+est.bg+';color:'+est.fg+';border:1px solid '+est.border+';font-weight:700;">'+est.txt+'</span>';
     var modalidad = _modalidadDe(c);
     var modBadge = modalidad === "home"
-      ? '<span class="badge" style="background:rgba(30,91,168,.1);color:#1E5BA8;border:1px solid rgba(30,91,168,.3);font-weight:800;">🏠 HOME</span>'
+      ? '<span class="badge" style="background:rgba(195,111,74,.12);color:#C36F4A;border:1px solid rgba(195,111,74,.35);font-weight:800;">🏠 HOME</span>'
       : modalidad === "rackline"
         ? '<span class="badge" style="background:rgba(12,35,64,.1);color:#0C2340;border:1px solid rgba(12,35,64,.3);font-weight:800;">📦 RACKLINE</span>'
         : '';
-    var barColor = modalidad === "home" ? "#1E5BA8" : (modalidad === "rackline" ? "#0C2340" : "#7C3AED");
+    var barColor = modalidad === "home" ? "#C36F4A" : (modalidad === "rackline" ? "#0C2340" : "#7C3AED");
 
     // Aviso por vencer
     var avisoVencer = "";
@@ -12719,12 +12774,12 @@ function renderListaCosteos(){
     const folioEsc = (c.folio||"sin folio").replace(/'/g,"\\'");
     const modalidad = _modalidadDe(c);
     const modBadge = modalidad === "home"
-      ? '<span style="display:inline-block;font-size:8.5px;font-weight:800;color:#1E5BA8;background:rgba(30,91,168,.1);border:1px solid rgba(30,91,168,.3);padding:1px 7px;border-radius:8px;margin-right:5px;vertical-align:middle;">🏠 HOME</span>'
+      ? '<span style="display:inline-block;font-size:8.5px;font-weight:800;color:#C36F4A;background:rgba(195,111,74,.12);border:1px solid rgba(195,111,74,.35);padding:1px 7px;border-radius:8px;margin-right:5px;vertical-align:middle;">🏠 HOME</span>'
       : modalidad === "rackline"
       ? '<span style="display:inline-block;font-size:8.5px;font-weight:800;color:#0C2340;background:rgba(12,35,64,.1);border:1px solid rgba(12,35,64,.3);padding:1px 7px;border-radius:8px;margin-right:5px;vertical-align:middle;">📦 RACKLINE</span>'
       : '';
     const subtitulo = (c.cliente||"") + (c.folio?' · '+c.folio:'') + ' · '+fecha;
-    return '<div class="cos-card" style="cursor:pointer;position:relative;border-left:3px solid '+(modalidad==="home"?"#1E5BA8":(modalidad==="rackline"?"#0C2340":"transparent"))+';" onclick="abrirCosteo(\''+c.id+'\')">'
+    return '<div class="cos-card" style="cursor:pointer;position:relative;border-left:3px solid '+(modalidad==="home"?"#C36F4A":(modalidad==="rackline"?"#0C2340":"transparent"))+';" onclick="abrirCosteo(\''+c.id+'\')">'
       +'<div class="cos-card-row">'
         +'<div style="flex:1;min-width:0;">'
           +'<div class="cos-card-title" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+modBadge+escapeHtml(c.proyecto||"Sin nombre")+'</div>'
@@ -17982,6 +18037,34 @@ function cGradientOverlay(ctx, x, y, w, h, colorHex, opacity, dir){
   grad.addColorStop(1, `rgba(${rgb.r},${rgb.g},${rgb.b},${opacity})`);
   ctx.save(); ctx.fillStyle = grad; ctx.fillRect(x, y, w, h); ctx.restore();
 }
+// Igual que cGradientOverlay, pero el desvanecido se extiende MUCHO más allá
+// de la zona de contenido (zoneY/zoneH), con una parada intermedia para que
+// la caída sea gradual — así toda la foto participa del degradado, en vez
+// de sentirse como un rectángulo con un corte visible donde termina.
+function cGradientOverlaySmooth(ctx, w, h, zoneY, zoneH, colorHex, maxOpacity, anchorBottom){
+  const rgb = bceHexToRgb(colorHex);
+  const col = `${rgb.r},${rgb.g},${rgb.b}`;
+  // Cuánto más allá de la zona de contenido se extiende el desvanecido
+  const extra = Math.min(h - zoneH, zoneH * 1.1);
+  if(anchorBottom){
+    const top = Math.max(0, zoneY - extra);
+    const span = h - top;
+    const solidStop = Math.min(0.97, extra / span);
+    const grad = ctx.createLinearGradient(0, top, 0, h);
+    grad.addColorStop(0, `rgba(${col},0)`);
+    grad.addColorStop(solidStop, `rgba(${col},${maxOpacity*0.5})`);
+    grad.addColorStop(1, `rgba(${col},${maxOpacity})`);
+    ctx.save(); ctx.fillStyle = grad; ctx.fillRect(0, top, w, span); ctx.restore();
+  } else {
+    const bottom = Math.min(h, zoneY + zoneH + extra);
+    const solidStop = Math.min(0.97, zoneH / bottom);
+    const grad = ctx.createLinearGradient(0, 0, 0, bottom);
+    grad.addColorStop(0, `rgba(${col},${maxOpacity})`);
+    grad.addColorStop(solidStop, `rgba(${col},${maxOpacity*0.5})`);
+    grad.addColorStop(1, `rgba(${col},0)`);
+    ctx.save(); ctx.fillStyle = grad; ctx.fillRect(0, 0, w, bottom); ctx.restore();
+  }
+}
 function cFullOverlay(ctx, w, h, colorHex, opacity){
   const rgb = bceHexToRgb(colorHex);
   ctx.save();
@@ -18345,7 +18428,7 @@ function tplCorporate(ctx, w, h, lum, postType){
   const zoneH = Math.max(minZoneH, Math.min(h*0.78, meas.totalH + padTop + padBottom + (anchorBottom ? footerReserve : 0)));
   const zoneY = anchorBottom ? h - zoneH : 0;
 
-  cGradientOverlay(ctx, 0, zoneY, w, zoneH, BCE_NAVY, lum.overlayOpacity, anchorBottom ? "down" : "up");
+  cGradientOverlaySmooth(ctx, w, h, zoneY, zoneH, BCE_NAVY, lum.overlayOpacity, anchorBottom);
 
   // 3. Dibujar el contenido — ahora garantizado dentro de la zona oscura
   const contentBottom = anchorBottom ? (h - footerReserve - padBottom) : (zoneY + zoneH - padBottom);
@@ -18498,7 +18581,7 @@ function tplMinimal(ctx, w, h, lum, postType){
   const barH = anchorBottom ? (footerReserve + titleH + M*1.6) : (titleH + M*1.6);
   const barY = anchorBottom ? h - barH : 0;
 
-  cGradientOverlay(ctx, 0, barY, w, barH, "#000000", 0.58, anchorBottom ? "down" : "up");
+  cGradientOverlaySmooth(ctx, w, h, barY, barH, "#000000", 0.58, anchorBottom);
 
   const textY = anchorBottom ? (h - footerReserve - M*0.8 - titleH) : (barY + M*0.8);
   cTitle(ctx, M, textY, titleMaxW, f.titulo || "Título del proyecto", titleSize, "#FFFFFF", 600);
@@ -19129,6 +19212,275 @@ window.bceUiSelectFormat = bceUiSelectFormat;
 window.bceApplyService = bceApplyService;
 window.bceCopyPostText = bceCopyPostText;
 window.bceDownload = bceDownload;
+
+// ══════════════════════════════════════════════════════════════
+// CALENDARIO DE PUBLICACIONES — sugerencias por día de la semana
+// (editables) + plan específico por fecha (para los 2-3 meses reales).
+// Se guarda en Firestore en un solo documento (dato pequeño).
+// ══════════════════════════════════════════════════════════════
+const BCE_DOW_NOMBRES = ["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
+const BCE_MES_NOMBRES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+
+// Regla semanal por default — el usuario la puede editar; sirve como
+// sugerencia para cualquier fecha que no tenga una entrada específica.
+let BCE_CALENDAR = {
+  semanal: {
+    1: [{ brand: "industrial", template: "corporate" }],
+    2: [{ brand: "rackline",   template: "editorial" }],
+    3: [{ brand: "industrial", template: "impacto"   }],
+    4: [{ brand: "home",       template: "editorial" }],
+    5: [{ brand: "rackline",   template: "minimal"   }],
+    6: [{ brand: "home",       template: "minimal"   }],
+    0: [],
+  },
+  fechas: {}, // "YYYY-MM-DD": [{brand, template, nota}]
+};
+let _bceCalCargado = false;
+let _bceCalMesActual = new Date();
+let _bceCalFiltroMarca = "todas";
+let _bceCalDiaSeleccionado = null;
+
+function _bceCalFechaISO(d){
+  return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
+}
+
+async function bceCalCargar(){
+  if(_bceCalCargado) return;
+  _bceCalCargado = true;
+  try{
+    if(typeof db !== "undefined" && db){
+      const doc = await db.collection("crm_config").doc("bce_calendario").get();
+      if(doc.exists){
+        const data = doc.data();
+        if(data.semanal) BCE_CALENDAR.semanal = data.semanal;
+        if(data.fechas) BCE_CALENDAR.fechas = data.fechas;
+      }
+    }
+  }catch(e){ console.warn("No se pudo cargar el calendario de publicaciones:", e); }
+}
+
+async function bceCalGuardar(){
+  try{
+    if(typeof db !== "undefined" && db){
+      await db.collection("crm_config").doc("bce_calendario").set({
+        semanal: BCE_CALENDAR.semanal,
+        fechas: BCE_CALENDAR.fechas,
+      });
+    }
+  }catch(e){ console.warn("No se pudo guardar el calendario de publicaciones:", e); showToast("⚠️ No se guardó el calendario (sin conexión)"); }
+}
+
+async function bceAbrirCalendario(){
+  await bceCalCargar();
+  document.getElementById("fe-cal-overlay").style.display = "block";
+  _bceCalMesActual = new Date();
+  _bceCalDiaSeleccionado = null;
+  document.getElementById("fe-cal-daypanel").style.display = "none";
+
+  // Filtro de marca (Todas + una pestaña por marca)
+  const filterEl = document.getElementById("fe-cal-brandfilter");
+  filterEl.innerHTML = ['<button type="button" class="fe-tpl-btn active" data-filtromarca="todas" onclick="bceCalFiltrarMarca(\'todas\')">Todas</button>']
+    .concat(Object.keys(BCE_BRANDS).map(key =>
+      `<button type="button" class="fe-tpl-btn" data-filtromarca="${key}" onclick="bceCalFiltrarMarca('${key}')">${BCE_BRANDS[key].label}</button>`
+    )).join("");
+
+  bceCalRenderMes();
+}
+
+function bceCerrarCalendario(){
+  document.getElementById("fe-cal-overlay").style.display = "none";
+}
+
+function bceCalFiltrarMarca(marca){
+  _bceCalFiltroMarca = marca;
+  document.querySelectorAll("#fe-cal-brandfilter .fe-tpl-btn").forEach(b => b.classList.toggle("active", b.dataset.filtromarca === marca));
+  bceCalRenderMes();
+}
+
+function bceCalMoverMes(delta){
+  _bceCalMesActual = new Date(_bceCalMesActual.getFullYear(), _bceCalMesActual.getMonth()+delta, 1);
+  document.getElementById("fe-cal-daypanel").style.display = "none";
+  _bceCalDiaSeleccionado = null;
+  bceCalRenderMes();
+}
+
+// Entradas efectivas para una fecha: si hay override específico, ese manda;
+// si no, cae a la regla semanal de ese día de la semana.
+function bceCalEntradasDe(fechaISO, dow){
+  const specific = BCE_CALENDAR.fechas[fechaISO];
+  const entradas = specific !== undefined ? specific : (BCE_CALENDAR.semanal[dow] || []);
+  if(_bceCalFiltroMarca === "todas") return entradas;
+  return entradas.filter(e => e.brand === _bceCalFiltroMarca);
+}
+
+function bceCalRenderMes(){
+  const label = document.getElementById("fe-cal-month-label");
+  label.textContent = BCE_MES_NOMBRES[_bceCalMesActual.getMonth()] + " " + _bceCalMesActual.getFullYear();
+
+  const year = _bceCalMesActual.getFullYear(), month = _bceCalMesActual.getMonth();
+  const primerDia = new Date(year, month, 1);
+  // Lunes=0 ... Domingo=6 para alinear con el grid (L M M J V S D)
+  const offset = (primerDia.getDay() + 6) % 7;
+  const diasEnMes = new Date(year, month+1, 0).getDate();
+  const hoyISO = _bceCalFechaISO(new Date());
+
+  const celdas = [];
+  for(let i=0; i<offset; i++){
+    const d = new Date(year, month, 1 - (offset - i));
+    celdas.push({ date: d, otroMes: true });
+  }
+  for(let dia=1; dia<=diasEnMes; dia++){
+    celdas.push({ date: new Date(year, month, dia), otroMes: false });
+  }
+  while(celdas.length % 7 !== 0 || celdas.length < 35){
+    const last = celdas[celdas.length-1].date;
+    const d = new Date(last); d.setDate(d.getDate()+1);
+    celdas.push({ date: d, otroMes: true });
+  }
+
+  const grid = document.getElementById("fe-cal-grid");
+  grid.innerHTML = celdas.map(c => {
+    const iso = _bceCalFechaISO(c.date);
+    const dow = c.date.getDay();
+    const entradas = bceCalEntradasDe(iso, dow);
+    const pills = entradas.slice(0,3).map(e => {
+      const bc = BCE_BRANDS[e.brand] || BCE_BRANDS.industrial;
+      const tplLabel = (BCE_TEMPLATES.find(t=>t.key===e.template)||{label:e.template}).label;
+      return `<div class="fe-cal-pill" style="background:${bc.navy};">${tplLabel}</div>`;
+    }).join("");
+    return `<div class="fe-cal-day${c.otroMes?' otro-mes':''}${iso===hoyISO?' hoy':''}" onclick="bceCalClickDia('${iso}')">
+      <div class="fe-cal-day-num">${c.date.getDate()}</div>
+      ${pills}
+    </div>`;
+  }).join("");
+}
+
+function bceCalClickDia(iso){
+  _bceCalDiaSeleccionado = iso;
+  const panel = document.getElementById("fe-cal-daypanel");
+  panel.style.display = "block";
+  bceCalRenderPanel();
+}
+
+function bceCalRenderPanel(){
+  const iso = _bceCalDiaSeleccionado;
+  if(!iso) return;
+  const [y,m,d] = iso.split("-").map(Number);
+  const fecha = new Date(y, m-1, d);
+  const dow = fecha.getDay();
+  const tieneOverride = BCE_CALENDAR.fechas[iso] !== undefined;
+  const entradas = tieneOverride ? BCE_CALENDAR.fechas[iso] : (BCE_CALENDAR.semanal[dow] || []).map(e => ({...e}));
+
+  const panel = document.getElementById("fe-cal-daypanel");
+  panel.innerHTML = `
+    <div class="fe-cal-daypanel-title">${BCE_DOW_NOMBRES[dow]} ${d} de ${BCE_MES_NOMBRES[m-1]}</div>
+    ${!tieneOverride ? '<div style="font-size:11px;color:#9AA3B2;margin-bottom:8px;">Mostrando la regla semanal por default — cualquier cambio aquí crea una excepción solo para este día.</div>' : ''}
+    <div id="fe-cal-entries">
+      ${entradas.map((e,i) => bceCalEntryRowHtml(e,i)).join("")}
+    </div>
+    <button type="button" class="fe-cal-entry-add" onclick="bceCalAgregarEntrada()">+ Agregar publicación este día</button>
+    ${tieneOverride ? '<button type="button" class="fe-cal-entry-add" style="background:#EEF1F6;color:#0B1F3A;margin-left:6px;" onclick="bceCalQuitarOverride()">↩ Volver a la regla semanal</button>' : ''}
+  `;
+  panel._entradasTemp = entradas;
+}
+
+function bceCalEntryRowHtml(e, i){
+  const brandOpts = Object.keys(BCE_BRANDS).map(k => `<option value="${k}"${e.brand===k?' selected':''}>${BCE_BRANDS[k].label}</option>`).join("");
+  const tplOpts = BCE_TEMPLATES.map(t => `<option value="${t.key}"${e.template===t.key?' selected':''}>${t.label}</option>`).join("");
+  return `<div class="fe-cal-entry-row" data-idx="${i}">
+    <select onchange="bceCalEditarEntrada(${i},'brand',this.value)">${brandOpts}</select>
+    <select onchange="bceCalEditarEntrada(${i},'template',this.value)">${tplOpts}</select>
+    <button type="button" class="fe-cal-entry-remove" onclick="bceCalQuitarEntrada(${i})">×</button>
+  </div>`;
+}
+
+function bceCalEditarEntrada(i, campo, valor){
+  const panel = document.getElementById("fe-cal-daypanel");
+  panel._entradasTemp[i][campo] = valor;
+  BCE_CALENDAR.fechas[_bceCalDiaSeleccionado] = panel._entradasTemp;
+  bceCalGuardar();
+  bceCalRenderMes();
+}
+
+function bceCalAgregarEntrada(){
+  const panel = document.getElementById("fe-cal-daypanel");
+  panel._entradasTemp = panel._entradasTemp || [];
+  panel._entradasTemp.push({ brand: "industrial", template: "corporate" });
+  BCE_CALENDAR.fechas[_bceCalDiaSeleccionado] = panel._entradasTemp;
+  bceCalRenderPanel();
+  bceCalRenderMes();
+  bceCalGuardar();
+}
+
+function bceCalQuitarEntrada(i){
+  const panel = document.getElementById("fe-cal-daypanel");
+  panel._entradasTemp.splice(i,1);
+  BCE_CALENDAR.fechas[_bceCalDiaSeleccionado] = panel._entradasTemp;
+  bceCalRenderPanel();
+  bceCalRenderMes();
+  bceCalGuardar();
+}
+
+function bceCalQuitarOverride(){
+  delete BCE_CALENDAR.fechas[_bceCalDiaSeleccionado];
+  bceCalRenderPanel();
+  bceCalRenderMes();
+  bceCalGuardar();
+}
+
+function bceCalToggleReglas(){
+  const el = document.getElementById("fe-cal-reglas");
+  const abrir = el.style.display === "none";
+  el.style.display = abrir ? "block" : "none";
+  if(abrir) bceCalRenderReglas();
+}
+
+function bceCalRenderReglas(){
+  const el = document.getElementById("fe-cal-reglas");
+  const orden = [1,2,3,4,5,6,0]; // Lunes..Domingo
+  el.innerHTML = orden.map(dow => {
+    const entradas = BCE_CALENDAR.semanal[dow] || [];
+    const brandOpts0 = ['<option value="">— Sin publicación —</option>'].concat(
+      Object.keys(BCE_BRANDS).map(k => `<option value="${k}">${BCE_BRANDS[k].label}</option>`)
+    ).join("");
+    // Simplificado a 1 entrada por día en la regla general (lo más común);
+    // para días con más de una publicación se usa el panel de fecha específica.
+    const e = entradas[0] || null;
+    const brandOpts = ['<option value=""'+(!e?' selected':'')+'>— Sin publicación —</option>'].concat(
+      Object.keys(BCE_BRANDS).map(k => `<option value="${k}"${e&&e.brand===k?' selected':''}>${BCE_BRANDS[k].label}</option>`)
+    ).join("");
+    const tplOpts = BCE_TEMPLATES.map(t => `<option value="${t.key}"${e&&e.template===t.key?' selected':''}>${t.label}</option>`).join("");
+    return `<div class="fe-cal-regla-dia">
+      <div class="fe-cal-regla-dia-label">${BCE_DOW_NOMBRES[dow].slice(0,3)}</div>
+      <select onchange="bceCalEditarRegla(${dow},'brand',this.value)" style="flex:1;font-size:11px;padding:5px 6px;border-radius:6px;border:1.5px solid #E3E7EE;">${brandOpts}</select>
+      <select onchange="bceCalEditarRegla(${dow},'template',this.value)" style="flex:1;font-size:11px;padding:5px 6px;border-radius:6px;border:1.5px solid #E3E7EE;">${tplOpts}</select>
+    </div>`;
+  }).join("");
+}
+
+function bceCalEditarRegla(dow, campo, valor){
+  if(campo === "brand" && !valor){
+    BCE_CALENDAR.semanal[dow] = [];
+  } else {
+    const actual = BCE_CALENDAR.semanal[dow][0] || { brand: "industrial", template: "corporate" };
+    actual[campo] = valor;
+    BCE_CALENDAR.semanal[dow] = [actual];
+  }
+  bceCalGuardar();
+  bceCalRenderMes();
+}
+
+window.bceAbrirCalendario = bceAbrirCalendario;
+window.bceCerrarCalendario = bceCerrarCalendario;
+window.bceCalFiltrarMarca = bceCalFiltrarMarca;
+window.bceCalMoverMes = bceCalMoverMes;
+window.bceCalClickDia = bceCalClickDia;
+window.bceCalEditarEntrada = bceCalEditarEntrada;
+window.bceCalAgregarEntrada = bceCalAgregarEntrada;
+window.bceCalQuitarEntrada = bceCalQuitarEntrada;
+window.bceCalQuitarOverride = bceCalQuitarOverride;
+window.bceCalToggleReglas = bceCalToggleReglas;
+window.bceCalEditarRegla = bceCalEditarRegla;
 
 
 </script>
