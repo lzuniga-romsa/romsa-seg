@@ -782,6 +782,9 @@ body.in-fotoeditor #app{
 .fe-swatch-row{display:flex;gap:8px;}
 .fe-swatch-btn{width:30px;height:30px;border-radius:50%;border:2px solid transparent;cursor:pointer;padding:0;position:relative;}
 .fe-swatch-btn.active{border-color:#0B1F3A;box-shadow:0 0 0 2px #fff,0 0 0 3px #0B1F3A;}
+.fe-brand-tabs{display:flex;gap:0;background:#EEF1F6;padding:4px;margin:0 12px 10px 12px;border-radius:10px;}
+.fe-brand-tab{flex:1;text-align:center;padding:8px 6px;border-radius:8px;border:none;background:transparent;font-size:12px;font-weight:700;color:#5A6472;cursor:pointer;font-family:inherit;transition:background .15s,color .15s;}
+.fe-brand-tab.active{background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.12);}
 .cos-card-meta{font-size:10px;color:var(--tx2);margin-top:2px;}
 .cos-input{width:100%;padding:8px 10px;border:1px solid var(--g1);border-radius:6px;font-size:12px;font-family:var(--font);color:var(--navy);background:#fff;}
 .cos-input:focus{outline:none;border-color:#1E6FD9;}
@@ -2804,9 +2807,11 @@ body.in-fotoeditor #app{
   <div id="screen-fotoeditor" class="screen fe-screen">
     <div class="fe-topbar">
       <button class="fe-back" onclick="volverSelector()">← Menú</button>
-      <div class="fe-title">Motor de Marca ROMSA</div>
+      <div class="fe-title" id="fe-title">Motor de Marca ROMSA</div>
       <div class="fe-step-dots" id="fe-step-dots"><span class="dot active"></span><span class="dot"></span></div>
     </div>
+
+    <div class="fe-brand-tabs" id="fe-brand-tabs"></div>
 
     <!-- Paso 1: subir foto -->
     <div id="fe-step-1" class="fe-step">
@@ -17753,8 +17758,16 @@ const BCE_TEMPLATES = [
 
 // Margen estándar del sistema de grid (equivalente a 1 columna de 12) — del Kit de Marca
 const BCE_MARGIN = 0.075;
-const BCE_NAVY = "#0B1F3A";
-const BCE_LIGHTBLUE = "#7B9AD0";
+let BCE_NAVY = "#0B1F3A";
+let BCE_LIGHTBLUE = "#7B9AD0";
+
+// Catálogo de marcas — mismos colores ya usados en Cotizaciones/Costeo
+// (MODALIDADES) para mantener consistencia en todo el CRM.
+const BCE_BRANDS = {
+  industrial: { navy: "#0B1F3A", accent: "#7B9AD0", accentAlt: "#3D8BFF", web: "www.romsaindustrial.com", label: "ROMSA" },
+  rackline:   { navy: "#0C2340", accent: "#F5821F", accentAlt: "#FFB366", web: "www.rackline.com.mx",     label: "RACKLINE" },
+  home:       { navy: "#1E5BA8", accent: "#8FB4E3", accentAlt: "#5B9BD5", web: "www.romsaindustrial.com/home", label: "HOME by ROMSA" },
+};
 
 // ── Estado ────────────────────────────────────────────────────
 let BCE = {
@@ -17768,6 +17781,7 @@ let BCE = {
   titlePosition: "auto", // "auto" | "top" | "bottom" — el footer siempre queda fijo abajo
   labelColor: "#7B9AD0", // color de "AVANCE DE OBRA" / "CASO DE ÉXITO" etc.
   extraDarken: 0, // 0-100 — oscurecimiento adicional manual sobre toda la foto
+  brand: "industrial", // "industrial" (ROMSA) | "rackline" | "home"
 };
 
 function bceCurrentNetwork(){ return BCE_NETWORKS.find(n => n.key === BCE.networkKey) || BCE_NETWORKS[0]; }
@@ -18083,7 +18097,8 @@ function cWebsite(ctx, x, y, canvasW, colorHex, align){
   ctx.font = `500 ${fontPx}px "Inter", Arial, sans-serif`;
   ctx.textAlign = align || "left";
   ctx.textBaseline = "alphabetic";
-  ctx.fillText("www.romsaindustrial.com", x, y);
+  const web = (BCE_BRANDS[BCE.brand] || BCE_BRANDS.industrial).web;
+  ctx.fillText(web, x, y);
   ctx.restore();
 }
 
@@ -18101,23 +18116,29 @@ function cFooterStrip(ctx, w, h, side){
   ctx.clip();
 
   // Degradado diagonal (mismo patrón que headers de Cotización/Auditoría/Reporte)
+  // — los tonos oscuro/claro se derivan del navy de la marca activa
+  const nRgb = bceHexToRgb(BCE_NAVY);
+  const darker = `rgb(${Math.round(nRgb.r*0.55)},${Math.round(nRgb.g*0.55)},${Math.round(nRgb.b*0.55)})`;
+  const lighter = `rgb(${Math.round(nRgb.r+(255-nRgb.r)*0.28)},${Math.round(nRgb.g+(255-nRgb.g)*0.28)},${Math.round(nRgb.b+(255-nRgb.b)*0.28)})`;
   const grad = ctx.createLinearGradient(0, y, w * 0.5, y + stripH);
-  grad.addColorStop(0, "#0A1930");
+  grad.addColorStop(0, darker);
   grad.addColorStop(0.55, BCE_NAVY);
-  grad.addColorStop(1, "#1C3A63");
+  grad.addColorStop(1, lighter);
   ctx.fillStyle = grad;
   ctx.fillRect(0, y, w, stripH);
 
-  // Destellos — 2 círculos difuminados, azul claro a opacidad baja
+  // Destellos — 2 círculos difuminados con el acento de la marca activa
+  const dRgb = bceHexToRgb(BCE_LIGHTBLUE);
+  const dCol = `${dRgb.r},${dRgb.g},${dRgb.b}`;
   const g1 = ctx.createRadialGradient(w * 0.95, y + stripH * 0.15, 0, w * 0.95, y + stripH * 0.15, stripH * 2.4);
-  g1.addColorStop(0, "rgba(30,111,217,.20)");
-  g1.addColorStop(1, "rgba(30,111,217,0)");
+  g1.addColorStop(0, `rgba(${dCol},.20)`);
+  g1.addColorStop(1, `rgba(${dCol},0)`);
   ctx.fillStyle = g1;
   ctx.fillRect(0, y, w, stripH);
 
   const g2 = ctx.createRadialGradient(w * 0.06, y + stripH * 0.9, 0, w * 0.06, y + stripH * 0.9, stripH * 1.8);
-  g2.addColorStop(0, "rgba(30,111,217,.12)");
-  g2.addColorStop(1, "rgba(30,111,217,0)");
+  g2.addColorStop(0, `rgba(${dCol},.12)`);
+  g2.addColorStop(1, `rgba(${dCol},0)`);
   ctx.fillStyle = g2;
   ctx.fillRect(0, y, w, stripH);
 
@@ -18479,9 +18500,9 @@ function bceInit(){
   if(_bceInited) return;
   _bceInited = true;
   BCE.logoWhiteImg = new Image();
-  BCE.logoWhiteImg.src = window._romsaLogoBlanco || "";
+  BCE.logoWhiteImg.src = _logoBlancoDe(BCE.brand) || "";
   BCE.logoNavyImg = new Image();
-  BCE.logoNavyImg.src = window._romsaLogoAzul || "";
+  BCE.logoNavyImg.src = _logoColorDe(BCE.brand) || "";
   if(document.fonts && document.fonts.load){
     _bceFontsReady = Promise.all([
       document.fonts.load('800 40px "Inter"'),
@@ -18527,11 +18548,12 @@ function bceInit(){
     `<button type="button" class="fe-tpl-btn${key==='auto'?' active':''}" data-pos="${key}" onclick="bceUiSelectTitlePosition('${key}')">${label}</button>`
   ).join("");
 
-  // Swatches de color de etiqueta — el azul claro original se pierde en
-  // algunas fotos, así que se puede cambiar a un tono con más contraste
-  const labelColors = ["#7B9AD0", "#FFFFFF", "#3D8BFF", "#0B1F3A"];
-  document.getElementById("fe-labelcolor-swatches").innerHTML = labelColors.map(c =>
-    `<button type="button" class="fe-swatch-btn${c===BCE.labelColor?' active':''}" data-color="${c}" style="background:${c};${c==='#FFFFFF'?'border-color:#D7E3F5;':''}" onclick="bceUiSelectLabelColor('${c}')"></button>`
+  // Swatches de color de etiqueta — se regeneran según la marca activa
+  bceRenderSwatches();
+
+  // Pestañas de línea de negocio (ROMSA / RACKLINE / HOME) — siempre visibles
+  document.getElementById("fe-brand-tabs").innerHTML = Object.keys(BCE_BRANDS).map(key =>
+    `<button type="button" class="fe-brand-tab${key===BCE.brand?' active':''}" data-brand="${key}" onclick="bceUiSelectBrand('${key}')">${BCE_BRANDS[key].label}</button>`
   ).join("");
 
   // Pills de oscurecimiento adicional (degradado azul manual sobre toda la foto)
@@ -18640,6 +18662,44 @@ function bceUiSelectLabelColor(hex){
 function bceUiSelectDarken(val){
   BCE.extraDarken = val;
   document.querySelectorAll("#fe-darken-pills .fe-tpl-btn").forEach(b => b.classList.toggle("active", Number(b.dataset.darken) === val));
+  bceLiveUpdate();
+}
+
+// Dibuja los swatches de color de etiqueta usando la paleta de la marca activa
+function bceRenderSwatches(){
+  const bc = BCE_BRANDS[BCE.brand] || BCE_BRANDS.industrial;
+  const labelColors = [bc.accent, "#FFFFFF", bc.accentAlt, bc.navy];
+  const el = document.getElementById("fe-labelcolor-swatches");
+  if(!el) return;
+  el.innerHTML = labelColors.map(c =>
+    `<button type="button" class="fe-swatch-btn${c===BCE.labelColor?' active':''}" data-color="${c}" style="background:${c};${c==='#FFFFFF'?'border-color:#D7E3F5;':''}" onclick="bceUiSelectLabelColor('${c}')"></button>`
+  ).join("");
+}
+
+// Cambiar la línea de negocio activa — actualiza colores, logo y sitio web
+// del motor. El footer, título y demás siguen siendo automáticos.
+function bceUiSelectBrand(brand){
+  if(!BCE_BRANDS[brand]) return;
+  BCE.brand = brand;
+  const bc = BCE_BRANDS[brand];
+  BCE_NAVY = bc.navy;
+  BCE_LIGHTBLUE = bc.accent;
+  BCE.labelColor = bc.accent;
+
+  BCE.logoWhiteImg = new Image();
+  BCE.logoWhiteImg.src = _logoBlancoDe(brand) || "";
+  BCE.logoNavyImg = new Image();
+  BCE.logoNavyImg.src = _logoColorDe(brand) || "";
+
+  document.querySelectorAll("#fe-brand-tabs .fe-brand-tab").forEach(b => b.classList.toggle("active", b.dataset.brand === brand));
+  const titleEl = document.getElementById("fe-title");
+  if(titleEl) titleEl.textContent = "Motor de Marca " + bc.label;
+  bceRenderSwatches();
+
+  // Las imágenes de logo cargan async — reintentar el render cuando estén listas
+  const rerender = () => bceLiveUpdate();
+  BCE.logoWhiteImg.onload = rerender;
+  BCE.logoNavyImg.onload = rerender;
   bceLiveUpdate();
 }
 
@@ -18761,6 +18821,7 @@ window.bceUiSelectTemplate = bceUiSelectTemplate;
 window.bceUiSelectTitlePosition = bceUiSelectTitlePosition;
 window.bceUiSelectLabelColor = bceUiSelectLabelColor;
 window.bceUiSelectDarken = bceUiSelectDarken;
+window.bceUiSelectBrand = bceUiSelectBrand;
 window.bceUiSelectFormat = bceUiSelectFormat;
 window.bceApplyService = bceApplyService;
 window.bceCopyPostText = bceCopyPostText;
