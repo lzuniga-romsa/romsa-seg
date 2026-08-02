@@ -4950,7 +4950,7 @@ function _segDistribuirHojas(bloquesFuente, headerHojaHtml, footerHojaHtml, head
   const AREA_UTIL_P1 = HOJA_ALTO - HEADER_ALTO_P1 - FOOTER_ALTO - PADDING_VERT;
   const AREA_UTIL_CONT = HOJA_ALTO - HEADER_ALTO_CONT - FOOTER_ALTO - PADDING_VERT;
   const medidor = document.createElement("div");
-  medidor.style.cssText = "position:absolute;left:-99999px;top:0;width:730px;visibility:hidden;font-family:Inter,-apple-system,system-ui,sans-serif;";
+  medidor.style.cssText = "position:absolute;left:-99999px;top:0;width:658px;visibility:hidden;font-family:Inter,-apple-system,system-ui,sans-serif;";
   medidor.innerHTML = bloquesFuente.join("");
   document.body.appendChild(medidor);
   const bloques = medidor.querySelectorAll(".seg-blk");
