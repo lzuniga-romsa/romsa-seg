@@ -4990,7 +4990,7 @@ const SEG_REPORTE_CSS = '<style>'
   + '#doc-wrap{margin-top:52px;padding:20px 0;min-height:100vh;}'
   + '.seg-hoja{width:210mm;min-height:297mm;background:#fff;margin:16px auto;box-shadow:0 8px 32px rgba(11,31,58,.15);display:flex;flex-direction:column;page-break-after:always;}'
   + '.seg-hoja:last-child{page-break-after:auto;}'
-  + '.seg-hoja-cuerpo{padding:28px 32px 8px;flex:1;}'
+  + '.seg-hoja-cuerpo{padding:32px 68px 8px;flex:1;}'
   + '.seg-blk{page-break-inside:avoid;break-inside:avoid;}'
   // Header navy
   + '.seg-header{background:linear-gradient(135deg,#0A1930 0%,#12233F 55%,#1C3A63 100%);color:#fff;padding:36px 32px 28px;position:relative;overflow:hidden;}'
@@ -5222,7 +5222,7 @@ async function showPdfPreview(){
     <div style="font-size:8px;font-weight:700;color:#7FAEE8;font-family:'JetBrains Mono',monospace;letter-spacing:.5px;">${segFolio}</div>
   </div>`;
 
-  const footerHojaHtml = `<div class="seg-footer" style="margin:0 32px 22px;">
+  const footerHojaHtml = `<div class="seg-footer" style="margin:0 68px 22px;">
     <div>
       <img src="${logoSrc}" style="height:18px;width:auto;max-width:130px;object-fit:contain;display:block;" alt="ROMSA">
       <div class="seg-footer-tagline">Servicios y Suministros Industriales</div>
@@ -17382,8 +17382,7 @@ body { font-family: 'Inter', -apple-system, system-ui, sans-serif; background: #
 
 /* Footer */
 .footer-pag {
-  position: absolute; left: 18mm; right: 18mm; bottom: 14mm;
-  border-top: 1px solid #E2E8F2; padding-top: 12px;
+  border-top: 1px solid #E2E8F2; padding: 12px 18mm 14mm;
   display: flex; justify-content: space-between; align-items: center;
   font-size: 8.5px; color: #4A5E7A;
 }
@@ -18114,17 +18113,25 @@ function _auRenderizarPDF(a){
     </div>`;
   // Header y footer premium, se repiten idénticos en cada hoja (misma lógica que cotización)
   const headerHojaHtml =
-    '<div class="au-hoja-header" style="background:linear-gradient(135deg,#0A1930 0%,#12233F 55%,#1C3A63 100%);padding:22px 18mm 28px;text-align:center;position:relative;overflow:hidden;">'
+    '<div class="au-hoja-header" style="background:linear-gradient(135deg,#0A1930 0%,#12233F 55%,#1C3A63 100%);padding:36px 32px 28px;position:relative;overflow:hidden;">'
       +'<div style="position:absolute;right:-45px;top:-45px;width:190px;height:190px;border-radius:50%;background:rgba(30,111,217,.10);"></div>'
       +'<div style="position:absolute;left:-35px;bottom:-55px;width:150px;height:150px;border-radius:50%;background:rgba(30,111,217,.07);"></div>'
-      +'<div style="position:relative;z-index:2;display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">'
-        +'<div style="font-size:8.5px;color:#7FAEE8;font-family:monospace;font-weight:700;letter-spacing:.8px;">'+escapeHtml(a.folio||"")+'</div>'
-        +'<div style="font-size:8px;font-weight:700;color:#9CC0EE;letter-spacing:1.5px;text-transform:uppercase;">Auditoría técnica</div>'
+      +'<div style="display:flex;justify-content:center;align-items:center;margin-bottom:10px;position:relative;z-index:2;">'
+        +(logoBlanco?'<img src="'+logoBlanco+'" style="height:42px;width:auto;opacity:.98;max-width:260px;object-fit:contain;">':'<div style="color:#fff;font-size:24px;font-weight:800;letter-spacing:1px;">ROMSA</div>')
       +'</div>'
-      +'<div style="position:relative;z-index:2;">'
-        +(logoBlanco?'<img src="'+logoBlanco+'" style="height:36px;width:auto;max-width:210px;object-fit:contain;">':'<div style="color:#fff;font-size:24px;font-weight:800;letter-spacing:1px;">ROMSA</div>')
+      +'<div style="text-align:center;margin-bottom:4px;position:relative;z-index:2;font-size:8.5px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.4);">Servicios y Suministros Industriales</div>'
+      +'<div style="display:flex;justify-content:space-between;align-items:flex-end;margin-top:16px;gap:20px;position:relative;z-index:2;">'
+        +'<div>'
+          +'<div style="font-size:7px;font-weight:800;letter-spacing:2.5px;color:rgba(255,255,255,.4);text-transform:uppercase;">Folio</div>'
+          +'<div style="font-family:\'JetBrains Mono\',\'Courier New\',monospace;font-size:10.5px;letter-spacing:.5px;font-weight:700;color:#fff;margin-top:4px;">'+escapeHtml(a.folio||"—")+'</div>'
+        +'</div>'
+        +'<div style="text-align:right;">'
+          +'<div style="width:30px;height:2px;border-radius:1px;margin-bottom:6px;background:#1E6FD9;margin-left:auto;"></div>'
+          +'<div style="font-size:9.5px;font-weight:700;letter-spacing:2.6px;text-transform:uppercase;color:rgba(255,255,255,.82);">Auditoría Técnica</div>'
+        +'</div>'
       +'</div>'
-    +'</div>';
+    +'</div>'
+    +'<div style="text-align:right;padding:36px 32px 2px;font-size:10.5px;font-style:normal;color:#64748B;letter-spacing:.1px;background:#fff;">Mexicali, Baja California a '+escapeHtml(fecha)+'.</div>';
   // Header delgado para páginas 2+ (mismo patrón unificado que Reportes/Seguimiento de Obra)
   const headerContHojaHtml =
     '<div style="background:#0B1F3A;padding:12px 18mm;display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid #1E6FD9;">'
@@ -18191,7 +18198,7 @@ body{font-family:'Inter',sans-serif;background:#ECEFF4 radial-gradient(ellipse 9
     var footerTpl = document.getElementById("au-footer-tpl");
     if(!wrap || !source || !headerTpl || !footerTpl) return;
     var HOJA_ALTO = 1123;
-    var HEADER_ALTO = 118;
+    var HEADER_ALTO = 195;
     var FOOTER_ALTO = 78;
     var PADDING_VERT = 40;
     var AREA_UTIL = HOJA_ALTO - HEADER_ALTO - FOOTER_ALTO - PADDING_VERT;
