@@ -16207,6 +16207,7 @@ async function abrirEditorReporte(id){
 
   // Renderizar secciones
   _rpSeccionesTemp = JSON.parse(JSON.stringify(r.secciones));
+  _rpSeccionesTemp.forEach(s => { if(!Array.isArray(s.fotos)) s.fotos = []; });
   _rpRenderSecciones();
 
   // Inicializar fotos (desde reporte existente o vacías)
@@ -16235,6 +16236,12 @@ function _rpRenderSecciones(){
   const wrap = document.getElementById("rp-secciones-wrap");
   if(!wrap) return;
   wrap.innerHTML = _rpSeccionesTemp.map((s, i) => {
+    if(!Array.isArray(s.fotos)) s.fotos = [];
+    const galeria = s.fotos.map((f, fi) => `
+      <div style="position:relative;width:52px;height:52px;border-radius:6px;overflow:hidden;flex-shrink:0;background:#000;border:1px solid var(--g1);">
+        <img src="${f.url}" style="width:100%;height:100%;object-fit:cover;display:block;">
+        <button onclick="event.stopPropagation();_rpEliminarFotoSeccion(${i},${fi})" style="position:absolute;top:1px;right:1px;background:rgba(239,68,68,.9);border:none;color:#fff;width:15px;height:15px;border-radius:50%;font-size:9px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;padding:0;">×</button>
+      </div>`).join("");
     return `<div style="border:1px solid var(--g1);border-radius:8px;padding:10px;margin-bottom:8px;background:#FAFBFD;">
       <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
         <div style="width:22px;height:22px;background:#0B1F3A;color:#fff;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;">${i+1}</div>
@@ -16242,6 +16249,14 @@ function _rpRenderSecciones(){
         <button onclick="_rpEliminarSeccion(${i})" title="Eliminar sección" style="background:none;border:none;color:#EF4444;font-size:14px;cursor:pointer;padding:2px 6px;">✕</button>
       </div>
       <textarea class="ftextarea" placeholder="Texto de la sección (puedes usar viñetas con • o líneas separadas para listas)..." oninput="_rpUpdSeccion(${i},'texto',this.value)" style="min-height:80px;font-family:var(--font);">${escapeHtml(s.texto||"")}</textarea>
+      <div style="display:flex;align-items:center;gap:6px;margin-top:8px;flex-wrap:wrap;">
+        ${galeria}
+        <label style="width:52px;height:52px;border:1.5px dashed var(--g2);border-radius:6px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;color:var(--tx2);font-size:18px;">
+          +
+          <input type="file" accept="image/*" multiple onchange="_rpSubirFotosSeccion(${i},this)" style="display:none;">
+        </label>
+        <span style="font-size:9.5px;color:var(--tx2);">Fotos de esta sección (opcional)</span>
+      </div>
     </div>`;
   }).join("");
 }
@@ -16257,7 +16272,59 @@ function _rpEliminarSeccion(i){
 }
 
 function rpAgregarSeccion(){
-  _rpSeccionesTemp.push({id:"custom-"+Date.now(), titulo:"Nueva sección", texto:""});
+  _rpSeccionesTemp.push({id:"custom-"+Date.now(), titulo:"Nueva sección", texto:"", fotos:[]});
+  _rpRenderSecciones();
+}
+
+// ── Fotos por sección personalizada ──────────────────────────────
+async function _rpSubirFotosSeccion(idx, inputEl){
+  if(!storage){ alert("⚠️ Firebase Storage no está disponible."); return; }
+  if(typeof firebase !== "undefined" && firebase.auth && !firebase.auth().currentUser){
+    alert("⚠️ Tu sesión expiró. Recarga la página e inicia sesión de nuevo.");
+    return;
+  }
+  const files = Array.from(inputEl.files || []);
+  if(!files.length) return;
+
+  for(const f of files){
+    if(f.size > 20 * 1024 * 1024){ alert("⚠️ La foto '" + f.name + "' pesa más de 20 MB."); return; }
+    if(!f.type.startsWith("image/")){ alert("⚠️ El archivo '" + f.name + "' no es una imagen."); return; }
+  }
+
+  if(!_reporteEditId){
+    _reporteEditId = "tmp-" + Date.now() + "-" + Math.random().toString(36).slice(2,8);
+  }
+  if(!Array.isArray(_rpSeccionesTemp[idx].fotos)) _rpSeccionesTemp[idx].fotos = [];
+
+  showToast("📦 Subiendo " + files.length + " foto" + (files.length===1?"":"s") + "...");
+
+  for(let i = 0; i < files.length; i++){
+    const file = files[i];
+    try {
+      const blob = await _rpComprimirImagen(file);
+      const ts = Date.now();
+      const rand = Math.random().toString(36).slice(2,8);
+      const path = "reportes/" + _reporteEditId + "/seccion-" + idx + "-" + ts + "-" + rand + ".jpg";
+      const ref = storage.ref().child(path);
+      const snapshot = await ref.put(blob, {contentType:"image/jpeg"});
+      const url = await snapshot.ref.getDownloadURL();
+      _rpSeccionesTemp[idx].fotos.push({url, path, nombre:file.name, tamano:blob.size, ts});
+    } catch(err){
+      console.error("[ROMSA] Error subiendo foto de sección:", err);
+      showToast("⚠️ Falló subir '" + file.name + "'");
+    }
+  }
+  inputEl.value = "";
+  _rpRenderSecciones();
+  showToast("✓ Fotos agregadas a la sección");
+}
+
+async function _rpEliminarFotoSeccion(idx, fotoIdx){
+  const s = _rpSeccionesTemp[idx];
+  if(!s || !s.fotos || !s.fotos[fotoIdx]) return;
+  const f = s.fotos[fotoIdx];
+  try { if(f.path && storage) await storage.ref().child(f.path).delete(); } catch(e){ /* no bloquear si ya no existe */ }
+  s.fotos.splice(fotoIdx, 1);
   _rpRenderSecciones();
 }
 
@@ -16444,7 +16511,7 @@ window._rpEliminarSeccion = _rpEliminarSeccion;
 let _rpFotosTemp = {antes:[], durante:[], despues:[]};
 
 // ── Comprimir imagen antes de subir (reduce ~70-80%) ──
-function _rpComprimirImagen(file, maxLado=1600, calidad=0.82){
+function _rpComprimirImagen(file, maxLado=2400, calidad=0.92){
   return new Promise(function(resolve, reject){
     const reader = new FileReader();
     reader.onload = function(e){
@@ -17069,6 +17136,15 @@ function _rpRenderizarPDF(r){
       ? _rpTextoAHtml(textoLimpio)
       : '<p style="margin:0;color:#94A3B8;font-style:italic;font-size:10.5px;">— Sin contenido en esta sección —</p>';
 
+    // Fotos propias de esta sección (opcional) — en alta calidad, grid responsivo
+    const fotosSeccion = Array.isArray(s.fotos) ? s.fotos : [];
+    const fotosSeccionHtml = !fotosSeccion.length ? "" : `
+      <div style="display:grid;grid-template-columns:repeat(${fotosSeccion.length===1?1:(fotosSeccion.length===2?2:3)}, 1fr);gap:6px;margin-top:10px;">
+        ${fotosSeccion.map(f => `<div style="aspect-ratio:4/3;border-radius:5px;overflow:hidden;background:#F1F5F9;border:1px solid #E2E8F2;box-shadow:0 1px 4px rgba(11,31,58,.08);">
+          <img src="${f.url}" style="width:100%;height:100%;object-fit:cover;display:block;">
+        </div>`).join("")}
+      </div>`;
+
     return `<div class="rp-seccion" style="margin-bottom:20px;break-inside:avoid;">
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:11px;">
         <div style="width:24px;height:24px;background:${colorAccent};color:#fff;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;font-family:'JetBrains Mono', monospace;letter-spacing:0;box-shadow:0 2px 6px ${colorAccent}33;">${numero}</div>
@@ -17076,6 +17152,7 @@ function _rpRenderizarPDF(r){
       </div>
       <div style="padding-left:36px;color:#1B3F72;font-size:11px;">
         ${contenidoHtml}
+        ${fotosSeccionHtml}
       </div>
     </div>`;
   };
@@ -17348,7 +17425,7 @@ body { font-family: 'Inter', -apple-system, system-ui, sans-serif; background: #
       </div>
       <!-- Badge tipo justo debajo del logo, centrado, pequeño -->
       <div class="tipo-badge-wrap">
-        <div class="tipo-badge">${t.emoji} ${escapeHtml(t.label)}</div>
+        <div class="tipo-badge"><svg width="7" height="7" viewBox="0 0 24 24" style="margin-right:1px;"><circle cx="12" cy="12" r="10" fill="#fff"/></svg> ${escapeHtml(t.label)}</div>
       </div>
       <!-- Folio y Fecha en columnas, parte inferior del navy -->
       <div class="meta-row">
