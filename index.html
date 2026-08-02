@@ -5014,7 +5014,7 @@ const SEG_REPORTE_CSS = '<style>'
   + '.seg-subtitulo::after{content:"";position:absolute;bottom:-1px;left:0;width:44px;height:2px;background:#1E6FD9;border-radius:1px;}'
   // Footer
   + '.seg-footer{padding-top:14px;border-top:1px solid #E2E8F2;display:flex;justify-content:space-between;align-items:center;}'
-  + '.seg-footer-tagline{font-size:8px;color:#1E6FD9;letter-spacing:0.3px;font-weight:700;margin-top:5px;}'
+  + '.seg-footer-tagline{font-size:8px;color:#94A3B8;letter-spacing:0.3px;font-weight:700;margin-top:4px;}'
   + '.seg-footer-contact{text-align:right;font-size:8px;color:#64748B;line-height:1.6;}'
   + '.seg-footer-contact a{color:#1E6FD9;text-decoration:none;font-weight:600;}'
   + '@media print{'
@@ -17322,6 +17322,18 @@ body { font-family: 'Inter', -apple-system, system-ui, sans-serif; background: #
 /* Cuerpo */
 .cuerpo { padding: 16mm 18mm; flex: 1; }
 
+/* Header delgado para páginas 2+ (mismo patrón que Seguimiento de Obra) */
+.header-cont {
+  background: #0B1F3A; padding: 12px 18mm;
+  display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 2px solid #1E6FD9;
+}
+.header-cont img { height: 17px; width: auto; max-width: 120px; object-fit: contain; }
+.header-cont .hc-folio {
+  font-size: 8px; font-weight: 700; color: #7FAEE8;
+  font-family: 'JetBrains Mono', monospace; letter-spacing: .5px;
+}
+
 /* Fecha formal, tipo membrete de carta — con aire, alineada a la derecha */
 .fecha-formal {
   text-align: right;
@@ -17376,7 +17388,7 @@ body { font-family: 'Inter', -apple-system, system-ui, sans-serif; background: #
   font-size: 8.5px; color: #4A5E7A;
 }
 .footer-left { display: flex; flex-direction: column; gap: 4px; }
-.footer-tagline { font-size: 7.5px; color: #94A3B8; letter-spacing: 0.4px; font-weight: 500; }
+.footer-tagline { font-size: 8px; color: #94A3B8; letter-spacing: 0.3px; font-weight: 700; margin-top: 4px; }
 .footer-contact { text-align: right; line-height: 1.6; font-size: 8px; }
 .footer-contact a { color: #1E6FD9; text-decoration: none; font-weight: 600; }
 .footer-loc { color: #64748B; font-weight: 500; }
@@ -17497,6 +17509,8 @@ body { font-family: 'Inter', -apple-system, system-ui, sans-serif; background: #
 // DISTRIBUIDOR DINÁMICO de hojas A4 (igual estilo cotización)
 // ───────────────────────────────────────────────────────────────
 window.__LOGO_AZUL__ = ${JSON.stringify(logoAzul || "")};
+window.__LOGO_BLANCO__ = ${JSON.stringify(logo || "")};
+window.__FOLIO__ = ${JSON.stringify(r.folio || "")};
 
 const HOJA_ALTO = 1123;       // px equivalentes a 297mm
 const HEADER_ALTO = 240;      // header navy aprox
@@ -17582,11 +17596,17 @@ function distribuir(){
   // Construir HTML final con todas las hojas
   const totPag = paginas.length;
   const headerHtml = buildHeader();
+  const logoBlancoCont = window.__LOGO_BLANCO__ || "";
+  const folioCont = window.__FOLIO__ || "";
+  const headerContHtml = \`<div class="header-cont">
+    \${logoBlancoCont ? '<img src="'+logoBlancoCont+'" alt="ROMSA">' : ''}
+    <div class="hc-folio">\${folioCont}</div>
+  </div>\`;
 
   const hojasHtml = paginas.map((items, i) => {
     return \`<div class="hoja">
-      \${i === 0 ? headerHtml : ""}
-      <div class="cuerpo" style="\${i > 0 ? 'padding-top: 22mm;' : ''}">
+      \${i === 0 ? headerHtml : headerContHtml}
+      <div class="cuerpo" style="\${i > 0 ? 'padding-top: 14mm;' : ''}">
         \${items.join("")}
       </div>
       \${buildFooter(i+1, totPag)}
@@ -18105,16 +18125,22 @@ function _auRenderizarPDF(a){
         +(logoBlanco?'<img src="'+logoBlanco+'" style="height:36px;width:auto;max-width:210px;object-fit:contain;">':'<div style="color:#fff;font-size:24px;font-weight:800;letter-spacing:1px;">ROMSA</div>')
       +'</div>'
     +'</div>';
+  // Header delgado para páginas 2+ (mismo patrón unificado que Reportes/Seguimiento de Obra)
+  const headerContHojaHtml =
+    '<div style="background:#0B1F3A;padding:12px 18mm;display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid #1E6FD9;">'
+      +(logoBlanco?'<img src="'+logoBlanco+'" style="height:17px;width:auto;max-width:120px;object-fit:contain;">':'<div style="color:#fff;font-size:12px;font-weight:800;">ROMSA</div>')
+      +'<div style="font-size:8px;font-weight:700;color:#7FAEE8;font-family:monospace;letter-spacing:.5px;">'+escapeHtml(a.folio||"")+'</div>'
+    +'</div>';
   const footerHojaHtml =
-    '<div class="au-hoja-footer" style="background:linear-gradient(135deg,#0A1930 0%,#12233F 60%,#16294A 100%);padding:18px 18mm 20px;">'
+    '<div class="au-hoja-footer" style="background:#fff;border-top:1px solid #E2E8F2;padding:14px 18mm;">'
       +'<div style="display:flex;justify-content:space-between;align-items:flex-end;">'
         +'<div>'
-          +(logoBlanco?'<img src="'+logoBlanco+'" style="height:16px;width:auto;max-width:110px;object-fit:contain;">':'<div style="font-size:11px;font-weight:800;color:#fff;">ROMSA industrial</div>')
-          +'<div style="font-size:8.5px;font-weight:700;color:#9CC0EE;letter-spacing:.2px;margin-top:8px;">Servicios y Suministros Industriales</div>'
+          +(logoAzul?'<img src="'+logoAzul+'" style="height:18px;width:auto;max-width:130px;object-fit:contain;display:block;">':'<div style="font-size:11px;font-weight:800;color:#1E6FD9;">ROMSA Industrial</div>')
+          +'<div style="font-size:8px;font-weight:700;color:#94A3B8;letter-spacing:.3px;margin-top:4px;">Servicios y Suministros Industriales</div>'
         +'</div>'
-        +'<div style="text-align:right;font-size:8.5px;line-height:1.7;">'
-          +'<div style="font-weight:700;color:#9CC0EE;">www.romsaindustrial.com</div>'
-          +'<a href="mailto:ventas@romsaindustrial.com" style="color:rgba(255,255,255,.55);text-decoration:none;">ventas@romsaindustrial.com</a>'
+        +'<div style="text-align:right;font-size:8px;line-height:1.6;">'
+          +'<div style="font-weight:500;color:#64748B;">www.romsaindustrial.com</div>'
+          +'<a href="mailto:ventas@romsaindustrial.com" style="color:#1E6FD9;text-decoration:none;font-weight:600;">ventas@romsaindustrial.com</a>'
         +'</div>'
       +'</div>'
     +'</div>';
@@ -18139,6 +18165,7 @@ body{font-family:'Inter',sans-serif;background:#ECEFF4 radial-gradient(ellipse 9
 <div id="contenido-pdf">
   <div id="au-seed-hoja">
     <div id="au-header-tpl" style="display:none;">${headerHojaHtml}</div>
+    <div id="au-header-cont-tpl" style="display:none;">${headerContHojaHtml}</div>
     <div id="au-footer-tpl" style="display:none;">${footerHojaHtml}</div>
     <div id="au-secciones-fuente" style="display:none;">
       <div class="au-seccion">
@@ -18160,6 +18187,7 @@ body{font-family:'Inter',sans-serif;background:#ECEFF4 radial-gradient(ellipse 9
     var wrap = document.getElementById("contenido-pdf");
     var source = document.getElementById("au-secciones-fuente");
     var headerTpl = document.getElementById("au-header-tpl");
+    var headerContTpl = document.getElementById("au-header-cont-tpl");
     var footerTpl = document.getElementById("au-footer-tpl");
     if(!wrap || !source || !headerTpl || !footerTpl) return;
     var HOJA_ALTO = 1123;
@@ -18168,6 +18196,7 @@ body{font-family:'Inter',sans-serif;background:#ECEFF4 radial-gradient(ellipse 9
     var PADDING_VERT = 40;
     var AREA_UTIL = HOJA_ALTO - HEADER_ALTO - FOOTER_ALTO - PADDING_VERT;
     var headerHTML = headerTpl.innerHTML;
+    var headerContHTML = headerContTpl ? headerContTpl.innerHTML : headerHTML;
     var footerHTML = footerTpl.innerHTML;
     var medidor = document.createElement("div");
     medidor.style.cssText = "position:absolute;left:-99999px;top:0;width:"+(wrap.offsetWidth||794)+"px;visibility:hidden;padding:0 18mm;";
@@ -18200,7 +18229,7 @@ body{font-family:'Inter',sans-serif;background:#ECEFF4 radial-gradient(ellipse 9
         .replace('<span class="au-pag-actual">1</span>', '<span class="au-pag-actual">'+(idx+1)+'</span>')
         .replace('<span class="au-pag-total">1</span>', '<span class="au-pag-total">'+totPag+'</span>');
       html += '<div class="au-hoja">'
-        + headerHTML
+        + (idx === 0 ? headerHTML : headerContHTML)
         + '<div class="au-hoja-cuerpo">' + items.join("") + '</div>'
         + footerConPagina
         + '</div>';
