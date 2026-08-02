@@ -1261,6 +1261,15 @@ body.in-fotoeditor #app{
       </div>
     </div>
 
+    <!-- 8b. Base de Datos de Contactos (nuevo — import XLS/Drive + envío de correos) -->
+    <div class="mod-card" onclick="selectModule('contactosdb')" style="background:linear-gradient(135deg,#0F5132,#0B3D26);border:1px solid rgba(52,211,153,.4);">
+      <div class="mod-icon" style="background:rgba(52,211,153,.2);color:#6EE7B7;">📇</div>
+      <div class="mod-info">
+        <div class="mod-name" style="color:#fff;">Base de Datos de Contactos <span style="font-size:8px;font-weight:700;letter-spacing:1px;color:#6EE7B7;margin-left:4px;padding:1px 6px;border:1px solid rgba(110,231,183,.4);border-radius:10px;vertical-align:middle;">NUEVO</span></div>
+        <div class="mod-desc" style="color:rgba(255,255,255,.65);">Importa Excel o Google Drive, y envía correos a tus contactos</div>
+      </div>
+    </div>
+
   </div>
 
   <div class="mod-group-section">
@@ -2852,6 +2861,137 @@ body.in-fotoeditor #app{
   </div><!-- /screen-auditoria -->
 
   <!-- ═══════════════════ EDITOR DE FOTOS ═══════════════════ -->
+  <div id="screen-contactosdb" class="screen" style="padding:0;overflow-y:auto;background:var(--off);">
+    <style>
+      #screen-contactosdb .ctdb-toolbar{display:flex;align-items:center;gap:10px;background:var(--white);border:1px solid var(--g1);border-radius:12px;padding:12px 14px;margin:0 18px 16px;flex-wrap:wrap;}
+      #screen-contactosdb .ctdb-search{flex:1;min-width:200px;display:flex;align-items:center;gap:8px;background:var(--off);border:1px solid var(--g1);border-radius:9px;padding:8px 12px;}
+      #screen-contactosdb .ctdb-search input{border:none;background:none;outline:none;font-size:13.5px;width:100%;color:var(--tx);font-family:var(--font);}
+      #screen-contactosdb .ctdb-search svg{flex-shrink:0;color:var(--tx2);}
+      #screen-contactosdb select.ctdb-filter{border:1px solid var(--g1);border-radius:9px;padding:8px 10px;font-size:13px;color:var(--tx);background:var(--white);font-family:var(--font);}
+      #screen-contactosdb .ctdb-btn{display:inline-flex;align-items:center;gap:7px;border-radius:9px;padding:9px 14px;font-size:13px;font-weight:600;cursor:pointer;border:1px solid transparent;white-space:nowrap;font-family:var(--font);transition:opacity .15s;}
+      #screen-contactosdb .ctdb-btn:hover{opacity:.88;}
+      #screen-contactosdb .ctdb-btn-ghost{background:var(--white);border:1px solid var(--g1);color:var(--tx);}
+      #screen-contactosdb .ctdb-btn-navy{background:var(--navy);color:#fff;}
+      #screen-contactosdb .ctdb-btn-accent{background:#3D8BFF;color:#fff;}
+      #screen-contactosdb #ctdb-xls-input{display:none;}
+      #screen-contactosdb .ctdb-table-wrap{margin:0 18px 90px;overflow-x:auto;}
+      #screen-contactosdb table.ctdb-table{width:100%;border-collapse:collapse;background:var(--white);border:1px solid var(--g1);border-radius:12px;overflow:hidden;min-width:720px;}
+      #screen-contactosdb table.ctdb-table thead th{text-align:left;font-size:11px;letter-spacing:.4px;text-transform:uppercase;color:var(--tx2);font-weight:700;padding:12px 14px;border-bottom:1px solid var(--g1);background:var(--off2);}
+      #screen-contactosdb table.ctdb-table tbody td{padding:12px 14px;font-size:13px;border-bottom:1px solid var(--g1);vertical-align:middle;}
+      #screen-contactosdb table.ctdb-table tbody tr:last-child td{border-bottom:none;}
+      #screen-contactosdb table.ctdb-table tbody tr:hover{background:var(--off2);}
+      #screen-contactosdb .ctdb-name-cell{font-weight:600;color:var(--navy);}
+      #screen-contactosdb .ctdb-sub{color:var(--tx2);font-size:12px;}
+      #screen-contactosdb .ctdb-badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;padding:4px 9px;border-radius:100px;}
+      #screen-contactosdb .ctdb-badge-lead{background:#FFF4E0;color:#B4740E;}
+      #screen-contactosdb .ctdb-badge-cliente{background:#E4F5EC;color:#1E9E6B;}
+      #screen-contactosdb .ctdb-badge-inactivo{background:#F1F2F5;color:var(--tx2);}
+      #screen-contactosdb .ctdb-icon-btn{width:30px;height:30px;border-radius:8px;border:1px solid var(--g1);background:var(--white);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;color:var(--navy);}
+      #screen-contactosdb .ctdb-icon-btn:hover{background:var(--off);}
+      #screen-contactosdb .ctdb-empty{margin:0 18px 20px;padding:70px 20px;text-align:center;background:var(--white);border:1px dashed var(--g1);border-radius:12px;}
+      #screen-contactosdb .ctdb-empty h3{font-size:15px;font-weight:700;color:var(--navy);margin-bottom:6px;}
+      #screen-contactosdb .ctdb-empty p{font-size:13px;color:var(--tx2);margin-bottom:18px;}
+      #screen-contactosdb .ctdb-empty .ctdb-actions{display:flex;gap:10px;justify-content:center;}
+      #screen-contactosdb .ctdb-hidden{display:none !important;}
+      #screen-contactosdb .ctdb-float-bar{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(120%);background:var(--navy);color:#fff;border-radius:12px;padding:12px 16px;display:flex;align-items:center;gap:14px;box-shadow:0 12px 30px rgba(11,31,58,.35);transition:transform .2s ease;z-index:50;}
+      #screen-contactosdb .ctdb-float-bar.ctdb-show{transform:translateX(-50%) translateY(0);}
+      #screen-contactosdb .ctdb-float-bar span{font-size:13px;font-weight:600;font-family:var(--font);}
+      #screen-contactosdb .ctdb-float-bar .ctdb-btn-outline{background:transparent;border:1px solid rgba(255,255,255,.3);color:#fff;}
+      #screen-contactosdb .ctdb-modal-overlay{position:fixed;inset:0;background:rgba(11,20,35,.5);display:flex;align-items:center;justify-content:center;z-index:500;opacity:0;pointer-events:none;transition:opacity .15s;}
+      #screen-contactosdb .ctdb-modal-overlay.ctdb-show{opacity:1;pointer-events:auto;}
+      #screen-contactosdb .ctdb-modal{background:#fff;border-radius:14px;width:460px;max-width:92vw;padding:22px;box-shadow:0 24px 60px rgba(0,0,0,.25);}
+      #screen-contactosdb .ctdb-modal h3{font-size:15px;font-weight:800;color:var(--navy);margin-bottom:14px;font-family:var(--font);}
+      #screen-contactosdb .ctdb-field{margin-bottom:12px;}
+      #screen-contactosdb .ctdb-field label{font-size:11px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.3px;display:block;margin-bottom:5px;}
+      #screen-contactosdb .ctdb-field input, #screen-contactosdb .ctdb-field textarea{width:100%;border:1px solid var(--g1);border-radius:8px;padding:9px 11px;font-size:13px;font-family:var(--font);outline:none;}
+      #screen-contactosdb .ctdb-field input:focus, #screen-contactosdb .ctdb-field textarea:focus{border-color:#3D8BFF;}
+      #screen-contactosdb .ctdb-field textarea{min-height:110px;resize:vertical;}
+      #screen-contactosdb .ctdb-modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px;}
+      #screen-contactosdb .ctdb-checkbox{width:16px;height:16px;accent-color:#3D8BFF;cursor:pointer;}
+    </style>
+
+    <!-- HEADER del módulo -->
+    <div style="background:linear-gradient(135deg,#ECFDF5 0%,#D1FAE5 100%);border-bottom:1px solid rgba(52,211,153,.25);padding:16px 18px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <button onclick="volverSelector()" style="background:rgba(11,31,58,.06);border:1px solid rgba(11,31,58,.1);color:var(--navy);font-size:13px;font-weight:700;padding:6px 12px;border-radius:8px;cursor:pointer;font-family:var(--font);">← Menú</button>
+          <div>
+            <div style="font-size:9px;font-weight:700;color:#0F766E;letter-spacing:2px;text-transform:uppercase;">CRM · Base de Datos</div>
+            <div style="font-size:18px;font-weight:800;color:var(--navy);">📇 Base de Datos de Contactos</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="ctdb-toolbar">
+      <div class="ctdb-search">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        <input id="ctdb-search-input" type="text" placeholder="Buscar por nombre, empresa o correo...">
+      </div>
+      <select class="ctdb-filter" id="ctdb-status-filter">
+        <option value="">Todos los estatus</option>
+        <option value="Lead">Lead</option>
+        <option value="Cliente">Cliente</option>
+        <option value="Inactivo">Inactivo</option>
+      </select>
+      <button class="ctdb-btn ctdb-btn-ghost" onclick="document.getElementById('ctdb-xls-input').click()">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0 4-4m-4 4-4-4"/><path d="M20 21H4"/></svg>
+        Subir XLS
+      </button>
+      <input type="file" id="ctdb-xls-input" accept=".xlsx,.xls,.csv">
+      <button class="ctdb-btn ctdb-btn-navy" id="ctdb-drive-btn">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2 2 20h20L12 2z"/></svg>
+        Conectar Google Drive
+      </button>
+    </div>
+
+    <div id="ctdb-empty-state" class="ctdb-empty ctdb-hidden">
+      <h3>Todavía no hay contactos</h3>
+      <p>Sube un archivo Excel con tu lista, o conecta tu Google Drive para importar uno que ya tengas ahí.</p>
+      <div class="ctdb-actions">
+        <button class="ctdb-btn ctdb-btn-ghost" onclick="document.getElementById('ctdb-xls-input').click()">Subir XLS</button>
+        <button class="ctdb-btn ctdb-btn-navy" onclick="document.getElementById('ctdb-drive-btn').click()">Conectar Google Drive</button>
+      </div>
+    </div>
+
+    <div class="ctdb-table-wrap">
+      <table class="ctdb-table" id="ctdb-table">
+        <thead>
+          <tr>
+            <th style="width:34px;"><input type="checkbox" class="ctdb-checkbox" id="ctdb-select-all"></th>
+            <th>Nombre</th>
+            <th>Empresa</th>
+            <th>Correo</th>
+            <th>Teléfono</th>
+            <th>Estatus</th>
+            <th>Último contacto</th>
+            <th style="width:44px;"></th>
+          </tr>
+        </thead>
+        <tbody id="ctdb-tbody"></tbody>
+      </table>
+    </div>
+
+    <div class="ctdb-float-bar" id="ctdb-float-bar">
+      <span id="ctdb-sel-count">0 seleccionados</span>
+      <button class="ctdb-btn ctdb-btn-accent" id="ctdb-bulk-email-btn">Enviar correo masivo</button>
+      <button class="ctdb-btn ctdb-btn-outline" id="ctdb-export-btn">Exportar a Excel</button>
+    </div>
+
+    <div class="ctdb-modal-overlay" id="ctdb-modal-overlay">
+      <div class="ctdb-modal">
+        <h3 id="ctdb-modal-title">Enviar correo</h3>
+        <div class="ctdb-field"><label>Para</label><input id="ctdb-mail-to" type="text"></div>
+        <div class="ctdb-field"><label>Asunto</label><input id="ctdb-mail-subject" type="text" placeholder="Asunto del correo"></div>
+        <div class="ctdb-field"><label>Mensaje</label><textarea id="ctdb-mail-body" placeholder="Escribe tu mensaje..."></textarea></div>
+        <div class="ctdb-modal-actions">
+          <button class="ctdb-btn ctdb-btn-ghost" id="ctdb-mail-cancel">Cancelar</button>
+          <button class="ctdb-btn ctdb-btn-navy" id="ctdb-mail-send">Enviar</button>
+        </div>
+      </div>
+    </div>
+  </div><!-- /screen-contactosdb -->
+
   <div id="screen-fotoeditor" class="screen fe-screen">
     <div class="fe-topbar">
       <button class="fe-back" onclick="volverSelector()">← Menú</button>
@@ -6371,6 +6511,9 @@ function selectModule(mod){
   } else if(mod === 'contactos'){
     goScreen('contactos');
     if(typeof cargarContactos === "function") cargarContactos();
+  } else if(mod === 'contactosdb'){
+    goScreen('contactosdb');
+    if(typeof ctdbInit === "function") ctdbInit();
   } else if(mod === 'reportes'){
     goScreen('reportes');
     if(typeof cargarReportes === "function") cargarReportes();
@@ -15230,6 +15373,178 @@ function filtrarContactos(tipo){
     b.style.fontWeight = activo ? "700" : "600";
   });
   renderListaContactos();
+}
+
+// ══════════════════════════════════════════════════════════════════
+// MÓDULO NUEVO: Base de Datos de Contactos (ctdb) — import XLS/Drive + correos
+// Namespacing con prefijo ctdb para no chocar con las funciones/variables
+// del módulo "Contactos" original (_contactos, renderListaContactos, etc.)
+// ══════════════════════════════════════════════════════════════════
+let ctdbContactos = [];
+let ctdbSeleccionados = new Set();
+let ctdbInicializado = false;
+
+function ctdbInit(){
+  if(ctdbInicializado) return;
+  ctdbInicializado = true;
+
+  document.getElementById('ctdb-search-input').addEventListener('input', ctdbRender);
+  document.getElementById('ctdb-status-filter').addEventListener('change', ctdbRender);
+
+  document.getElementById('ctdb-select-all').addEventListener('change', e=>{
+    document.querySelectorAll('#screen-contactosdb .ctdb-row-check').forEach(chk=>{
+      chk.checked = e.target.checked; chk.dispatchEvent(new Event('change'));
+    });
+  });
+
+  document.getElementById('ctdb-mail-cancel').onclick = ()=> document.getElementById('ctdb-modal-overlay').classList.remove('ctdb-show');
+  document.getElementById('ctdb-mail-send').onclick = ctdbEnviarCorreo;
+  document.getElementById('ctdb-bulk-email-btn').onclick = ()=> ctdbOpenMail(null);
+  document.getElementById('ctdb-export-btn').onclick = ctdbExportarExcel;
+
+  document.getElementById('ctdb-xls-input').addEventListener('change', ctdbImportarXLS);
+  document.getElementById('ctdb-drive-btn').addEventListener('click', ctdbConectarDrive);
+
+  ctdbRender();
+}
+
+function ctdbBadgeClass(estatus){
+  return {Lead:'ctdb-badge-lead', Cliente:'ctdb-badge-cliente', Inactivo:'ctdb-badge-inactivo'}[estatus] || 'ctdb-badge-lead';
+}
+
+function ctdbRender(){
+  const tbody = document.getElementById('ctdb-tbody');
+  if(!tbody) return;
+  const q = (document.getElementById('ctdb-search-input').value||'').toLowerCase();
+  const f = document.getElementById('ctdb-status-filter').value;
+
+  const filtrados = ctdbContactos.filter(c=>{
+    const matchQ = !q || c.nombre.toLowerCase().includes(q) || c.empresa.toLowerCase().includes(q) || c.correo.toLowerCase().includes(q);
+    const matchF = !f || c.estatus === f;
+    return matchQ && matchF;
+  });
+
+  document.getElementById('ctdb-empty-state').classList.toggle('ctdb-hidden', ctdbContactos.length > 0);
+  document.getElementById('ctdb-table').classList.toggle('ctdb-hidden', ctdbContactos.length === 0);
+
+  tbody.innerHTML = filtrados.map((c,i)=>`
+    <tr>
+      <td><input type="checkbox" class="ctdb-checkbox ctdb-row-check" data-idx="${i}" ${ctdbSeleccionados.has(c.correo)?'checked':''}></td>
+      <td class="ctdb-name-cell">${escapeHtml(c.nombre)}</td>
+      <td>${escapeHtml(c.empresa)}</td>
+      <td class="ctdb-sub">${escapeHtml(c.correo)}</td>
+      <td class="ctdb-sub">${escapeHtml(c.telefono)}</td>
+      <td><span class="ctdb-badge ${ctdbBadgeClass(c.estatus)}">${escapeHtml(c.estatus)}</span></td>
+      <td class="ctdb-sub">${escapeHtml(c.ultimo)}</td>
+      <td><button class="ctdb-icon-btn" data-mail="${escapeHtml(c.correo)}" title="Enviar correo">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 6-10 7L2 6"/></svg>
+      </button></td>
+    </tr>`).join('');
+
+  tbody.querySelectorAll('.ctdb-row-check').forEach(chk=>{
+    chk.addEventListener('change', e=>{
+      const c = filtrados[+e.target.dataset.idx];
+      e.target.checked ? ctdbSeleccionados.add(c.correo) : ctdbSeleccionados.delete(c.correo);
+      ctdbUpdateFloatBar();
+    });
+  });
+  tbody.querySelectorAll('[data-mail]').forEach(btn=>{
+    btn.addEventListener('click', ()=> ctdbOpenMail(btn.dataset.mail));
+  });
+}
+
+function ctdbUpdateFloatBar(){
+  const bar = document.getElementById('ctdb-float-bar');
+  document.getElementById('ctdb-sel-count').textContent = `${ctdbSeleccionados.size} seleccionado${ctdbSeleccionados.size===1?'':'s'}`;
+  bar.classList.toggle('ctdb-show', ctdbSeleccionados.size > 0);
+}
+
+function ctdbOpenMail(to){
+  document.getElementById('ctdb-modal-title').textContent = to ? 'Enviar correo' : 'Enviar correo masivo';
+  document.getElementById('ctdb-mail-to').value = to || Array.from(ctdbSeleccionados).join(', ');
+  document.getElementById('ctdb-mail-subject').value = '';
+  document.getElementById('ctdb-mail-body').value = '';
+  document.getElementById('ctdb-modal-overlay').classList.add('ctdb-show');
+}
+
+function ctdbEnviarCorreo(){
+  // ── Integración pendiente: escribir a la colección Firestore que dispara
+  // la extensión "Trigger Email" (Firebase Extensions). Ejemplo:
+  //   db.collection('mail').add({
+  //     to: document.getElementById('ctdb-mail-to').value.split(',').map(s=>s.trim()),
+  //     message: {
+  //       subject: document.getElementById('ctdb-mail-subject').value,
+  //       html: document.getElementById('ctdb-mail-body').value
+  //     }
+  //   });
+  // Requiere instalar la extensión una sola vez en el proyecto Firebase de ROMSA.
+  showToast("✉️ Demo: aquí se enviaría el correo (falta configurar Trigger Email en Firebase)");
+  document.getElementById('ctdb-modal-overlay').classList.remove('ctdb-show');
+}
+
+function ctdbImportarXLS(e){
+  const file = e.target.files[0];
+  if(!file) return;
+  if(typeof XLSX === "undefined"){
+    showToast("⏳ Cargando librería...");
+    const sc = document.createElement("script");
+    sc.src = "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";
+    sc.onload = ()=> ctdbImportarXLSReal(file);
+    sc.onerror = () => showToast("⚠️ No se pudo cargar la librería");
+    document.head.appendChild(sc);
+    return;
+  }
+  ctdbImportarXLSReal(file);
+}
+
+function ctdbImportarXLSReal(file){
+  const reader = new FileReader();
+  reader.onload = function(evt){
+    const wb = XLSX.read(evt.target.result, {type:'binary'});
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(ws);
+    // Encabezados esperados: Nombre, Empresa, Correo, Telefono, Estatus, UltimoContacto
+    ctdbContactos = rows.map(r=>({
+      nombre: r.Nombre || r.nombre || '',
+      empresa: r.Empresa || r.empresa || '',
+      correo: r.Correo || r.correo || r.Email || '',
+      telefono: r.Telefono || r.telefono || r['Teléfono'] || '',
+      estatus: r.Estatus || r.estatus || 'Lead',
+      ultimo: r.UltimoContacto || r.ultimo || '—',
+    }));
+    ctdbRender();
+    showToast(`✅ ${ctdbContactos.length} contactos importados desde Excel`);
+  };
+  reader.readAsBinaryString(file);
+}
+
+function ctdbConectarDrive(){
+  // Integración pendiente: requiere configurar credenciales de Google Cloud
+  // (Google Picker API + OAuth Client ID) para abrir el selector de Drive real.
+  showToast("📁 Demo: aquí se abriría el selector de Google Drive (falta configurar Google Picker API)");
+}
+
+function ctdbExportarExcel(){
+  if(!ctdbContactos.length){ showToast("⚠️ No hay contactos para exportar"); return; }
+  if(typeof XLSX === "undefined"){
+    showToast("⏳ Cargando librería...");
+    const sc = document.createElement("script");
+    sc.src = "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";
+    sc.onload = ctdbExportarExcelReal;
+    sc.onerror = () => showToast("⚠️ No se pudo cargar la librería");
+    document.head.appendChild(sc);
+    return;
+  }
+  ctdbExportarExcelReal();
+}
+
+function ctdbExportarExcelReal(){
+  const ws = XLSX.utils.json_to_sheet(ctdbContactos.map(c=>({
+    Nombre:c.nombre, Empresa:c.empresa, Correo:c.correo, Telefono:c.telefono, Estatus:c.estatus, UltimoContacto:c.ultimo
+  })));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Contactos");
+  XLSX.writeFile(wb, "contactos_romsa.xlsx");
 }
 
 function renderListaContactos(){
