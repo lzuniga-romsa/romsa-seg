@@ -5006,7 +5006,7 @@ const SEG_REPORTE_CSS = '<style>'
   + '.seg-meta-value.mono{font-family:"JetBrains Mono",monospace;font-size:10.5px;letter-spacing:0.5px;color:#7FAEE8;}'
   + '.seg-badge-line{width:30px;height:2px;border-radius:1px;margin-bottom:6px;background:#1E6FD9;}'
   + '.seg-badge{display:inline-block;font-size:9.5px;font-weight:700;letter-spacing:2.6px;text-transform:uppercase;color:rgba(255,255,255,.82);}'
-  + '.fecha-formal{text-align:left;padding:36px 32px 2px;font-size:10.5px;font-style:normal;color:#64748B;letter-spacing:.1px;background:#fff;}'
+  + '.fecha-formal{text-align:right;padding:36px 32px 2px;font-size:10.5px;font-style:normal;color:#64748B;letter-spacing:.1px;background:#fff;}'
   + '.seg-header-cont{background:#0B1F3A;padding:12px 32px;display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid #1E6FD9;}'
   // Título doc
   + '.seg-titulo-doc{font-family:Inter,sans-serif;font-size:23px;font-weight:800;letter-spacing:-0.4px;color:#0B1F3A;line-height:1.2;margin-bottom:4px;}'
@@ -5228,9 +5228,8 @@ async function showPdfPreview(){
       <div class="seg-footer-tagline">Servicios y Suministros Industriales</div>
     </div>
     <div class="seg-footer-contact">
-      <div style="color:#64748B;font-weight:500;">Mexicali, Baja California</div>
+      <div style="color:#64748B;font-weight:500;">www.romsaindustrial.com</div>
       <a href="mailto:ventas@romsaindustrial.com">ventas@romsaindustrial.com</a>
-      <div style="font-family:'JetBrains Mono',monospace;font-size:8px;color:#64748B;font-weight:600;margin-top:2px;">Reporte generado el ${fechaHoy}</div>
     </div>
   </div>`;
 
@@ -17323,9 +17322,9 @@ body { font-family: 'Inter', -apple-system, system-ui, sans-serif; background: #
 /* Cuerpo */
 .cuerpo { padding: 16mm 18mm; flex: 1; }
 
-/* Fecha formal, tipo membrete de carta — con aire, alineación normal */
+/* Fecha formal, tipo membrete de carta — con aire, alineada a la derecha */
 .fecha-formal {
-  text-align: left;
+  text-align: right;
   padding: 36px 32px 2px;
   font-size: 10.5px;
   font-style: normal;
@@ -17513,13 +17512,12 @@ function buildFooter(pagNum, totPag){
   return \`<div class="footer-pag">
     <div class="footer-left">
       \${logoHtml}
-      <div class="footer-tagline">Especialistas en recubrimientos industriales</div>
+      <div class="footer-tagline">Servicios y Suministros Industriales</div>
       ${vincCotHtml}
     </div>
     <div class="footer-contact">
-      <div class="footer-loc">Mexicali, Baja California</div>
+      <div class="footer-loc">www.romsaindustrial.com</div>
       <a href="mailto:ventas@romsaindustrial.com">ventas@romsaindustrial.com</a>
-      <div class="footer-pag-num">Pág. \${pagNum} <span style="color:#CBD5E1;">/</span> \${totPag}</div>
     </div>
   </div>\`;
 }
