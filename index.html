@@ -5004,6 +5004,9 @@ const SEG_REPORTE_CSS = '<style>'
   + '.seg-meta-label{font-size:7px;font-weight:800;letter-spacing:2.5px;color:rgba(255,255,255,.4);text-transform:uppercase;}'
   + '.seg-meta-value{font-size:11px;font-weight:700;color:#fff;margin-top:4px;}'
   + '.seg-meta-value.mono{font-family:"JetBrains Mono",monospace;font-size:10.5px;letter-spacing:0.5px;color:#7FAEE8;}'
+  + '.seg-badge-line{width:30px;height:2px;border-radius:1px;margin-bottom:6px;background:#1E6FD9;}'
+  + '.seg-badge{display:inline-block;font-size:9.5px;font-weight:700;letter-spacing:2.6px;text-transform:uppercase;color:rgba(255,255,255,.82);}'
+  + '.fecha-formal{text-align:right;padding:9px 32px 2px;font-size:10.5px;font-style:italic;color:#64748B;letter-spacing:.1px;background:#fff;}'
   + '.seg-header-cont{background:#0B1F3A;padding:12px 32px;display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid #1E6FD9;}'
   // Título doc
   + '.seg-titulo-doc{font-family:Inter,sans-serif;font-size:23px;font-weight:800;letter-spacing:-0.4px;color:#0B1F3A;line-height:1.2;margin-bottom:4px;}'
@@ -5204,11 +5207,12 @@ async function showPdfPreview(){
           <div class="seg-meta-value mono">${segFolio}</div>
         </div>
         <div style="text-align:right;">
-          <div class="seg-meta-label">Fecha de emisión</div>
-          <div class="seg-meta-value">${fechaHoy}</div>
+          <div class="seg-badge-line" style="margin-left:auto;"></div>
+          <div class="seg-badge">${segTitulo}</div>
         </div>
       </div>
-    </div>`;
+    </div>
+    <div class="fecha-formal">Mexicali, Baja California a ${fechaHoy}.</div>`;
 
   const _titulo = "ROMSA – Reporte de Proceso de Obra – " + (o.nombre||"");
 
@@ -5221,7 +5225,7 @@ async function showPdfPreview(){
   const footerHojaHtml = `<div class="seg-footer" style="margin:0 32px 22px;">
     <div>
       <img src="${logoSrc}" style="height:18px;width:auto;max-width:130px;object-fit:contain;display:block;" alt="ROMSA">
-      <div class="seg-footer-tagline">Especialistas en Recubrimientos Industriales</div>
+      <div class="seg-footer-tagline">Servicios y Suministros Industriales</div>
     </div>
     <div class="seg-footer-contact">
       <div style="color:#64748B;font-weight:500;">Mexicali, Baja California</div>
@@ -17319,6 +17323,16 @@ body { font-family: 'Inter', -apple-system, system-ui, sans-serif; background: #
 /* Cuerpo */
 .cuerpo { padding: 16mm 18mm; flex: 1; }
 
+/* Fecha formal, tipo membrete de carta — con aire, alineada a la derecha */
+.fecha-formal {
+  text-align: right;
+  padding: 9mm 18mm 2mm;
+  font-size: 10.5px;
+  font-style: italic;
+  color: #64748B;
+  letter-spacing: .1px;
+}
+
 /* Título del documento (en navy, ARRIBA de la caja de datos) */
 .titulo-doc {
   font-family: 'Playfair Display', 'Inter', serif;
@@ -17442,18 +17456,21 @@ body { font-family: 'Inter', -apple-system, system-ui, sans-serif; background: #
         ${logo ? '<img src="'+logo+'" class="logo-img" alt="ROMSA">' : ''}
       </div>
       <div class="header-tagline">Servicios y Suministros Industriales</div>
-      <!-- Folio y Fecha en columnas, parte inferior del navy -->
+      <!-- Folio (izq) y Tipo de reporte con línea de acento (der), parte inferior del navy -->
       <div class="meta-row">
         <div>
           <div class="meta-col-label">Folio</div>
           <div class="meta-col-value mono">${escapeHtml(r.folio || "—")}</div>
         </div>
         <div style="text-align:right;">
-          <div class="meta-col-label">Fecha de emisión</div>
-          <div class="meta-col-value">${escapeHtml(fechaEmision)}</div>
+          <div class="tipo-badge-line" style="margin-left:auto;"></div>
+          <div class="tipo-badge">${escapeHtml(t.label)}</div>
         </div>
       </div>
     </div>
+
+    <!-- Fecha formal, con aire, debajo del header -->
+    <div class="fecha-formal">Mexicali, Baja California a ${escapeHtml(fechaEmision)}.</div>
 
     <!-- CUERPO -->
     <div class="cuerpo" id="cuerpo-fuente">
@@ -18091,7 +18108,7 @@ function _auRenderizarPDF(a){
       +'<div style="display:flex;justify-content:space-between;align-items:flex-end;">'
         +'<div>'
           +(logoBlanco?'<img src="'+logoBlanco+'" style="height:16px;width:auto;max-width:110px;object-fit:contain;">':'<div style="font-size:11px;font-weight:800;color:#fff;">ROMSA industrial</div>')
-          +'<div style="font-size:8.5px;font-weight:700;color:#9CC0EE;letter-spacing:.2px;margin-top:8px;">Especialistas en Recubrimientos Industriales</div>'
+          +'<div style="font-size:8.5px;font-weight:700;color:#9CC0EE;letter-spacing:.2px;margin-top:8px;">Servicios y Suministros Industriales</div>'
         +'</div>'
         +'<div style="text-align:right;font-size:8.5px;line-height:1.7;">'
           +'<div style="font-weight:700;color:#9CC0EE;">www.romsaindustrial.com</div>'
