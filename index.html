@@ -4999,12 +4999,13 @@ const SEG_REPORTE_CSS = '<style>'
   + '.seg-header::after{content:"";position:absolute;bottom:0;left:0;right:0;height:4px;background:linear-gradient(90deg,#0B1F3A,#1E6FD9,#1B3F72);}'
   + '.seg-logo-center{display:flex;justify-content:center;align-items:center;margin-bottom:10px;position:relative;z-index:2;}'
   + '.seg-logo-img{height:42px;width:auto;max-width:260px;object-fit:contain;}'
-  + '.seg-badge-wrap{display:flex;justify-content:center;margin-bottom:4px;position:relative;z-index:2;}'
-  + '.seg-badge{display:inline-block;font-size:7.5px;font-weight:800;letter-spacing:2.2px;text-transform:uppercase;padding:4px 11px;border-radius:11px;background:#1E6FD9;color:#fff;box-shadow:0 2px 8px rgba(0,0,0,.18);}'
-  + '.seg-meta-row{display:flex;justify-content:space-between;align-items:flex-end;margin-top:16px;gap:20px;position:relative;z-index:2;}'
-  + '.seg-meta-label{font-size:7px;font-weight:800;letter-spacing:2.5px;color:rgba(255,255,255,.4);text-transform:uppercase;}'
-  + '.seg-meta-value{font-size:11px;font-weight:700;color:#fff;margin-top:4px;}'
-  + '.seg-meta-value.mono{font-family:"JetBrains Mono",monospace;font-size:10.5px;letter-spacing:0.5px;color:#7FAEE8;}'
+  + '.seg-top-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;position:relative;z-index:2;}'
+  + '.seg-folio-top{font-family:"JetBrains Mono","Courier New",monospace;font-size:10px;font-weight:700;letter-spacing:.5px;color:rgba(255,255,255,.55);}'
+  + '.seg-tipo-top{display:flex;flex-direction:column;align-items:flex-end;}'
+  + '.seg-badge-line{width:30px;height:2px;border-radius:1px;margin-bottom:6px;background:#1E6FD9;}'
+  + '.seg-badge{display:inline-block;font-size:9.5px;font-weight:700;letter-spacing:2.6px;text-transform:uppercase;color:rgba(255,255,255,.82);}'
+  + '.seg-tagline{text-align:center;margin-top:10px;position:relative;z-index:2;font-size:8.5px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.4);}'
+  + '.seg-fecha-top{text-align:center;margin-top:10px;position:relative;z-index:2;font-size:9px;font-weight:600;color:rgba(255,255,255,.5);}'
   + '.seg-header-cont{background:#0B1F3A;padding:12px 32px;display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid #1E6FD9;}'
   // Título doc
   + '.seg-titulo-doc{font-family:Inter,sans-serif;font-size:23px;font-weight:800;letter-spacing:-0.4px;color:#0B1F3A;line-height:1.2;margin-bottom:4px;}'
@@ -5195,22 +5196,18 @@ async function showPdfPreview(){
   // ── HTML completo con diseño UNIFICADO (header + footer se repiten en cada hoja) ──
   const headerHojaHtml = `<div class="seg-header">
       <div class="seg-destello2"></div>
+      <div class="seg-top-row">
+        <div class="seg-folio-top">${segFolio}</div>
+        <div class="seg-tipo-top">
+          <div class="seg-badge-line"></div>
+          <div class="seg-badge">${segTitulo}</div>
+        </div>
+      </div>
       <div class="seg-logo-center">
         <img src="${logoBlancoSeg}" class="seg-logo-img" alt="ROMSA">
       </div>
-      <div class="seg-badge-wrap">
-        <div class="seg-badge">🔵 PROCESO DE OBRA</div>
-      </div>
-      <div class="seg-meta-row">
-        <div>
-          <div class="seg-meta-label">Proyecto</div>
-          <div class="seg-meta-value mono">${segFolio}</div>
-        </div>
-        <div style="text-align:right;">
-          <div class="seg-meta-label">Fecha de emisión</div>
-          <div class="seg-meta-value">${fechaHoy}</div>
-        </div>
-      </div>
+      <div class="seg-tagline">Servicios y Suministros Industriales</div>
+      <div class="seg-fecha-top">Fecha de emisión &nbsp;·&nbsp; ${fechaHoy}</div>
     </div>`;
 
   const _titulo = "ROMSA – Reporte de Proceso de Obra – " + (o.nombre||"");
@@ -17265,18 +17262,39 @@ body { font-family: 'Inter', -apple-system, system-ui, sans-serif; background: #
   max-width: 240px; object-fit: contain;
 }
 
-/* Badge tipo, centrado debajo del logo, pequeño */
-.tipo-badge-wrap {
-  display: flex; justify-content: center; margin-bottom: 4px;
-  position: relative; z-index: 2;
+/* Fila superior: folio (izq) + tipo con línea de acento (der) */
+.header-top-row {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 18px; position: relative; z-index: 2;
+}
+.header-folio {
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-size: 10px; font-weight: 700; letter-spacing: .5px;
+  color: rgba(255,255,255,.55);
+}
+.header-tipo { display: flex; flex-direction: column; align-items: flex-end; }
+
+/* Badge tipo — estilo "línea" (mismo patrón que el BCE) */
+.tipo-badge-line {
+  width: 30px; height: 2px; border-radius: 1px; margin-bottom: 6px;
+  background: ${t.color};
 }
 .tipo-badge {
   display: inline-block;
-  font-size: 7.5px; font-weight: 800; letter-spacing: 2.2px;
+  font-size: 9.5px; font-weight: 700; letter-spacing: 2.6px;
   text-transform: uppercase;
-  padding: 4px 11px; border-radius: 11px;
-  background: ${t.color}; color: #fff;
-  box-shadow: 0 2px 8px rgba(0,0,0,.18);
+  color: rgba(255,255,255,.82);
+}
+
+/* Tagline institucional, siempre bajo el logo */
+.header-tagline {
+  text-align: center; margin-top: 10px; position: relative; z-index: 2;
+  font-size: 8.5px; font-weight: 700; letter-spacing: 2px;
+  text-transform: uppercase; color: rgba(255,255,255,.4);
+}
+.header-fecha {
+  text-align: center; margin-top: 10px; position: relative; z-index: 2;
+  font-size: 9px; font-weight: 600; color: rgba(255,255,255,.5);
 }
 
 /* (legacy — ya no se usa pero por si acaso) */
@@ -17419,25 +17437,21 @@ body { font-family: 'Inter', -apple-system, system-ui, sans-serif; background: #
 
     <!-- HEADER NAVY -->
     <div class="header">
-      <!-- Logo centrado -->
+      <!-- Fila superior: folio (izq) + tipo de documento con línea de acento (der) -->
+      <div class="header-top-row">
+        <div class="header-folio">${escapeHtml(r.folio || "—")}</div>
+        <div class="header-tipo">
+          <div class="tipo-badge-line"></div>
+          <div class="tipo-badge">${escapeHtml(t.label)}</div>
+        </div>
+      </div>
+      <!-- Logo centrado + tagline institucional -->
       <div class="logo-center">
         ${logo ? '<img src="'+logo+'" class="logo-img" alt="ROMSA">' : ''}
       </div>
-      <!-- Badge tipo justo debajo del logo, centrado, pequeño -->
-      <div class="tipo-badge-wrap">
-        <div class="tipo-badge"><svg width="7" height="7" viewBox="0 0 24 24" style="margin-right:1px;"><circle cx="12" cy="12" r="10" fill="#fff"/></svg> ${escapeHtml(t.label)}</div>
-      </div>
-      <!-- Folio y Fecha en columnas, parte inferior del navy -->
-      <div class="meta-row">
-        <div>
-          <div class="meta-col-label">Folio</div>
-          <div class="meta-col-value mono">${escapeHtml(r.folio || "—")}</div>
-        </div>
-        <div style="text-align:right;">
-          <div class="meta-col-label">Fecha de emisión</div>
-          <div class="meta-col-value">${escapeHtml(fechaEmision)}</div>
-        </div>
-      </div>
+      <div class="header-tagline">Servicios y Suministros Industriales</div>
+      <!-- Fecha de emisión, discreta, debajo del tagline -->
+      <div class="header-fecha">Fecha de emisión &nbsp;·&nbsp; ${escapeHtml(fechaEmision)}</div>
     </div>
 
     <!-- CUERPO -->
