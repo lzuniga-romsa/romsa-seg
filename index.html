@@ -5114,37 +5114,38 @@ async function showPdfPreview(){
     return partes.join(" ");
   }
 
-  // ── Etapas: una tarjeta independiente por etapa (unidad mínima de paginación) ──
-  function etapaCardHtml(e, idx){
-    const eUpds=updates.filter(u=>u.etapaId==e.id);
+  // ── Etapas: título y cada actualización son unidades independientes de paginación ──
+  // (antes toda la etapa era UN solo bloque indivisible — si tenía muchas fechas/fotos,
+  //  crecía más alto que una página física y el navegador la cortaba mal al imprimir,
+  //  aunque en pantalla "se viera bien" por hacer scroll sin límite)
+  function etapaTitleHtml(e, idx){
     const estadoColor=e.estado==="done"?"#10B981":e.estado==="active"?"#1E6FD9":"#94A3B8";
     const estadoBg=e.estado==="done"?"#D1FAE5":e.estado==="active"?"#DBEAFE":"#F1F5F9";
     const estadoTxt=e.estado==="done"?"✓ Completada":e.estado==="active"?"▶ En proceso":"○ Pendiente";
     return `
-    <div style="margin-bottom:16px;">
+    <div>
       <div style="font-size:9px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:2px;margin-bottom:5px;">Etapa ${(idx!==undefined?idx+1:"")}</div>
       <div style="display:flex;align-items:baseline;justify-content:space-between;gap:14px;border-bottom:1px solid #E7ECF3;padding-bottom:10px;">
         <div style="font-size:18px;font-weight:800;color:#0B1F3A;letter-spacing:-.2px;">${e.nombre}</div>
         <div style="font-size:9px;font-weight:700;color:${estadoColor};background:${estadoBg};padding:4px 11px;border-radius:20px;white-space:nowrap;">${estadoTxt}</div>
       </div>
-    </div>
-    <div style="border:1px solid #E7ECF3;border-radius:14px;overflow:hidden;box-shadow:0 1px 3px rgba(11,31,58,.03);">
-      ${e.fechaCompletada?`<div style="padding:9px 18px;background:#FAFBFD;border-bottom:1px solid #F1F5F9;font-size:9.5px;color:#94A3B8;">Completada: ${e.fechaCompletada} ${e.horaCompletada||""}</div>`:""}
-      ${eUpds.length?eUpds.map(u=>`
-        <div style="padding:15px 18px;border-bottom:1px solid #F1F5F9;">
-          <div style="font-size:10px;font-weight:700;color:#334155;letter-spacing:.3px;margin-bottom:10px;">${u.fecha}</div>
-          ${(u.fotos||[]).length?(()=>{
-            const fs=u.fotos||[];
-            const boxes = fs.map(src=>`<div style="width:108px;height:100px;overflow:hidden;border-radius:7px;border:1px solid #E7ECF3;background:#F8FAFC;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><img src="${src}" style="max-width:100%;max-height:100%;object-fit:contain;display:block;"></div>`).join("");
-            return `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:4px;">${boxes}</div>`;
-          })():""}
-          ${(u.fotos||[]).length?`<div style="text-align:center;font-size:9px;font-style:italic;color:#94A3B8;margin-bottom:8px;">${u.fecha}</div>`:""}
-          ${(u.videos||[]).length?`<div style="font-size:9.5px;margin-bottom:8px;">${u.videos.map((src,vi)=>`<a href="${src}" target="_blank" style="color:#334155;text-decoration:underline;font-weight:600;">🎥 Ver video ${u.videos.length>1?(vi+1):""}</a>`).join(" &nbsp;·&nbsp; ")}</div>`:""}
-          ${u.nota?`<div style="font-size:11px;color:#475569;line-height:1.7;background:#F8FAFC;padding:10px 12px;border-radius:8px;">${u.nota}</div>`:""}
-          ${u.notaCliente?`<div style="font-size:10.5px;color:#334155;background:#F1F3F7;padding:9px 12px;border-radius:8px;margin-top:8px;"><strong>Nota al cliente:</strong> ${u.notaCliente}</div>`:""}
-          ${u.m2hoy?`<div style="font-size:9.5px;color:#64748B;margin-top:7px;">📐 Área trabajada: <strong>${u.m2hoy} ${u.m2unit||"m²"}</strong></div>`:""}
-        </div>`).join("")
-      :`<div style="padding:12px 18px;font-size:11px;color:#94A3B8;">Sin actualizaciones registradas</div>`}
+      ${e.fechaCompletada?`<div style="padding:9px 0 0;font-size:9.5px;color:#94A3B8;">Completada: ${e.fechaCompletada} ${e.horaCompletada||""}</div>`:""}
+    </div>`;
+  }
+  function etapaUpdateHtml(u){
+    return `
+    <div style="border:1px solid #E7ECF3;border-radius:12px;padding:15px 18px;background:#fff;box-shadow:0 1px 3px rgba(11,31,58,.03);">
+      <div style="font-size:10px;font-weight:700;color:#334155;letter-spacing:.3px;margin-bottom:10px;">${u.fecha}</div>
+      ${(u.fotos||[]).length?(()=>{
+        const fs=u.fotos||[];
+        const boxes = fs.map(src=>`<div style="width:108px;height:100px;overflow:hidden;border-radius:7px;border:1px solid #E7ECF3;background:#F8FAFC;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><img src="${src}" style="max-width:100%;max-height:100%;object-fit:contain;display:block;"></div>`).join("");
+        return `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:4px;">${boxes}</div>`;
+      })():""}
+      ${(u.fotos||[]).length?`<div style="text-align:center;font-size:9px;font-style:italic;color:#94A3B8;margin-bottom:8px;">${u.fecha}</div>`:""}
+      ${(u.videos||[]).length?`<div style="font-size:9.5px;margin-bottom:8px;">${u.videos.map((src,vi)=>`<a href="${src}" target="_blank" style="color:#334155;text-decoration:underline;font-weight:600;">🎥 Ver video ${u.videos.length>1?(vi+1):""}</a>`).join(" &nbsp;·&nbsp; ")}</div>`:""}
+      ${u.nota?`<div style="font-size:11px;color:#475569;line-height:1.7;background:#F8FAFC;padding:10px 12px;border-radius:8px;">${u.nota}</div>`:""}
+      ${u.notaCliente?`<div style="font-size:10.5px;color:#334155;background:#F1F3F7;padding:9px 12px;border-radius:8px;margin-top:8px;"><strong>Nota al cliente:</strong> ${u.notaCliente}</div>`:""}
+      ${u.m2hoy?`<div style="font-size:9.5px;color:#64748B;margin-top:7px;">📐 Área trabajada: <strong>${u.m2hoy} ${u.m2unit||"m²"}</strong></div>`:""}
     </div>`;
   }
 
@@ -5174,7 +5175,15 @@ async function showPdfPreview(){
 
   bloquesFuente.push(mkSeccionHeader("Etapas y Evidencia"));
   if(etapas.length){
-    etapas.forEach((e, idx) => bloquesFuente.push(mkItem(etapaCardHtml(e, idx), true)));
+    etapas.forEach((e, idx) => {
+      bloquesFuente.push(mkItem(etapaTitleHtml(e, idx), true));
+      const eUpds = updates.filter(u=>u.etapaId==e.id);
+      if(eUpds.length){
+        eUpds.forEach(u => bloquesFuente.push(mkItem(etapaUpdateHtml(u))));
+      } else {
+        bloquesFuente.push(mkItem('<div style="padding:12px 18px;font-size:11px;color:#94A3B8;border:1px solid #E7ECF3;border-radius:12px;">Sin actualizaciones registradas</div>'));
+      }
+    });
   } else {
     bloquesFuente.push(mkItem('<div style="font-size:11px;color:#94A3B8;font-style:italic;">Sin etapas registradas</div>'));
   }
