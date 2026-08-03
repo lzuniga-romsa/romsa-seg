@@ -17145,21 +17145,18 @@ function _rpRenderizarPDF(r){
       ? _rpTextoAHtml(textoLimpio)
       : '<p style="margin:0;color:#94A3B8;font-style:italic;font-size:10.5px;">— Sin contenido en esta sección —</p>';
 
-    // Bloque 1: título (siempre pequeño, cabe en cualquier página)
-    // Clase extra "rp-seccion-start" marca el INICIO de una sección nueva (para el
-    // separador visual entre secciones distintas — ver regla CSS .rp-seccion + .rp-seccion-start)
-    const tituloBlockHtml = `<div class="rp-seccion rp-seccion-start" style="margin-bottom:10px;break-inside:avoid;">
-      <div style="display:flex;align-items:center;gap:12px;">
+    // Bloque 1: título + texto juntos (un título nunca debe quedar solo al final de una
+    // página con su texto en la siguiente — por eso van en el mismo bloque medible).
+    // Las fotos SÍ se mantienen aparte, porque esas son las que pueden hacer que una
+    // sección completa sea más alta que una página entera si hay varias.
+    const tituloTextoBlockHtml = `<div class="rp-seccion rp-seccion-start" style="margin-bottom:${(Array.isArray(s.fotos)&&s.fotos.length)?10:20}px;break-inside:avoid;">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:11px;">
         <div style="width:24px;height:24px;background:${colorAccent};color:#fff;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;font-family:'JetBrains Mono', monospace;letter-spacing:0;box-shadow:0 2px 6px ${colorAccent}33;">${numero}</div>
         <div style="font-size:12.5px;font-weight:800;color:${colorTitleText};letter-spacing:.6px;text-transform:uppercase;">${escapeHtml(s.titulo || "")}</div>
       </div>
-    </div>`;
-
-    // Bloque 2: texto de la sección (unidad medible independiente — antes iba pegado
-    // al título y a las fotos en un solo bloque gigante que el navegador cortaba mal al imprimir)
-    const hayFotos = Array.isArray(s.fotos) && s.fotos.length > 0;
-    const textoBlockHtml = `<div class="rp-seccion" style="padding-left:36px;margin-bottom:${hayFotos?10:20}px;color:#1B3F72;font-size:11px;break-inside:avoid;">
-      ${contenidoHtml}
+      <div style="padding-left:36px;color:#1B3F72;font-size:11px;">
+        ${contenidoHtml}
+      </div>
     </div>`;
 
     // Bloque(s) 3: fotos propias de esta sección — repartidas en filas de 3,
@@ -17179,7 +17176,7 @@ function _rpRenderizarPDF(r){
       </div>`;
     }
 
-    return tituloBlockHtml + textoBlockHtml + fotosBlocksHtml;
+    return tituloTextoBlockHtml + fotosBlocksHtml;
   };
 
   // Separar conclusión del resto (debe ir AL FINAL, después de fotos)
@@ -17589,6 +17586,8 @@ function buildHoja(headerHtml, contentItems, footerHtml){
 
 function distribuir(){
   const seed = document.getElementById("seed-hoja");
+  const tituloProyecto = seed.querySelector(".titulo-doc").outerHTML;
+  const subtituloProyecto = seed.querySelector(".rp-subtitulo");
   const infoTitulo = seed.querySelector(".rp-info-titulo").outerHTML;
   const datosCliente = seed.querySelector(".datos-cliente").outerHTML;
   const secciones = Array.from(seed.querySelectorAll(".rp-seccion"));
@@ -17604,10 +17603,18 @@ function distribuir(){
     return h;
   };
 
-  // Título "Información del Proyecto" + su caja de datos siempre van juntos en página 1
+  // Título del proyecto + subtítulo + "Información del Proyecto" + su caja de datos
+  // siempre van juntos en página 1
   let paginas = [];
-  let actual = [infoTitulo, datosCliente];
-  let actualAlto = medirHTML(infoTitulo) + medirHTML(datosCliente);
+  let actual = [tituloProyecto];
+  let actualAlto = medirHTML(tituloProyecto);
+  if(subtituloProyecto){
+    const subH = subtituloProyecto.outerHTML;
+    actual.push(subH);
+    actualAlto += medirHTML(subH);
+  }
+  actual.push(infoTitulo, datosCliente);
+  actualAlto += medirHTML(infoTitulo) + medirHTML(datosCliente);
 
   for(const sec of secciones){
     const html = sec.outerHTML;
