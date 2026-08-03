@@ -17145,32 +17145,48 @@ function _rpRenderizarPDF(r){
       ? _rpTextoAHtml(textoLimpio)
       : '<p style="margin:0;color:#94A3B8;font-style:italic;font-size:10.5px;">— Sin contenido en esta sección —</p>';
 
-    // Fotos propias de esta sección (opcional) — en alta calidad, grid responsivo
-    const fotosSeccion = Array.isArray(s.fotos) ? s.fotos : [];
-    const fotosSeccionHtml = !fotosSeccion.length ? "" : `
-      <div style="display:grid;grid-template-columns:repeat(${fotosSeccion.length===1?1:(fotosSeccion.length===2?2:3)}, 1fr);gap:6px;margin-top:10px;">
-        ${fotosSeccion.map(f => `<div style="aspect-ratio:4/3;border-radius:5px;overflow:hidden;background:#F1F5F9;border:1px solid #E2E8F2;box-shadow:0 1px 4px rgba(11,31,58,.08);">
-          <img src="${f.url}" style="width:100%;height:100%;object-fit:cover;display:block;">
-        </div>`).join("")}
-      </div>`;
-
-    return `<div class="rp-seccion" style="margin-bottom:20px;break-inside:avoid;">
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:11px;">
+    // Bloque 1: título (siempre pequeño, cabe en cualquier página)
+    // Clase extra "rp-seccion-start" marca el INICIO de una sección nueva (para el
+    // separador visual entre secciones distintas — ver regla CSS .rp-seccion + .rp-seccion-start)
+    const tituloBlockHtml = `<div class="rp-seccion rp-seccion-start" style="margin-bottom:10px;break-inside:avoid;">
+      <div style="display:flex;align-items:center;gap:12px;">
         <div style="width:24px;height:24px;background:${colorAccent};color:#fff;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;font-family:'JetBrains Mono', monospace;letter-spacing:0;box-shadow:0 2px 6px ${colorAccent}33;">${numero}</div>
         <div style="font-size:12.5px;font-weight:800;color:${colorTitleText};letter-spacing:.6px;text-transform:uppercase;">${escapeHtml(s.titulo || "")}</div>
       </div>
-      <div style="padding-left:36px;color:#1B3F72;font-size:11px;">
-        ${contenidoHtml}
-        ${fotosSeccionHtml}
-      </div>
     </div>`;
+
+    // Bloque 2: texto de la sección (unidad medible independiente — antes iba pegado
+    // al título y a las fotos en un solo bloque gigante que el navegador cortaba mal al imprimir)
+    const hayFotos = Array.isArray(s.fotos) && s.fotos.length > 0;
+    const textoBlockHtml = `<div class="rp-seccion" style="padding-left:36px;margin-bottom:${hayFotos?10:20}px;color:#1B3F72;font-size:11px;break-inside:avoid;">
+      ${contenidoHtml}
+    </div>`;
+
+    // Bloque(s) 3: fotos propias de esta sección — repartidas en filas de 3,
+    // cada fila es su propia unidad medible para que el reparto de páginas
+    // pueda cortar entre filas en vez de partir la sección completa a la mitad
+    const fotosSeccion = Array.isArray(s.fotos) ? s.fotos : [];
+    let fotosBlocksHtml = "";
+    for(let i = 0; i < fotosSeccion.length; i += 3){
+      const fila = fotosSeccion.slice(i, i + 3);
+      const esUltimaFila = (i + 3) >= fotosSeccion.length;
+      fotosBlocksHtml += `<div class="rp-seccion" style="padding-left:36px;margin-bottom:${esUltimaFila?20:6}px;break-inside:avoid;">
+        <div style="display:grid;grid-template-columns:repeat(${fila.length}, 1fr);gap:6px;">
+          ${fila.map(f => `<div style="aspect-ratio:4/3;border-radius:5px;overflow:hidden;background:#F1F5F9;border:1px solid #E2E8F2;box-shadow:0 1px 4px rgba(11,31,58,.08);">
+            <img src="${f.url}" style="width:100%;height:100%;object-fit:cover;display:block;">
+          </div>`).join("")}
+        </div>
+      </div>`;
+    }
+
+    return tituloBlockHtml + textoBlockHtml + fotosBlocksHtml;
   };
 
   // Separar conclusión del resto (debe ir AL FINAL, después de fotos)
   const conclusionSeccion = seccionesConContenido.find(s => (s.titulo||"").toLowerCase().includes("conclusi"));
   const seccionesAntes = seccionesConContenido.filter(s => !(s.titulo||"").toLowerCase().includes("conclusi"));
 
-  const seccionesHtml = seccionesAntes.map((s, i) => _rpRenderSeccionPDF(s, i+1)).join("");
+  const seccionesHtml = seccionesAntes.map((s, i) => _rpRenderSeccionPDF(s, i+2)).join("");
 
   // ── Galería de fotos por categoría — siempre 3 columnas para tamaño consistente ──
   const renderGaleriaCat = function(cat, label, color){
@@ -17356,21 +17372,24 @@ body { font-family: 'Inter', -apple-system, system-ui, sans-serif; background: #
 
 /* Título del documento (en navy, ARRIBA de la caja de datos) */
 .titulo-doc {
-  font-family: 'Playfair Display', 'Inter', serif;
-  font-size: 26px;
-  font-weight: 700;
+  font-family: 'Inter', sans-serif;
+  font-size: 23px;
+  font-weight: 800;
   letter-spacing: -0.4px;
   color: #0B1F3A;
-  line-height: 1.15;
-  margin-bottom: 18px;
-  padding-bottom: 14px;
-  position: relative;
+  line-height: 1.2;
+  margin-bottom: 4px;
 }
-.titulo-doc::after {
+.rp-subtitulo {
+  font-size: 11px; color: #64748B; font-weight: 500;
+  margin-bottom: 18px; padding-bottom: 14px;
+  border-bottom: 1px solid #F1F5F9; position: relative;
+}
+.rp-subtitulo::after {
   content: "";
   position: absolute;
-  bottom: 0; left: 0;
-  width: 48px; height: 2px;
+  bottom: -1px; left: 0;
+  width: 44px; height: 2px;
   background: var(--tdoc-accent, #1E6FD9);
   border-radius: 1px;
 }
@@ -17406,8 +17425,8 @@ body { font-family: 'Inter', -apple-system, system-ui, sans-serif; background: #
   margin-top: 2px; letter-spacing: 0.5px;
 }
 
-/* ── Líneas separadoras sutiles entre secciones ── */
-.rp-seccion + .rp-seccion {
+/* ── Líneas separadoras sutiles entre secciones (solo antes de un título nuevo, NO entre los bloques internos de la misma sección) ── */
+.rp-seccion + .rp-seccion-start {
   border-top: 1px solid #F1F5F9;
   padding-top: 18px;
   margin-top: 2px;
@@ -17495,17 +17514,24 @@ body { font-family: 'Inter', -apple-system, system-ui, sans-serif; background: #
     <!-- CUERPO -->
     <div class="cuerpo" id="cuerpo-fuente">
 
-      <!-- Título principal en navy, ARRIBA de la caja de datos -->
-      <div class="titulo-doc" style="--tdoc-accent:${t.color};">${escapeHtml(t.label)}</div>
+      <!-- Título del proyecto (no el tipo de documento — eso ya vive en el header) + subtítulo -->
+      <div class="titulo-doc" style="--tdoc-accent:${t.color};">${escapeHtml(r.asunto || t.label)}</div>
+      ${r.cliente ? `<div class="rp-subtitulo" style="--tdoc-accent:${t.color};">${escapeHtml(r.cliente)}</div>` : ''}
 
-      <div class="datos-cliente">
+      <div class="rp-info-titulo" style="margin-bottom:10px;">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div style="width:24px;height:24px;background:#0B1F3A;color:#fff;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;font-family:'JetBrains Mono', monospace;box-shadow:0 2px 6px rgba(11,31,58,.2);">1</div>
+          <div style="font-size:12.5px;font-weight:800;color:#0B1F3A;letter-spacing:.6px;text-transform:uppercase;">Información del Proyecto</div>
+        </div>
+      </div>
+      <div class="datos-cliente" style="padding-left:36px;">
         <table>${datosClienteHtml}</table>
       </div>
 
       <div id="secciones-fuente">
         ${seccionesHtml}
         ${fotosHtml}
-        ${conclusionSeccion ? _rpRenderSeccionPDF(conclusionSeccion, seccionesAntes.length + 1) : ''}
+        ${conclusionSeccion ? _rpRenderSeccionPDF(conclusionSeccion, seccionesAntes.length + 2) : ''}
       </div>
     </div>
 
@@ -17563,6 +17589,7 @@ function buildHoja(headerHtml, contentItems, footerHtml){
 
 function distribuir(){
   const seed = document.getElementById("seed-hoja");
+  const infoTitulo = seed.querySelector(".rp-info-titulo").outerHTML;
   const datosCliente = seed.querySelector(".datos-cliente").outerHTML;
   const secciones = Array.from(seed.querySelectorAll(".rp-seccion"));
 
@@ -17577,10 +17604,10 @@ function distribuir(){
     return h;
   };
 
-  // Datos cliente siempre va en página 1
+  // Título "Información del Proyecto" + su caja de datos siempre van juntos en página 1
   let paginas = [];
-  let actual = [datosCliente]; // contenido de la página actual (HTML strings)
-  let actualAlto = medirHTML(datosCliente);
+  let actual = [infoTitulo, datosCliente];
+  let actualAlto = medirHTML(infoTitulo) + medirHTML(datosCliente);
 
   for(const sec of secciones){
     const html = sec.outerHTML;
