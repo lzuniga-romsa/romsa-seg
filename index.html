@@ -5189,7 +5189,7 @@ async function showPdfPreview(){
   }
 
   if(baPairs.length){
-    bloquesFuente.push(mkSeccionHeader("Comparativas Antes / Después"));
+    bloquesFuente.push(mkSeccionHeader("Comparativas Antes / Después", null, true));
     baPairs.forEach(pair => bloquesFuente.push(mkItem(baCardHtml(pair))));
   }
 
