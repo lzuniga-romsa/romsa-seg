@@ -9868,7 +9868,7 @@ function showNuevaCot(){
   var _pp=document.getElementById("cot-proyecto"); if(_pp) _pp.value="";
   document.getElementById("cot-empresa").value="";
   document.getElementById("cot-fecha").value=new Date().toISOString().slice(0,10);
-  document.getElementById("cot-ciudad").value="Mexicali, B.C.";
+  document.getElementById("cot-ciudad").value="Mexicali, Baja California";
   document.getElementById("cot-email").value="";
   document.getElementById("cot-tel").value="";
   document.getElementById("cot-rfc").value="";
@@ -11126,7 +11126,7 @@ function generarPdfCotEnVentana(cot, winRef){
     '<div style="margin-bottom:12px;">'
     +'<div style="font-size:8px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#8A9AB8;margin-bottom:4px;">Dirigido a</div>'
     +'<div style="font-size:12px;color:#0B1F3A;font-weight:600;">'+(cot.empresa||'')+'</div>'
-    +'<div style="font-size:12px;color:#4A5E7A;font-weight:500;">Attn: '+cot.atencion+'</div>'
+    +'<div style="font-size:12px;color:#4A5E7A;font-weight:500;">Atención: '+cot.atencion+'</div>'
     +((cot.email||cot.tel)?'<div style="font-size:10.5px;color:#8A9AB8;margin-top:2px;">'+(cot.email||'')+(cot.email&&cot.tel?' · ':'')+( cot.tel||'')+'</div>':'')
     +(cot.rfc?'<div style="font-size:10px;color:#8A9AB8;margin-top:2px;">RFC: '+cot.rfc+'</div>':'')
     +'</div>';
@@ -11975,7 +11975,7 @@ function _ppt_construirSlide1(pptx, cot, partidas, sub, iva, total, lugarFecha, 
   slide.addText("DIRIGIDO A", {x:0.45, y:2.5, w:4, h:0.2, fontSize:8, bold:true, color: COLOR.txtFaint, fontFace:"Calibri", charSpacing:4});
   slide.addText(cot.empresa || "", {x:0.45, y:2.7, w:5.2, h:0.32, fontSize:14, bold:true, color: COLOR.navy, fontFace:"Calibri"});
   if(cot.atencion){
-    slide.addText("Attn: "+cot.atencion, {x:0.45, y:3.04, w:5.2, h:0.22, fontSize:11, color: COLOR.txtSec, fontFace:"Calibri"});
+    slide.addText("Atención: "+cot.atencion, {x:0.45, y:3.04, w:5.2, h:0.22, fontSize:11, color: COLOR.txtSec, fontFace:"Calibri"});
   }
   var contactoLineas = [];
   if(cot.email) contactoLineas.push(cot.email);
@@ -15643,7 +15643,7 @@ function abrirEditorContacto(id){
         <div class="fg"><label class="flabel">Teléfono</label>
           <input class="finput" id="ct-telefono" placeholder="686-123-4567" value="${c?escapeHtml(c.telefono||"").replace(/"/g,"&quot;"):""}"></div>
         <div class="fg"><label class="flabel">Ciudad</label>
-          <input class="finput" id="ct-ciudad" placeholder="Mexicali, B.C." value="${c?escapeHtml(c.ciudad||"").replace(/"/g,"&quot;"):""}"></div>
+          <input class="finput" id="ct-ciudad" placeholder="Mexicali, Baja California" value="${c?escapeHtml(c.ciudad||"").replace(/"/g,"&quot;"):""}"></div>
       </div>
 
       <div class="fg"><label class="flabel">Cargo / Puesto</label>
@@ -19695,7 +19695,7 @@ function bceGenerateCopy(){
     // X: corto y directo
     cuerpo = `${titulo}${lugarCliente ? " — " + lugarCliente : ""}.${areaTxt ? " " + areaTxt + " intervenidos." : ""} #ROMSAIndustrial`;
   } else if(net.key === "ig_story"){
-    cuerpo = `${titulo}\n${lugarCliente || "Mexicali, B.C."}\nDesliza para más info 👉`;
+    cuerpo = `${titulo}\n${lugarCliente || "Mexicali, Baja California"}\nDesliza para más info 👉`;
   } else {
     // LinkedIn / Instagram Feed / Facebook / Website: formato más completo
     const linea1 = `${postType.badge ? postType.badge + ": " : ""}${titulo}`;
@@ -20252,10 +20252,11 @@ window.bceCalEditarRegla = bceCalEditarRegla;
       <label id="fp-label-subir" style="display:flex;align-items:center;justify-content:center;gap:8px;border:1.5px dashed #CBD5E1;border-radius:10px;padding:14px;cursor:pointer;font-size:12.5px;font-weight:600;color:#4A5E7A;">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0 4-4m-4 4-4-4"/><path d="M20 21H4"/></svg>
         <span id="fp-label-subir-txt">Elegir imagen y subir</span>
-        <input id="fp-input-subir" type="file" accept="image/*" style="display:none;" onchange="_fpSubirYGuardarLibreria(this)">
+        <input id="fp-input-subir" type="file" accept="image/*" style="display:none;" onchange="_fpSubirCustom(this)">
       </label>
       <div id="fp-custom-preview" style="display:none;margin-top:10px;text-align:center;">
-        <img id="fp-custom-img" src="" style="max-width:100%;max-height:160px;border-radius:8px;border:1px solid #E2E8F2;">
+        <img id="fp-custom-img" src="" style="max-width:100%;max-height:160px;border-radius:8px;border:1px solid #E2E8F2;margin-bottom:10px;">
+        <button onclick="_fpUsarCustom()" style="width:100%;background:#0B1F3A;border:1px solid #1E6FD9;color:#fff;font-size:12.5px;font-weight:700;padding:10px;border-radius:9px;cursor:pointer;font-family:var(--font);">Usar esta foto</button>
       </div>
     </div>
 
@@ -20347,12 +20348,12 @@ function generarPdfCotPremium(cot, winRef, fotoDataUrl){
   var fechaFmt = '';
   try{ fechaFmt = new Date((cot.fecha||'')+'T12:00:00').toLocaleDateString('es-MX',{year:'numeric',month:'long',day:'numeric'}); }
   catch(e){ fechaFmt = cot.fecha||''; }
-  var lugarFecha = (cot.ciudad?cot.ciudad+', ':'Mexicali, B.C., ')+fechaFmt;
+  var lugarFecha = (cot.ciudad?cot.ciudad+', ':'Mexicali, Baja California, ')+fechaFmt;
 
   var cliente = cot.empresa || 'Cliente';
   var atencion = cot.atencion || '';
   var proyecto = cot.proyecto || cot.asunto || 'Propuesta técnica-comercial';
-  var ubicacion = cot.ciudad || 'Mexicali, B.C.';
+  var ubicacion = cot.ciudad || 'Mexicali, Baja California';
   var partidas = cot.partidas || [];
   var totalM2 = partidas.reduce(function(s,p){ return s + ((p.unit||'').toLowerCase().includes('m')?(parseFloat(p.qty)||0):0); }, 0);
 
