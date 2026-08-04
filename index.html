@@ -20413,11 +20413,11 @@ function generarPdfCotPremium(cot, winRef, fotoDataUrl){
   var CSS = _fpCss();
   var portada = _fpPortadaHtml(logoBlanco, fotoDataUrl, proyecto, cliente, atencion, ubicacion, fechaFmt, cot.folio, lugarFecha);
   var resumen = _fpResumenHtml(logoAzul, cliente, atencion, proyecto, ubicacion, totalM2, total, vigencia, cot);
-  var alcance = _fpAlcanceHtml(logoAzul);
-  var servicio = _fpDistribuirBloques(partidasBloques, 'Descripción del Servicio', 'Alcance detallado y estimación', logoAzul, cliente);
-  var pasos = _fpPasosHtml(logoAzul);
+  var alcance = _fpAlcanceHtml(logoAzul, cliente, proyecto);
+  var servicio = _fpDistribuirBloques(partidasBloques, 'Descripción del Servicio', 'Alcance detallado y estimación', logoAzul, cliente, proyecto);
+  var pasos = _fpPasosHtml(logoAzul, cliente, proyecto);
   var cierre = _fpCierreHtml(logoBlanco, rTelDe(cot,_modCot), rEmailDe(cot,_modCot), rWebDe(cot));
-  var condiciones = _fpDistribuirBloques(condsBloques, 'Condiciones Generales de Venta', 'Términos de la propuesta', logoAzul, cliente);
+  var condiciones = _fpDistribuirBloques(condsBloques, 'Condiciones Generales de Venta', 'Términos de la propuesta', logoAzul, cliente, proyecto);
 
   var htmlDoc = '<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Cotización Premium — '+escapeHtml(cliente)+'</title>'
     + '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Manrope:wght@700;800&display=swap" rel="stylesheet">'
@@ -20468,7 +20468,8 @@ function _fpCss(){
     .fp-site{font-size:10.5px;font-weight:600;color:#fff;white-space:nowrap;}
     .fp-body{padding:20mm 20mm 24mm;}
     .fp-eyebrow-navy{font-size:10px;font-weight:700;letter-spacing:2.2px;color:#2C4A78;text-transform:uppercase;margin-bottom:8px;}
-    .fp-h1{font-family:'Manrope',sans-serif;font-size:23px;font-weight:800;color:#0B1F3A;margin-bottom:36px;}
+    .fp-h1{font-family:'Manrope',sans-serif;font-size:23px;font-weight:800;color:#0B1F3A;margin-bottom:34px;padding-bottom:16px;position:relative;}
+    .fp-h1::after{content:'';position:absolute;bottom:0;left:0;width:56px;height:3px;background:linear-gradient(90deg,#0B1F3A,#5D7FB0);border-radius:2px;}
     .fp-kpi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:#E7EAEE;border:1px solid #E7EAEE;margin-bottom:44px;box-shadow:0 1px 4px rgba(11,31,58,.05);}
     .fp-kpi{background:#fff;padding:20px 18px;border-top:3px solid transparent;border-image:linear-gradient(90deg,#0B1F3A,#2C4A78) 1;}
     .fp-kpi-label{font-size:8.5px;font-weight:700;letter-spacing:1.4px;color:#5B6672;text-transform:uppercase;margin-bottom:6px;}
@@ -20478,7 +20479,9 @@ function _fpCss(){
     .fp-label{font-size:9.5px;font-weight:700;letter-spacing:1.8px;color:#5B6672;text-transform:uppercase;margin-bottom:12px;padding-bottom:9px;border-bottom:1px solid #E7EAEE;}
     .fp-p{font-size:12px;color:#1B2430;line-height:1.85;max-width:150mm;}
     .fp-footer{position:absolute;bottom:0;left:0;right:0;padding:16px 20mm;display:flex;justify-content:space-between;align-items:center;border-top:1px solid #E7EAEE;}
-    .fp-footer img{height:13px;opacity:.55;}
+    .fp-footer img{height:15px;}
+    .fp-footer-brand{display:flex;flex-direction:column;gap:3px;}
+    .fp-footer-tagline{font-size:7.5px;font-weight:700;color:#94A3B8;letter-spacing:.6px;text-transform:uppercase;}
     .fp-footer-meta{font-size:9px;color:#5B6672;}
     .fp-badge{width:20px;height:20px;background:linear-gradient(135deg,#0B1F3A,#2C4A78);color:#fff;border-radius:5px;display:inline-flex;align-items:center;justify-content:center;font-size:9.5px;font-weight:700;flex-shrink:0;box-shadow:0 2px 5px rgba(11,31,58,.25);}
     @media print{ .toolbar{display:none!important;} #doc{padding-top:0!important;} body{background:#fff;} .fp-page,.fp-cover{margin:0;box-shadow:none;page-break-after:always;} .fp-page:last-child{page-break-after:auto;} }
@@ -20518,8 +20521,7 @@ function _fpResumenHtml(logoAzul, cliente, atencion, proyecto, ubicacion, totalM
   var parrafo2 = 'El presente documento detalla el alcance, la inversión y las condiciones correspondientes al proyecto <strong style="color:#0B1F3A;">'+escapeHtml(proyecto)+'</strong>, formulado con base en la información y condiciones observadas durante la visita técnica.';
   return '<div class="fp-page"><div class="fp-body">'
     + '<div class="fp-eyebrow-navy">Resumen Ejecutivo</div>'
-    + '<div class="fp-h1" style="margin-bottom:6px;">Propuesta para '+escapeHtml(cliente)+'</div>'
-    + '<div style="width:64px;height:3px;background:linear-gradient(90deg,#2C4A78,#8FA3C4);border-radius:2px;margin-bottom:36px;"></div>'
+    + '<div class="fp-h1" style="margin-bottom:34px;">Propuesta para '+escapeHtml(cliente)+'</div>'
     + '<div class="fp-kpi-grid">'
       + '<div class="fp-kpi"><div class="fp-kpi-label">Cliente</div><div class="fp-kpi-value">'+escapeHtml(cliente)+'</div><div class="fp-kpi-sub">'+(atencion?'Atn: '+escapeHtml(atencion):'')+'</div></div>'
       + '<div class="fp-kpi"><div class="fp-kpi-label">Proyecto</div><div class="fp-kpi-value">'+escapeHtml(proyecto)+'</div><div class="fp-kpi-sub"></div></div>'
@@ -20532,11 +20534,18 @@ function _fpResumenHtml(logoAzul, cliente, atencion, proyecto, ubicacion, totalM
     + '<div class="fp-section"><div class="fp-label">Objetivo</div><div class="fp-p">'+parrafo2+'</div></div>'
     + (nota ? '<div class="fp-section"><div class="fp-label">Nota adicional</div><div class="fp-p">'+escapeHtml(nota)+'</div></div>' : '')
     + '</div>'
-    + '<div class="fp-footer"><img src="'+logoAzul+'" alt="ROMSA"><div class="fp-footer-meta">'+escapeHtml(cliente)+' · Página 02</div></div>'
+    + _fpFooter(logoAzul, cliente, proyecto)
   + '</div>';
 }
 
-function _fpAlcanceHtml(logoAzul){
+function _fpFooter(logoAzul, cliente, proyecto){
+  return '<div class="fp-footer">'
+    + '<div class="fp-footer-brand"><img src="'+logoAzul+'" alt="ROMSA"><div class="fp-footer-tagline">Servicios y Suministros Industriales</div></div>'
+    + '<div class="fp-footer-meta" style="text-align:right;">'+escapeHtml(cliente)+(proyecto?' · '+escapeHtml(proyecto):'')+'</div>'
+  + '</div>';
+}
+
+function _fpAlcanceHtml(logoAzul, cliente, proyecto){
   return '<div class="fp-page"><div class="fp-body">'
     + '<div class="fp-eyebrow-navy">Alcance del Proyecto</div>'
     + '<div class="fp-h1">Cómo trabajamos</div>'
@@ -20550,14 +20559,14 @@ function _fpAlcanceHtml(logoAzul){
       + '<div class="fp-p" style="font-size:11.5px;">Utilizamos materiales de primera calidad y procesos certificados para asegurar resultados superiores y duraderos.</div>'
     + '</div>'
     + '</div>'
-    + '<div class="fp-footer"><img src="'+logoAzul+'" alt="ROMSA"><div class="fp-footer-meta">Página 03</div></div>'
+    + _fpFooter(logoAzul, cliente, proyecto)
   + '</div>';
 }
 
 // ── Distribuidor real: mide cada bloque y reparte en tantas páginas como
 //    haga falta — el mismo principio que corregimos hoy en Reportes de Obra
 //    y Seguimiento. NUNCA asume que todo cabe en una sola página. ──
-function _fpDistribuirBloques(bloques, eyebrow, h1, logoAzul, nombreCliente){
+function _fpDistribuirBloques(bloques, eyebrow, h1, logoAzul, nombreCliente, proyecto){
   var HOJA_ALTO = 1123, FOOTER_ALTO = 50, PADDING_VERT = 76;
   var HEADER_ALTO_P1 = 130;   // eyebrow + h1 + margen
   var HEADER_ALTO_CONT = 40;  // solo logo, páginas de continuación
@@ -20591,7 +20600,7 @@ function _fpDistribuirBloques(bloques, eyebrow, h1, logoAzul, nombreCliente){
       + header
       + '<div>' + items.join('') + '</div>'
       + '</div>'
-      + '<div class="fp-footer"><img src="'+logoAzul+'" alt="ROMSA"><div class="fp-footer-meta">'+escapeHtml(nombreCliente)+'</div></div>'
+      + _fpFooter(logoAzul, nombreCliente, proyecto)
     + '</div>';
   }).join('');
 }
@@ -20614,7 +20623,7 @@ function _fpServicioHtml_UNUSED(logoAzul, partidasHtml, sub, iva, total){
   + '</div>';
 }
 
-function _fpPasosHtml(logoAzul){
+function _fpPasosHtml(logoAzul, cliente, proyecto){
   var pasos = [['Aceptación','Firma de propuesta'],['Orden de compra','Emisión a ROMSA'],['Anticipo 60%','Transferencia'],['Inicio de obra','Programación']];
   var pasosHtml = pasos.map(function(p,i){
     return '<div style="text-align:center;width:110px;">'
@@ -20632,7 +20641,7 @@ function _fpPasosHtml(logoAzul){
       + '<div><div class="fp-label" style="border:none;padding-bottom:0;">Condiciones</div><div class="fp-p" style="font-size:11.5px;line-height:2;">Precios en pesos mexicanos.<br>Forma de pago: 60% anticipo, 40% contra entrega.<br>Ver condiciones completas en las páginas siguientes.</div></div>'
     + '</div>'
     + '</div>'
-    + '<div class="fp-footer"><img src="'+logoAzul+'" alt="ROMSA"><div class="fp-footer-meta">Página 05</div></div>'
+    + _fpFooter(logoAzul, cliente, proyecto)
   + '</div>';
 }
 
@@ -20647,11 +20656,15 @@ function _fpCondicionesHtml_UNUSED(logoAzul, condsHtml){
 }
 
 function _fpCierreHtml(logoBlanco, tel, email, web){
-  return '<div class="fp-page" style="background:#0B1F3A;">'
-    + '<div style="height:297mm;display:flex;flex-direction:column;justify-content:space-between;padding:22mm 20mm;">'
+  return '<div class="fp-page" style="background:#0B1F3A;position:relative;overflow:hidden;">'
+    + '<div style="position:absolute;right:-80px;top:-80px;width:340px;height:340px;border-radius:50%;background:radial-gradient(circle,rgba(93,127,176,.30) 0%,transparent 70%);"></div>'
+    + '<div style="position:absolute;left:-60px;bottom:120px;width:260px;height:260px;border-radius:50%;background:radial-gradient(circle,rgba(93,127,176,.22) 0%,transparent 70%);"></div>'
+    + '<div style="position:absolute;right:60px;bottom:-100px;width:220px;height:220px;border-radius:50%;background:radial-gradient(circle,rgba(44,74,120,.35) 0%,transparent 70%);"></div>'
+    + '<div style="position:relative;z-index:2;height:297mm;display:flex;flex-direction:column;justify-content:space-between;padding:22mm 20mm;">'
       + (logoBlanco?'<img src="'+logoBlanco+'" style="height:26px;width:auto;" alt="ROMSA">':'')
       + '<div style="text-align:center;">'
         + '<div style="font-size:9.5px;font-weight:700;letter-spacing:2.2px;color:#8FA3C4;text-transform:uppercase;margin-bottom:14px;">Gracias por su confianza</div>'
+        + '<div style="width:44px;height:3px;background:linear-gradient(90deg,#2C4A78,#8FA3C4);border-radius:2px;margin:0 auto 18px;"></div>'
         + '<div style="font-family:\'Manrope\',sans-serif;font-size:19px;font-weight:700;color:#fff;max-width:340px;margin:0 auto;line-height:1.4;">Quedamos a sus órdenes para resolver cualquier duda sobre esta propuesta.</div>'
       + '</div>'
       + '<div style="display:flex;justify-content:space-between;align-items:flex-end;border-top:1px solid rgba(255,255,255,.14);padding-top:22px;">'
