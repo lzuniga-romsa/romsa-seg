@@ -20237,24 +20237,26 @@ window.bceCalEditarRegla = bceCalEditarRegla;
 
 <!-- ═══════════ MODAL: Selector de foto de portada — PDF Premium ═══════════ -->
 <div id="modal-foto-premium" style="display:none;position:fixed;inset:0;background:rgba(11,19,35,.72);z-index:9000;align-items:center;justify-content:center;padding:20px;">
-  <div style="background:#fff;border-radius:16px;max-width:520px;width:100%;padding:28px;max-height:90vh;overflow-y:auto;">
+  <div style="background:#fff;border-radius:16px;max-width:560px;width:100%;padding:28px;max-height:90vh;overflow-y:auto;">
     <div style="font-size:9.5px;font-weight:700;color:#1E6FD9;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:4px;">Cotización Premium</div>
     <div style="font-size:17px;font-weight:800;color:#0B1F3A;margin-bottom:6px;font-family:var(--font);">Elige la foto de portada</div>
-    <div style="font-size:12px;color:#64748B;margin-bottom:20px;line-height:1.5;">Selecciona una de las categorías, o sube tu propia foto del proyecto.</div>
+    <div style="font-size:12px;color:#64748B;margin-bottom:18px;line-height:1.5;">Elige de tu librería, o sube una foto nueva — se guarda para tus próximas cotizaciones.</div>
 
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px;" id="fp-grid-default"></div>
-
-    <label style="display:flex;align-items:center;justify-content:center;gap:8px;border:1.5px dashed #CBD5E1;border-radius:10px;padding:14px;cursor:pointer;font-size:12.5px;font-weight:600;color:#4A5E7A;margin-bottom:18px;">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0 4-4m-4 4-4-4"/><path d="M20 21H4"/></svg>
-      Subir mi propia foto
-      <input type="file" accept="image/*" style="display:none;" onchange="_fpSubirCustom(this)">
-    </label>
-    <div id="fp-custom-preview" style="display:none;margin-bottom:16px;">
-      <img id="fp-custom-img" style="width:100%;max-height:160px;object-fit:cover;border-radius:10px;">
-      <button onclick="_fpUsarCustom()" style="margin-top:8px;width:100%;background:#0B1F3A;color:#fff;border:none;padding:10px;border-radius:8px;font-weight:700;font-size:12.5px;cursor:pointer;">Usar esta foto</button>
+    <div id="fp-grid-default" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:20px;">
+      <div style="grid-column:1/-1;text-align:center;padding:20px;color:#94A3B8;font-size:12px;">Cargando librería...</div>
     </div>
 
-    <button onclick="document.getElementById('modal-foto-premium').style.display='none';" style="width:100%;background:none;border:none;color:#94A3B8;font-size:12px;padding:8px;cursor:pointer;">Cancelar</button>
+    <div style="border-top:1px solid #EEF1F5;padding-top:16px;">
+      <div style="font-size:11px;font-weight:700;color:#4A5E7A;margin-bottom:10px;">Subir foto nueva a la librería</div>
+      <input id="fp-nueva-categoria" type="text" placeholder="Nombre de la categoría (ej: Piso de concreto pulido)" style="width:100%;padding:9px 12px;border:1px solid #E2E8F2;border-radius:8px;font-size:12px;font-family:var(--font);margin-bottom:8px;box-sizing:border-box;">
+      <label id="fp-label-subir" style="display:flex;align-items:center;justify-content:center;gap:8px;border:1.5px dashed #CBD5E1;border-radius:10px;padding:14px;cursor:pointer;font-size:12.5px;font-weight:600;color:#4A5E7A;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0 4-4m-4 4-4-4"/><path d="M20 21H4"/></svg>
+        <span id="fp-label-subir-txt">Elegir imagen y subir</span>
+        <input id="fp-input-subir" type="file" accept="image/*" style="display:none;" onchange="_fpSubirYGuardarLibreria(this)">
+      </label>
+    </div>
+
+    <button onclick="document.getElementById('modal-foto-premium').style.display='none';" style="width:100%;background:none;border:none;color:#94A3B8;font-size:12px;padding:8px;margin-top:14px;cursor:pointer;">Cancelar</button>
   </div>
 </div>
 <script>
