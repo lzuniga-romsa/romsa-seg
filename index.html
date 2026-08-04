@@ -20456,7 +20456,7 @@ function _fpCss(){
     .fp-cover-logo{height:30px;width:auto;margin-bottom:auto;}
     .fp-eyebrow{font-size:10.5px;font-weight:700;letter-spacing:2.6px;color:#8FA3C4;text-transform:uppercase;margin-bottom:12px;}
     .fp-title{font-family:'Manrope',sans-serif;font-size:32px;font-weight:800;color:#fff;line-height:1.15;letter-spacing:-.4px;max-width:150mm;}
-    .fp-rule{width:44px;height:2px;background:#1E6FD9;border-radius:1px;margin:18px 0;}
+    .fp-rule{width:44px;height:2px;background:#8FA3C4;border-radius:1px;margin:18px 0;}
     .fp-client{font-family:'Manrope',sans-serif;font-size:17px;font-weight:700;color:#fff;margin-bottom:3px;}
     .fp-attn{font-size:11.5px;color:rgba(255,255,255,.62);margin-bottom:28px;}
     .fp-meta-row{display:flex;gap:30px;margin-bottom:30px;flex-wrap:wrap;}
@@ -20468,8 +20468,8 @@ function _fpCss(){
     .fp-site{font-size:10.5px;font-weight:600;color:#fff;white-space:nowrap;}
     .fp-body{padding:20mm 20mm 24mm;}
     .fp-eyebrow-navy{font-size:10px;font-weight:700;letter-spacing:2.2px;color:#2C4A78;text-transform:uppercase;margin-bottom:8px;}
-    .fp-h1{font-family:'Manrope',sans-serif;font-size:23px;font-weight:800;color:#0B1F3A;margin-bottom:34px;padding-bottom:16px;position:relative;}
-    .fp-h1::after{content:'';position:absolute;bottom:0;left:0;width:56px;height:2px;background:#1E6FD9;border-radius:1px;}
+    .fp-h1{font-family:'Manrope',sans-serif;font-size:23px;font-weight:800;color:#0B1F3A;margin-bottom:34px;padding-bottom:22px;position:relative;}
+    .fp-h1::after{content:'';position:absolute;bottom:0;left:0;width:56px;height:2px;background:#8FA3C4;border-radius:1px;}
     .fp-kpi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:#E7EAEE;border:1px solid #E7EAEE;margin-bottom:44px;box-shadow:0 1px 4px rgba(11,31,58,.05);}
     .fp-kpi{background:#fff;padding:20px 18px;border-top:3px solid transparent;border-image:linear-gradient(90deg,#0B1F3A,#2C4A78) 1;}
     .fp-kpi-label{font-size:8.5px;font-weight:700;letter-spacing:1.4px;color:#5B6672;text-transform:uppercase;margin-bottom:6px;}
@@ -20525,12 +20525,15 @@ function _fpResumenHtml(logoAzul, cliente, atencion, proyecto, ubicacion, totalM
   }
   var sistemaTxt = primerServicio ? primerServicio.toLowerCase() : 'el sistema especificado';
 
-  // ── Bloque 2: Project Snapshot — tarjetas KPI con jerarquía número-grande / unidad-chica ──
-  function snapCard(label, valorGrande, unidad, sub){
+  // ── Bloque 2: Project Snapshot — jerarquía número-grande solo para datos numéricos;
+  //    los valores de texto (Cliente/Proyecto/Ubicación) usan un tamaño más moderado ──
+  function snapCard(label, valorGrande, unidad, sub, esTexto){
+    var tam = esTexto ? '15px' : '22px';
+    var peso = esTexto ? '700' : '600';
     return '<div style="padding:18px 4px;">'
       + '<div style="font-size:8.5px;font-weight:500;letter-spacing:1.3px;color:#8993A3;text-transform:uppercase;margin-bottom:9px;">'+label+'</div>'
       + '<div style="display:flex;align-items:baseline;gap:5px;">'
-        + '<div style="font-family:\'Manrope\',sans-serif;font-size:22px;font-weight:600;color:#0B1F3A;line-height:1;">'+valorGrande+'</div>'
+        + '<div style="font-family:\'Manrope\',sans-serif;font-size:'+tam+';font-weight:'+peso+';color:#0B1F3A;line-height:1.25;">'+valorGrande+'</div>'
         + (unidad?'<div style="font-size:11px;font-weight:400;color:#8993A3;">'+unidad+'</div>':'')
       + '</div>'
       + (sub?'<div style="font-size:9.5px;font-weight:400;color:#8993A3;margin-top:5px;">'+sub+'</div>':'')
@@ -20538,9 +20541,9 @@ function _fpResumenHtml(logoAzul, cliente, atencion, proyecto, ubicacion, totalM
   }
 
   var snapshotHtml = '<div style="display:grid;grid-template-columns:repeat(3,1fr);column-gap:28px;border-top:1px solid #F1F3F7;border-bottom:1px solid #F1F3F7;margin-bottom:44px;">'
-    + snapCard('Cliente', escapeHtml(cliente), '', atencion?'Atn: '+escapeHtml(atencion):'')
-    + snapCard('Proyecto', escapeHtml(proyecto.length > 22 ? proyecto.slice(0,22)+'…' : proyecto), '', '')
-    + snapCard('Ubicación', escapeHtml(ubicacion), '', '')
+    + snapCard('Cliente', escapeHtml(cliente), '', atencion?'Atn: '+escapeHtml(atencion):'', true)
+    + snapCard('Proyecto', escapeHtml(proyecto.length > 22 ? proyecto.slice(0,22)+'…' : proyecto), '', '', true)
+    + snapCard('Ubicación', escapeHtml(ubicacion), '', '', true)
     + snapCard('Área', totalM2>0?totalM2.toLocaleString('es-MX'):'—', totalM2>0?'m²':'', '')
     + snapCard('Inversión', '$'+fmtPeso(total).split('.')[0], 'MXN', 'IVA incluido')
     + snapCard('Vigencia', String(vigencia), 'días', 'Desde emisión')
@@ -20556,15 +20559,14 @@ function _fpResumenHtml(logoAzul, cliente, atencion, proyecto, ubicacion, totalM
   var beneficios = ['Mayor durabilidad', 'Mayor resistencia química', 'Fácil limpieza', 'Mejor imagen', 'Mayor vida útil'];
   var beneficiosHtml = '<div style="display:grid;grid-template-columns:repeat(3,1fr);row-gap:14px;">'
     + beneficios.map(function(b){
-        return '<div style="display:flex;align-items:center;gap:9px;"><div style="width:10px;height:2px;background:#1E6FD9;border-radius:1px;flex-shrink:0;"></div><div style="font-size:11px;font-weight:400;color:#1B2430;">'+b+'</div></div>';
+        return '<div style="display:flex;align-items:center;gap:9px;"><div style="width:10px;height:2px;background:#8FA3C4;border-radius:1px;flex-shrink:0;"></div><div style="font-size:11px;font-weight:400;color:#1B2430;">'+b+'</div></div>';
       }).join('')
   + '</div>';
 
   return '<div class="fp-page"><div class="fp-body">'
     // BLOQUE 1 — Header
     + '<div class="fp-eyebrow-navy">Resumen Ejecutivo</div>'
-    + '<div class="fp-h1" style="font-size:24px;margin-bottom:6px;padding-bottom:0;border:none;">Propuesta Técnica para '+escapeHtml(cliente)+'</div>'
-    + '<div style="width:56px;height:2px;background:#1E6FD9;border-radius:1px;margin-bottom:40px;"></div>'
+    + '<div class="fp-h1" style="padding-bottom:16px;margin-bottom:40px;">Propuesta Técnica para '+escapeHtml(cliente)+'</div>'
     // BLOQUE 2 — Project Snapshot
     + snapshotHtml
     // BLOQUE 3 — Resumen en 30 segundos
@@ -20713,7 +20715,7 @@ function _fpCierreHtml(logoBlanco, tel, email, web){
       + (logoBlanco?'<img src="'+logoBlanco+'" style="height:26px;width:auto;" alt="ROMSA">':'')
       + '<div style="text-align:center;">'
         + '<div style="font-size:9.5px;font-weight:700;letter-spacing:2.2px;color:#8FA3C4;text-transform:uppercase;margin-bottom:14px;">Gracias por su confianza</div>'
-        + '<div style="width:44px;height:2px;background:#1E6FD9;border-radius:1px;margin:0 auto 18px;"></div>'
+        + '<div style="width:44px;height:2px;background:#8FA3C4;border-radius:1px;margin:0 auto 18px;"></div>'
         + '<div style="font-family:\'Manrope\',sans-serif;font-size:19px;font-weight:700;color:#fff;max-width:340px;margin:0 auto;line-height:1.4;">Quedamos a sus órdenes para resolver cualquier duda sobre esta propuesta.</div>'
       + '</div>'
       + '<div style="display:flex;justify-content:space-between;align-items:flex-end;border-top:1px solid rgba(255,255,255,.14);padding-top:22px;">'
