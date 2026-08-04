@@ -20390,7 +20390,7 @@ function generarPdfCotPremium(cot, winRef, fotoDataUrl){
     if(!valor) return '';
     return '<div>'
       + '<div style="font-size:8px;font-weight:500;letter-spacing:1.2px;color:#8993A3;text-transform:uppercase;margin-bottom:6px;">'+label+'</div>'
-      + '<div style="display:flex;align-items:baseline;gap:4px;"><div style="font-family:\'Manrope\',sans-serif;font-size:16px;font-weight:600;color:#0B1F3A;">'+valor+'</div>'+(unidad?'<div style="font-size:9.5px;color:#8993A3;">'+unidad+'</div>':'')+'</div>'
+      + '<div style="display:flex;align-items:baseline;gap:4px;"><div style="font-family:\'Manrope\',sans-serif;font-size:16px;font-weight:600;color:#2C4A78;">'+valor+'</div>'+(unidad?'<div style="font-size:9.5px;color:#8993A3;">'+unidad+'</div>':'')+'</div>'
     + '</div>';
   }
   var resumenTecnicoBloque = '<div class="fp-item" style="break-inside:avoid;background:#FAFBFC;border-radius:10px;padding:20px 22px;margin-bottom:6px;">'
@@ -20398,7 +20398,7 @@ function generarPdfCotPremium(cot, winRef, fotoDataUrl){
     + '<div style="display:grid;grid-template-columns:repeat(4,1fr);row-gap:16px;">'
       + resumenKpi('Área', totalM2>0?totalM2.toLocaleString('es-MX'):'', 'm²')
       + resumenKpi('Sistema', escapeHtml(sistemaResumen.length>18?sistemaResumen.slice(0,18)+'…':sistemaResumen), '')
-      + resumenKpi('Tiempo est.', tiempoTxt, 'días')
+      + resumenKpi('Tiempo de Ejecución', tiempoTxt, 'días')
       + resumenKpi('Garantía', garantiaTxt, 'meses')
     + '</div>'
   + '</div>';
@@ -20413,17 +20413,17 @@ function generarPdfCotPremium(cot, winRef, fotoDataUrl){
       + '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:20px;margin-bottom:16px;">'
         + '<div style="display:flex;gap:12px;align-items:flex-start;">'
           + '<div class="fp-badge">'+(i+1)+'</div>'
-          + '<div style="font-size:13.5px;font-weight:700;color:#0B1F3A;padding-top:1px;max-width:380px;">'+escapeHtml(titulo)+'</div>'
+          + '<div style="font-size:13.5px;font-weight:700;color:#2C4A78;padding-top:1px;max-width:380px;">'+escapeHtml(titulo)+'</div>'
         + '</div>'
         + '<div style="text-align:right;flex-shrink:0;">'
           + '<div style="font-size:8px;font-weight:500;letter-spacing:1.2px;color:#8993A3;text-transform:uppercase;margin-bottom:3px;">Inversión</div>'
-          + '<div style="font-family:\'Manrope\',sans-serif;font-size:17px;font-weight:600;color:#0B1F3A;">$'+fmtPeso(st)+'</div>'
+          + '<div style="font-family:\'Manrope\',sans-serif;font-size:17px;font-weight:600;color:#2C4A78;">$'+fmtPeso(st)+'</div>'
         + '</div>'
       + '</div>'
       + '<div style="display:flex;gap:28px;margin-bottom:18px;padding-bottom:18px;border-bottom:1px solid #F1F3F7;">'
-        + '<div><div style="font-size:8px;font-weight:500;letter-spacing:1.2px;color:#8993A3;text-transform:uppercase;margin-bottom:4px;">Área</div><div style="font-size:12px;font-weight:600;color:#0B1F3A;">'+(parseFloat(p.qty)||0).toLocaleString('es-MX')+' '+escapeHtml(p.unit||'')+'</div></div>'
-        + (garantiaTxt?'<div><div style="font-size:8px;font-weight:500;letter-spacing:1.2px;color:#8993A3;text-transform:uppercase;margin-bottom:4px;">Garantía</div><div style="font-size:12px;font-weight:600;color:#0B1F3A;">'+garantiaTxt+' meses</div></div>':'')
-        + (tiempoTxt?'<div><div style="font-size:8px;font-weight:500;letter-spacing:1.2px;color:#8993A3;text-transform:uppercase;margin-bottom:4px;">Tiempo</div><div style="font-size:12px;font-weight:600;color:#0B1F3A;">'+tiempoTxt+' días</div></div>':'')
+        + '<div><div style="font-size:8px;font-weight:500;letter-spacing:1.2px;color:#8993A3;text-transform:uppercase;margin-bottom:4px;">Área</div><div style="font-size:12px;font-weight:600;color:#2C4A78;">'+(parseFloat(p.qty)||0).toLocaleString('es-MX')+' '+escapeHtml(p.unit||'')+'</div></div>'
+        + (garantiaTxt?'<div><div style="font-size:8px;font-weight:500;letter-spacing:1.2px;color:#8993A3;text-transform:uppercase;margin-bottom:4px;">Garantía</div><div style="font-size:12px;font-weight:600;color:#2C4A78;">'+garantiaTxt+' meses</div></div>':'')
+        + (tiempoTxt?'<div><div style="font-size:8px;font-weight:500;letter-spacing:1.2px;color:#8993A3;text-transform:uppercase;margin-bottom:4px;">Tiempo</div><div style="font-size:12px;font-weight:600;color:#2C4A78;">'+tiempoTxt+' días</div></div>':'')
       + '</div>'
       + (p.desc ? '<div style="margin-bottom:16px;"><div style="font-size:8.5px;font-weight:500;letter-spacing:1.2px;color:#8993A3;text-transform:uppercase;margin-bottom:7px;">Descripción</div><div style="font-size:10.5px;color:#1B2430;line-height:1.7;white-space:pre-wrap;">'+escapeHtml(p.desc)+'</div></div>' : '')
       + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">'
@@ -20441,7 +20441,7 @@ function generarPdfCotPremium(cot, winRef, fotoDataUrl){
       + '<div style="display:flex;justify-content:space-between;font-size:11px;color:#5B6672;padding:5px 0;border-bottom:1px solid #E7EAEE;"><span>IVA</span><span style="color:#1B2430;font-weight:500;">$'+fmtPeso(iva)+'</span></div>'
       + '<div style="display:flex;justify-content:space-between;align-items:center;padding:14px 0 12px;">'
         + '<div><div style="font-size:9px;font-weight:700;letter-spacing:1.4px;color:#2C4A78;text-transform:uppercase;margin-bottom:3px;">Gran Total</div><div style="font-size:8px;color:#5B6672;">MXN</div></div>'
-        + '<div style="font-family:\'Manrope\',sans-serif;font-size:22px;font-weight:800;color:#0B1F3A;">$'+fmtPeso(total)+'</div>'
+        + '<div style="font-family:\'Manrope\',sans-serif;font-size:22px;font-weight:800;color:#2C4A78;">$'+fmtPeso(total)+'</div>'
       + '</div>'
       + '<div style="font-size:9px;color:#8993A3;line-height:1.6;border-top:1px solid #E7EAEE;padding-top:10px;">La inversión presentada incluye materiales certificados, preparación de superficie, aplicación del sistema, supervisión técnica y entrega conforme al alcance descrito.</div>'
     + '</div>';
@@ -20546,8 +20546,8 @@ function _fpCss(){
     .fp-p{font-size:12px;color:#1B2430;line-height:1.85;max-width:150mm;}
     .fp-footer{position:absolute;bottom:0;left:0;right:0;padding:16px 20mm;display:flex;justify-content:space-between;align-items:center;border-top:1px solid #E7EAEE;}
     .fp-footer img{height:15px;}
-    .fp-footer-brand{display:flex;flex-direction:column;gap:3px;}
-    .fp-footer-tagline{font-size:7.5px;font-weight:700;color:#94A3B8;letter-spacing:.6px;text-transform:uppercase;}
+    .fp-footer-brand{display:flex;flex-direction:column;gap:7px;}
+    .fp-footer-tagline{width:82px;font-size:6.5px;font-weight:700;color:#94A3B8;letter-spacing:.3px;text-transform:uppercase;line-height:1.45;}
     .fp-footer-meta{font-size:9px;color:#5B6672;}
     .fp-badge{width:20px;height:20px;background:linear-gradient(135deg,#0B1F3A,#2C4A78);color:#fff;border-radius:5px;display:inline-flex;align-items:center;justify-content:center;font-size:9.5px;font-weight:700;flex-shrink:0;box-shadow:0 2px 5px rgba(11,31,58,.25);}
     @media print{ .toolbar{display:none!important;} #doc{padding-top:0!important;} body{background:#fff;} .fp-page,.fp-cover{margin:0;box-shadow:none;page-break-after:always;} .fp-page:last-child{page-break-after:auto;} }
@@ -20599,7 +20599,7 @@ function _fpResumenHtml(logoAzul, cliente, atencion, proyecto, ubicacion, totalM
     return '<div style="padding:18px 4px;">'
       + '<div style="font-size:8.5px;font-weight:500;letter-spacing:1.3px;color:#8993A3;text-transform:uppercase;margin-bottom:9px;">'+label+'</div>'
       + '<div style="display:flex;align-items:baseline;gap:5px;">'
-        + '<div style="font-family:\'Manrope\',sans-serif;font-size:'+tam+';font-weight:'+peso+';color:#0B1F3A;line-height:1.25;">'+valorGrande+'</div>'
+        + '<div style="font-family:\'Manrope\',sans-serif;font-size:'+tam+';font-weight:'+peso+';color:#2C4A78;line-height:1.25;">'+valorGrande+'</div>'
         + (unidad?'<div style="font-size:11px;font-weight:400;color:#8993A3;">'+unidad+'</div>':'')
       + '</div>'
       + (sub?'<div style="font-size:9.5px;font-weight:400;color:#8993A3;margin-top:5px;">'+sub+'</div>':'')
@@ -20616,7 +20616,7 @@ function _fpResumenHtml(logoAzul, cliente, atencion, proyecto, ubicacion, totalM
   + '</div>';
 
   // ── Bloque 3: Resumen del proyecto en 30 segundos — lenguaje ejecutivo, máx 4 líneas ──
-  var resumen30 = 'ROMSA Industrial ejecutará <strong style="color:#0B1F3A;font-weight:500;">'+escapeHtml(proyecto)+'</strong> en las instalaciones de <strong style="color:#0B1F3A;font-weight:500;">'+escapeHtml(cliente)+'</strong>, en '+escapeHtml(ubicacion)+', mediante '+escapeHtml(sistemaTxt)+'. El objetivo es restaurar y proteger el área intervenida, incrementando su vida útil y reduciendo costos futuros de mantenimiento.';
+  var resumen30 = 'ROMSA Industrial ejecutará <strong style="color:#2C4A78;font-weight:500;">'+escapeHtml(proyecto)+'</strong> en las instalaciones de <strong style="color:#2C4A78;font-weight:500;">'+escapeHtml(cliente)+'</strong>, en '+escapeHtml(ubicacion)+', mediante '+escapeHtml(sistemaTxt)+'. El objetivo es restaurar y proteger el área intervenida, incrementando su vida útil y reduciendo costos futuros de mantenimiento.';
 
   // ── Bloque 4: Objetivo del proyecto — habla del proyecto, no del documento ──
   var objetivoTxt = 'Restaurar y proteger el área mediante '+escapeHtml(sistemaTxt)+' de alto desempeño, incrementando la vida útil de la superficie y reduciendo los costos futuros de mantenimiento.';
@@ -20745,7 +20745,7 @@ function _fpPasosHtml(logoAzul, cliente, proyecto){
   var pasosHtml = pasos.map(function(p,i){
     return '<div style="text-align:center;width:110px;">'
       + '<div style="width:20px;height:20px;border-radius:50%;background:'+(i<2?'#2C4A78':'#fff')+';border:2px solid '+(i<2?'#2C4A78':'#E7EAEE')+';margin:0 auto 12px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:'+(i<2?'#fff':'#5B6672')+';">'+(i+1)+'</div>'
-      + '<div style="font-size:10.5px;font-weight:700;color:#0B1F3A;margin-bottom:2px;">'+p[0]+'</div>'
+      + '<div style="font-size:10.5px;font-weight:700;color:#2C4A78;margin-bottom:2px;">'+p[0]+'</div>'
       + '<div style="font-size:9.5px;color:#5B6672;">'+p[1]+'</div>'
     + '</div>';
   }).join('');
