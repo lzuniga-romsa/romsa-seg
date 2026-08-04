@@ -20773,22 +20773,29 @@ function _fpCondicionesHtml_UNUSED(logoAzul, condsHtml){
 }
 
 function _fpCierreHtml(logoBlanco, tel, email, web){
-  return '<div class="fp-page" style="background:#0B1F3A;position:relative;overflow:hidden;">'
-    + '<div style="position:absolute;right:-80px;top:-80px;width:340px;height:340px;border-radius:50%;background:radial-gradient(circle,rgba(93,127,176,.30) 0%,transparent 70%);"></div>'
-    + '<div style="position:absolute;left:-60px;bottom:120px;width:260px;height:260px;border-radius:50%;background:radial-gradient(circle,rgba(93,127,176,.22) 0%,transparent 70%);"></div>'
-    + '<div style="position:absolute;right:60px;bottom:-100px;width:220px;height:220px;border-radius:50%;background:radial-gradient(circle,rgba(44,74,120,.35) 0%,transparent 70%);"></div>'
-    + '<div style="position:relative;z-index:2;height:297mm;display:flex;flex-direction:column;justify-content:space-between;padding:22mm 20mm;">'
-      + (logoBlanco?'<img src="'+logoBlanco+'" style="height:26px;width:auto;" alt="ROMSA">':'')
-      + '<div style="text-align:center;">'
-        + '<div style="font-size:9.5px;font-weight:700;letter-spacing:2.2px;color:#8FA3C4;text-transform:uppercase;margin-bottom:14px;">Gracias por su confianza</div>'
-        + '<div style="width:44px;height:2px;background:#8FA3C4;border-radius:1px;margin:0 auto 18px;"></div>'
-        + '<div style="font-family:\'Manrope\',sans-serif;font-size:19px;font-weight:700;color:#fff;max-width:340px;margin:0 auto;line-height:1.4;">Quedamos a sus órdenes para resolver cualquier duda sobre esta propuesta.</div>'
+  return '<div class="fp-page" style="background:linear-gradient(165deg,#0B1F3A 0%,#0D2242 60%,#0A1D38 100%);position:relative;overflow:hidden;">'
+    + '<div style="position:relative;z-index:2;height:297mm;display:flex;flex-direction:column;padding:26mm 24mm 20mm;">'
+
+      // Logo — reposicionado más abajo, sello institucional, no pegado arriba
+      + '<div style="text-align:center;margin-top:34mm;margin-bottom:auto;">'
+        + (logoBlanco?'<img src="'+logoBlanco+'" style="height:32px;width:auto;" alt="ROMSA">':'')
       + '</div>'
-      + '<div style="display:flex;justify-content:space-between;align-items:flex-end;border-top:1px solid rgba(255,255,255,.14);padding-top:22px;">'
-        + '<div style="display:flex;flex-direction:column;gap:9px;font-size:11px;color:rgba(255,255,255,.75);">'
-          + '<div>'+escapeHtml(web)+'</div>'
-          + '<div>'+escapeHtml(email)+'</div>'
-          + '<div>'+escapeHtml(tel)+'</div>'
+
+      // Mensaje principal + institucional — centro visual de la página
+      + '<div style="text-align:center;max-width:130mm;margin:0 auto;">'
+        + '<div style="font-family:\'Manrope\',sans-serif;font-size:22px;font-weight:700;color:#fff;line-height:1.4;margin-bottom:20px;">Ingeniería aplicada.<br>Resultados que permanecen.</div>'
+        + '<div style="font-size:11px;color:rgba(255,255,255,.62);line-height:1.8;max-width:105mm;margin:0 auto;">ROMSA Industrial desarrolla soluciones especializadas para pisos industriales, cubiertas y mantenimiento de instalaciones, ejecutadas con materiales certificados, procesos estandarizados y personal altamente capacitado.</div>'
+      + '</div>'
+
+      // Bloque de contacto — al fondo, separado por una línea casi imperceptible
+      + '<div style="margin-top:auto;">'
+        + '<div style="border-top:1px solid rgba(255,255,255,.10);padding-top:20px;display:flex;justify-content:space-between;align-items:flex-end;">'
+          + '<div style="display:flex;flex-direction:column;gap:7px;font-size:10.5px;color:rgba(255,255,255,.68);">'
+            + '<div>'+escapeHtml(web)+'</div>'
+            + '<div>'+escapeHtml(email)+'</div>'
+            + '<div>'+escapeHtml(tel)+'</div>'
+          + '</div>'
+          + '<div style="font-size:9px;color:rgba(255,255,255,.38);letter-spacing:.4px;text-align:right;">Mexicali · Tijuana · Ensenada · Tecate</div>'
         + '</div>'
       + '</div>'
     + '</div>'
