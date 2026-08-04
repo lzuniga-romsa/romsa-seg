@@ -20546,8 +20546,8 @@ function _fpCss(){
     .fp-p{font-size:12px;color:#1B2430;line-height:1.85;max-width:150mm;}
     .fp-footer{position:absolute;bottom:0;left:0;right:0;padding:16px 20mm;display:flex;justify-content:space-between;align-items:center;border-top:1px solid #E7EAEE;}
     .fp-footer img{height:15px;}
-    .fp-footer-brand{display:flex;flex-direction:column;gap:7px;}
-    .fp-footer-tagline{width:82px;font-size:6.5px;font-weight:700;color:#94A3B8;letter-spacing:.3px;text-transform:uppercase;line-height:1.45;}
+    .fp-footer-brand{display:flex;flex-direction:column;gap:6px;}
+    .fp-footer-tagline{font-size:6px;font-weight:700;color:#94A3B8;letter-spacing:.4px;text-transform:uppercase;white-space:nowrap;}
     .fp-footer-meta{font-size:9px;color:#5B6672;}
     .fp-badge{width:20px;height:20px;background:linear-gradient(135deg,#0B1F3A,#2C4A78);color:#fff;border-radius:5px;display:inline-flex;align-items:center;justify-content:center;font-size:9.5px;font-weight:700;flex-shrink:0;box-shadow:0 2px 5px rgba(11,31,58,.25);}
     @media print{ .toolbar{display:none!important;} #doc{padding-top:0!important;} body{background:#fff;} .fp-page,.fp-cover{margin:0;box-shadow:none;page-break-after:always;} .fp-page:last-child{page-break-after:auto;} }
@@ -20783,18 +20783,14 @@ function _fpCierreHtml(logoBlanco, tel, email, web){
 
       // Mensaje principal + institucional — centro visual de la página
       + '<div style="text-align:center;max-width:130mm;margin:0 auto;">'
-        + '<div style="font-family:\'Manrope\',sans-serif;font-size:22px;font-weight:700;color:#fff;line-height:1.4;margin-bottom:20px;">Ingeniería aplicada.<br>Resultados que permanecen.</div>'
+        + '<div style="font-family:\'Manrope\',sans-serif;font-size:31px;font-weight:700;letter-spacing:-.3px;line-height:1.3;margin-bottom:22px;"><span style="color:#fff;">Ingeniería aplicada.</span><br><span style="color:#8FA3C4;">Resultados que permanecen.</span></div>'
         + '<div style="font-size:11px;color:rgba(255,255,255,.62);line-height:1.8;max-width:105mm;margin:0 auto;">ROMSA Industrial desarrolla soluciones especializadas para pisos industriales, cubiertas y mantenimiento de instalaciones, ejecutadas con materiales certificados, procesos estandarizados y personal altamente capacitado.</div>'
       + '</div>'
 
       // Bloque de contacto — al fondo, separado por una línea casi imperceptible
       + '<div style="margin-top:auto;">'
         + '<div style="border-top:1px solid rgba(255,255,255,.10);padding-top:20px;display:flex;justify-content:space-between;align-items:flex-end;">'
-          + '<div style="display:flex;flex-direction:column;gap:7px;font-size:10.5px;color:rgba(255,255,255,.68);">'
-            + '<div>'+escapeHtml(web)+'</div>'
-            + '<div>'+escapeHtml(email)+'</div>'
-            + '<div>'+escapeHtml(tel)+'</div>'
-          + '</div>'
+          + '<div style="font-size:10.5px;color:rgba(255,255,255,.68);">'+escapeHtml(web)+' &nbsp;·&nbsp; '+escapeHtml(email)+' &nbsp;·&nbsp; '+escapeHtml(tel)+'</div>'
           + '<div style="font-size:9px;color:rgba(255,255,255,.38);letter-spacing:.4px;text-align:right;">Mexicali · Tijuana · Ensenada · Tecate</div>'
         + '</div>'
       + '</div>'
