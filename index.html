@@ -9568,6 +9568,7 @@ function renderListaCot(){
       var estLabel = (COT_ESTADO_LABELS[estado]||{}).txt || estado;
       var montoStr = String(parseFloat(c.granTotal||0).toFixed(0));
       var montoFmt = fmtPeso(parseFloat(c.granTotal||0));
+      var qDigits = q.replace(/[^\d]/g,"");
       var hay = (c.empresa||"").toLowerCase().indexOf(q) >= 0
              || (c.folio||"").toLowerCase().indexOf(q) >= 0
              || (c.atencion||"").toLowerCase().indexOf(q) >= 0
@@ -9577,7 +9578,7 @@ function renderListaCot(){
              || (c.ciudad||"").toLowerCase().indexOf(q) >= 0
              || estLabel.toLowerCase().indexOf(q) >= 0
              || estado.toLowerCase().indexOf(q) >= 0
-             || montoStr.indexOf(q.replace(/[^\d]/g,"")) >= 0
+             || (qDigits && montoStr.indexOf(qDigits) >= 0)
              || montoFmt.toLowerCase().indexOf(q) >= 0;
       if(!hay) return false;
     }
@@ -12887,13 +12888,14 @@ function renderListaCosteos(){
       var q = _costeoBusqueda;
       var montoStr = String((c.precioTotal||0).toFixed(0));
       var montoFmt = (c.precioTotal||0).toLocaleString("es-MX",{maximumFractionDigits:0});
+      var qDigits = q.replace(/[^\d]/g,"");
       var hay = (c.proyecto||"").toLowerCase().indexOf(q) >= 0
              || (c.cliente||"").toLowerCase().indexOf(q) >= 0
              || (c.folio||"").toLowerCase().indexOf(q) >= 0
              || (c.atencion||"").toLowerCase().indexOf(q) >= 0
              || (c.prefijo||"").toLowerCase().indexOf(q) >= 0
              || (c.estado||"").toLowerCase().indexOf(q) >= 0
-             || montoStr.indexOf(q.replace(/[^\d]/g,"")) >= 0
+             || (qDigits && montoStr.indexOf(qDigits) >= 0)
              || montoFmt.toLowerCase().indexOf(q) >= 0;
       if(!hay) return false;
     }
