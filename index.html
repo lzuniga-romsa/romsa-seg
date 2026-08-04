@@ -20254,6 +20254,9 @@ window.bceCalEditarRegla = bceCalEditarRegla;
         <span id="fp-label-subir-txt">Elegir imagen y subir</span>
         <input id="fp-input-subir" type="file" accept="image/*" style="display:none;" onchange="_fpSubirYGuardarLibreria(this)">
       </label>
+      <div id="fp-custom-preview" style="display:none;margin-top:10px;text-align:center;">
+        <img id="fp-custom-img" src="" style="max-width:100%;max-height:160px;border-radius:8px;border:1px solid #E2E8F2;">
+      </div>
     </div>
 
     <button onclick="document.getElementById('modal-foto-premium').style.display='none';" style="width:100%;background:none;border:none;color:#94A3B8;font-size:12px;padding:8px;margin-top:14px;cursor:pointer;">Cancelar</button>
