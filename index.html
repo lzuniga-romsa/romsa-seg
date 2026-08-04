@@ -20516,23 +20516,85 @@ function _fpPortadaHtml(logoBlanco, foto, proyecto, cliente, atencion, ubicacion
 }
 
 function _fpResumenHtml(logoAzul, cliente, atencion, proyecto, ubicacion, totalM2, total, vigencia, cot){
-  var nota = cot.introTexto || cot.nota;
-  var parrafo1 = 'Es un placer presentar a <strong style="color:#0B1F3A;">'+escapeHtml(cliente)+'</strong> esta propuesta técnica-comercial. En ROMSA Industrial estamos comprometidos con ofrecer soluciones de alta calidad, ejecutadas con los más altos estándares de seguridad, durabilidad y desempeño.';
-  var parrafo2 = 'El presente documento detalla el alcance, la inversión y las condiciones correspondientes al proyecto <strong style="color:#0B1F3A;">'+escapeHtml(proyecto)+'</strong>, formulado con base en la información y condiciones observadas durante la visita técnica.';
+  var partidas = cot.partidas || [];
+  var primerServicio = '';
+  if(partidas.length){
+    var p0 = partidas[0];
+    primerServicio = (p0.tituloCustom && p0.tituloCustom.trim()) ? p0.tituloCustom.trim()
+                    : (p0.servicio === '__PERSONALIZADO__' ? '' : (p0.servicio || ''));
+  }
+  var sistemaTxt = primerServicio ? primerServicio.toLowerCase() : 'el sistema especificado';
+
+  // ── Iconos lineales (mismo trazo 1.6px en todos, estilo corporativo) ──
+  var ICO = {
+    cliente: '<path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/>',
+    proyecto: '<path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-4"/>',
+    ubicacion: '<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>',
+    area: '<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>',
+    monto: '<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>',
+    calendario: '<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>',
+    check: '<circle cx="12" cy="12" r="9"/><path d="m8.5 12.5 2.3 2.3 4.7-4.8"/>'
+  };
+  function icono(nombre){ return '<svg viewBox="0 0 24 24" fill="none" stroke="#2C4A78" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="width:17px;height:17px;">'+ICO[nombre]+'</svg>'; }
+
+  // ── Bloque 2: Project Snapshot — tarjetas KPI con jerarquía número-grande / unidad-chica ──
+  function snapCard(icoKey, label, valorGrande, unidad, sub){
+    return '<div style="padding:20px 4px;">'
+      + icono(icoKey)
+      + '<div style="font-size:8.5px;font-weight:500;letter-spacing:1.3px;color:#8993A3;text-transform:uppercase;margin:12px 0 8px;">'+label+'</div>'
+      + '<div style="display:flex;align-items:baseline;gap:5px;">'
+        + '<div style="font-family:\'Manrope\',sans-serif;font-size:22px;font-weight:600;color:#0B1F3A;line-height:1;">'+valorGrande+'</div>'
+        + (unidad?'<div style="font-size:11px;font-weight:400;color:#8993A3;">'+unidad+'</div>':'')
+      + '</div>'
+      + (sub?'<div style="font-size:9.5px;font-weight:400;color:#8993A3;margin-top:5px;">'+sub+'</div>':'')
+    + '</div>';
+  }
+
+  var snapshotHtml = '<div style="display:grid;grid-template-columns:repeat(3,1fr);column-gap:28px;border-top:1px solid #F1F3F7;border-bottom:1px solid #F1F3F7;margin-bottom:44px;">'
+    + snapCard('cliente', 'Cliente', escapeHtml(cliente), '', atencion?'Atn: '+escapeHtml(atencion):'')
+    + snapCard('proyecto', 'Proyecto', escapeHtml(proyecto.length > 22 ? proyecto.slice(0,22)+'…' : proyecto), '', '')
+    + snapCard('ubicacion', 'Ubicación', escapeHtml(ubicacion), '', '')
+    + snapCard('area', 'Área', totalM2>0?totalM2.toLocaleString('es-MX'):'—', totalM2>0?'m²':'', '')
+    + snapCard('monto', 'Inversión', '$'+fmtPeso(total).split('.')[0], 'MXN', 'IVA incluido')
+    + snapCard('calendario', 'Vigencia', String(vigencia), 'días', 'Desde emisión')
+  + '</div>';
+
+  // ── Bloque 3: Resumen del proyecto en 30 segundos — lenguaje ejecutivo, máx 4 líneas ──
+  var resumen30 = 'ROMSA Industrial ejecutará <strong style="color:#0B1F3A;font-weight:500;">'+escapeHtml(proyecto)+'</strong> en las instalaciones de <strong style="color:#0B1F3A;font-weight:500;">'+escapeHtml(cliente)+'</strong>, en '+escapeHtml(ubicacion)+', mediante '+escapeHtml(sistemaTxt)+'. El objetivo es restaurar y proteger el área intervenida, incrementando su vida útil y reduciendo costos futuros de mantenimiento.';
+
+  // ── Bloque 4: Objetivo del proyecto — habla del proyecto, no del documento ──
+  var objetivoTxt = 'Restaurar y proteger el área mediante '+escapeHtml(sistemaTxt)+' de alto desempeño, incrementando la vida útil de la superficie y reduciendo los costos futuros de mantenimiento.';
+
+  // ── Beneficios esperados (máx 5, con iconografía) ──
+  var beneficios = ['Mayor durabilidad', 'Mayor resistencia química', 'Fácil limpieza', 'Mejor imagen', 'Mayor vida útil'];
+  var beneficiosHtml = '<div style="display:grid;grid-template-columns:repeat(3,1fr);row-gap:16px;">'
+    + beneficios.map(function(b){
+        return '<div style="display:flex;align-items:center;gap:8px;">'+icono('check')+'<div style="font-size:11px;font-weight:400;color:#1B2430;">'+b+'</div></div>';
+      }).join('')
+  + '</div>';
+
   return '<div class="fp-page"><div class="fp-body">'
+    // BLOQUE 1 — Header
     + '<div class="fp-eyebrow-navy">Resumen Ejecutivo</div>'
-    + '<div class="fp-h1" style="margin-bottom:34px;">Propuesta para '+escapeHtml(cliente)+'</div>'
-    + '<div class="fp-kpi-grid">'
-      + '<div class="fp-kpi"><div class="fp-kpi-label">Cliente</div><div class="fp-kpi-value">'+escapeHtml(cliente)+'</div><div class="fp-kpi-sub">'+(atencion?'Atn: '+escapeHtml(atencion):'')+'</div></div>'
-      + '<div class="fp-kpi"><div class="fp-kpi-label">Proyecto</div><div class="fp-kpi-value">'+escapeHtml(proyecto)+'</div><div class="fp-kpi-sub"></div></div>'
-      + '<div class="fp-kpi"><div class="fp-kpi-label">Ubicación</div><div class="fp-kpi-value">'+escapeHtml(ubicacion)+'</div><div class="fp-kpi-sub"></div></div>'
-      + '<div class="fp-kpi"><div class="fp-kpi-label">Área estimada</div><div class="fp-kpi-value">'+(totalM2>0?totalM2.toLocaleString('es-MX')+' m²':'—')+'</div><div class="fp-kpi-sub"></div></div>'
-      + '<div class="fp-kpi"><div class="fp-kpi-label">Inversión total</div><div class="fp-kpi-value">$'+fmtPeso(total)+'</div><div class="fp-kpi-sub">MXN, IVA incluido</div></div>'
-      + '<div class="fp-kpi"><div class="fp-kpi-label">Vigencia</div><div class="fp-kpi-value">'+escapeHtml(String(vigencia))+' días naturales</div><div class="fp-kpi-sub">Desde la fecha de emisión</div></div>'
+    + '<div class="fp-h1" style="font-size:24px;margin-bottom:6px;padding-bottom:0;border:none;">Propuesta Técnica para '+escapeHtml(cliente)+'</div>'
+    + '<div style="width:56px;height:3px;background:linear-gradient(90deg,#0B1F3A,#5D7FB0);border-radius:2px;margin-bottom:40px;"></div>'
+    // BLOQUE 2 — Project Snapshot
+    + snapshotHtml
+    // BLOQUE 3 — Resumen en 30 segundos
+    + '<div style="margin-bottom:38px;">'
+      + '<div style="font-size:9.5px;font-weight:500;letter-spacing:1.6px;color:#8993A3;text-transform:uppercase;margin-bottom:12px;">El proyecto en 30 segundos</div>'
+      + '<div style="font-size:13px;color:#1B2430;line-height:1.9;font-weight:400;max-width:150mm;">'+resumen30+'</div>'
     + '</div>'
-    + '<div class="fp-section"><div class="fp-label">Presentación</div><div class="fp-p">'+parrafo1+'</div></div>'
-    + '<div class="fp-section"><div class="fp-label">Objetivo</div><div class="fp-p">'+parrafo2+'</div></div>'
-    + (nota ? '<div class="fp-section"><div class="fp-label">Nota adicional</div><div class="fp-p">'+escapeHtml(nota)+'</div></div>' : '')
+    // BLOQUE 4 — Objetivo del Proyecto
+    + '<div style="margin-bottom:38px;">'
+      + '<div style="font-size:9.5px;font-weight:500;letter-spacing:1.6px;color:#8993A3;text-transform:uppercase;margin-bottom:12px;">Objetivo del Proyecto</div>'
+      + '<div style="font-size:12px;color:#1B2430;line-height:1.85;font-weight:400;max-width:150mm;">'+objetivoTxt+'</div>'
+    + '</div>'
+    // Beneficios esperados
+    + '<div>'
+      + '<div style="font-size:9.5px;font-weight:500;letter-spacing:1.6px;color:#8993A3;text-transform:uppercase;margin-bottom:16px;">Beneficios Esperados</div>'
+      + beneficiosHtml
+    + '</div>'
     + '</div>'
     + _fpFooter(logoAzul, cliente, proyecto)
   + '</div>';
