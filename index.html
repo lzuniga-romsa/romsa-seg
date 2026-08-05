@@ -20399,9 +20399,11 @@ function generarPdfCotPremium(cot, winRef, fotoDataUrl){
     return m ? m[1] : '';
   }
   var garantiaTxt = extraerNumero(cot.condGarantia, /(\d+)\s*meses/i);
-  var sistemaResumen = partidas.length === 1
-    ? (partidas[0].tituloCustom || partidas[0].servicio || 'Sistema especificado')
-    : partidas.length + ' sistemas';
+  function nombreDePartida(p){
+    return (p.tituloCustom && p.tituloCustom.trim()) ? p.tituloCustom.trim()
+         : (p.servicio === '__PERSONALIZADO__' ? 'Sistema personalizado' : (p.servicio || 'Sistema especificado'));
+  }
+  var sistemaResumen = partidas.length === 1 ? nombreDePartida(partidas[0]) : '';
 
   // ALCANCE y BENEFICIOS genéricos por ficha — aplican a cualquier sistema de
   // recubrimiento/impermeabilización; si en algún momento quieres que varíen
@@ -20429,15 +20431,25 @@ function generarPdfCotPremium(cot, winRef, fotoDataUrl){
     + '</div>';
   }
   var multiSistema = partidas.length > 1;
-  var gridColsResumen = multiSistema ? '1fr 2fr 1fr 1fr' : '1fr 2.4fr 1fr';
-  var resumenTecnicoBloque = '<div class="fp-item" style="break-inside:avoid;background:#FAFBFC;border-radius:10px;padding:20px 22px;margin-bottom:6px;">'
-    + '<div style="font-size:9px;font-weight:500;letter-spacing:1.6px;color:#8993A3;text-transform:uppercase;margin-bottom:16px;">Resumen Técnico</div>'
-    + '<div style="display:grid;grid-template-columns:'+gridColsResumen+';column-gap:20px;row-gap:16px;">'
+  var resumenTecnicoInner;
+  if(multiSistema){
+    // 2+ sistemas: cantidad + lista real de cada uno (nunca el bulto genérico "N sistemas")
+    var listaSistemasHtml = partidas.map(function(p){
+      return '<div style="display:flex;align-items:baseline;gap:7px;margin-top:5px;"><div style="width:7px;height:1.5px;background:#8FA3C4;border-radius:1px;flex-shrink:0;margin-top:-1px;"></div><div style="font-size:11.5px;font-weight:600;color:#2C4A78;">'+escapeHtml(nombreDePartida(p))+'</div></div>';
+    }).join('');
+    resumenTecnicoInner = '<div style="display:grid;grid-template-columns:1fr 2.6fr;column-gap:24px;">'
+      + resumenKpi('Sistemas Incluidos', String(partidas.length), '')
+      + '<div style="min-width:0;"><div style="font-size:8px;font-weight:500;letter-spacing:1.2px;color:#8993A3;text-transform:uppercase;">Sistemas Propuestos</div>'+listaSistemasHtml+'</div>'
+    + '</div>';
+  } else {
+    resumenTecnicoInner = '<div style="display:grid;grid-template-columns:1fr 3fr;column-gap:20px;">'
       + resumenKpi('Área', totalM2>0?totalM2.toLocaleString('es-MX'):'', 'm²')
       + resumenKpi('Sistema', escapeHtml(sistemaResumen), '', true)
-      + resumenKpi('Garantía', garantiaTxt, 'meses')
-      + (multiSistema ? resumenKpi('Sistemas Incluidos', String(partidas.length), '') : '')
-    + '</div>'
+    + '</div>';
+  }
+  var resumenTecnicoBloque = '<div class="fp-item" style="break-inside:avoid;background:#FAFBFC;border-radius:10px;padding:20px 22px;margin-bottom:6px;">'
+    + '<div style="font-size:9px;font-weight:500;letter-spacing:1.6px;color:#8993A3;text-transform:uppercase;margin-bottom:16px;">Resumen Técnico</div>'
+    + resumenTecnicoInner
   + '</div>';
 
   // BLOQUE 3 — Soluciones Propuestas: cada partida como ficha técnica independiente
@@ -20808,8 +20820,8 @@ function _fpCierreHtml(logoBlanco, tel, email, web){
       // Mensaje principal + institucional — centro visual de la página
       + '<div style="text-align:center;max-width:130mm;margin:0 auto;">'
         + '<div style="margin-bottom:22px;">'
-          + '<div style="font-family:\'Manrope\',sans-serif;font-size:15px;font-weight:500;letter-spacing:5px;line-height:1.6;color:#fff;">INGENIERÍA APLICADA<span style="color:#8FA3C4;">·</span></div>'
-          + '<div style="font-family:\'Manrope\',sans-serif;font-size:29px;font-weight:800;letter-spacing:-.3px;line-height:1.3;color:#fff;margin-top:6px;">Resultados que permanecen<span style="color:#8FA3C4;">·</span></div>'
+          + '<div style="font-family:\'Manrope\',sans-serif;font-size:24px;font-weight:500;letter-spacing:2px;line-height:1.4;color:#fff;">INGENIERÍA APLICADA<span style="color:#8FA3C4;">·</span></div>'
+          + '<div style="font-family:\'Manrope\',sans-serif;font-size:24px;font-weight:800;letter-spacing:-.3px;line-height:1.4;color:#fff;margin-top:6px;">Resultados que permanecen<span style="color:#8FA3C4;">·</span></div>'
         + '</div>'
         + '<div style="font-size:11px;color:rgba(255,255,255,.62);line-height:1.8;max-width:105mm;margin:0 auto;">ROMSA Industrial desarrolla soluciones especializadas para pisos industriales, cubiertas y mantenimiento de instalaciones, ejecutadas con materiales certificados, procesos estandarizados y personal altamente capacitado.</div>'
       + '</div>'
