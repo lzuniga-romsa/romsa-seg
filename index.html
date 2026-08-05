@@ -20300,12 +20300,37 @@ window.abrirSelectorFotoPremium = abrirSelectorFotoPremium;
 function _fpSubirCustom(input){
   var file = input.files && input.files[0];
   if(!file) return;
-  if(file.size > 8*1024*1024){ alert('⚠️ La imagen pesa más de 8 MB, elige una más ligera.'); return; }
+  if(file.size > 15*1024*1024){ alert('⚠️ La imagen pesa más de 15 MB, elige una más ligera.'); return; }
   var reader = new FileReader();
   reader.onload = function(e){
-    _fpCustomDataUrl = e.target.result;
-    document.getElementById('fp-custom-img').src = _fpCustomDataUrl;
-    document.getElementById('fp-custom-preview').style.display = 'block';
+    var img = new Image();
+    img.onload = function(){
+      // La portada mide 210mm de ancho (A4). 2000px de ancho equivale a ~240 DPI,
+      // muy por encima de lo que el ojo distingue impreso o en pantalla — así que
+      // recortamos el exceso de megapíxeles de la foto de celular sin que se note,
+      // y esa es la parte que realmente pesa el PDF.
+      var MAX_DIM = 2000;
+      var w = img.naturalWidth, h = img.naturalHeight;
+      var scale = Math.min(1, MAX_DIM / Math.max(w, h));
+      var cw = Math.round(w * scale), ch = Math.round(h * scale);
+      var canvas = document.createElement('canvas');
+      canvas.width = cw; canvas.height = ch;
+      var ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, cw, ch);
+      // Calidad 0.92: visualmente indistinguible del original, pero mucho más ligera
+      // que el PNG/JPEG sin comprimir que entrega la cámara del celular.
+      _fpCustomDataUrl = canvas.toDataURL('image/jpeg', 0.92);
+      document.getElementById('fp-custom-img').src = _fpCustomDataUrl;
+      document.getElementById('fp-custom-preview').style.display = 'block';
+    };
+    img.onerror = function(){
+      // Si por alguna razón la imagen no carga en un <img> (formato raro), usamos el
+      // archivo original sin procesar en lugar de bloquear al usuario.
+      _fpCustomDataUrl = e.target.result;
+      document.getElementById('fp-custom-img').src = _fpCustomDataUrl;
+      document.getElementById('fp-custom-preview').style.display = 'block';
+    };
+    img.src = e.target.result;
   };
   reader.readAsDataURL(file);
 }
