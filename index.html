@@ -20435,9 +20435,9 @@ function generarPdfCotPremium(cot, winRef, fotoDataUrl){
   if(multiSistema){
     // 2+ sistemas: cantidad + lista real de cada uno (nunca el bulto genérico "N sistemas")
     var listaSistemasHtml = partidas.map(function(p){
-      return '<div style="display:flex;align-items:baseline;gap:7px;margin-top:5px;"><div style="width:7px;height:1.5px;background:#8FA3C4;border-radius:1px;flex-shrink:0;margin-top:-1px;"></div><div style="font-size:11.5px;font-weight:600;color:#2C4A78;">'+escapeHtml(nombreDePartida(p))+'</div></div>';
+      return '<div style="display:flex;align-items:baseline;gap:7px;margin-top:6px;"><div style="width:6px;height:1.5px;background:#8FA3C4;border-radius:1px;flex-shrink:0;margin-top:-1px;"></div><div style="font-size:10px;font-weight:500;color:#1B2430;line-height:1.4;">'+escapeHtml(nombreDePartida(p))+'</div></div>';
     }).join('');
-    resumenTecnicoInner = '<div style="display:grid;grid-template-columns:1fr 2.6fr;column-gap:24px;">'
+    resumenTecnicoInner = '<div style="display:grid;grid-template-columns:1fr 2.2fr;column-gap:24px;">'
       + resumenKpi('Sistemas Incluidos', String(partidas.length), '')
       + '<div style="min-width:0;"><div style="font-size:8px;font-weight:500;letter-spacing:1.2px;color:#8993A3;text-transform:uppercase;">Sistemas Propuestos</div>'+listaSistemasHtml+'</div>'
     + '</div>';
@@ -20820,8 +20820,8 @@ function _fpCierreHtml(logoBlanco, tel, email, web){
       // Mensaje principal + institucional — centro visual de la página
       + '<div style="text-align:center;max-width:130mm;margin:0 auto;">'
         + '<div style="margin-bottom:22px;">'
-          + '<div style="font-family:\'Manrope\',sans-serif;font-size:24px;font-weight:500;letter-spacing:2px;line-height:1.4;color:#fff;">INGENIERÍA APLICADA<span style="color:#8FA3C4;">·</span></div>'
-          + '<div style="font-family:\'Manrope\',sans-serif;font-size:24px;font-weight:800;letter-spacing:-.3px;line-height:1.4;color:#fff;margin-top:6px;">Resultados que permanecen<span style="color:#8FA3C4;">·</span></div>'
+          + '<div style="font-family:\'Manrope\',sans-serif;font-size:24px;font-weight:700;letter-spacing:-.2px;line-height:1.4;color:#8FA3C4;">Ingeniería aplicada</div>'
+          + '<div style="font-family:\'Manrope\',sans-serif;font-size:24px;font-weight:700;letter-spacing:-.2px;line-height:1.4;color:#fff;">Resultados que permanecen.</div>'
         + '</div>'
         + '<div style="font-size:11px;color:rgba(255,255,255,.62);line-height:1.8;max-width:105mm;margin:0 auto;">ROMSA Industrial desarrolla soluciones especializadas para pisos industriales, cubiertas y mantenimiento de instalaciones, ejecutadas con materiales certificados, procesos estandarizados y personal altamente capacitado.</div>'
       + '</div>'
