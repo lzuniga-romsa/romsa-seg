@@ -20398,7 +20398,6 @@ function generarPdfCotPremium(cot, winRef, fotoDataUrl){
     var m = texto.match(regex);
     return m ? m[1] : '';
   }
-  var tiempoTxt = extraerNumero(cot.condTiempo, /(\d+(?:\s*a\s*\d+)?)\s*d[ií]as?/i);
   var garantiaTxt = extraerNumero(cot.condGarantia, /(\d+)\s*meses/i);
   var sistemaResumen = partidas.length === 1
     ? (partidas[0].tituloCustom || partidas[0].servicio || 'Sistema especificado')
@@ -20429,13 +20428,15 @@ function generarPdfCotPremium(cot, winRef, fotoDataUrl){
       + '<div style="display:flex;align-items:baseline;gap:4px;"><div style="font-family:\'Manrope\',sans-serif;font-size:'+tam+';font-weight:600;color:#2C4A78;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word;">'+valor+'</div>'+(unidad?'<div style="font-size:9.5px;color:#8993A3;flex-shrink:0;">'+unidad+'</div>':'')+'</div>'
     + '</div>';
   }
+  var multiSistema = partidas.length > 1;
+  var gridColsResumen = multiSistema ? '1fr 2fr 1fr 1fr' : '1fr 2.4fr 1fr';
   var resumenTecnicoBloque = '<div class="fp-item" style="break-inside:avoid;background:#FAFBFC;border-radius:10px;padding:20px 22px;margin-bottom:6px;">'
     + '<div style="font-size:9px;font-weight:500;letter-spacing:1.6px;color:#8993A3;text-transform:uppercase;margin-bottom:16px;">Resumen Técnico</div>'
-    + '<div style="display:grid;grid-template-columns:repeat(4,1fr);column-gap:14px;row-gap:16px;">'
+    + '<div style="display:grid;grid-template-columns:'+gridColsResumen+';column-gap:20px;row-gap:16px;">'
       + resumenKpi('Área', totalM2>0?totalM2.toLocaleString('es-MX'):'', 'm²')
       + resumenKpi('Sistema', escapeHtml(sistemaResumen), '', true)
-      + resumenKpi('Tiempo de Ejecución', tiempoTxt, 'días')
       + resumenKpi('Garantía', garantiaTxt, 'meses')
+      + (multiSistema ? resumenKpi('Sistemas Incluidos', String(partidas.length), '') : '')
     + '</div>'
   + '</div>';
 
@@ -20521,7 +20522,7 @@ function generarPdfCotPremium(cot, winRef, fotoDataUrl){
   var condiciones = _fpDistribuirBloques(condsBloques, 'Condiciones Generales de Venta', 'Términos de la propuesta', logoAzul, cliente, proyecto);
 
   var htmlDoc = '<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Cotización Premium — '+escapeHtml(cliente)+'</title>'
-    + '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Manrope:wght@700;800&display=swap" rel="stylesheet">'
+    + '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Manrope:wght@500;700;800&display=swap" rel="stylesheet">'
     + '<style>'+CSS+'</style></head><body>'
     + '<div class="toolbar"><button onclick="window.print()">🖨️ Imprimir / Guardar PDF</button><button class="alt" onclick="window.close()">Cerrar</button></div>'
     + '<div id="doc">' + portada + resumen + servicio + pasos + condiciones + cierre + '</div>'
