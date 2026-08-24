@@ -2513,7 +2513,10 @@ body.in-fotoeditor #app{
     <div id="cos-tab-costeos" class="cos-tab-panel" style="display:none;padding:16px;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
         <div style="font-size:12px;font-weight:700;color:var(--navy);">Costeos de proyectos</div>
-        <button onclick="nuevoCosteo()" style="background:#1E6FD9;color:#fff;border:none;padding:8px 14px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:var(--font);">+ Nuevo Costeo</button>
+        <div style="display:flex;gap:8px;">
+          <button onclick="abrirCosteoAutomatico()" style="background:linear-gradient(135deg,#1E6FD9,#6B4FE0);color:#fff;border:none;padding:8px 14px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:var(--font);">✨ Costeo Automático</button>
+          <button onclick="nuevoCosteo()" style="background:#1E6FD9;color:#fff;border:none;padding:8px 14px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:var(--font);">+ Nuevo Costeo</button>
+        </div>
       </div>
       <!-- Buscador costeos -->
       <div style="position:relative;margin-bottom:10px;">
@@ -12434,7 +12437,7 @@ const COSTEO_SEED_MATERIALES = [
     id: "mat_lm555_gris",
     nombre: "LM555 Color Gris",
     presentacion: "cubeta",
-    precio: 3453.00,
+    precio: 3700.00,
     notas: "Epóxico 100% sólidos — Parte A",
     rendimientos: [
       {espesor:"10 mils",   m2PorGalon:14.86},
@@ -12447,7 +12450,7 @@ const COSTEO_SEED_MATERIALES = [
     id: "mat_epo35",
     nombre: "EPO35",
     presentacion: "cubeta",
-    precio: 3524.00,
+    precio: 3700.00,
     notas: "Epóxico 100% sólidos — Parte B",
     rendimientos: [
       {espesor:"10 mils",   m2PorGalon:14.86},
@@ -12460,10 +12463,10 @@ const COSTEO_SEED_MATERIALES = [
     id: "mat_poliuretano_l32",
     nombre: "Poliuretano Línea 32",
     presentacion: "cubeta",
-    precio: 6894.00,
+    precio: 6900.00,
     notas: "Acabado de poliuretano resistente a UV",
     rendimientos: [
-      {espesor:"4 mils",    m2PorGalon:140.00}  /* rango 120-160, promedio */
+      {espesor:"4 mils",    m2PorGalon:22.71}  /* 120 m²/kit de 20L confirmado */
     ]
   },
   {
@@ -13260,6 +13263,104 @@ function nuevoCosteo(){
   setTimeout(function(){ cambiarModalidadCosteo("industrial"); }, 100);
 }
 
+// ── COSTEO AUTOMÁTICO — descripción libre → costeo pre-armado ──
+// Interpretación por palabras clave (no es IA generativa): busca menciones
+// de sistemas conocidos, su espesor en mils, y el área en m². Genera un
+// costeo en borrador que el usuario siempre revisa/edita antes de guardar
+// — el parser es un punto de partida, no un cálculo final automático.
+const _CA_SISTEMA_KEYWORDS = [
+  { match: function(t){ return /epox/i.test(t) && /poliuretano/i.test(t); }, nombre: "Epóxico con acabado de poliuretano" },
+  { match: function(t){ return /epox/i.test(t) && !/poliuretano/i.test(t); }, nombre: "Epóxico 100% sólidos" },
+  { match: function(t){ return /mortero|uretano cement|flowfresh/i.test(t); }, nombre: "Mortero uretano cementicio" },
+  { match: function(t){ return /sello|sikaflex|juntas?\b/i.test(t) && /grieta|junta/i.test(t); }, nombre: "Sello de juntas y grietas" },
+  { match: function(t){ return /pulido|desbaste|\bdpa\b/i.test(t); }, nombre: "Desbaste y pulido de concreto" },
+  { match: function(t){ return /reparaci[oó]n de losa/i.test(t); }, nombre: "Reparación de losa" },
+  { match: function(t){ return /pintura industrial/i.test(t); }, nombre: "Pintura industrial" }
+];
+
+function abrirCosteoAutomatico(){
+  const ov = document.createElement("div");
+  ov.className = "cos-modal-ov";
+  ov.style.cssText = "position:fixed;inset:0;background:rgba(10,20,40,.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;";
+  ov.onclick = function(e){ if(e.target===ov) ov.remove(); };
+  ov.innerHTML = '<div class="cos-modal" onclick="event.stopPropagation();" style="max-width:520px;width:100%;background:#fff;border-radius:14px;overflow:hidden;">'
+    +'<div style="padding:16px 18px;background:linear-gradient(135deg,#1E6FD9,#6B4FE0);color:#fff;">'
+      +'<div style="font-size:14px;font-weight:800;">✨ Costeo Automático</div>'
+      +'<div style="font-size:11px;opacity:.9;margin-top:2px;">Describe el proyecto y te arma un borrador — tú lo revisas antes de guardar</div>'
+    +'</div>'
+    +'<div style="padding:18px;">'
+      +'<label style="font-size:11px;font-weight:700;color:var(--navy);display:block;margin-bottom:6px;">Descripción del proyecto</label>'
+      +'<textarea id="ca-texto" rows="4" placeholder="Ej. Epóxico 20 mils y poliuretano 4 mils en 83 m2" style="width:100%;padding:10px;border:1px solid var(--g1);border-radius:8px;font-family:var(--font);font-size:12px;resize:vertical;box-sizing:border-box;"></textarea>'
+      +'<div style="font-size:10px;color:var(--tx3);margin-top:6px;">Puedes describir varios sistemas en el mismo texto (ej. "sello de juntas en 40 m.l. y pulido de concreto en 200 m2"). Si el área aplica a todo el texto, con mencionarla una vez basta.</div>'
+      +'<button onclick="_procesarCosteoAutomatico()" style="margin-top:14px;width:100%;background:#1E6FD9;color:#fff;border:none;padding:11px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font);">Generar borrador de costeo</button>'
+      +'<button onclick="this.closest(\'.cos-modal-ov\').remove()" style="margin-top:8px;width:100%;background:none;color:var(--tx2);border:none;padding:6px;font-size:11px;cursor:pointer;font-family:var(--font);">Cancelar</button>'
+    +'</div>'
+  +'</div>';
+  document.body.appendChild(ov);
+  setTimeout(function(){ var t=document.getElementById("ca-texto"); if(t) t.focus(); }, 50);
+}
+window.abrirCosteoAutomatico = abrirCosteoAutomatico;
+
+function _procesarCosteoAutomatico(){
+  const texto = (document.getElementById("ca-texto")?.value || "").trim();
+  if(!texto){ showToast("⚠️ Describe el proyecto primero"); return; }
+
+  // Área global: primer número seguido de m2/m²/metros cuadrados en todo el texto
+  const areaMatch = texto.match(/(\d+(?:\.\d+)?)\s*(?:m2|m²|metros?\s*cuadrados?)/i);
+  const areaGlobal = areaMatch ? parseFloat(areaMatch[1]) : null;
+
+  // Detectar qué sistema(s) se mencionan
+  const sistemasDetectados = [];
+  _CA_SISTEMA_KEYWORDS.forEach(function(k){
+    if(k.match(texto) && sistemasDetectados.indexOf(k.nombre)<0) sistemasDetectados.push(k.nombre);
+  });
+
+  if(!sistemasDetectados.length){
+    showToast("⚠️ No reconocí ningún sistema en el texto — ábrelo manual y ajusta");
+    document.querySelector(".cos-modal-ov")?.remove();
+    nuevoCosteo();
+    return;
+  }
+  if(!areaGlobal){
+    showToast("⚠️ No encontré el área (m²) — agrégala en el texto, ej. 'en 83 m2'");
+    return;
+  }
+
+  // Espesor: buscar el primer número seguido de "mils" que aparezca ANTES
+  // de la palabra "poliuretano" (si existe) — así el espesor detectado
+  // corresponde a la capa base de epóxico, no al acabado (que siempre usa
+  // su propio rendimiento fijo de 4 mils).
+  let espesorDetectado = null;
+  const idxPoliuretano = texto.search(/poliuretano/i);
+  const textoParaEspesor = idxPoliuretano>=0 ? texto.slice(0, idxPoliuretano) : texto;
+  const espesorMatch = textoParaEspesor.match(/(\d+(?:\.\d+)?)\s*mils?/i);
+  if(espesorMatch) espesorDetectado = espesorMatch[1]+" mils";
+
+  document.querySelector(".cos-modal-ov")?.remove();
+
+  // Crear el costeo base (mismo flujo que "Nuevo Costeo")
+  nuevoCosteo();
+  _ceCosteo.sistemas = [];
+
+  sistemasDetectados.forEach(function(nombreSistema){
+    const idx = _ceCosteo.sistemas.length;
+    _ceCosteo.sistemas.push({
+      nombre: nombreSistema,
+      cantidad: areaGlobal,
+      unidad: "m²",
+      partidas: []
+    });
+    if(COSTEO_KITS[nombreSistema]){
+      aplicarKit(idx, espesorDetectado);
+    }
+  });
+
+  _renderSistemas();
+  _actualizarResumenGlobal();
+  showToast("✨ Borrador generado — revisa espesores, área y materiales antes de guardar");
+}
+window._procesarCosteoAutomatico = _procesarCosteoAutomatico;
+
 // ── Abrir editor (cargar existente) ───────────────────────────
 function abrirCosteo(id){
   const c = _costeoCosteos.find(x=>x.id===id);
@@ -14016,11 +14117,14 @@ function _abrirModalSelector(tipo, sIdx){
 }
 
 // ── Calcular cantidad auto para material ─────────────────────
+// Regla del negocio: no se compra por litro/galón suelto — el pedido mínimo
+// por componente es 1 cubeta completa, y solo se compra en cubetas enteras
+// (nunca fracciones), redondeando siempre hacia arriba.
 function _calcularCantMaterial(m2, rend){
   if(!rend || !rend.m2PorGalon || !m2) return 0;
   const galonesNecesarios = m2 / rend.m2PorGalon;
   const cubetasNecesarias = galonesNecesarios / GALONES_POR_CUBETA;
-  return Math.ceil(cubetasNecesarias * 100) / 100;  // 2 decimales, redondeado hacia arriba
+  return Math.max(1, Math.ceil(cubetasNecesarias));  // cubetas enteras, mínimo 1
 }
 
 // ── Selección de Material ─────────────────────────────────────
@@ -14349,7 +14453,11 @@ async function _guardarPartidaAlCatalogo(sIdx, pIdx){
 }
 
 // ── Aplicar kit (auto-agrega materiales + MO) ────────────────
-function aplicarKit(sIdx){
+// espesorOverride (opcional): espesor real del proyecto (ej. "20 mils") para
+// los materiales base del kit que no tienen su propio rendOverride fijo
+// (como el acabado de poliuretano, que siempre va a 4 mils). Si no se pasa,
+// se mantiene el comportamiento anterior (30 mils por default).
+function aplicarKit(sIdx, espesorOverride){
   const s = _ceCosteo.sistemas[sIdx];
   if(!s) return;
   const kit = COSTEO_KITS[s.nombre];
@@ -14371,12 +14479,16 @@ function aplicarKit(sIdx){
     const mat = _costeoMateriales.find(x=>x.id===km.matId);
     if(!mat) return;
 
-    // Rendimiento: el primero o el especificado
+    // Rendimiento: el especificado por el kit, el espesor real del proyecto, o 30 mils por default
     let rend = null;
     let rendIdx = -1;
     if(mat.rendimientos && mat.rendimientos.length){
       if(km.rendOverride){
         rendIdx = mat.rendimientos.findIndex(r=>r.espesor===km.rendOverride);
+        if(rendIdx<0) rendIdx = 0;
+      } else if(espesorOverride){
+        rendIdx = mat.rendimientos.findIndex(r=>r.espesor===espesorOverride);
+        if(rendIdx<0) rendIdx = mat.rendimientos.findIndex(r=>r.espesor==="30 mils");
         if(rendIdx<0) rendIdx = 0;
       } else {
         // Para kits, usar 30 mils por default si existe
@@ -20282,71 +20394,135 @@ const _fpFotos = {
 };
 let _fpCustomDataUrl = null;
 
-function abrirSelectorFotoPremium(){
+// ── Librería de fotos de portada — Firebase Storage + Firestore ──────
+// Reemplaza las fotos de ejemplo "quemadas" en _fpFotos: ahora el selector
+// carga dinámicamente desde la colección cotizacion_fotos_portada.
+let _fpLibreria = [];
+let _fpLibreriaCargada = false;
+let _fpArchivoNuevo = null;
+
+async function _fpCargarLibreria(forzar){
+  if(_fpLibreriaCargada && !forzar) return _fpLibreria;
+  if(!db) return _fpLibreria;
+  try {
+    var snap = await db.collection("cotizacion_fotos_portada").orderBy("ts","desc").get();
+    _fpLibreria = snap.docs.map(function(d){
+      var data = d.data();
+      data.id = d.id;
+      return data;
+    });
+    _fpLibreriaCargada = true;
+  } catch(err){
+    console.error("[ROMSA] Error cargando librería de fotos de portada:", err);
+  }
+  return _fpLibreria;
+}
+
+function _fpRenderGrid(){
   var grid = document.getElementById('fp-grid-default');
-  var labels = {cubierta:'Impermeabilización', epoxico:'Recubrimiento Epóxico', pulido:'Pulido de Concreto', epoxico_gris_medio:'Epóxico Gris Medio', epoxico_gris_claro:'Epóxico Gris Claro', dpa:'DPA', uretano_cementicio:'Uretano Cementicio'};
-  grid.innerHTML = Object.keys(_fpFotos).map(function(k){
-    return '<div onclick="_fpSeleccionar(\''+k+'\')" style="cursor:pointer;">'
-      + '<div style="width:100%;aspect-ratio:4/3;border-radius:8px;background-image:url(\''+_fpFotos[k]+'\');background-size:cover;background-position:center;border:2px solid transparent;margin-bottom:6px;"></div>'
-      + '<div style="font-size:10px;font-weight:600;color:#4A5E7A;text-align:center;">'+labels[k]+'</div>'
-      + '</div>';
+  if(!grid) return;
+  if(!_fpLibreria.length){
+    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:22px 10px;color:#94A3B8;font-size:12px;line-height:1.5;">Aún no hay fotos en tu librería.<br>Sube la primera abajo 👇</div>';
+    return;
+  }
+  grid.innerHTML = _fpLibreria.map(function(f){
+    return '<div style="position:relative;">'
+      + '<div onclick="_fpSeleccionarLib(\''+f.id+'\')" style="cursor:pointer;">'
+        + '<div style="width:100%;aspect-ratio:4/3;border-radius:8px;background-image:url(\''+f.url+'\');background-size:cover;background-position:center;border:2px solid transparent;margin-bottom:6px;"></div>'
+        + '<div style="font-size:10px;font-weight:600;color:#4A5E7A;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+escapeHtml(f.nombre||"Foto")+'</div>'
+      + '</div>'
+      + '<button onclick="event.stopPropagation();_fpEliminarLib(\''+f.id+'\',\''+(f.path||"").replace(/'/g,"\\'")+'\')" title="Eliminar de la librería" style="position:absolute;top:-7px;right:-7px;width:20px;height:20px;border-radius:50%;background:#EF4444;color:#fff;border:2px solid #fff;font-size:11px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;">✕</button>'
+    + '</div>';
   }).join('');
+}
+
+async function abrirSelectorFotoPremium(){
   document.getElementById('fp-custom-preview').style.display = 'none';
+  var inputSubir = document.getElementById('fp-input-subir');
+  if(inputSubir) inputSubir.value = '';
+  var catInput = document.getElementById('fp-nueva-categoria');
+  if(catInput) catInput.value = '';
   _fpCustomDataUrl = null;
+  _fpArchivoNuevo = null;
   document.getElementById('modal-foto-premium').style.display = 'flex';
+  var grid = document.getElementById('fp-grid-default');
+  grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:20px;color:#94A3B8;font-size:12px;">Cargando librería...</div>';
+  await _fpCargarLibreria();
+  _fpRenderGrid();
 }
 window.abrirSelectorFotoPremium = abrirSelectorFotoPremium;
+
+function _fpSeleccionarLib(id){
+  var f = _fpLibreria.find(function(x){ return x.id === id; });
+  if(!f) return;
+  document.getElementById('modal-foto-premium').style.display = 'none';
+  _guardarYVerCotPremiumConFoto(f.url);
+}
+window._fpSeleccionarLib = _fpSeleccionarLib;
+
+async function _fpEliminarLib(id, path){
+  if(!confirm('¿Eliminar esta foto de la librería? No afecta cotizaciones ya generadas.')) return;
+  try {
+    if(path && storage) await storage.ref().child(path).delete();
+    if(db) await db.collection('cotizacion_fotos_portada').doc(id).delete();
+    _fpLibreria = _fpLibreria.filter(function(x){ return x.id !== id; });
+    _fpRenderGrid();
+    showToast('✓ Foto eliminada de la librería');
+  } catch(err){
+    console.error('[ROMSA] Error eliminando foto de portada:', err);
+    showToast("⚠️ No se pudo eliminar la foto");
+  }
+}
+window._fpEliminarLib = _fpEliminarLib;
 
 function _fpSubirCustom(input){
   var file = input.files && input.files[0];
   if(!file) return;
   if(file.size > 15*1024*1024){ alert('⚠️ La imagen pesa más de 15 MB, elige una más ligera.'); return; }
+  if(!file.type.startsWith('image/')){ alert('⚠️ El archivo no es una imagen.'); return; }
+  _fpArchivoNuevo = file;
   var reader = new FileReader();
   reader.onload = function(e){
-    var img = new Image();
-    img.onload = function(){
-      // La portada mide 210mm de ancho (A4). 2000px de ancho equivale a ~240 DPI,
-      // muy por encima de lo que el ojo distingue impreso o en pantalla — así que
-      // recortamos el exceso de megapíxeles de la foto de celular sin que se note,
-      // y esa es la parte que realmente pesa el PDF.
-      var MAX_DIM = 2000;
-      var w = img.naturalWidth, h = img.naturalHeight;
-      var scale = Math.min(1, MAX_DIM / Math.max(w, h));
-      var cw = Math.round(w * scale), ch = Math.round(h * scale);
-      var canvas = document.createElement('canvas');
-      canvas.width = cw; canvas.height = ch;
-      var ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0, cw, ch);
-      // Calidad 0.92: visualmente indistinguible del original, pero mucho más ligera
-      // que el PNG/JPEG sin comprimir que entrega la cámara del celular.
-      _fpCustomDataUrl = canvas.toDataURL('image/jpeg', 0.92);
-      document.getElementById('fp-custom-img').src = _fpCustomDataUrl;
-      document.getElementById('fp-custom-preview').style.display = 'block';
-    };
-    img.onerror = function(){
-      // Si por alguna razón la imagen no carga en un <img> (formato raro), usamos el
-      // archivo original sin procesar en lugar de bloquear al usuario.
-      _fpCustomDataUrl = e.target.result;
-      document.getElementById('fp-custom-img').src = _fpCustomDataUrl;
-      document.getElementById('fp-custom-preview').style.display = 'block';
-    };
-    img.src = e.target.result;
+    document.getElementById('fp-custom-img').src = e.target.result;
+    document.getElementById('fp-custom-preview').style.display = 'block';
   };
   reader.readAsDataURL(file);
 }
 window._fpSubirCustom = _fpSubirCustom;
 
-function _fpUsarCustom(){
-  document.getElementById('modal-foto-premium').style.display = 'none';
-  _guardarYVerCotPremiumConFoto(_fpCustomDataUrl);
+// Sube la foto elegida a Storage, guarda su metadata en Firestore
+// (colección cotizacion_fotos_portada) y la usa de inmediato en la
+// cotización actual — así queda disponible en la librería la próxima vez.
+async function _fpUsarCustom(){
+  if(!_fpArchivoNuevo){ return; }
+  if(!storage || !db){ alert('⚠️ Firebase no está disponible ahora mismo.'); return; }
+  var btn = document.querySelector('#fp-custom-preview button');
+  var categoria = (document.getElementById('fp-nueva-categoria')?.value || '').trim();
+  var nombre = categoria || _fpArchivoNuevo.name.replace(/\.[^.]+$/, '');
+  if(btn){ btn.disabled = true; btn.textContent = 'Subiendo...'; }
+  try {
+    // La portada mide 210mm de ancho (A4). 2000px de ancho equivale a ~240 DPI,
+    // muy por encima de lo que el ojo distingue impreso o en pantalla — así que
+    // recortamos el exceso de megapíxeles de la foto de celular sin que se note,
+    // y esa es la parte que realmente pesa el PDF.
+    var blob = await _rpComprimirImagen(_fpArchivoNuevo, 2000, 0.92);
+    var ts = Date.now();
+    var rand = Math.random().toString(36).slice(2,8);
+    var path = 'cotizacion_fotos_portada/' + ts + '-' + rand + '.jpg';
+    var ref = storage.ref().child(path);
+    var snapshot = await ref.put(blob, {contentType:'image/jpeg'});
+    var url = await snapshot.ref.getDownloadURL();
+    await db.collection('cotizacion_fotos_portada').add({url:url, path:path, nombre:nombre, ts:ts})
+      .then(function(docRef){ _fpLibreria.unshift({id:docRef.id, url:url, path:path, nombre:nombre, ts:ts}); });
+    document.getElementById('modal-foto-premium').style.display = 'none';
+    _guardarYVerCotPremiumConFoto(url);
+  } catch(err){
+    console.error('[ROMSA] Error subiendo foto a librería de portadas:', err);
+    alert('⚠️ No se pudo subir la foto. Intenta de nuevo.');
+    if(btn){ btn.disabled = false; btn.textContent = 'Usar esta foto'; }
+  }
 }
 window._fpUsarCustom = _fpUsarCustom;
-
-function _fpSeleccionar(tipo){
-  document.getElementById('modal-foto-premium').style.display = 'none';
-  _guardarYVerCotPremiumConFoto(_fpFotos[tipo]);
-}
-window._fpSeleccionar = _fpSeleccionar;
 
 async function _guardarYVerCotPremiumConFoto(fotoDataUrl){
   var esIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)&&!window.MSStream;
