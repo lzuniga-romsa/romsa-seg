@@ -30,6 +30,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-functions-compat.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
 :root{
@@ -3507,6 +3508,7 @@ const _fbCfg = {
 if(typeof firebase!=="undefined"&&!firebase.apps.length) firebase.initializeApp(_fbCfg);
 const db=(typeof firebase!=="undefined")?firebase.firestore():null;
 const storage=(typeof firebase!=="undefined" && firebase.storage)?firebase.storage():null;
+const cloudFunctions=(typeof firebase!=="undefined" && firebase.functions)?firebase.functions():null;
 const obrasRef=db?db.collection("obras_seguimiento_v2"):null;
 function getBaPairsRef(obraId){ return obrasRef.doc(obraId).collection("baPairs"); }
 function getUpdatesRef(obraId){ return obrasRef.doc(obraId).collection("updates"); }
@@ -16381,6 +16383,7 @@ function _rpRenderSecciones(){
           <input type="file" accept="image/*" multiple onchange="_rpSubirFotosSeccion(${i},this)" style="display:none;">
         </label>
         <span style="font-size:9.5px;color:var(--tx2);">Fotos de esta sección (opcional)</span>
+        <button type="button" onclick="abrirDiagnosticoIA(${i})" title="Diagnóstico visual con IA sobre una foto de daño" style="display:flex;align-items:center;gap:5px;height:52px;padding:0 12px;border:1.5px dashed #7C3AED;border-radius:6px;background:#F5F3FF;color:#6D28D9;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0;font-family:var(--font);margin-left:auto;">🤖 Diagnóstico IA</button>
       </div>
     </div>`;
   }).join("");
@@ -16452,6 +16455,140 @@ async function _rpEliminarFotoSeccion(idx, fotoIdx){
   s.fotos.splice(fotoIdx, 1);
   _rpRenderSecciones();
 }
+
+// ── Diagnóstico Visual con IA ─────────────────────────────────────
+// Apoyo de decisión sobre fotos de obra/piso dañado — NO reemplaza ni
+// toca el flujo de subida de fotos de la sección (_rpSubirFotosSeccion),
+// solo lo reutiliza como referencia de patrón (compresión + Storage).
+let _diagIaSeccionIdx = null;
+let _diagIaFotoSeleccionada = null; // {url, path} de una foto ya subida a la sección
+let _diagIaNuevaFoto = null;        // {url, path} de una foto subida solo para este diagnóstico
+
+function abrirDiagnosticoIA(idx){
+  if(!cloudFunctions){ alert("⚠️ El servicio de diagnóstico con IA no está disponible."); return; }
+  if(typeof firebase !== "undefined" && firebase.auth && !firebase.auth().currentUser){
+    alert("⚠️ Tu sesión expiró. Recarga la página e inicia sesión de nuevo.");
+    return;
+  }
+  _diagIaSeccionIdx = idx;
+  _diagIaFotoSeleccionada = null;
+  _diagIaNuevaFoto = null;
+  document.getElementById("diag-ia-desc").value = "";
+  document.getElementById("diag-ia-nueva-preview").innerHTML = "";
+  document.getElementById("diag-ia-resultado").innerHTML = "";
+
+  const s = _rpSeccionesTemp[idx];
+  const fotos = (s && Array.isArray(s.fotos)) ? s.fotos : [];
+  const cont = document.getElementById("diag-ia-fotos-existentes");
+  if(!fotos.length){
+    cont.innerHTML = `<div style="font-size:10.5px;color:var(--tx2);font-style:italic;">Esta sección aún no tiene fotos — sube una nueva abajo.</div>`;
+  } else {
+    cont.innerHTML = fotos.map((f, fi) => `
+      <div class="diag-ia-thumb" data-fi="${fi}" onclick="_diagIaSeleccionarExistente(${fi})" style="width:56px;height:56px;border-radius:6px;overflow:hidden;cursor:pointer;border:2px solid transparent;flex-shrink:0;">
+        <img src="${f.url}" style="width:100%;height:100%;object-fit:cover;display:block;">
+      </div>`).join("");
+  }
+  document.getElementById("modal-diag-ia").classList.add("open");
+}
+
+function _diagIaSeleccionarExistente(fi){
+  const s = _rpSeccionesTemp[_diagIaSeccionIdx];
+  const f = s && s.fotos && s.fotos[fi];
+  if(!f) return;
+  _diagIaFotoSeleccionada = f;
+  _diagIaNuevaFoto = null;
+  document.getElementById("diag-ia-nueva-preview").innerHTML = "";
+  document.querySelectorAll("#diag-ia-fotos-existentes .diag-ia-thumb").forEach(el => {
+    el.style.borderColor = (Number(el.dataset.fi) === fi) ? "#7C3AED" : "transparent";
+  });
+}
+
+async function _diagIaSubirNueva(inputEl){
+  const file = (inputEl.files || [])[0];
+  if(!file) return;
+  if(!storage){ alert("⚠️ Firebase Storage no está disponible."); inputEl.value=""; return; }
+  if(file.size > 20 * 1024 * 1024){ alert("⚠️ La foto pesa más de 20 MB."); inputEl.value=""; return; }
+  if(!file.type.startsWith("image/")){ alert("⚠️ El archivo no es una imagen."); inputEl.value=""; return; }
+
+  document.getElementById("diag-ia-nueva-preview").innerHTML = `<div style="font-size:10.5px;color:var(--tx2);">📦 Subiendo...</div>`;
+  try {
+    const blob = await _rpComprimirImagen(file);
+    const ts = Date.now();
+    const rand = Math.random().toString(36).slice(2,8);
+    const idBase = _reporteEditId || ("tmp-" + ts + "-" + rand);
+    const path = "diagnosticos-ia/" + idBase + "/" + ts + "-" + rand + ".jpg";
+    const ref = storage.ref().child(path);
+    const snapshot = await ref.put(blob, {contentType:"image/jpeg"});
+    const url = await snapshot.ref.getDownloadURL();
+    _diagIaNuevaFoto = {url, path};
+    _diagIaFotoSeleccionada = null;
+    document.querySelectorAll("#diag-ia-fotos-existentes .diag-ia-thumb").forEach(el => el.style.borderColor = "transparent");
+    document.getElementById("diag-ia-nueva-preview").innerHTML = `<img src="${url}" style="width:56px;height:56px;object-fit:cover;border-radius:6px;border:2px solid #7C3AED;display:block;">`;
+  } catch(err){
+    console.error("[ROMSA] Error subiendo foto para diagnóstico IA:", err);
+    document.getElementById("diag-ia-nueva-preview").innerHTML = `<div style="font-size:10.5px;color:#EF4444;">⚠️ Falló la subida, intenta de nuevo.</div>`;
+  }
+  inputEl.value = "";
+}
+
+async function ejecutarDiagnosticoIA(){
+  const foto = _diagIaNuevaFoto || _diagIaFotoSeleccionada;
+  const descripcion = (document.getElementById("diag-ia-desc").value || "").trim();
+  const resultEl = document.getElementById("diag-ia-resultado");
+
+  if(!foto){ resultEl.innerHTML = `<div style="font-size:11px;color:#EF4444;margin-top:8px;">⚠️ Selecciona o sube una foto primero.</div>`; return; }
+  if(!descripcion){ resultEl.innerHTML = `<div style="font-size:11px;color:#EF4444;margin-top:8px;">⚠️ Escribe una descripción breve del problema.</div>`; return; }
+  if(!cloudFunctions){ resultEl.innerHTML = `<div style="font-size:11px;color:#EF4444;margin-top:8px;">⚠️ El servicio de diagnóstico con IA no está disponible.</div>`; return; }
+
+  const btn = document.getElementById("diag-ia-btn-analizar");
+  btn.disabled = true; btn.textContent = "⏳ Analizando...";
+  resultEl.innerHTML = `<div style="font-size:11px;color:var(--tx2);margin-top:8px;">⏳ Consultando diagnóstico visual con IA, esto puede tardar unos segundos...</div>`;
+
+  try {
+    const fn = cloudFunctions.httpsCallable("diagnosticoVisualIA");
+    const res = await fn({ imageUrl: foto.url, descripcion });
+    _diagIaRenderResultado(res.data);
+  } catch(err){
+    console.error("[ROMSA] Error en diagnóstico IA:", err);
+    resultEl.innerHTML = `<div style="font-size:11px;color:#EF4444;margin-top:8px;">⚠️ No se pudo completar el diagnóstico: ${escapeHtml(err.message||"error desconocido")}</div>`;
+  } finally {
+    btn.disabled = false; btn.textContent = "🔍 Analizar";
+  }
+}
+
+function _diagIaRenderResultado(d){
+  const resultEl = document.getElementById("diag-ia-resultado");
+  if(!d){ resultEl.innerHTML = `<div style="font-size:11px;color:#EF4444;margin-top:8px;">⚠️ Respuesta vacía del servicio de diagnóstico.</div>`; return; }
+
+  const RIESGO = {
+    bajo:  {color:"#059669", bg:"#D1FAE5", bd:"#6EE7B7", label:"RIESGO BAJO"},
+    medio: {color:"#B45309", bg:"#FEF3C7", bd:"#FCD34D", label:"RIESGO MEDIO"},
+    alto:  {color:"#B91C1C", bg:"#FEE2E2", bd:"#FCA5A5", label:"RIESGO ALTO"}
+  };
+  const r = RIESGO[d.nivelRiesgo] || RIESGO.medio;
+
+  const RECOM = {
+    "si":           {texto:"✅ SÍ tomar el proyecto", color:"#059669"},
+    "con-reservas": {texto:"⚠️ Con reservas / condiciones", color:"#B45309"},
+    "no":           {texto:"⛔ NO recomendado sin resolver la causa raíz primero", color:"#B91C1C"}
+  };
+  const rec = RECOM[d.recomendacionTomarProyecto] || {texto: d.recomendacionTomarProyecto || "—", color:"#334155"};
+
+  resultEl.innerHTML = `
+    <div style="margin-top:10px;border:1.5px solid ${r.bd};background:${r.bg};border-radius:10px;padding:12px 14px;">
+      <div style="font-size:10px;font-weight:800;letter-spacing:1px;color:${r.color};margin-bottom:8px;">${r.label}</div>
+      <div style="font-size:12.5px;font-weight:800;color:var(--navy);margin-bottom:4px;">${escapeHtml(d.tipoDetectado||"—")}</div>
+      <div style="font-size:11px;color:#334155;line-height:1.6;margin-bottom:6px;"><strong>Causa probable:</strong> ${escapeHtml(d.causaProbable||"—")}</div>
+      <div style="font-size:11px;color:#334155;line-height:1.6;margin-bottom:6px;"><strong>Consecuencias posibles:</strong> ${escapeHtml(d.consecuenciasPosibles||"—")}</div>
+      <div style="font-size:11.5px;font-weight:700;color:${rec.color};margin-bottom:8px;">${rec.texto}</div>
+      <div style="font-size:10px;color:#64748B;line-height:1.5;border-top:1px solid rgba(0,0,0,.08);padding-top:8px;">${escapeHtml(d.notaImportante||"")}</div>
+    </div>`;
+}
+
+window.abrirDiagnosticoIA = abrirDiagnosticoIA;
+window._diagIaSeleccionarExistente = _diagIaSeleccionarExistente;
+window._diagIaSubirNueva = _diagIaSubirNueva;
+window.ejecutarDiagnosticoIA = ejecutarDiagnosticoIA;
 
 // Auto-llenar campos desde cotización seleccionada
 function rpAutoLlenarDesdeCot(){
@@ -20260,6 +20397,37 @@ window.bceCalEditarRegla = bceCalEditarRegla;
     <div style="display:flex;gap:8px;">
       <button class="btn btn-secondary" style="flex:1;" onclick="closeModal('modal-obs-finales')">Después</button>
       <button class="btn btn-primary" style="flex:1;" onclick="guardarObsFinales()">💾 Guardar →</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL DIAGNÓSTICO VISUAL CON IA -->
+<div class="moverlay" id="modal-diag-ia" style="z-index:650;">
+  <div class="modal" style="max-width:480px;">
+    <div class="modal-handle"></div>
+    <div style="font-size:15px;font-weight:800;color:var(--navy);margin-bottom:4px;">🤖 Diagnóstico Visual con IA</div>
+    <div style="font-size:11px;color:var(--tx2);margin-bottom:14px;line-height:1.5;">Apoyo de decisión para evaluar el daño antes de cotizar. No sustituye una inspección técnica en sitio.</div>
+
+    <div class="fg">
+      <label class="flabel">Foto a evaluar <span class="req">*</span></label>
+      <div id="diag-ia-fotos-existentes" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;"></div>
+      <label style="display:flex;align-items:center;gap:8px;border:1.5px dashed var(--g2);border-radius:8px;padding:10px;cursor:pointer;font-size:11.5px;color:var(--tx2);">
+        📤 Subir una foto nueva
+        <input type="file" accept="image/*" id="diag-ia-input-nueva" style="display:none;" onchange="_diagIaSubirNueva(this)">
+      </label>
+      <div id="diag-ia-nueva-preview" style="margin-top:8px;"></div>
+    </div>
+
+    <div class="fg">
+      <label class="flabel">Descripción breve del problema <span class="req">*</span></label>
+      <textarea class="ftextarea" id="diag-ia-desc" placeholder="Ej. Piso con agrietamiento en la zona de tránsito pesado..." style="min-height:70px;"></textarea>
+    </div>
+
+    <div id="diag-ia-resultado"></div>
+
+    <div style="display:flex;gap:8px;margin-top:10px;">
+      <button class="btn btn-secondary" style="flex:1;" onclick="closeModal('modal-diag-ia')">Cerrar</button>
+      <button class="btn btn-primary" style="flex:1;" id="diag-ia-btn-analizar" onclick="ejecutarDiagnosticoIA()">🔍 Analizar</button>
     </div>
   </div>
 </div>
