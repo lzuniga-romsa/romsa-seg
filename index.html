@@ -10899,6 +10899,35 @@ async function guardarCot(){
   if(!fecha){showToast("⚠️ Selecciona la fecha");return null;}
 
   var tots=calcTotalesCot();
+
+  // Monto real ganado — esta ruta de guardado (formulario completo) es una
+  // segunda vía por la que una cotización puede pasar a aceptada/en_obra/
+  // cerrada (además del menú rápido de estado, que ya lo maneja en
+  // aplicarCambioEstadoCot). Debe capturar el monto con la misma lógica:
+  // solo preguntar la primera vez, y SIEMPRE preservar montoGanado/
+  // fechaGanada ya guardados — como este guardado hace un set() sin merge
+  // del documento completo, si no los incluimos explícitamente aquí se
+  // borrarían de Firestore aunque ya existieran.
+  var estadoNuevoCot = (document.getElementById("cot-estado")?.value) || "pendiente";
+  var cotExistente = cotActivaId ? (cotizaciones.find(function(c){return c.id===cotActivaId;})||{}) : {};
+  var estadosGanadosCot = (estadoNuevoCot === "aceptada" || estadoNuevoCot === "en_obra" || estadoNuevoCot === "cerrada");
+  var yaTieneMontoCot = (cotExistente.montoGanado !== undefined && cotExistente.montoGanado !== null);
+  var montoGanadoCot = yaTieneMontoCot ? cotExistente.montoGanado : undefined;
+  var fechaGanadaCot = yaTieneMontoCot ? cotExistente.fechaGanada : undefined;
+
+  if(estadosGanadosCot && !yaTieneMontoCot){
+    var sugeridoCot = tots.total || cotExistente.granTotal || "";
+    var montoInputCot = prompt("Monto final asignado a esta cotización (si hubo negociación, ajusta el valor):", String(sugeridoCot));
+    if(montoInputCot === null){ showToast("Guardado cancelado"); return null; }
+    var montoParsedCot = parseFloat(String(montoInputCot).replace(/,/g,""));
+    if(isNaN(montoParsedCot) || montoParsedCot < 0){
+      alert("⚠️ Monto inválido. No se guardó la cotización.");
+      return null;
+    }
+    montoGanadoCot = montoParsedCot;
+    fechaGanadaCot = new Date().toISOString().slice(0,10);
+  }
+
   // Folio según modalidad: RACKLINE → RACK-…, HOME → HOME-…, Industrial → clásico
   function _folioNuevoPorModalidad(){
     return _cotModalidad==="rackline" ? _generarFolioRackline()
@@ -10953,9 +10982,13 @@ async function guardarCot(){
     }),
     subtotal:tots.sub,iva:tots.iva,granTotal:tots.total,
     // Estado de seguimiento (Sesión 1)
-    estado: (document.getElementById("cot-estado")?.value) || "pendiente",
+    estado: estadoNuevoCot,
     fechaRespuesta: (document.getElementById("cot-fecha-respuesta")?.value) || "",
     motivoRechazo: (document.getElementById("cot-motivo-rechazo")?.value || "").trim(),
+    // Monto real ganado — puede venir de esta misma sesión de guardado
+    // (recién capturado arriba) o ser el ya existente que preservamos.
+    montoGanado: montoGanadoCot,
+    fechaGanada: fechaGanadaCot,
     // Vinculación con cliente (Sesión 7)
     clienteId: (document.getElementById("cot-cliente-id")?.value) || "",
     // Seguimiento de obra (Sesión 4)
