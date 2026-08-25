@@ -1273,6 +1273,15 @@ body.in-fotoeditor #app{
       </div>
     </div>
 
+    <!-- 9. Diagnóstico Visual con IA (acceso directo standalone) -->
+    <div class="mod-card" onclick="abrirDiagnosticoIAStandalone()" style="background:linear-gradient(135deg,#4C1D95,#6D28D9);border:1px solid rgba(196,181,253,.4);">
+      <div class="mod-icon" style="background:rgba(196,181,253,.22);color:#EDE9FE;font-size:19px;">🤖</div>
+      <div class="mod-info">
+        <div class="mod-name" style="color:#fff;">Diagnóstico Visual con IA</div>
+        <div class="mod-desc" style="color:rgba(255,255,255,.65);">Evalúa el riesgo de un piso/obra dañado con una foto, antes de cotizar</div>
+      </div>
+    </div>
+
   </div>
 
   <div class="mod-group-section">
@@ -1845,6 +1854,17 @@ body.in-fotoeditor #app{
             </div>
           </div>
           <div id="cot-dash-top-clientes"></div>
+        </div>
+
+        <!-- Monto real por línea de negocio -->
+        <div class="card" style="padding:14px;margin-bottom:14px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+            <div>
+              <div style="font-size:9px;font-weight:700;color:var(--tx2);letter-spacing:1.5px;text-transform:uppercase;">Ganado real</div>
+              <div style="font-size:13px;font-weight:800;color:var(--navy);">✅ Monto real por línea de negocio</div>
+            </div>
+          </div>
+          <div id="cot-dash-por-linea"></div>
         </div>
 
         <!-- Cotizaciones por vencer -->
@@ -6811,6 +6831,21 @@ function _cotsDelPeriodo(p){
   });
 }
 
+// Cotizaciones GANADAS en el período — filtra por fechaGanada (cuándo se
+// cerró el negocio realmente), NO por c.fecha (cuándo se cotizó). Así el
+// monto real aparece en el mes en que se ganó, sin importar cuándo se
+// haya cotizado originalmente.
+function _cotsGanadasDelPeriodo(p){
+  return cotizaciones.filter(function(c){
+    if(c.montoGanado === undefined || c.montoGanado === null) return false;
+    if(!c.fechaGanada) return false;
+    try {
+      var d = new Date(c.fechaGanada+"T12:00:00");
+      return d.getMonth() === p.mes && d.getFullYear() === p.anio;
+    } catch(e){ return false; }
+  });
+}
+
 function _cotsTodasHasta(p){
   // Cotizaciones desde inicio hasta el último día del periodo (inclusive)
   var fin = new Date(p.anio, p.mes+1, 0, 23, 59, 59);
@@ -6914,6 +6949,14 @@ function renderCotDashboard(){
   var tiempoProm = tiemposResp.length ? Math.round(tiemposResp.reduce(function(a,b){return a+b;},0)/tiemposResp.length) : 0;
   var tiempoSubtxt = tiemposResp.length ? "Basado en "+tiemposResp.length+" respuesta"+(tiemposResp.length>1?"s":"") : "Sin respuestas registradas";
 
+  // ─── KPI 7: Ganado real ───
+  // Cotizaciones cerradas en ESTE período según fechaGanada (no c.fecha).
+  var cotsGanadasMes = _cotsGanadasDelPeriodo(_cotDashPeriodo);
+  var totalGanado = cotsGanadasMes.reduce(function(s,c){return s+(parseFloat(c.montoGanado)||0);},0);
+  var ganadoSubtxt = cotsGanadasMes.length
+    ? cotsGanadasMes.length+" cotización"+(cotsGanadasMes.length===1?"":"es")+" cerrada"+(cotsGanadasMes.length===1?"":"s")+" este mes"
+    : "Sin cotizaciones cerradas este mes";
+
   // ─── Render del grid 3x2 ───
   var grid = document.getElementById("cot-dash-grid");
   if(grid){
@@ -6959,6 +7002,13 @@ function renderCotDashboard(){
         valor: tiemposResp.length>0 ? tiempoProm+" días" : "—",
         subtitulo: tiempoSubtxt,
         color:"#EC4899", icono:"⚡"
+      })
+      // KPI 7 — Ganado real
+      +_kpiCard({
+        titulo:"Ganado real",
+        valor: "$"+fmtPeso(totalGanado),
+        subtitulo: ganadoSubtxt,
+        color:"#059669", icono:"✅"
       });
   }
 
@@ -6988,6 +7038,37 @@ function renderCotDashboard(){
           +'</div>'
           +'<div style="height:6px;background:var(--off);border-radius:3px;overflow:hidden;">'
             +'<div style="height:100%;width:'+pct+'%;background:linear-gradient(90deg,#7C3AED,#EC4899);"></div>'
+          +'</div>'
+        +'</div>';
+      }).join("");
+    }
+  }
+
+  // ─── Monto real por línea de negocio (mismo período que KPI "Ganado real") ───
+  var porLineaMap = {industrial:0, home:0, rackline:0};
+  cotsGanadasMes.forEach(function(c){
+    var mod = _modalidadDe(c);
+    porLineaMap[mod] = (porLineaMap[mod]||0) + (parseFloat(c.montoGanado)||0);
+  });
+  var porLineaArr = Object.keys(porLineaMap).map(function(k){
+    var m = MODALIDADES[k];
+    return {key:k, label: (m&&m.label)||k, color:(m&&m.color)||"#334155", total:porLineaMap[k]};
+  });
+  var porLineaWrap = document.getElementById("cot-dash-por-linea");
+  if(porLineaWrap){
+    if(!totalGanado){
+      porLineaWrap.innerHTML = '<div style="text-align:center;padding:18px;font-size:11px;color:var(--tx2);">Sin monto ganado registrado en este período</div>';
+    } else {
+      var maxL = Math.max.apply(null, porLineaArr.map(function(p){return p.total;})) || 1;
+      porLineaWrap.innerHTML = porLineaArr.map(function(p){
+        var pct = (p.total/maxL)*100;
+        return '<div style="margin-bottom:8px;">'
+          +'<div style="display:flex;align-items:center;justify-content:space-between;font-size:11px;margin-bottom:4px;">'
+            +'<span style="font-weight:700;color:var(--navy);">'+escapeHtml(p.label)+'</span>'
+            +'<span style="font-weight:800;color:'+p.color+';">$'+fmtPeso(p.total)+'</span>'
+          +'</div>'
+          +'<div style="height:6px;background:var(--off);border-radius:3px;overflow:hidden;">'
+            +'<div style="height:100%;width:'+(p.total>0?pct:0)+'%;background:'+p.color+';"></div>'
           +'</div>'
         +'</div>';
       }).join("");
@@ -9787,6 +9868,27 @@ async function aplicarCambioEstadoCot(id, nuevoEstado){
   var menu = document.getElementById("cot-menu-estado");
   if(menu) menu.remove();
 
+  // Al ganar el negocio (aceptada/en_obra/cerrada) capturamos el monto REAL
+  // asignado — solo la primera vez (si ya tiene montoGanado guardado, no se
+  // vuelve a preguntar en transiciones posteriores entre esos 3 estados).
+  var estadosGanados = (nuevoEstado === "aceptada" || nuevoEstado === "en_obra" || nuevoEstado === "cerrada");
+  var yaTieneMonto = (c.montoGanado !== undefined && c.montoGanado !== null);
+  var montoGanado = yaTieneMonto ? c.montoGanado : undefined;
+  var fechaGanada = yaTieneMonto ? c.fechaGanada : undefined;
+
+  if(estadosGanados && !yaTieneMonto){
+    var sugerido = (c.granTotal !== undefined && c.granTotal !== null) ? c.granTotal : "";
+    var montoInput = prompt("Monto final asignado a esta cotización (si hubo negociación, ajusta el valor):", String(sugerido));
+    if(montoInput === null) return; // canceló — no aplicar el cambio de estado
+    var montoParsed = parseFloat(String(montoInput).replace(/,/g,""));
+    if(isNaN(montoParsed) || montoParsed < 0){
+      alert("⚠️ Monto inválido. No se aplicó el cambio de estado.");
+      return;
+    }
+    montoGanado = montoParsed;
+    fechaGanada = new Date().toISOString().slice(0,10);
+  }
+
   // Si pasa a un estado terminal y no tiene fechaRespuesta, asignar hoy
   var fechaRespuesta = c.fechaRespuesta || "";
   if(!fechaRespuesta && (nuevoEstado === "aceptada" || nuevoEstado === "rechazada" || nuevoEstado === "en_obra" || nuevoEstado === "cerrada")){
@@ -9796,13 +9898,22 @@ async function aplicarCambioEstadoCot(id, nuevoEstado){
   if(nuevoEstado === "pendiente") fechaRespuesta = "";
 
   try {
-    await db.collection("cotizaciones").doc(id).update({
+    var updatePayload = {
       estado: nuevoEstado,
       fechaRespuesta: fechaRespuesta
-    });
+    };
+    if(estadosGanados && !yaTieneMonto){
+      updatePayload.montoGanado = montoGanado;
+      updatePayload.fechaGanada = fechaGanada;
+    }
+    await db.collection("cotizaciones").doc(id).update(updatePayload);
     // Actualizar memoria
     c.estado = nuevoEstado;
     c.fechaRespuesta = fechaRespuesta;
+    if(estadosGanados && !yaTieneMonto){
+      c.montoGanado = montoGanado;
+      c.fechaGanada = fechaGanada;
+    }
     showToast("✓ Estado actualizado: "+(COT_ESTADO_LABELS[nuevoEstado]?.txt||nuevoEstado));
     renderListaCot();
     // Si el dashboard está visible, refrescarlo también
@@ -16491,6 +16602,29 @@ function abrirDiagnosticoIA(idx){
   document.getElementById("modal-diag-ia").classList.add("open");
 }
 
+// Variante standalone — acceso directo desde el menú principal, SIN estar
+// editando un Reporte de Proceso de Obra. No hay galería de fotos existente
+// que elegir (no hay sección/reporte activo): solo se puede subir una foto
+// nueva. _diagIaSeccionIdx queda en null para marcar este modo.
+function abrirDiagnosticoIAStandalone(){
+  if(!cloudFunctions){ alert("⚠️ El servicio de diagnóstico con IA no está disponible."); return; }
+  if(typeof firebase !== "undefined" && firebase.auth && !firebase.auth().currentUser){
+    alert("⚠️ Tu sesión expiró. Recarga la página e inicia sesión de nuevo.");
+    return;
+  }
+  _diagIaSeccionIdx = null;
+  _diagIaFotoSeleccionada = null;
+  _diagIaNuevaFoto = null;
+  document.getElementById("diag-ia-desc").value = "";
+  document.getElementById("diag-ia-nueva-preview").innerHTML = "";
+  document.getElementById("diag-ia-resultado").innerHTML = "";
+
+  const cont = document.getElementById("diag-ia-fotos-existentes");
+  cont.innerHTML = `<div style="font-size:10.5px;color:var(--tx2);font-style:italic;">Sube una foto del piso/obra dañado abajo para evaluarla.</div>`;
+
+  document.getElementById("modal-diag-ia").classList.add("open");
+}
+
 function _diagIaSeleccionarExistente(fi){
   const s = _rpSeccionesTemp[_diagIaSeccionIdx];
   const f = s && s.fotos && s.fotos[fi];
@@ -16586,6 +16720,7 @@ function _diagIaRenderResultado(d){
 }
 
 window.abrirDiagnosticoIA = abrirDiagnosticoIA;
+window.abrirDiagnosticoIAStandalone = abrirDiagnosticoIAStandalone;
 window._diagIaSeleccionarExistente = _diagIaSeleccionarExistente;
 window._diagIaSubirNueva = _diagIaSubirNueva;
 window.ejecutarDiagnosticoIA = ejecutarDiagnosticoIA;
@@ -20402,7 +20537,7 @@ window.bceCalEditarRegla = bceCalEditarRegla;
 </div>
 
 <!-- MODAL DIAGNÓSTICO VISUAL CON IA -->
-<div class="moverlay" id="modal-diag-ia" style="z-index:650;">
+<div class="moverlay" id="modal-diag-ia" style="z-index:1200;">
   <div class="modal" style="max-width:480px;">
     <div class="modal-handle"></div>
     <div style="font-size:15px;font-weight:800;color:var(--navy);margin-bottom:4px;">🤖 Diagnóstico Visual con IA</div>
