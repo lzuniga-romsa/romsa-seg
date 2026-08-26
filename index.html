@@ -1192,6 +1192,17 @@ body.in-fotoeditor #app{
 
   <div class="mod-grid">
 
+    <!-- 0. Dashboard General — vista rápida de todo el negocio -->
+    <div class="mod-card" onclick="selectModule('dashboardgeneral')" style="grid-column:1/-1;background:linear-gradient(135deg,#0B1F3A,#1E3A5F,#164E63);border:1.5px solid rgba(124,169,232,.45);">
+      <div style="display:flex;align-items:center;gap:12px;width:100%;">
+        <div class="mod-icon" style="background:rgba(124,169,232,.22);color:#9CC0EE;flex-shrink:0;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg></div>
+        <div class="mod-info" style="gap:2px;">
+          <div class="mod-name" style="color:#fff;">🏠 Dashboard General</div>
+          <div class="mod-desc" style="color:rgba(255,255,255,.65);">KPIs del mes, alertas importantes y accesos rápidos — todo el negocio de un vistazo</div>
+        </div>
+      </div>
+    </div>
+
     <!-- 1. Levantamientos -->
     <div class="mod-card green" onclick="selectModule('levantamientos')">
       <div class="mod-icon green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m14.5 12.5 2-2a2.121 2.121 0 0 0-3-3l-2 2M8.5 19.5l-2-2a2.121 2.121 0 0 1 3-3l2 2"/><rect x="2.5" y="14.5" width="16" height="7" rx="1" transform="rotate(-45 10.5 18)"/><path d="m9 15 1.5 1.5M12 12l1.5 1.5M15 9l1.5 1.5"/></svg></div>
@@ -1214,7 +1225,7 @@ body.in-fotoeditor #app{
     <div id="mod-card-costeo" class="mod-card" onclick="selectModule('costeo')" style="display:none;background:linear-gradient(135deg,#1B3F72,#0B1F3A);border:1px solid rgba(96,165,250,.3);">
       <div class="mod-icon" style="background:rgba(96,165,250,.2);color:#60A5FA;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="8" y2="10.01"/><line x1="12" y1="10" x2="12" y2="10.01"/><line x1="16" y1="10" x2="16" y2="10.01"/><line x1="8" y1="14" x2="8" y2="14.01"/><line x1="12" y1="14" x2="12" y2="14.01"/><line x1="16" y1="14" x2="16" y2="17"/><line x1="8" y1="18" x2="12" y2="18"/></svg></div>
       <div class="mod-info">
-        <div class="mod-name" style="color:#fff;">Costeo <span style="font-size:8px;font-weight:700;letter-spacing:1px;color:#60A5FA;margin-left:4px;padding:1px 6px;border:1px solid rgba(96,165,250,.4);border-radius:10px;vertical-align:middle;">INTERNO</span></div>
+        <div class="mod-name" style="color:#fff;">Costeo <span style="font-size:8px;font-weight:700;letter-spacing:1px;color:#60A5FA;margin-left:4px;padding:1px 6px;border:1px solid rgba(96,165,250,.4);border-radius:10px;vertical-align:middle;">INTERNO</span><span id="mod-badge-costeo" style="display:none;font-size:9px;font-weight:800;color:#0B1F3A;background:#60A5FA;margin-left:6px;padding:2px 7px;border-radius:10px;vertical-align:middle;"></span></div>
         <div class="mod-desc" style="color:rgba(255,255,255,.5);">Análisis de costos, materiales y utilidad</div>
       </div>
     </div>
@@ -1223,7 +1234,7 @@ body.in-fotoeditor #app{
     <div class="mod-card purple" onclick="selectModule('cotizaciones')">
       <div class="mod-icon purple"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg></div>
       <div class="mod-info">
-        <div class="mod-name">Cotizaciones</div>
+        <div class="mod-name">Cotizaciones <span id="mod-badge-cotizaciones" style="display:none;font-size:9px;font-weight:800;color:#fff;background:#7C3AED;margin-left:4px;padding:2px 7px;border-radius:10px;vertical-align:middle;"></span></div>
         <div class="mod-desc">Genera, personaliza y envía cotizaciones en PDF</div>
       </div>
     </div>
@@ -1232,7 +1243,7 @@ body.in-fotoeditor #app{
     <div class="mod-card blue" onclick="selectModule('obras')">
       <div class="mod-icon blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 22V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v18"/><path d="M14 9h4a1 1 0 0 1 1 1v12"/><path d="M2 22h20"/><line x1="9" y1="6" x2="9" y2="6.01"/><line x1="9" y1="10" x2="9" y2="10.01"/><line x1="9" y1="14" x2="9" y2="14.01"/><line x1="9" y1="18" x2="9" y2="18.01"/></svg></div>
       <div class="mod-info">
-        <div class="mod-name">Seguimiento de Obras</div>
+        <div class="mod-name">Seguimiento de Obras <span id="mod-badge-obras" style="display:none;font-size:9px;font-weight:800;color:#fff;background:#1E6FD9;margin-left:4px;padding:2px 7px;border-radius:10px;vertical-align:middle;"></span></div>
         <div class="mod-desc">Avance, etapas, reportes y atención al cliente</div>
       </div>
     </div>
@@ -2806,6 +2817,42 @@ body.in-fotoeditor #app{
   </div><!-- /screen-costeo-editor -->
 
   <!-- ════════════════════════════════════════════════════════════════ -->
+  <!-- 🏠 DASHBOARD GENERAL · KPIs, alertas y accesos rápidos de todo el negocio -->
+  <!-- ════════════════════════════════════════════════════════════════ -->
+  <div id="screen-dashboardgeneral" class="screen" style="padding:0;overflow-y:auto;background:var(--off);">
+
+    <!-- HEADER -->
+    <div style="background:linear-gradient(135deg,#0B1F3A 0%,#1E3A5F 100%);padding:16px 18px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <button onclick="volverSelector()" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);color:#fff;font-size:13px;font-weight:700;padding:6px 12px;border-radius:8px;cursor:pointer;font-family:var(--font);">← Menú</button>
+          <div>
+            <div style="font-size:9px;font-weight:700;color:#9CC0EE;letter-spacing:2px;text-transform:uppercase;">ROMSA CRM</div>
+            <div style="font-size:18px;font-weight:800;color:#fff;">🏠 Dashboard General</div>
+          </div>
+        </div>
+        <button onclick="renderDashboardGeneral()" title="Actualizar" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);color:#fff;font-size:11px;font-weight:700;padding:8px 14px;border-radius:8px;cursor:pointer;font-family:var(--font);">🔄 Actualizar</button>
+      </div>
+    </div>
+
+    <div style="padding:16px 18px 32px;">
+
+      <!-- 1. KPIs principales -->
+      <div style="font-size:9px;font-weight:700;color:var(--tx2);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;">📊 KPIs Principales — este mes</div>
+      <div id="dg-kpis" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:10px;margin-bottom:22px;"></div>
+
+      <!-- 2. Alertas importantes -->
+      <div style="font-size:9px;font-weight:700;color:var(--tx2);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;">🚨 Alertas Importantes</div>
+      <div id="dg-alertas" style="display:flex;flex-direction:column;gap:8px;margin-bottom:22px;"></div>
+
+      <!-- 3. Accesos rápidos con datos en vivo -->
+      <div style="font-size:9px;font-weight:700;color:var(--tx2);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;">⚡ Accesos Rápidos</div>
+      <div id="dg-accesos" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(150px, 1fr));gap:10px;"></div>
+
+    </div>
+  </div><!-- /screen-dashboardgeneral -->
+
+  <!-- ════════════════════════════════════════════════════════════════ -->
   <!-- 📇 MÓDULO CONTACTOS · Red profesional, leads, directorio personas -->
   <!-- ════════════════════════════════════════════════════════════════ -->
   <div id="screen-contactos" class="screen" style="padding:0;overflow-y:auto;background:var(--off);">
@@ -3742,7 +3789,7 @@ function subscribeObras(){
     document.getElementById("lista-obras").innerHTML="<div class='empty'><div class='empty-ico'>⚠️</div><div class='empty-ttl'>Sin conexión a Firebase</div><div class='empty-sub'>Verifica tu conexión a internet</div></div>";
     return;
   }
-  obrasRef.orderBy("ts","desc").get().then(snap=>{obras=snap.docs.map(d=>d.data());renderObras();renderDashboard();}).catch(err=>{
+  obrasRef.orderBy("ts","desc").get().then(snap=>{obras=snap.docs.map(d=>d.data());renderObras();renderDashboard();if(typeof _actualizarBadgesMenu === "function") _actualizarBadgesMenu();}).catch(err=>{
     console.error("Firebase error:",err);
     document.getElementById("lista-obras").innerHTML="<div class='empty'><div class='empty-ico'>🔴</div><div class='empty-ttl'>Error al cargar obras</div><div class='empty-sub'>"+err.message+"<br><br><button onclick='subscribeObras()' style='background:#1E6FD9;color:#fff;border:none;padding:8px 18px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;'>&#8635; Reintentar</button></div></div>";
   });
@@ -3757,6 +3804,7 @@ function subscribeObras(){
     const a = document.querySelector(".screen.active");
     if(a && a.id==="screen-obras") renderObras();
     renderDashboard();
+    if(typeof _actualizarBadgesMenu === "function") _actualizarBadgesMenu();
     if(obraActivaId){
       const o=getO();
       if(o){
@@ -6596,13 +6644,17 @@ function showModuleSelector(){
     const loginLogo = document.getElementById('login-logo-img');
     if(loginLogo && loginLogo.src) ll.src = loginLogo.src;
   }
+  if(typeof _actualizarBadgesMenu === "function") _actualizarBadgesMenu();
 }
 
 function selectModule(mod){
   _selectedModule = mod;
   localStorage.setItem('romsa_module', mod);
   document.getElementById('module-selector').classList.add('hidden');
-  if(mod === 'obras'){
+  if(mod === 'dashboardgeneral'){
+    goScreen('dashboardgeneral');
+    if(typeof renderDashboardGeneral === "function") renderDashboardGeneral();
+  } else if(mod === 'obras'){
     goScreen('dashboard');
   } else if(mod === 'levantamientos'){
     goScreen('levantamientos');
@@ -6712,6 +6764,7 @@ function subscribeCotizaciones(){
     cotizaciones=snap.docs.map(function(d){return d.data();});
     if(document.getElementById("screen-cotizaciones")?.classList.contains("active"))
       renderListaCot();
+    if(typeof _actualizarBadgesMenu === "function") _actualizarBadgesMenu();
   });
 }
 
@@ -6913,6 +6966,24 @@ function _cotsGanadasDelPeriodo(p){
   });
 }
 
+// Cotizaciones pendientes con vigencia por vencer pronto (≤3 días, de
+// TODAS, no solo del mes) — compartida entre el Dashboard de Cotizaciones
+// y el Dashboard General, para no duplicar el criterio.
+function _cotsPorVencer(){
+  var hoy = new Date(); hoy.setHours(12,0,0,0);
+  return cotizaciones.filter(function(c){
+    if((c.estado||"pendiente") !== "pendiente") return false;
+    if(!c.fecha) return false;
+    try {
+      var dCot = new Date(c.fecha+"T12:00:00");
+      var diasTrans = Math.floor((hoy-dCot)/86400000);
+      var vig = parseInt(c.vigencia)||15;
+      var diasRest = vig - diasTrans;
+      return diasRest <= 3 && diasRest >= 0;
+    } catch(e){return false;}
+  });
+}
+
 function _cotsTodasHasta(p){
   // Cotizaciones desde inicio hasta el último día del periodo (inclusive)
   var fin = new Date(p.anio, p.mes+1, 0, 23, 59, 59);
@@ -6985,19 +7056,8 @@ function renderCotDashboard(){
   var nClientes = clientesUnicos.size;
 
   // ─── KPI 5: Cotizaciones por vencer ───
-  // Pendientes con < 3 días para vencer (de TODAS, no solo del mes)
-  var hoy = new Date(); hoy.setHours(12,0,0,0);
-  var porVencer = cotizaciones.filter(function(c){
-    if((c.estado||"pendiente") !== "pendiente") return false;
-    if(!c.fecha) return false;
-    try {
-      var dCot = new Date(c.fecha+"T12:00:00");
-      var diasTrans = Math.floor((hoy-dCot)/86400000);
-      var vig = parseInt(c.vigencia)||15;
-      var diasRest = vig - diasTrans;
-      return diasRest <= 3 && diasRest >= 0;
-    } catch(e){return false;}
-  });
+  var hoy = new Date(); hoy.setHours(12,0,0,0); // usado también más abajo al renderizar la lista
+  var porVencer = _cotsPorVencer();
   var nPorVencer = porVencer.length;
 
   // ─── KPI 6: Tiempo promedio de respuesta del cliente ───
@@ -7246,6 +7306,29 @@ function _utilidadDe(c, costeosMap){
   return {utilidad: monto-r.costo, costo:r.costo, monto:monto, pct: monto>0 ? ((monto-r.costo)/monto*100) : 0, fuente:r.fuente};
 }
 
+// Compara margen estimado (costeo original) vs. real (costeo real) para
+// TODOS los proyectos con costeo real capturado — no depende del período,
+// es una comparación retrospectiva. Compartida entre Análisis Financiero
+// y el Dashboard General. filas.totalCandidatos distingue "sin proyectos
+// con costeo real todavía" de "hay candidatos pero no se pudo resolver
+// su costeo estimado" (ej. sin acceso al módulo Costeo).
+function _margenComparativoFilas(costeosMap){
+  var candidatos = cotizaciones.filter(function(c){ return c.costeoRealId && c.costeoIdOrigen && c.montoGanado; });
+  var filas = candidatos.map(function(c){
+    var origen = costeosMap[c.costeoIdOrigen];
+    var costoEstimado = origen ? (parseFloat(origen.costoTotal)||0) : null;
+    var costoReal = parseFloat(c.costoReal)||0;
+    var monto = parseFloat(c.montoGanado)||0;
+    if(costoEstimado===null || monto<=0) return null;
+    var pctEst = ((monto-costoEstimado)/monto)*100;
+    var pctReal = ((monto-costoReal)/monto)*100;
+    return {c:c, pctEst:pctEst, pctReal:pctReal, delta: pctReal-pctEst};
+  }).filter(function(x){return x!==null;});
+  filas.sort(function(a,b){return a.delta-b.delta;});
+  filas.totalCandidatos = candidatos.length;
+  return filas;
+}
+
 // Array de {anio,mes} de longitud n, terminando en p (inclusive), ascendente
 function _rangoUltimosNMeses(p, n){
   var out = [], m = p.mes, a = p.anio;
@@ -7357,26 +7440,15 @@ function renderAnalisisFinanciero(){
   }
 
   // ─── 3. Margen estimado vs. real — TODOS los proyectos con costeo real, sin filtrar por período ───
-  var conCosteoReal = cotizaciones.filter(function(c){ return c.costeoRealId && c.costeoIdOrigen && c.montoGanado; });
+  var filas = _margenComparativoFilas(costeosMap);
   var margenEl = document.getElementById("fin-margen-comparativo");
   if(margenEl){
-    if(!conCosteoReal.length){
+    if(!filas.totalCandidatos){
       margenEl.innerHTML = '<div style="text-align:center;padding:18px;font-size:11px;color:var(--tx2);">Aún no hay proyectos con costeo real capturado</div>';
     } else {
-      var filas = conCosteoReal.map(function(c){
-        var origen = costeosMap[c.costeoIdOrigen];
-        var costoEstimado = origen ? (parseFloat(origen.costoTotal)||0) : null;
-        var costoReal = parseFloat(c.costoReal)||0;
-        var monto = parseFloat(c.montoGanado)||0;
-        if(costoEstimado===null || monto<=0) return null;
-        var pctEst = ((monto-costoEstimado)/monto)*100;
-        var pctReal = ((monto-costoReal)/monto)*100;
-        return {c:c, pctEst:pctEst, pctReal:pctReal, delta: pctReal-pctEst};
-      }).filter(function(x){return x!==null;});
       if(!filas.length){
         margenEl.innerHTML = '<div style="text-align:center;padding:18px;font-size:11px;color:var(--tx2);">No se encontró el costeo estimado original de estos proyectos (¿sin acceso al módulo Costeo?)</div>';
       } else {
-        filas.sort(function(a,b){return a.delta-b.delta;});
         margenEl.innerHTML = filas.map(function(f){
           var malo = f.delta < 0;
           var col = malo ? "#B91C1C" : "#059669";
@@ -7447,6 +7519,179 @@ function renderAnalisisFinanciero(){
   }
 }
 window.renderAnalisisFinanciero = renderAnalisisFinanciero;
+
+// ═══════════════════════════════════════════════════════════════
+// DASHBOARD GENERAL — vista rápida de todo el negocio, ficha destacada
+// del menú principal. Reutiliza los helpers de Cotizaciones/Análisis
+// Financiero (nunca recalcula la misma lógica dos veces) y agrega solo
+// lo nuevo: actividad reciente de obras.
+// ═══════════════════════════════════════════════════════════════
+
+// "DD/MM/AAAA" (formato de toLocaleDateString("es-MX")) → Date, o null
+function _parseFechaCortaEsMX(str){
+  if(!str) return null;
+  var partes = String(str).split("/");
+  if(partes.length !== 3) return null;
+  var d = parseInt(partes[0],10), m = parseInt(partes[1],10), a = parseInt(partes[2],10);
+  if(!d||!m||!a) return null;
+  var fecha = new Date(a, m-1, d, 12, 0, 0);
+  return isNaN(fecha.getTime()) ? null : fecha;
+}
+
+// No existe un campo único de "última actualización" en obras_seguimiento_v2
+// (updates vive en subcolección, no siempre cargada en memoria) — se usa la
+// mejor señal disponible en el documento principal: la fecha de creación y
+// las fechas de las etapas (fechaActivo/fechaCompletada). Es una
+// aproximación, no un registro exacto de la última actividad.
+function _ultimaActividadObra(o){
+  var ts = o.ts || 0;
+  (o.etapas||[]).forEach(function(e){
+    [e.fechaActivo, e.fechaCompletada].forEach(function(f){
+      var d = _parseFechaCortaEsMX(f);
+      if(d && d.getTime() > ts) ts = d.getTime();
+    });
+  });
+  return ts;
+}
+
+// Obras activas (misma definición de "activa" que ya usa renderDashboard)
+// sin señal de actividad en los últimos N días.
+function _obrasSinActividadReciente(dias){
+  var limite = Date.now() - dias*86400000;
+  return obras.filter(function(o){
+    var activa = o.estado==="activa" || (o.pct>0 && o.pct<100);
+    if(!activa) return false;
+    return _ultimaActividadObra(o) < limite;
+  });
+}
+
+function _dgAlertaItem(texto, sub, onclick){
+  return '<div onclick="'+onclick+'" style="cursor:pointer;padding:8px 10px;border-radius:6px;background:rgba(255,255,255,.6);margin-bottom:4px;display:flex;align-items:center;justify-content:space-between;gap:8px;">'
+    +'<div style="font-size:11.5px;font-weight:700;color:var(--navy);">'+escapeHtml(texto)+'</div>'
+    +'<div style="font-size:10px;color:var(--tx2);white-space:nowrap;">'+escapeHtml(sub)+'</div>'
+  +'</div>';
+}
+
+// opts: {icono, titulo, colorAlerta ("#F59E0B" amarillo | "#B91C1C" rojo), items:[{texto,sub,onclick}]}
+function _dgAlertaCard(opts){
+  var ok = !opts.items.length;
+  var col = ok ? "#059669" : opts.colorAlerta;
+  var esRojo = opts.colorAlerta === "#B91C1C";
+  var bg = ok ? "rgba(16,185,129,.06)" : (esRojo ? "rgba(239,68,68,.06)" : "rgba(245,158,11,.06)");
+  var bd = ok ? "rgba(16,185,129,.25)" : (esRojo ? "rgba(239,68,68,.25)" : "rgba(245,158,11,.3)");
+  var html = '<div class="card" style="padding:14px;border:1px solid '+bd+';background:'+bg+';">'
+    +'<div style="display:flex;align-items:center;justify-content:space-between;'+(ok?"":"margin-bottom:8px;")+'">'
+      +'<div style="font-size:12.5px;font-weight:800;color:var(--navy);">'+opts.icono+' '+opts.titulo+'</div>'
+      +'<div style="font-size:11px;font-weight:800;color:'+col+';background:#fff;padding:2px 9px;border-radius:12px;flex-shrink:0;">'+(ok?"✓ Todo bien":opts.items.length)+'</div>'
+    +'</div>';
+  if(!ok){
+    html += opts.items.slice(0,5).map(function(it){ return _dgAlertaItem(it.texto, it.sub, it.onclick); }).join("");
+    if(opts.items.length>5) html += '<div style="font-size:10px;color:var(--tx2);text-align:center;margin-top:2px;">+'+(opts.items.length-5)+' más</div>';
+  }
+  html += '</div>';
+  return html;
+}
+
+function renderDashboardGeneral(){
+  var hoy = new Date();
+  var periodoActual = {anio: hoy.getFullYear(), mes: hoy.getMonth()};
+  var costeosMap = _costeosByIdMap();
+  var ganadasMes = _cotsGanadasDelPeriodo(periodoActual);
+
+  // ─── 1. KPIs principales del mes ───
+  var ingresosMes = ganadasMes.reduce(function(s,c){return s+(parseFloat(c.montoGanado)||0);},0);
+  var utilidadMes = 0;
+  ganadasMes.forEach(function(c){ var u=_utilidadDe(c, costeosMap); if(u) utilidadMes += u.utilidad; });
+  var obrasActivas = obras.filter(function(o){return o.estado==="activa"||(o.pct>0&&o.pct<100);});
+  var cotsPendientes = cotizaciones.filter(function(c){return (c.estado||"pendiente")==="pendiente";});
+
+  var kpisEl = document.getElementById("dg-kpis");
+  if(kpisEl){
+    kpisEl.innerHTML = ''
+      +_kpiCard({titulo:"Ingresos ganados (mes)", valor:"$"+fmtPeso(ingresosMes), subtitulo: ganadasMes.length+" proyecto"+(ganadasMes.length===1?"":"s")+" ganado"+(ganadasMes.length===1?"":"s"), color:"#059669", icono:"💰"})
+      +_kpiCard({titulo:"Utilidad (mes)", valor:"$"+fmtPeso(utilidadMes), subtitulo:"Sobre proyectos con costo conocido", color:"#7C3AED", icono:"📈"})
+      +_kpiCard({titulo:"Obras activas", valor:obrasActivas.length, subtitulo:"de "+obras.length+" total", color:"#1E6FD9", icono:"🏗️"})
+      +_kpiCard({titulo:"Cotizaciones pendientes", valor:cotsPendientes.length, subtitulo:"esperando respuesta del cliente", color:"#F59E0B", icono:"⏳"});
+  }
+
+  // ─── 2. Alertas importantes (reutiliza lógica ya existente, no la recalcula distinto) ───
+  var alertasEl = document.getElementById("dg-alertas");
+  if(alertasEl){
+    var porVencer = _cotsPorVencer();
+    var margenBajo = _margenComparativoFilas(costeosMap).filter(function(f){return f.delta<0;});
+    var obrasStale = _obrasSinActividadReciente(14);
+
+    alertasEl.innerHTML = ''
+      + _dgAlertaCard({
+          icono:"⏳", titulo:"Cotizaciones por vencer", colorAlerta:"#F59E0B",
+          items: porVencer.map(function(c){ return {texto: c.empresa||"Sin empresa", sub: c.folio||"", onclick:"abrirCot('"+c.id+"')"}; })
+        })
+      + _dgAlertaCard({
+          icono:"⚖️", titulo:"Margen real por debajo del estimado", colorAlerta:"#B91C1C",
+          items: margenBajo.map(function(f){ return {texto: f.c.empresa||"Sin empresa", sub: (f.delta>=0?"+":"")+f.delta.toFixed(1)+" pts", onclick:"abrirCot('"+f.c.id+"')"}; })
+        })
+      + _dgAlertaCard({
+          icono:"💤", titulo:"Obras sin actividad reciente (14+ días)", colorAlerta:"#F59E0B",
+          items: obrasStale.map(function(o){ return {texto: o.nombre||"Sin nombre", sub: o.cliente||"", onclick:"goScreen('obras');setTimeout(function(){abrirObra('"+o.id+"');},200);"}; })
+        });
+  }
+
+  // ─── 3. Accesos rápidos con datos en vivo (mismos módulos con badge en el menú) ───
+  var accesosEl = document.getElementById("dg-accesos");
+  if(accesosEl){
+    var accesos = [
+      {label:"Cotizaciones", icono:"📋", valor:cotsPendientes.length, sub:"pendientes", mod:"cotizaciones", color:"#7C3AED"},
+      {label:"Seguimiento de Obras", icono:"🏗️", valor:obrasActivas.length, sub:"activas", mod:"obras", color:"#1E6FD9"}
+    ];
+    if(window._costeoAcceso){
+      var borradores = (_costeoCosteos||[]).filter(function(c){return c.estado==="borrador";}).length;
+      accesos.push({label:"Costeo", icono:"🧮", valor:borradores, sub:"borradores", mod:"costeo", color:"#60A5FA"});
+    }
+    accesosEl.innerHTML = accesos.map(function(a){
+      return '<div onclick="selectModule(\''+a.mod+'\')" style="cursor:pointer;background:#fff;border:1px solid var(--g1);border-radius:10px;padding:12px;text-align:center;">'
+        +'<div style="font-size:20px;margin-bottom:4px;">'+a.icono+'</div>'
+        +'<div style="font-size:20px;font-weight:900;color:'+a.color+';line-height:1;">'+a.valor+'</div>'
+        +'<div style="font-size:9.5px;color:var(--tx2);margin-top:2px;">'+a.sub+'</div>'
+        +'<div style="font-size:10px;font-weight:700;color:var(--navy);margin-top:4px;">'+a.label+'</div>'
+      +'</div>';
+    }).join("");
+  }
+
+  if(typeof _actualizarBadgesMenu === "function") _actualizarBadgesMenu();
+}
+window.renderDashboardGeneral = renderDashboardGeneral;
+
+// Badges de dato en vivo en las fichas del menú principal — solo para los
+// módulos cuyos datos ya viven sincronizados permanentemente en memoria
+// desde el login (cotizaciones, costeo si hay acceso, obras). Contactos/
+// Auditoría/Base de Datos de Contactos NO se cargan al iniciar sesión
+// (decisión confirmada), así que no llevan badge — mostraría 0 o datos
+// viejos hasta que el usuario visite esos módulos.
+function _actualizarBadgesMenu(){
+  var bCot = document.getElementById("mod-badge-cotizaciones");
+  if(bCot){
+    var nPend = (typeof cotizaciones !== "undefined" ? cotizaciones : []).filter(function(c){return (c.estado||"pendiente")==="pendiente";}).length;
+    if(nPend > 0){ bCot.style.display = "inline"; bCot.textContent = nPend+" pendiente"+(nPend===1?"":"s"); }
+    else bCot.style.display = "none";
+  }
+  var bObras = document.getElementById("mod-badge-obras");
+  if(bObras){
+    var nAct = (typeof obras !== "undefined" ? obras : []).filter(function(o){return o.estado==="activa"||(o.pct>0&&o.pct<100);}).length;
+    if(nAct > 0){ bObras.style.display = "inline"; bObras.textContent = nAct+" activa"+(nAct===1?"":"s"); }
+    else bObras.style.display = "none";
+  }
+  var bCosteo = document.getElementById("mod-badge-costeo");
+  if(bCosteo){
+    if(window._costeoAcceso){
+      var nBorr = (typeof _costeoCosteos !== "undefined" ? _costeoCosteos : []).filter(function(c){return c.estado==="borrador";}).length;
+      if(nBorr > 0){ bCosteo.style.display = "inline"; bCosteo.textContent = nBorr+" borrador"+(nBorr===1?"":"es"); }
+      else bCosteo.style.display = "none";
+    } else {
+      bCosteo.style.display = "none";
+    }
+  }
+}
+window._actualizarBadgesMenu = _actualizarBadgesMenu;
 
 // Exponer al window
 window.cambiarPeriodoDash = cambiarPeriodoDash;
@@ -13101,6 +13346,7 @@ function subscribeCosteo(){
     _costeoCosteos = snap.docs.map(d=>d.data());
     renderKPIsCosteo();
     renderListaCosteos();
+    if(typeof _actualizarBadgesMenu === "function") _actualizarBadgesMenu();
   }, err=>console.error("Costeos:", err));
 }
 
