@@ -2203,7 +2203,11 @@ body.in-fotoeditor #app{
               <div class="fg" style="margin:0;">
                 <label class="flabel">Costo real $ (al cierre)</label>
                 <input class="finput" id="cot-costo-real" type="number" step="0.01" placeholder="0.00" oninput="recalcularUtilidadReal()">
+                <div id="cot-costo-real-nota" style="display:none;font-size:9.5px;color:#7C3AED;margin-top:4px;line-height:1.4;"></div>
               </div>
+            </div>
+            <div id="cot-btn-costeo-real-wrap" style="display:none;margin-bottom:8px;">
+              <button type="button" id="cot-btn-costeo-real" onclick="abrirCosteoReal()" style="width:100%;background:rgba(124,58,237,.08);border:1px solid rgba(124,58,237,.25);color:#7C3AED;font-size:11px;font-weight:700;padding:9px;border-radius:8px;cursor:pointer;font-family:var(--font);">🔄 Actualizar con costeo real</button>
             </div>
             <div id="cot-utilidad-real-box" style="background:rgba(16,185,129,.06);border:1px solid rgba(16,185,129,.2);border-radius:8px;padding:10px 12px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;">
               <span style="font-size:10px;color:var(--tx2);">Utilidad real (precio - costo real):</span>
@@ -10092,6 +10096,33 @@ function abrirCot(id){
   setVal("cot-responsable",       c.responsable);
   setVal("cot-costo-estimado",    c.costoEstimado || "");
   setVal("cot-costo-real",        c.costoReal || "");
+  // Botón de costeo real — solo si esta cotización tiene un costeo vinculado
+  // y el usuario tiene acceso al módulo Costeo (mismo criterio que "Abrir costeo →")
+  (function(){
+    var wrap = document.getElementById("cot-btn-costeo-real-wrap");
+    var btn = document.getElementById("cot-btn-costeo-real");
+    var input = document.getElementById("cot-costo-real");
+    var nota = document.getElementById("cot-costo-real-nota");
+    if(!wrap || !btn || !input || !nota) return;
+    if(c.costeoIdOrigen && window._costeoAcceso){
+      wrap.style.display = "block";
+      btn.textContent = c.costeoRealId ? "🔄 Editar costeo real" : "🔄 Actualizar con costeo real";
+    } else {
+      wrap.style.display = "none";
+    }
+    if(c.costeoRealId){
+      input.readOnly = true;
+      input.style.background = "var(--off)";
+      input.style.cursor = "not-allowed";
+      nota.style.display = "block";
+      nota.textContent = "Calculado automáticamente del costeo real vinculado.";
+    } else {
+      input.readOnly = false;
+      input.style.background = "";
+      input.style.cursor = "";
+      nota.style.display = "none";
+    }
+  })();
   // Cargar cuadrilla asignada (Sesión 22)
   setVal("cot-cuadrilla-id",      c.cuadrillaId || "");
   // Poblar dropdown de cuadrillas (en background — no bloquea apertura)
@@ -10172,6 +10203,61 @@ function _irAlCosteoOrigen(costeoId){
     setTimeout(()=>abrirCosteo(costeoId), 150);
   }, 150);
 }
+
+// ── Costeo real al cierre de obra ──────────────────────────────
+// Si la cotización ya tiene un costeo real vinculado, lo abre directo.
+// Si no, DUPLICA el costeo estimado original (costeoIdOrigen) como un
+// nuevo costeo marcado esCosteoReal, vinculado a esta cotización — el
+// costeo original queda intacto. El vínculo (costeoRealId en la
+// cotización) solo se persiste cuando el usuario efectivamente GUARDA
+// ese costeo real (ver hook en guardarCosteoActual), para no dejar una
+// referencia a un costeo que nunca llegó a existir en Firestore.
+async function abrirCosteoReal(){
+  if(!window._costeoAcceso){ showToast("🔒 Sin acceso al módulo Costeo"); return; }
+  var c = cotizaciones.find(function(x){return x.id===cotActivaId;});
+  if(!c){ showToast("⚠️ Cotización no encontrada"); return; }
+
+  if(c.costeoRealId){
+    _irAlCosteoOrigen(c.costeoRealId);
+    return;
+  }
+
+  if(!c.costeoIdOrigen){ showToast("⚠️ Esta cotización no tiene un costeo vinculado"); return; }
+
+  showToast("⏳ Preparando costeo real...");
+  try {
+    var snap = await costeoCosteosRef.doc(c.costeoIdOrigen).get();
+    if(!snap.exists){ showToast("⚠️ No se encontró el costeo original"); return; }
+
+    var real = JSON.parse(JSON.stringify(snap.data()));
+    real.id = "cos_"+Date.now();
+    real.folio = "";
+    real.folioBase = "";
+    real.folioCotizacionGenerada = null;
+    real.cotizacionIdGenerada = null;
+    real.estado = "borrador";
+    real.ts = Date.now();
+    real.proyecto = (real.proyecto||"") + " (real)";
+    // Marca de costeo real — usada por guardarCosteoActual() para saber
+    // que al guardar debe actualizar el costo real de esta cotización.
+    real.esCosteoReal = true;
+    real.costeoOrigenId = c.costeoIdOrigen;
+    real.cotizacionId = c.id;
+
+    _ceCosteo = real;
+    _ceModalidad = _modalidadDe(_ceCosteo);
+    _ceCosteo.modalidad = _ceModalidad;
+    if(typeof _ceResetHistorial === "function") _ceResetHistorial();
+    _renderEditorCosteo();
+    goScreen("costeo-editor");
+    setTimeout(function(){ cambiarModalidadCosteo(_ceModalidad); }, 100);
+    showToast("📑 Costeo real creado como borrador — ajusta cantidades reales y guarda");
+  } catch(err) {
+    console.error("Error preparando costeo real:", err);
+    showToast("⚠️ Error: "+err.message);
+  }
+}
+window.abrirCosteoReal = abrirCosteoReal;
 
 // ── Partidas ──────────────────────────────────────────────────────
 var _cotPartidas=[];
@@ -10989,6 +11075,11 @@ async function guardarCot(){
     // (recién capturado arriba) o ser el ya existente que preservamos.
     montoGanado: montoGanadoCot,
     fechaGanada: fechaGanadaCot,
+    // Costeo real vinculado (Parte "Costeo real al cierre") — se asigna desde
+    // guardarCosteoActual() cuando se guarda el costeo real, nunca desde aquí.
+    // Solo lo preservamos para que este guardado de formulario completo (que
+    // hace set() sin merge) no lo borre.
+    costeoRealId: cotExistente.costeoRealId,
     // Vinculación con cliente (Sesión 7)
     clienteId: (document.getElementById("cot-cliente-id")?.value) || "",
     // Seguimiento de obra (Sesión 4)
@@ -14773,6 +14864,27 @@ async function guardarCosteoActual(){
     await costeoCosteosRef.doc(_ceCosteo.id).set(costeoSafe);
     showToast("✓ Costeo guardado · "+_ceCosteo.folio);
     document.getElementById("ce-folio").textContent = _ceCosteo.folio;
+
+    // Si este costeo es la versión "real al cierre" de una cotización,
+    // su costo total reemplaza el costo real capturado en Seguimiento de
+    // Obra — ya no se captura a mano, se calcula de aquí.
+    if(_ceCosteo.esCosteoReal && _ceCosteo.cotizacionId){
+      try{
+        await cotRef.doc(_ceCosteo.cotizacionId).update({
+          costoReal: _ceCosteo.costoTotal,
+          costeoRealId: _ceCosteo.id
+        });
+        const cotLocal = (typeof cotizaciones !== "undefined" ? cotizaciones : []).find(function(x){return x.id===_ceCosteo.cotizacionId;});
+        if(cotLocal){
+          cotLocal.costoReal = _ceCosteo.costoTotal;
+          cotLocal.costeoRealId = _ceCosteo.id;
+        }
+        showToast("✓ Costeo real guardado — costo real de la cotización actualizado");
+      }catch(e2){
+        console.error("Error actualizando costo real en cotización:", e2);
+        showToast("⚠️ Costeo guardado, pero no se pudo actualizar el costo real en la cotización: "+e2.message);
+      }
+    }
   }catch(e){
     console.error(e);
     showToast("⚠️ Error al guardar: "+e.message);
