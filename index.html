@@ -1814,6 +1814,7 @@ body.in-fotoeditor #app{
     <!-- SUB-PESTAÑAS DEL MÓDULO COTIZACIONES -->
     <div id="cot-subtabs-bar" style="background:#fff;border-bottom:1px solid var(--g1);padding:0 12px;display:flex;gap:0;overflow-x:auto;-webkit-overflow-scrolling:touch;flex-shrink:0;">
       <button class="cot-subtab cot-subtab-active" data-cottab="dashboard" onclick="showCotSubtab('dashboard',this)" style="background:transparent;border:none;color:#7C3AED;font-size:12px;font-weight:700;padding:13px 14px;cursor:pointer;font-family:var(--font);position:relative;white-space:nowrap;border-bottom:3px solid #7C3AED;">📊 Dashboard</button>
+      <button class="cot-subtab" data-cottab="financiero" onclick="showCotSubtab('financiero',this)" style="background:transparent;border:none;color:var(--tx2);font-size:12px;font-weight:600;padding:13px 14px;cursor:pointer;font-family:var(--font);position:relative;white-space:nowrap;border-bottom:3px solid transparent;">📈 Análisis Financiero</button>
       <button class="cot-subtab" data-cottab="lista" onclick="showCotSubtab('lista',this)" style="background:transparent;border:none;color:var(--tx2);font-size:12px;font-weight:600;padding:13px 14px;cursor:pointer;font-family:var(--font);position:relative;white-space:nowrap;border-bottom:3px solid transparent;">📋 Cotizaciones</button>
       <button class="cot-subtab" data-cottab="conceptos" onclick="showCotSubtab('conceptos',this)" style="background:transparent;border:none;color:var(--tx2);font-size:12px;font-weight:600;padding:13px 14px;cursor:pointer;font-family:var(--font);position:relative;white-space:nowrap;border-bottom:3px solid transparent;">🔧 Conceptos</button>
       <button class="cot-subtab" data-cottab="clientes" onclick="showCotSubtab('clientes',this)" style="background:transparent;border:none;color:var(--tx2);font-size:12px;font-weight:600;padding:13px 14px;cursor:pointer;font-family:var(--font);position:relative;white-space:nowrap;border-bottom:3px solid transparent;">🏢 Clientes</button>
@@ -1886,6 +1887,66 @@ body.in-fotoeditor #app{
             <div style="font-size:13px;font-weight:800;color:var(--navy);">📊 Estados de cotizaciones (mes)</div>
           </div>
           <div id="cot-dash-pipeline"></div>
+        </div>
+      </div>
+
+      <!-- ════ SUB-PESTAÑA: ANÁLISIS FINANCIERO ════ -->
+      <div id="cot-subtab-financiero" class="cot-subtab-content" style="padding:16px;display:none;">
+        <!-- Selector de mes (mismo período que Dashboard) -->
+        <div style="background:#fff;border:1px solid var(--g1);border-radius:12px;padding:12px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+          <div>
+            <div style="font-size:9px;font-weight:700;color:var(--tx2);letter-spacing:1.5px;text-transform:uppercase;">Período</div>
+            <div id="fin-periodo-label" style="font-size:14px;font-weight:800;color:var(--navy);">Cargando…</div>
+          </div>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <button onclick="cambiarPeriodoDash(-1)" title="Mes anterior" style="background:var(--off);border:1px solid var(--g1);color:var(--navy);font-size:13px;font-weight:700;padding:7px 11px;border-radius:8px;cursor:pointer;font-family:var(--font);">‹</button>
+            <button onclick="periodoDashHoy()" title="Mes actual" style="background:rgba(124,58,237,.08);border:1px solid rgba(124,58,237,.25);color:#7C3AED;font-size:11px;font-weight:700;padding:7px 11px;border-radius:8px;cursor:pointer;font-family:var(--font);">Hoy</button>
+            <button onclick="cambiarPeriodoDash(1)" title="Mes siguiente" style="background:var(--off);border:1px solid var(--g1);color:var(--navy);font-size:13px;font-weight:700;padding:7px 11px;border-radius:8px;cursor:pointer;font-family:var(--font);">›</button>
+          </div>
+        </div>
+
+        <!-- 1. Utilidad e Ingresos -->
+        <div style="font-size:9px;font-weight:700;color:#7C3AED;letter-spacing:1.5px;text-transform:uppercase;margin:4px 0 8px;">💰 Utilidad e Ingresos</div>
+        <div id="fin-kpis-utilidad" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:10px;margin-bottom:6px;"></div>
+        <div id="fin-utilidad-nota" style="font-size:10px;color:#B45309;margin-bottom:14px;"></div>
+
+        <div class="card" style="padding:14px;margin-bottom:14px;">
+          <div style="font-size:9px;font-weight:700;color:var(--tx2);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:2px;">Últimos 12 meses</div>
+          <div style="font-size:13px;font-weight:800;color:var(--navy);margin-bottom:10px;">📈 Ingresos ganados por mes</div>
+          <div id="fin-grafica-ingresos"></div>
+        </div>
+
+        <!-- 2. Comparativo por línea de negocio -->
+        <div style="font-size:9px;font-weight:700;color:#7C3AED;letter-spacing:1.5px;text-transform:uppercase;margin:4px 0 8px;">🏭 Comparativo por Línea de Negocio</div>
+        <div id="fin-por-linea" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));gap:10px;margin-bottom:14px;"></div>
+
+        <!-- 3. Margen estimado vs. real -->
+        <div class="card" style="padding:14px;margin-bottom:14px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+            <div>
+              <div style="font-size:9px;font-weight:700;color:var(--tx2);letter-spacing:1.5px;text-transform:uppercase;">Todos los proyectos con costeo real (no depende del período)</div>
+              <div style="font-size:13px;font-weight:800;color:var(--navy);">⚖️ Margen estimado vs. real</div>
+            </div>
+          </div>
+          <div id="fin-margen-comparativo"></div>
+        </div>
+
+        <!-- 4. Top clientes por utilidad -->
+        <div class="card" style="padding:14px;margin-bottom:14px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+            <div>
+              <div style="font-size:9px;font-weight:700;color:var(--tx2);letter-spacing:1.5px;text-transform:uppercase;">Top clientes</div>
+              <div style="font-size:13px;font-weight:800;color:var(--navy);">🏆 Mayor utilidad generada (mes)</div>
+            </div>
+          </div>
+          <div id="fin-top-clientes-utilidad"></div>
+        </div>
+
+        <!-- 5. Proyección básica -->
+        <div class="card" style="padding:14px;">
+          <div style="font-size:9px;font-weight:700;color:var(--tx2);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:2px;">Estimado</div>
+          <div style="font-size:13px;font-weight:800;color:var(--navy);margin-bottom:10px;">🔮 Proyección de ingresos — próximo mes</div>
+          <div id="fin-proyeccion"></div>
         </div>
       </div>
 
@@ -6810,6 +6871,7 @@ function periodoDashHoy(){
   var d = new Date();
   _cotDashPeriodo = {anio: d.getFullYear(), mes: d.getMonth()};
   renderCotDashboard();
+  if(typeof renderAnalisisFinanciero === "function") renderAnalisisFinanciero();
 }
 
 function cambiarPeriodoDash(delta){
@@ -6819,6 +6881,7 @@ function cambiarPeriodoDash(delta){
   if(m > 11){ m = 0; a++; }
   _cotDashPeriodo = {anio: a, mes: m};
   renderCotDashboard();
+  if(typeof renderAnalisisFinanciero === "function") renderAnalisisFinanciero();
 }
 
 function _nombreMes(m){
@@ -7142,6 +7205,249 @@ function _kpiCard(opts){
   +'</div>';
 }
 
+// ═══════════════════════════════════════════════════════════════
+// ANÁLISIS FINANCIERO — comparte período con el Dashboard (_cotDashPeriodo)
+// ═══════════════════════════════════════════════════════════════
+//
+// Resolución de costo para calcular utilidad de una cotización ganada,
+// en orden de prioridad:
+//   1. c.costoReal      — capturado (auto desde costeo real, o manual)
+//   2. costeo vinculado (c.costeoIdOrigen) — costo estimado del costeo
+//   3. c.costoEstimado  — capturado a mano, sin costeo vinculado
+//   4. sin dato — se excluye del cálculo de utilidad (se reporta aparte)
+// Decisión de negocio confirmada: para cotizaciones sin costeo vinculado,
+// el costo se captura a mano en los campos que ya existen en Seguimiento
+// de Obra (Costo estimado / Costo real) — no se inventa ni se asume 0.
+
+function _costeosByIdMap(){
+  var m = {};
+  (typeof _costeoCosteos !== "undefined" ? _costeoCosteos : []).forEach(function(co){ m[co.id] = co; });
+  return m;
+}
+
+function _costoUtilidadDe(c, costeosMap){
+  if(c.costoReal !== undefined && c.costoReal !== null && parseFloat(c.costoReal) > 0){
+    return {costo: parseFloat(c.costoReal), fuente:"real"};
+  }
+  if(c.costeoIdOrigen && costeosMap[c.costeoIdOrigen]){
+    return {costo: parseFloat(costeosMap[c.costeoIdOrigen].costoTotal)||0, fuente:"estimado_costeo"};
+  }
+  if(c.costoEstimado !== undefined && c.costoEstimado !== null && parseFloat(c.costoEstimado) > 0){
+    return {costo: parseFloat(c.costoEstimado), fuente:"estimado_manual"};
+  }
+  return {costo: null, fuente:"sin_dato"};
+}
+
+// Utilidad de una cotización ganada — null si no hay ningún dato de costo
+function _utilidadDe(c, costeosMap){
+  var r = _costoUtilidadDe(c, costeosMap);
+  if(r.costo === null) return null;
+  var monto = parseFloat(c.montoGanado)||0;
+  return {utilidad: monto-r.costo, costo:r.costo, monto:monto, pct: monto>0 ? ((monto-r.costo)/monto*100) : 0, fuente:r.fuente};
+}
+
+// Array de {anio,mes} de longitud n, terminando en p (inclusive), ascendente
+function _rangoUltimosNMeses(p, n){
+  var out = [], m = p.mes, a = p.anio;
+  for(var i=0;i<n;i++){ out.unshift({anio:a, mes:m}); m--; if(m<0){ m=11; a--; } }
+  return out;
+}
+
+function _fmtMesCorto(mes){
+  return ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"][mes]||"";
+}
+
+function renderAnalisisFinanciero(){
+  var periodo = _cotDashPeriodo;
+  var label = document.getElementById("fin-periodo-label");
+  if(label) label.textContent = _nombreMes(periodo.mes).charAt(0).toUpperCase()+_nombreMes(periodo.mes).slice(1)+" "+periodo.anio;
+
+  var costeosMap = _costeosByIdMap();
+  var cotsGanadasMes = _cotsGanadasDelPeriodo(periodo);
+
+  // ─── 1. Utilidad e Ingresos ───
+  var conCosto = [], sinCosto = [];
+  cotsGanadasMes.forEach(function(c){
+    var u = _utilidadDe(c, costeosMap);
+    if(u) conCosto.push({c:c, utilidad:u.utilidad, costo:u.costo, monto:u.monto, fuente:u.fuente});
+    else sinCosto.push(c);
+  });
+  var utilidadTotal = conCosto.reduce(function(s,x){return s+x.utilidad;},0);
+  var montoConCosto = conCosto.reduce(function(s,x){return s+x.monto;},0);
+  var pctUtilidad = montoConCosto>0 ? (utilidadTotal/montoConCosto*100) : 0;
+  var montoTodasGanadas = cotsGanadasMes.reduce(function(s,c){return s+(parseFloat(c.montoGanado)||0);},0);
+  var ticketProm = cotsGanadasMes.length ? montoTodasGanadas/cotsGanadasMes.length : 0;
+
+  var kpisEl = document.getElementById("fin-kpis-utilidad");
+  if(kpisEl){
+    kpisEl.innerHTML = ''
+      +_kpiCard({titulo:"Utilidad del período", valor:"$"+fmtPeso(utilidadTotal), subtitulo: conCosto.length+" proyecto"+(conCosto.length===1?"":"s")+" con costo conocido", color:"#059669", icono:"💰"})
+      +_kpiCard({titulo:"% Utilidad promedio", valor: montoConCosto>0 ? pctUtilidad.toFixed(1)+"%" : "—", subtitulo:"Sobre monto con costo conocido", color:"#7C3AED", icono:"📊"})
+      +_kpiCard({titulo:"Ticket promedio", valor:"$"+fmtPeso(ticketProm), subtitulo: cotsGanadasMes.length+" proyecto"+(cotsGanadasMes.length===1?"":"s")+" ganado"+(cotsGanadasMes.length===1?"":"s"), color:"#1E6FD9", icono:"🎫"});
+  }
+  var notaEl = document.getElementById("fin-utilidad-nota");
+  if(notaEl){
+    notaEl.textContent = sinCosto.length
+      ? "⚠️ "+sinCosto.length+" proyecto"+(sinCosto.length===1?"":"s")+" ganado"+(sinCosto.length===1?"":"s")+" sin costo estimado ni real capturado ($"+fmtPeso(sinCosto.reduce(function(s,c){return s+(parseFloat(c.montoGanado)||0);},0))+") — no se incluyen en la utilidad. Captúralo en Seguimiento de Obra."
+      : "";
+  }
+
+  // Gráfica de ingresos ganados — últimos 12 meses (terminando en el período seleccionado)
+  var meses12 = _rangoUltimosNMeses(periodo, 12);
+  var datos12 = meses12.map(function(m){
+    var total = _cotsGanadasDelPeriodo(m).reduce(function(s,c){return s+(parseFloat(c.montoGanado)||0);},0);
+    return {mes:m.mes, anio:m.anio, total:total};
+  });
+  var maxV12 = Math.max.apply(null, datos12.map(function(d){return d.total;})) || 1;
+  var graficaEl = document.getElementById("fin-grafica-ingresos");
+  if(graficaEl){
+    graficaEl.innerHTML = '<div style="display:flex;align-items:flex-end;gap:4px;height:110px;">'
+      + datos12.map(function(d){
+          var h = d.total>0 ? Math.max(3, (d.total/maxV12)*100) : 1;
+          return '<div style="flex:1;display:flex;align-items:flex-end;justify-content:center;height:100%;" title="'+_fmtMesCorto(d.mes)+' '+d.anio+': $'+fmtPeso(d.total)+'">'
+            +'<div style="width:100%;max-width:28px;height:'+h+'%;background:linear-gradient(180deg,#7C3AED,#5B21B6);border-radius:3px 3px 0 0;"></div>'
+          +'</div>';
+        }).join("")
+      + '</div>'
+      + '<div style="display:flex;gap:4px;margin-top:4px;">'
+      + datos12.map(function(d){ return '<div style="flex:1;text-align:center;font-size:8px;color:var(--tx2);">'+_fmtMesCorto(d.mes)+'</div>'; }).join("")
+      + '</div>';
+  }
+
+  // ─── 2. Comparativo por línea de negocio (mismo período) ───
+  var cotsDelMes = _cotsDelPeriodo(periodo);
+  var porLineaEl = document.getElementById("fin-por-linea");
+  if(porLineaEl){
+    porLineaEl.innerHTML = Object.keys(MODALIDADES).map(function(modKey){
+      var mInfo = MODALIDADES[modKey];
+      var delMes = cotsDelMes.filter(function(c){return _modalidadDe(c)===modKey;});
+      var ganadasMod = delMes.filter(function(c){return c.estado==="aceptada"||c.estado==="en_obra"||c.estado==="cerrada";});
+      var perdidasMod = delMes.filter(function(c){return c.estado==="rechazada";});
+      var totalDecididoMod = ganadasMod.length+perdidasMod.length;
+      var convMod = totalDecididoMod>0 ? (ganadasMod.length/totalDecididoMod*100) : 0;
+
+      var ganadasFechaGanadaMod = cotsGanadasMes.filter(function(c){return _modalidadDe(c)===modKey;});
+      var utilMod = 0, montoUtilMod = 0;
+      ganadasFechaGanadaMod.forEach(function(c){
+        var u = _utilidadDe(c, costeosMap);
+        if(u){ utilMod += u.utilidad; montoUtilMod += u.monto; }
+      });
+      var pctUtilMod = montoUtilMod>0 ? (utilMod/montoUtilMod*100) : 0;
+
+      var tiempos = ganadasFechaGanadaMod.map(function(c){
+        if(!c.fecha || !c.fechaGanada) return null;
+        try{
+          var d1 = new Date(c.fecha+"T12:00:00"), d2 = new Date(c.fechaGanada+"T12:00:00");
+          var dd = Math.round((d2-d1)/86400000);
+          return (dd>=0) ? dd : null;
+        }catch(e){ return null; }
+      }).filter(function(x){return x!==null;});
+      var tiempoProm = tiempos.length ? Math.round(tiempos.reduce(function(a,b){return a+b;},0)/tiempos.length) : null;
+
+      return '<div class="card" style="padding:14px;border-left:4px solid '+mInfo.color+';">'
+        +'<div style="font-size:9px;font-weight:700;color:'+mInfo.color+';letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;">'+mInfo.icono+' '+mInfo.label+'</div>'
+        +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:11px;">'
+          +'<div><div style="color:var(--tx2);font-size:9px;">Conversión</div><div style="font-weight:800;color:var(--navy);font-size:15px;">'+(totalDecididoMod>0?convMod.toFixed(0)+"%":"—")+'</div></div>'
+          +'<div><div style="color:var(--tx2);font-size:9px;">Utilidad</div><div style="font-weight:800;color:'+mInfo.color+';font-size:15px;">$'+fmtPeso(utilMod)+'</div></div>'
+          +'<div><div style="color:var(--tx2);font-size:9px;">% Utilidad</div><div style="font-weight:800;color:var(--navy);font-size:15px;">'+(montoUtilMod>0?pctUtilMod.toFixed(0)+"%":"—")+'</div></div>'
+          +'<div><div style="color:var(--tx2);font-size:9px;">Tiempo cierre</div><div style="font-weight:800;color:var(--navy);font-size:15px;">'+(tiempoProm!==null?tiempoProm+" d":"—")+'</div></div>'
+        +'</div>'
+      +'</div>';
+    }).join("");
+  }
+
+  // ─── 3. Margen estimado vs. real — TODOS los proyectos con costeo real, sin filtrar por período ───
+  var conCosteoReal = cotizaciones.filter(function(c){ return c.costeoRealId && c.costeoIdOrigen && c.montoGanado; });
+  var margenEl = document.getElementById("fin-margen-comparativo");
+  if(margenEl){
+    if(!conCosteoReal.length){
+      margenEl.innerHTML = '<div style="text-align:center;padding:18px;font-size:11px;color:var(--tx2);">Aún no hay proyectos con costeo real capturado</div>';
+    } else {
+      var filas = conCosteoReal.map(function(c){
+        var origen = costeosMap[c.costeoIdOrigen];
+        var costoEstimado = origen ? (parseFloat(origen.costoTotal)||0) : null;
+        var costoReal = parseFloat(c.costoReal)||0;
+        var monto = parseFloat(c.montoGanado)||0;
+        if(costoEstimado===null || monto<=0) return null;
+        var pctEst = ((monto-costoEstimado)/monto)*100;
+        var pctReal = ((monto-costoReal)/monto)*100;
+        return {c:c, pctEst:pctEst, pctReal:pctReal, delta: pctReal-pctEst};
+      }).filter(function(x){return x!==null;});
+      if(!filas.length){
+        margenEl.innerHTML = '<div style="text-align:center;padding:18px;font-size:11px;color:var(--tx2);">No se encontró el costeo estimado original de estos proyectos (¿sin acceso al módulo Costeo?)</div>';
+      } else {
+        filas.sort(function(a,b){return a.delta-b.delta;});
+        margenEl.innerHTML = filas.map(function(f){
+          var malo = f.delta < 0;
+          var col = malo ? "#B91C1C" : "#059669";
+          return '<div onclick="abrirCot(\''+f.c.id+'\')" style="cursor:pointer;background:'+(malo?"rgba(239,68,68,.06)":"rgba(16,185,129,.05)")+';border:1px solid '+(malo?"rgba(239,68,68,.25)":"rgba(16,185,129,.2)")+';border-radius:8px;padding:10px 12px;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">'
+            +'<div style="flex:1;min-width:0;">'
+              +'<div style="font-size:12px;font-weight:700;color:var(--navy);">'+escapeHtml(f.c.empresa||"Sin empresa")+'</div>'
+              +'<div style="font-size:10px;color:var(--tx2);">'+escapeHtml(f.c.folio||"")+'</div>'
+            +'</div>'
+            +'<div style="text-align:right;flex-shrink:0;font-size:11px;">'
+              +'<span style="color:var(--tx2);">Estimado '+f.pctEst.toFixed(0)+'%</span> → <span style="color:'+col+';font-weight:800;">Real '+f.pctReal.toFixed(0)+'%</span>'
+              +'<div style="font-size:10px;font-weight:700;color:'+col+';">'+(f.delta>=0?"+":"")+f.delta.toFixed(1)+' pts</div>'
+            +'</div>'
+          +'</div>';
+        }).join("");
+      }
+    }
+  }
+
+  // ─── 4. Top clientes por utilidad (mismo período que sección 1) ───
+  var topUtilMap = {};
+  conCosto.forEach(function(x){
+    var emp = (x.c.empresa||"").trim();
+    if(!emp) return;
+    if(!topUtilMap[emp]) topUtilMap[emp] = {empresa:emp, utilidad:0, count:0};
+    topUtilMap[emp].utilidad += x.utilidad;
+    topUtilMap[emp].count++;
+  });
+  var topUtilArr = Object.values(topUtilMap).sort(function(a,b){return b.utilidad-a.utilidad;}).slice(0,5);
+  var topUtilEl = document.getElementById("fin-top-clientes-utilidad");
+  if(topUtilEl){
+    if(!topUtilArr.length){
+      topUtilEl.innerHTML = '<div style="text-align:center;padding:18px;font-size:11px;color:var(--tx2);">Sin datos de utilidad en este período</div>';
+    } else {
+      var maxU = topUtilArr[0].utilidad || 1;
+      topUtilEl.innerHTML = topUtilArr.map(function(t,i){
+        var pct = maxU>0 ? (t.utilidad/maxU*100) : 0;
+        var medalla = i===0?"🥇":(i===1?"🥈":(i===2?"🥉":"   "));
+        return '<div style="margin-bottom:8px;">'
+          +'<div style="display:flex;align-items:center;justify-content:space-between;font-size:11px;margin-bottom:4px;">'
+            +'<span style="font-weight:700;color:var(--navy);">'+medalla+' '+escapeHtml(t.empresa)+' <span style="color:var(--tx3);font-weight:500;font-size:10px;">('+t.count+' proy)</span></span>'
+            +'<span style="font-weight:800;color:#059669;">$'+fmtPeso(t.utilidad)+'</span>'
+          +'</div>'
+          +'<div style="height:6px;background:var(--off);border-radius:3px;overflow:hidden;">'
+            +'<div style="height:100%;width:'+(t.utilidad>0?pct:0)+'%;background:linear-gradient(90deg,#059669,#10B981);"></div>'
+          +'</div>'
+        +'</div>';
+      }).join("");
+    }
+  }
+
+  // ─── 5. Proyección básica — tasa de conversión histórica (6 meses) x pendientes actuales ───
+  var meses6 = _rangoUltimosNMeses(periodo, 6);
+  var ganadas6=0, perdidas6=0;
+  meses6.forEach(function(m){
+    var cs = _cotsDelPeriodo(m);
+    ganadas6 += cs.filter(function(c){return c.estado==="aceptada"||c.estado==="en_obra"||c.estado==="cerrada";}).length;
+    perdidas6 += cs.filter(function(c){return c.estado==="rechazada";}).length;
+  });
+  var tasaConv6m = (ganadas6+perdidas6)>0 ? (ganadas6/(ganadas6+perdidas6)) : 0;
+  var pendientesActuales = cotizaciones.filter(function(c){return (c.estado||"pendiente")==="pendiente";});
+  var montoPendientes = pendientesActuales.reduce(function(s,c){return s+(parseFloat(c.granTotal)||0);},0);
+  var proyeccion = montoPendientes * tasaConv6m;
+
+  var proyEl = document.getElementById("fin-proyeccion");
+  if(proyEl){
+    proyEl.innerHTML = '<div style="font-size:22px;font-weight:900;color:#7C3AED;">$'+fmtPeso(proyeccion)+'</div>'
+      +'<div style="font-size:10.5px;color:var(--tx2);margin-top:4px;line-height:1.5;">'+(tasaConv6m*100).toFixed(0)+'% tasa de conversión histórica (últimos 6 meses, '+ganadas6+' ganadas / '+perdidas6+' perdidas) sobre $'+fmtPeso(montoPendientes)+' en '+pendientesActuales.length+' cotización'+(pendientesActuales.length===1?"":"es")+' pendiente'+(pendientesActuales.length===1?"":"s")+'.</div>';
+  }
+}
+window.renderAnalisisFinanciero = renderAnalisisFinanciero;
+
 // Exponer al window
 window.cambiarPeriodoDash = cambiarPeriodoDash;
 window.periodoDashHoy = periodoDashHoy;
@@ -7186,6 +7492,8 @@ function showCotSubtab(tab, btnEl){
     cargarCatalogoConceptos();
   } else if(tab === "dashboard"){
     if(typeof renderCotDashboard === "function") renderCotDashboard();
+  } else if(tab === "financiero"){
+    if(typeof renderAnalisisFinanciero === "function") renderAnalisisFinanciero();
   } else if(tab === "clientes"){
     if(typeof cargarClientes === "function") cargarClientes();
   } else if(tab === "condiciones"){
