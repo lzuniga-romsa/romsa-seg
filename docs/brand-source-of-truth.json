@@ -1,0 +1,357 @@
+{
+  "_meta": {
+    "description": "Fuente de verdad extraída del Brand Composition Engine (BCE) y del objeto MODALIDADES del CRM ROMSA. Documento de solo referencia (no ejecutable, no modifica el CRM) pensado para que un script de Python lo consuma directamente (json.load).",
+    "extracted_from": "index.html (raíz del repo, commit más reciente — 2026-07-31 -0700, ~2.6MB, 19726 líneas)",
+    "extraction_date": "2026-08-02",
+    "not_extracted_from": "\"index (2).html\" (versión anterior, commit 2026-06-25) e \"index BACKUP.html\" fueron descartados por ser versiones previas.",
+    "two_color_systems_warning": "El CRM usa DOS catálogos de color distintos para la misma marca, con propósitos diferentes — no son intercambiables: (1) MODALIDADES / COL (líneas ~9913 y ~9955,10051) define el color de acento usado en las tarjetas de UI del editor de Cotización/Costeo y en los PDFs de Auditoría/Reporte/Cotización. (2) BCE_BRANDS (línea ~17893) define navy/accent/accentAlt usados exclusivamente por el Brand Composition Engine (generador de piezas para redes sociales, sección 'Motor de Marca'). Ambos catálogos se documentan abajo, con su campo de origen claramente etiquetado.",
+    "units": "Todas las medidas de layout de las plantillas BCE son proporciones relativas al ancho (w) o alto (h) del lienzo activo (ej. 0.075 significa 7.5% de w o h), NO píxeles absolutos. El lienzo real se arma multiplicando por el w/h de la red social elegida (ver bce_networks). Esto es intencional en el código original para que las piezas escalen a cualquier formato."
+  },
+
+  "brands": {
+    "romsa_industrial": {
+      "source_key_modalidades": "industrial",
+      "source_key_bce": "industrial",
+      "label": "Industrial / ROMSA",
+      "icono": "🏭",
+      "tagline": "ROMSA Industrial — Especialistas en recubrimientos industriales",
+      "descripcion": "Recubrimientos industriales",
+      "colors": {
+        "modalidad_accent": "#1E6FD9",
+        "modalidad_accent_bg_rgba": "rgba(30,111,217,.08)",
+        "modalidad_accent_source_note": "MODALIDADES.industrial.color y COL.industrial — usado en UI de Cotización/Costeo y PDFs (index.html líneas 9913-9921, 9955, 10051)",
+        "bce_navy": "#0B1F3A",
+        "bce_accent": "#7B9AD0",
+        "bce_accent_alt": "#3D8BFF",
+        "bce_source_note": "BCE_BRANDS.industrial (index.html línea ~17894), usado solo por el Brand Composition Engine"
+      },
+      "website": "www.romsaindustrial.com",
+      "has_icon_only_logo_variant": false,
+      "logos": {
+        "note": "Los logos viven embebidos como data URIs (SVG) directamente en index.html, asignados a variables globales window.*. No se extraen los binarios aquí — solo su ubicación exacta para que un script los lea del HTML fuente si los necesita.",
+        "blanco": { "global_var": "window._romsaLogoBlanco", "index_html_line": 3326, "format": "SVG data URI (asignado desde var logoBlanco, línea 3323)", "uso": "topbar y vista de cliente sobre fondo oscuro; también variante blanca del BCE" },
+        "azul_color": { "global_var": "window._romsaLogoAzul", "index_html_line": 3325, "format": "SVG data URI", "uso": "PDFs sobre fondo blanco; también variante navy/color del BCE" }
+      }
+    },
+
+    "rackline": {
+      "source_key_modalidades": "rackline",
+      "source_key_bce": "rackline",
+      "label": "RACKLINE",
+      "icono": "📦",
+      "tagline": "Rackline Storage Systems — Almacenamiento inteligente para la industria",
+      "descripcion": "Racking industrial",
+      "colors": {
+        "modalidad_accent": "#0C2340",
+        "modalidad_accent_bg_rgba": "rgba(12,35,64,.08)",
+        "modalidad_accent_source_note": "MODALIDADES.rackline.color y COL.rackline — usado en UI de Cotización/Costeo y PDFs (index.html líneas 9913, 9930-9937, 9955, 10051)",
+        "bce_navy": "#0C2340",
+        "bce_accent": "#F5821F",
+        "bce_accent_alt": "#FFB366",
+        "bce_source_note": "BCE_BRANDS.rackline (index.html línea ~17895), usado solo por el Brand Composition Engine"
+      },
+      "website": "www.rackline.com.mx",
+      "has_icon_only_logo_variant": false,
+      "logos": {
+        "note": "Ver nota general en romsa_industrial.logos.note",
+        "color": { "global_var": "window._racklineLogoColor", "index_html_line": 3337, "format": "PNG base64 data URI" },
+        "blanco": { "global_var": "window._racklineLogoBlanco", "index_html_line": 3338, "format": "PNG base64 data URI" }
+      },
+      "telefono": { "global_var": "window._racklineTel", "index_html_line": 3339, "valor": "686 351 3988" },
+      "external_source_of_truth_skill": "rackline-brand-kit (skill del sistema) — fuente única de verdad más completa para tipografías, reglas de uso y variantes adicionales del logo Rackline."
+    },
+
+    "home": {
+      "source_key_modalidades": "home",
+      "source_key_bce": "home",
+      "label": "HOME by ROMSA",
+      "icono": "🏠",
+      "tagline": "HOME by ROMSA - Pisos Epóxicos",
+      "descripcion": "Pisos epóxicos residenciales",
+      "colors": {
+        "modalidad_accent": "#1E5BA8",
+        "modalidad_accent_bg_rgba": "rgba(30,91,168,.08)",
+        "modalidad_accent_source_note": "MODALIDADES.home.color y COL.home — usado en UI de Cotización/Costeo y PDFs (index.html líneas 9913, 9922-9929, 9955, 10051)",
+        "bce_navy": "#0B1F3A",
+        "bce_accent": "#C36F4A",
+        "bce_accent_alt": "#1E5BA8",
+        "bce_source_note": "BCE_BRANDS.home (index.html línea ~17896), usado solo por el Brand Composition Engine"
+      },
+      "website": "www.romsaindustrial.com/home",
+      "has_icon_only_logo_variant": true,
+      "logos": {
+        "note": "Ver nota general en romsa_industrial.logos.note. HOME es la única marca con variante 'solo ícono' (sin texto) para espacios reducidos como el footer del BCE.",
+        "color": { "global_var": "window._homeLogoColor", "index_html_line": 3328, "format": "PNG base64 data URI" },
+        "blanco": { "global_var": "window._homeLogoBlanco", "index_html_line": 3329, "format": "PNG base64 data URI" },
+        "blanco_icono": { "global_var": "window._homeLogoBlancoIcono", "index_html_line": 3332, "format": "PNG base64 data URI", "uso": "logo recortado sin texto 'HOME', para BCE.logoIconOnly=true" },
+        "color_icono": { "global_var": "window._homeLogoColorIcono", "index_html_line": 3333, "format": "PNG base64 data URI" }
+      },
+      "telefono": { "global_var": "window._homeTel", "index_html_line": 3334, "valor": "686 175 4812" }
+    }
+  },
+
+  "bce_networks": [
+    { "key": "linkedin", "label": "LinkedIn", "w": 1200, "h": 1200, "orientation": "square" },
+    { "key": "ig_feed", "label": "Instagram Feed", "w": 1080, "h": 1350, "orientation": "portrait" },
+    { "key": "ig_story", "label": "Instagram Historia", "w": 1080, "h": 1920, "orientation": "tall" },
+    { "key": "facebook", "label": "Facebook", "w": 1200, "h": 630, "orientation": "landscape" },
+    { "key": "x", "label": "X", "w": 1200, "h": 675, "orientation": "landscape" },
+    { "key": "web_hero", "label": "Website Hero", "w": 1920, "h": 1080, "orientation": "landscape" }
+  ],
+
+  "bce_shared_constants": {
+    "grid_margin_fraction_of_w": 0.075,
+    "grid_margin_note": "BCE_MARGIN — margen estándar del sistema (1 columna de 12 del Kit de Marca). Se aplica como M = w * 0.075.",
+    "footer_strip_height_fraction_of_h": 0.075,
+    "footer_strip_note": "cFooterStrip — franja sólida fija de logo + sitio web, SIEMPRE al fondo del canvas (excepto en tplTallOverride), independiente de la plantilla y de la luminosidad de la foto, para garantizar contraste.",
+    "footer_strip_logo_width_fraction_of_w": 0.11,
+    "footer_strip_logo_max_height_fraction_of_strip_h": 0.7,
+    "footer_strip_gradient": {
+      "type": "linear diagonal",
+      "base_color": "BCE_NAVY (navy activo de la marca)",
+      "stops": [
+        { "offset": 0, "color_formula": "navy oscurecido 8% (rgb * 0.92)" },
+        { "offset": 0.55, "color": "BCE_NAVY sin modificar" },
+        { "offset": 1, "color_formula": "navy aclarado 9% hacia blanco" }
+      ],
+      "accent_glow_circles": [
+        { "position": "95% w, 15% de la franja", "radius_fraction_of_stripH": 2.4, "color": "BCE_LIGHTBLUE (accent activo)", "max_opacity": 0.10 },
+        { "position": "6% w, 90% de la franja", "radius_fraction_of_stripH": 1.8, "color": "BCE_LIGHTBLUE (accent activo)", "max_opacity": 0.06 }
+      ]
+    },
+    "font_family": "\"Inter\", Arial, sans-serif",
+    "default_text_color_on_photo": "#FFFFFF"
+  },
+
+  "bce_contrast_logic": {
+    "function": "bceContrastColor(hex)",
+    "index_html_line": 17993,
+    "algorithm": "Luminancia relativa perceptual estándar (coeficientes ITU-R BT.601): lum = (0.299*R + 0.587*G + 0.114*B) / 255, con R,G,B extraídos del hex vía bceHexToRgb.",
+    "decision_rule": "if lum > 0.6 → devuelve BCE_NAVY (texto oscuro, para fondos claros); else → devuelve \"#FFFFFF\" (texto blanco, para fondos oscuros)",
+    "threshold": 0.6,
+    "used_by": [
+      "cCategoryBadge (color de texto sobre el fondo del badge cuando badgeStyle='badge')",
+      "cWebsite (color del texto 'www.marca.com' sobre el color de fondo pasado)",
+      "tplMinimal (color del título cuando minimalAcento=true, contra el color de acento de fondo)"
+    ],
+    "photo_luminosity_analysis": {
+      "function": "bceAnalyzeLuminosity(img)",
+      "index_html_line": 17926,
+      "purpose": "Determinístico, NO es IA: decide en qué franja de la foto (arriba o abajo, nunca el centro) colocar el bloque de texto, y qué tan oscuro debe ser el overlay para garantizar legibilidad.",
+      "method": [
+        "1. La imagen se re-muestrea a un canvas auxiliar de 120px de ancho (alto proporcional) para acelerar el análisis.",
+        "2. Se calcula luminancia por píxel con la misma fórmula (0.299R+0.587G+0.114B)/255.",
+        "3. Se divide la imagen en 3 franjas horizontales: top (0%-30%), middle (30%-70%), bottom (70%-100%).",
+        "4. Por franja se calcula: mean (brillo promedio), variance/std, y edgeDensity (densidad de bordes = diferencia absoluta de luminancia entre píxeles vecinos horizontal y verticalmente).",
+        "5. Se comparan SOLO top y bottom (middle se descarta porque casi siempre contiene el sujeto principal de la foto).",
+        "6. Se elige como 'safeZone' la franja (top o bottom) con MENOR edgeDensity — es decir, la visualmente más uniforme/menos detallada — NO la de menor varianza de brillo."
+      ],
+      "overlay_opacity_rule": {
+        "description": "La opacidad del degradado de oscurecimiento sobre la safeZone se calibra según qué tan clara es esa zona, para que el texto blanco siga siendo legible.",
+        "if_mean_gt": [
+          { "mean_gt": 0.62, "opacity": 0.62 },
+          { "mean_gt": 0.42, "opacity": 0.45 },
+          { "else": true, "opacity": 0.28 }
+        ]
+      },
+      "manual_override": "BCE.titlePosition puede forzarse a 'top' o 'bottom' (en vez de 'auto') si el análisis automático tapa algo importante de la foto; el footer se mantiene siempre fijo abajo independientemente de esto."
+    }
+  },
+
+  "bce_category_badge": {
+    "function": "cCategoryBadge",
+    "index_html_line": 18096,
+    "font_size_fraction_of_w": 0.0135,
+    "font_size_min_px": 9,
+    "letter_spacing_fraction_of_fontPx": 0.16,
+    "font": "700 {fontPx}px \"Inter\", Arial, sans-serif",
+    "styles": {
+      "badge": {
+        "description": "Etiqueta tipo pastilla con fondo sólido de color, esquinas redondeadas, texto con contraste automático (bceContrastColor).",
+        "padding_x_fraction_of_fontPx": 0.85,
+        "padding_y_fraction_of_fontPx": 0.55,
+        "corner_radius_fraction_of_boxH": 0.28,
+        "background_color": "BCE.labelColor (color de acento activo, seleccionable por el usuario entre la paleta de la marca)",
+        "text_color": "bceContrastColor(BCE.labelColor) — automático"
+      },
+      "line": {
+        "description": "Estilo editorial minimalista (default): sin caja, una línea corta de acento arriba del texto en mayúsculas.",
+        "line_width_max_fraction_of_w": 0.045,
+        "line_height_px_min": 2,
+        "line_height_fraction_of_w": 0.0022,
+        "color": "BCE.labelColor",
+        "font_weight": 600
+      }
+    }
+  },
+
+  "bce_templates": {
+    "corporate": {
+      "label": "Corporate",
+      "function": "tplCorporate",
+      "index_html_line": 18401,
+      "concept": "Franja oscura (gradiente suave) anclada arriba o abajo según la zona segura de la foto (lum.safeZone). Todo el bloque de texto (badge, título, subtítulo, meta, métrica) se mide ANTES de dibujar para que la franja se dimensione exactamente al contenido, nunca al revés.",
+      "layout": {
+        "margin_fraction_of_w": 0.075,
+        "title_font_size_fraction_of_w": { "landscape": 0.052, "other_orientations": 0.042 },
+        "subtitle_font_size_fraction_of_w": 0.024,
+        "meta_font_size_fraction_of_w": 0.018,
+        "footer_reserve_fraction_of_h": 0.075,
+        "pad_top_fraction_of_h": 0.05,
+        "pad_bottom_fraction_of_h": 0.075,
+        "max_content_height_fraction_of_h": 0.78,
+        "content_max_width": "w - 2*margin",
+        "min_zone_height_fraction_of_h": 0.28,
+        "max_zone_height_fraction_of_h": 0.78,
+        "autoshrink": {
+          "description": "Si el contenido medido no cabe en max_available (h*0.78 - padTop - padBottom - footerReserve si ancla abajo), se reduce título/subtítulo/meta proporcionalmente.",
+          "min_shrink_factor": 0.62
+        },
+        "text_color": "#FFFFFF",
+        "background_treatment": "cGradientOverlaySmooth sobre toda la foto, color BCE_NAVY, opacidad = lum.overlayOpacity (ver bce_contrast_logic.photo_luminosity_analysis), degradado continuo desde 0 (extremo opuesto) hasta la zona de contenido.",
+        "content_order_top_to_bottom": ["badge (opcional)", "titulo", "subtitulo (opcional)", "meta: cliente · ciudad · fecha (opcional)", "metrica inline: area m² (opcional)"],
+        "gap_between_blocks_fraction_of_w": 0.016,
+        "footer": "cFooterStrip fija abajo, ver bce_shared_constants.footer_strip_*"
+      }
+    },
+
+    "editorial": {
+      "label": "Editorial",
+      "function": "tplEditorial",
+      "index_html_line": 18470,
+      "concept": "Tarjeta sólida (card) de ancho fijo (60% del canvas) con fondo BCE_NAVY y glow decorativo, conteniendo eyebrow+título+subtítulo+métrica. La línea meta (cliente/ciudad/fecha) vive FUERA de la tarjeta, sin fondo, con sombra de texto, justo arriba del footer.",
+      "layout": {
+        "margin_fraction_of_w": 0.075,
+        "card_max_width_fraction_of_w": 0.6,
+        "card_padding_x_fraction_of_w": 0.042,
+        "card_padding_y_fraction_of_w": 0.038,
+        "card_background_color": "BCE_NAVY",
+        "card_has_glow": true,
+        "card_glow_spec": {
+          "position": "92% ancho de tarjeta, 8% alto de tarjeta",
+          "radius_fraction_of_cardH": 1.3,
+          "color": "rgba(30,111,217,.20) a rgba(30,111,217,0)"
+        },
+        "eyebrow_font_size_fraction_of_w": 0.0135,
+        "title_font_size_fraction_of_w": 0.048,
+        "subtitle_font_size_fraction_of_w": 0.0225,
+        "metric_number_font_size_fraction_of_w": 0.032,
+        "meta_font_size_fraction_of_w": 0.0165,
+        "gap_small_fraction_of_h": 0.018,
+        "footer_reserve_fraction_of_h": 0.075,
+        "card_vertical_position": {
+          "anchor_bottom_zone": "cardY = max(margin, h - footerReserve - metaRowH - h*0.07 - cardH)",
+          "anchor_top_zone": "cardY = margin + h*0.025"
+        },
+        "autoshrink": {
+          "description": "Igual mecanismo que Corporate: si (contenido + 2*padY) no cabe en el espacio disponible (h - footerReserve - metaRowH - h*0.08 - 2*margin), se reduce título/subtítulo/métrica/padY.",
+          "min_shrink_factor": 0.62
+        },
+        "content_order_inside_card": ["eyebrow/badge (opcional)", "titulo (blanco)", "subtitulo (blanco, opcional)", "metrica inline: area m² (opcional)"],
+        "meta_outside_card": {
+          "position": "M horizontal, y = h - footerReserve - h*0.055",
+          "style": "texto blanco con sombra suave (shadowColor rgba(0,0,0,.55), shadowBlur = fontPx*0.5), sin caja de fondo"
+        },
+        "footer": "cFooterStrip fija abajo"
+      }
+    },
+
+    "minimal": {
+      "label": "Minimal",
+      "function": "tplMinimal",
+      "index_html_line": 18571,
+      "concept": "Solo título (sin badge, sin subtítulo, sin meta, sin métrica) sobre una franja de oscurecimiento negro puro, ancho reducido (55% del canvas). Único con opción de 'acento de color' detrás del título.",
+      "layout": {
+        "margin_fraction_of_w": 0.075,
+        "footer_reserve_fraction_of_h": 0.075,
+        "title_font_size_fraction_of_w": 0.028,
+        "title_max_width_fraction_of_w": 0.55,
+        "title_font_weight": 600,
+        "line_height_multiplier": 1.25,
+        "bar_height_formula": "anchorBottom ? (footerReserve + titleH + margin*1.6) : (titleH + margin*1.6)",
+        "background_treatment": "cGradientOverlaySmooth, color #000000 (negro puro, distinto a Corporate/Editorial que usan BCE_NAVY), opacidad fija 0.58 (NO depende de lum.overlayOpacity)",
+        "text_color_default": "#FFFFFF",
+        "minimal_acento_option": {
+          "flag": "BCE.minimalAcento (boolean, default false)",
+          "description": "Rectángulo redondeado del color de acento activo (BCE.labelColor) detrás del título.",
+          "padding_x_fraction_of_titleSize": 0.45,
+          "padding_y_fraction_of_titleSize": 0.32,
+          "corner_radius": "min(boxH*0.18, w*0.012)",
+          "background_color": "BCE.labelColor",
+          "text_color": "bceContrastColor(BCE.labelColor) — automático según el acento elegido"
+        },
+        "footer": "cFooterStrip fija abajo"
+      }
+    },
+
+    "impacto": {
+      "label": "Impacto",
+      "function": "tplImpacto",
+      "index_html_line": 18632,
+      "concept": "Único que NO usa la detección de zona segura (lum.safeZone) — ocupa casi toda la altura del canvas con una estadística grande arriba y un bloque de titular/párrafo abajo, con oscurecimiento parejo arriba+abajo y más claro al centro (para fotos con mucho detalle, ej. racks/naves).",
+      "layout": {
+        "margin_fraction_of_w": 0.075,
+        "footer_reserve_fraction_of_h": 0.075,
+        "background_gradient": {
+          "type": "linear vertical continuo (single gradient, no dos rectángulos separados)",
+          "color": "BCE_NAVY",
+          "stops": [
+            { "offset": 0, "opacity": 0.5 },
+            { "offset": 0.46, "opacity": 0.16 },
+            { "offset": 0.52, "opacity": 0.16 },
+            { "offset": 1, "opacity": 0.62 }
+          ]
+        },
+        "badge_position": "top, en cursorY = margin",
+        "statistic_block": {
+          "font_size_fraction_of_w": 0.15,
+          "font_weight": 800,
+          "parse_regex": "^([+\\-]?[\\d.,]+)(.*)$",
+          "lead_color": "#FFFFFF (parte numérica)",
+          "trail_color": "BCE.labelColor (sufijo: %, x, +, etc.)",
+          "autoshrink": "si el ancho total excede maxW (w - 2*margin), se reduce statFontPx proporcionalmente",
+          "caption": {
+            "font_size_fraction_of_w": 0.0185,
+            "font_weight": 700,
+            "color": "#FFFFFF a 75% opacidad",
+            "letter_spacing_fraction_of_fontPx": 0.14,
+            "uppercase": true
+          }
+        },
+        "bottom_block": {
+          "description": "Línea de acento + titular + párrafo, anclado arriba del footer (NUNCA invade la mitad superior del canvas: max_available respeta h*0.52 mínimo para 'by').",
+          "title_font_size_fraction_of_w": 0.046,
+          "title_font_weight": 800,
+          "subtitle_font_size_fraction_of_w": 0.021,
+          "accent_line_width_fraction_of_w": 0.055,
+          "accent_line_color": "BCE.labelColor",
+          "min_top_position_fraction_of_h": 0.52,
+          "autoshrink_min_factor": 0.65
+        },
+        "footer": "cFooterStrip fija abajo"
+      }
+    },
+
+    "tall_override": {
+      "label": "(no es una de las 4 plantillas seleccionables — override automático)",
+      "function": "tplTallOverride",
+      "index_html_line": 18751,
+      "concept": "Se aplica AUTOMÁTICAMENTE, sin importar qué plantilla (Corporate/Editorial/Minimal/Impacto) esté seleccionada, cuando la red social activa tiene orientation:'tall' (actualmente solo 'ig_story', 1080x1920). Recomposición completa: logo centrado arriba, badge+título+subtítulo centrados en el tercio inferior, sitio web centrado hasta abajo. NO usa cFooterStrip.",
+      "layout": {
+        "top_gradient": { "type": "linear up, color #000000", "height_fraction_of_h": 0.32, "opacity": 0.5 },
+        "bottom_gradient": { "type": "linear down, color BCE_NAVY", "start_fraction_of_h": 0.68, "height_fraction_of_h": 0.32, "opacity": "lum.overlayOpacity" },
+        "logo_width_fraction_of_w": 0.30,
+        "logo_position": "centrado horizontalmente, y = margin",
+        "content_start_fraction_of_h": 0.72,
+        "title_font_size_fraction_of_w": 0.058,
+        "title_font_weight": 800,
+        "title_max_width_fraction_of_w": 0.82,
+        "subtitle_font_size_fraction_of_w": 0.026,
+        "subtitle_max_width_fraction_of_w": 0.78,
+        "website_font_size_fraction_of_w": 0.0155,
+        "website_position": "centrado horizontalmente, y = h - margin*0.7",
+        "text_align": "center (todo el bloque, a diferencia de las 4 plantillas normales que son left-aligned)"
+      }
+    }
+  }
+}

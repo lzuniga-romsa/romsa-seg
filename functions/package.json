@@ -1,0 +1,13 @@
+{
+  "name": "functions",
+  "description": "Cloud Functions del CRM ROMSA Industrial (romsa-industrial)",
+  "private": true,
+  "main": "index.js",
+  "engines": {
+    "node": "22"
+  },
+  "dependencies": {
+    "firebase-functions": "^6.4.0",
+    "@anthropic-ai/sdk": "^0.32.0"
+  }
+}

@@ -30,6 +30,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-functions-compat.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
 :root{
@@ -1272,6 +1273,15 @@ body.in-fotoeditor #app{
       </div>
     </div>
 
+    <!-- 9. Diagnóstico Visual con IA (acceso directo standalone) -->
+    <div class="mod-card" onclick="abrirDiagnosticoIAStandalone()" style="background:linear-gradient(135deg,#4C1D95,#6D28D9);border:1px solid rgba(196,181,253,.4);">
+      <div class="mod-icon" style="background:rgba(196,181,253,.22);color:#EDE9FE;font-size:19px;">🤖</div>
+      <div class="mod-info">
+        <div class="mod-name" style="color:#fff;">Diagnóstico Visual con IA</div>
+        <div class="mod-desc" style="color:rgba(255,255,255,.65);">Evalúa el riesgo de un piso/obra dañado con una foto, antes de cotizar</div>
+      </div>
+    </div>
+
   </div>
 
   <div class="mod-group-section">
@@ -1844,6 +1854,17 @@ body.in-fotoeditor #app{
             </div>
           </div>
           <div id="cot-dash-top-clientes"></div>
+        </div>
+
+        <!-- Monto real por línea de negocio -->
+        <div class="card" style="padding:14px;margin-bottom:14px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+            <div>
+              <div style="font-size:9px;font-weight:700;color:var(--tx2);letter-spacing:1.5px;text-transform:uppercase;">Ganado real</div>
+              <div style="font-size:13px;font-weight:800;color:var(--navy);">✅ Monto real por línea de negocio</div>
+            </div>
+          </div>
+          <div id="cot-dash-por-linea"></div>
         </div>
 
         <!-- Cotizaciones por vencer -->
@@ -3507,6 +3528,7 @@ const _fbCfg = {
 if(typeof firebase!=="undefined"&&!firebase.apps.length) firebase.initializeApp(_fbCfg);
 const db=(typeof firebase!=="undefined")?firebase.firestore():null;
 const storage=(typeof firebase!=="undefined" && firebase.storage)?firebase.storage():null;
+const cloudFunctions=(typeof firebase!=="undefined" && firebase.functions)?firebase.functions():null;
 const obrasRef=db?db.collection("obras_seguimiento_v2"):null;
 function getBaPairsRef(obraId){ return obrasRef.doc(obraId).collection("baPairs"); }
 function getUpdatesRef(obraId){ return obrasRef.doc(obraId).collection("updates"); }
@@ -6809,6 +6831,21 @@ function _cotsDelPeriodo(p){
   });
 }
 
+// Cotizaciones GANADAS en el período — filtra por fechaGanada (cuándo se
+// cerró el negocio realmente), NO por c.fecha (cuándo se cotizó). Así el
+// monto real aparece en el mes en que se ganó, sin importar cuándo se
+// haya cotizado originalmente.
+function _cotsGanadasDelPeriodo(p){
+  return cotizaciones.filter(function(c){
+    if(c.montoGanado === undefined || c.montoGanado === null) return false;
+    if(!c.fechaGanada) return false;
+    try {
+      var d = new Date(c.fechaGanada+"T12:00:00");
+      return d.getMonth() === p.mes && d.getFullYear() === p.anio;
+    } catch(e){ return false; }
+  });
+}
+
 function _cotsTodasHasta(p){
   // Cotizaciones desde inicio hasta el último día del periodo (inclusive)
   var fin = new Date(p.anio, p.mes+1, 0, 23, 59, 59);
@@ -6912,6 +6949,14 @@ function renderCotDashboard(){
   var tiempoProm = tiemposResp.length ? Math.round(tiemposResp.reduce(function(a,b){return a+b;},0)/tiemposResp.length) : 0;
   var tiempoSubtxt = tiemposResp.length ? "Basado en "+tiemposResp.length+" respuesta"+(tiemposResp.length>1?"s":"") : "Sin respuestas registradas";
 
+  // ─── KPI 7: Ganado real ───
+  // Cotizaciones cerradas en ESTE período según fechaGanada (no c.fecha).
+  var cotsGanadasMes = _cotsGanadasDelPeriodo(_cotDashPeriodo);
+  var totalGanado = cotsGanadasMes.reduce(function(s,c){return s+(parseFloat(c.montoGanado)||0);},0);
+  var ganadoSubtxt = cotsGanadasMes.length
+    ? cotsGanadasMes.length+" cotización"+(cotsGanadasMes.length===1?"":"es")+" cerrada"+(cotsGanadasMes.length===1?"":"s")+" este mes"
+    : "Sin cotizaciones cerradas este mes";
+
   // ─── Render del grid 3x2 ───
   var grid = document.getElementById("cot-dash-grid");
   if(grid){
@@ -6957,6 +7002,13 @@ function renderCotDashboard(){
         valor: tiemposResp.length>0 ? tiempoProm+" días" : "—",
         subtitulo: tiempoSubtxt,
         color:"#EC4899", icono:"⚡"
+      })
+      // KPI 7 — Ganado real
+      +_kpiCard({
+        titulo:"Ganado real",
+        valor: "$"+fmtPeso(totalGanado),
+        subtitulo: ganadoSubtxt,
+        color:"#059669", icono:"✅"
       });
   }
 
@@ -6986,6 +7038,37 @@ function renderCotDashboard(){
           +'</div>'
           +'<div style="height:6px;background:var(--off);border-radius:3px;overflow:hidden;">'
             +'<div style="height:100%;width:'+pct+'%;background:linear-gradient(90deg,#7C3AED,#EC4899);"></div>'
+          +'</div>'
+        +'</div>';
+      }).join("");
+    }
+  }
+
+  // ─── Monto real por línea de negocio (mismo período que KPI "Ganado real") ───
+  var porLineaMap = {industrial:0, home:0, rackline:0};
+  cotsGanadasMes.forEach(function(c){
+    var mod = _modalidadDe(c);
+    porLineaMap[mod] = (porLineaMap[mod]||0) + (parseFloat(c.montoGanado)||0);
+  });
+  var porLineaArr = Object.keys(porLineaMap).map(function(k){
+    var m = MODALIDADES[k];
+    return {key:k, label: (m&&m.label)||k, color:(m&&m.color)||"#334155", total:porLineaMap[k]};
+  });
+  var porLineaWrap = document.getElementById("cot-dash-por-linea");
+  if(porLineaWrap){
+    if(!totalGanado){
+      porLineaWrap.innerHTML = '<div style="text-align:center;padding:18px;font-size:11px;color:var(--tx2);">Sin monto ganado registrado en este período</div>';
+    } else {
+      var maxL = Math.max.apply(null, porLineaArr.map(function(p){return p.total;})) || 1;
+      porLineaWrap.innerHTML = porLineaArr.map(function(p){
+        var pct = (p.total/maxL)*100;
+        return '<div style="margin-bottom:8px;">'
+          +'<div style="display:flex;align-items:center;justify-content:space-between;font-size:11px;margin-bottom:4px;">'
+            +'<span style="font-weight:700;color:var(--navy);">'+escapeHtml(p.label)+'</span>'
+            +'<span style="font-weight:800;color:'+p.color+';">$'+fmtPeso(p.total)+'</span>'
+          +'</div>'
+          +'<div style="height:6px;background:var(--off);border-radius:3px;overflow:hidden;">'
+            +'<div style="height:100%;width:'+(p.total>0?pct:0)+'%;background:'+p.color+';"></div>'
           +'</div>'
         +'</div>';
       }).join("");
@@ -9785,6 +9868,27 @@ async function aplicarCambioEstadoCot(id, nuevoEstado){
   var menu = document.getElementById("cot-menu-estado");
   if(menu) menu.remove();
 
+  // Al ganar el negocio (aceptada/en_obra/cerrada) capturamos el monto REAL
+  // asignado — solo la primera vez (si ya tiene montoGanado guardado, no se
+  // vuelve a preguntar en transiciones posteriores entre esos 3 estados).
+  var estadosGanados = (nuevoEstado === "aceptada" || nuevoEstado === "en_obra" || nuevoEstado === "cerrada");
+  var yaTieneMonto = (c.montoGanado !== undefined && c.montoGanado !== null);
+  var montoGanado = yaTieneMonto ? c.montoGanado : undefined;
+  var fechaGanada = yaTieneMonto ? c.fechaGanada : undefined;
+
+  if(estadosGanados && !yaTieneMonto){
+    var sugerido = (c.granTotal !== undefined && c.granTotal !== null) ? c.granTotal : "";
+    var montoInput = prompt("Monto final asignado a esta cotización (si hubo negociación, ajusta el valor):", String(sugerido));
+    if(montoInput === null) return; // canceló — no aplicar el cambio de estado
+    var montoParsed = parseFloat(String(montoInput).replace(/,/g,""));
+    if(isNaN(montoParsed) || montoParsed < 0){
+      alert("⚠️ Monto inválido. No se aplicó el cambio de estado.");
+      return;
+    }
+    montoGanado = montoParsed;
+    fechaGanada = new Date().toISOString().slice(0,10);
+  }
+
   // Si pasa a un estado terminal y no tiene fechaRespuesta, asignar hoy
   var fechaRespuesta = c.fechaRespuesta || "";
   if(!fechaRespuesta && (nuevoEstado === "aceptada" || nuevoEstado === "rechazada" || nuevoEstado === "en_obra" || nuevoEstado === "cerrada")){
@@ -9794,13 +9898,22 @@ async function aplicarCambioEstadoCot(id, nuevoEstado){
   if(nuevoEstado === "pendiente") fechaRespuesta = "";
 
   try {
-    await db.collection("cotizaciones").doc(id).update({
+    var updatePayload = {
       estado: nuevoEstado,
       fechaRespuesta: fechaRespuesta
-    });
+    };
+    if(estadosGanados && !yaTieneMonto){
+      updatePayload.montoGanado = montoGanado;
+      updatePayload.fechaGanada = fechaGanada;
+    }
+    await db.collection("cotizaciones").doc(id).update(updatePayload);
     // Actualizar memoria
     c.estado = nuevoEstado;
     c.fechaRespuesta = fechaRespuesta;
+    if(estadosGanados && !yaTieneMonto){
+      c.montoGanado = montoGanado;
+      c.fechaGanada = fechaGanada;
+    }
     showToast("✓ Estado actualizado: "+(COT_ESTADO_LABELS[nuevoEstado]?.txt||nuevoEstado));
     renderListaCot();
     // Si el dashboard está visible, refrescarlo también
@@ -10786,6 +10899,35 @@ async function guardarCot(){
   if(!fecha){showToast("⚠️ Selecciona la fecha");return null;}
 
   var tots=calcTotalesCot();
+
+  // Monto real ganado — esta ruta de guardado (formulario completo) es una
+  // segunda vía por la que una cotización puede pasar a aceptada/en_obra/
+  // cerrada (además del menú rápido de estado, que ya lo maneja en
+  // aplicarCambioEstadoCot). Debe capturar el monto con la misma lógica:
+  // solo preguntar la primera vez, y SIEMPRE preservar montoGanado/
+  // fechaGanada ya guardados — como este guardado hace un set() sin merge
+  // del documento completo, si no los incluimos explícitamente aquí se
+  // borrarían de Firestore aunque ya existieran.
+  var estadoNuevoCot = (document.getElementById("cot-estado")?.value) || "pendiente";
+  var cotExistente = cotActivaId ? (cotizaciones.find(function(c){return c.id===cotActivaId;})||{}) : {};
+  var estadosGanadosCot = (estadoNuevoCot === "aceptada" || estadoNuevoCot === "en_obra" || estadoNuevoCot === "cerrada");
+  var yaTieneMontoCot = (cotExistente.montoGanado !== undefined && cotExistente.montoGanado !== null);
+  var montoGanadoCot = yaTieneMontoCot ? cotExistente.montoGanado : undefined;
+  var fechaGanadaCot = yaTieneMontoCot ? cotExistente.fechaGanada : undefined;
+
+  if(estadosGanadosCot && !yaTieneMontoCot){
+    var sugeridoCot = tots.total || cotExistente.granTotal || "";
+    var montoInputCot = prompt("Monto final asignado a esta cotización (si hubo negociación, ajusta el valor):", String(sugeridoCot));
+    if(montoInputCot === null){ showToast("Guardado cancelado"); return null; }
+    var montoParsedCot = parseFloat(String(montoInputCot).replace(/,/g,""));
+    if(isNaN(montoParsedCot) || montoParsedCot < 0){
+      alert("⚠️ Monto inválido. No se guardó la cotización.");
+      return null;
+    }
+    montoGanadoCot = montoParsedCot;
+    fechaGanadaCot = new Date().toISOString().slice(0,10);
+  }
+
   // Folio según modalidad: RACKLINE → RACK-…, HOME → HOME-…, Industrial → clásico
   function _folioNuevoPorModalidad(){
     return _cotModalidad==="rackline" ? _generarFolioRackline()
@@ -10840,9 +10982,13 @@ async function guardarCot(){
     }),
     subtotal:tots.sub,iva:tots.iva,granTotal:tots.total,
     // Estado de seguimiento (Sesión 1)
-    estado: (document.getElementById("cot-estado")?.value) || "pendiente",
+    estado: estadoNuevoCot,
     fechaRespuesta: (document.getElementById("cot-fecha-respuesta")?.value) || "",
     motivoRechazo: (document.getElementById("cot-motivo-rechazo")?.value || "").trim(),
+    // Monto real ganado — puede venir de esta misma sesión de guardado
+    // (recién capturado arriba) o ser el ya existente que preservamos.
+    montoGanado: montoGanadoCot,
+    fechaGanada: fechaGanadaCot,
     // Vinculación con cliente (Sesión 7)
     clienteId: (document.getElementById("cot-cliente-id")?.value) || "",
     // Seguimiento de obra (Sesión 4)
@@ -16381,6 +16527,7 @@ function _rpRenderSecciones(){
           <input type="file" accept="image/*" multiple onchange="_rpSubirFotosSeccion(${i},this)" style="display:none;">
         </label>
         <span style="font-size:9.5px;color:var(--tx2);">Fotos de esta sección (opcional)</span>
+        <button type="button" onclick="abrirDiagnosticoIA(${i})" title="Diagnóstico visual con IA sobre una foto de daño" style="display:flex;align-items:center;gap:5px;height:52px;padding:0 12px;border:1.5px dashed #7C3AED;border-radius:6px;background:#F5F3FF;color:#6D28D9;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0;font-family:var(--font);margin-left:auto;">🤖 Diagnóstico IA</button>
       </div>
     </div>`;
   }).join("");
@@ -16452,6 +16599,164 @@ async function _rpEliminarFotoSeccion(idx, fotoIdx){
   s.fotos.splice(fotoIdx, 1);
   _rpRenderSecciones();
 }
+
+// ── Diagnóstico Visual con IA ─────────────────────────────────────
+// Apoyo de decisión sobre fotos de obra/piso dañado — NO reemplaza ni
+// toca el flujo de subida de fotos de la sección (_rpSubirFotosSeccion),
+// solo lo reutiliza como referencia de patrón (compresión + Storage).
+let _diagIaSeccionIdx = null;
+let _diagIaFotoSeleccionada = null; // {url, path} de una foto ya subida a la sección
+let _diagIaNuevaFoto = null;        // {url, path} de una foto subida solo para este diagnóstico
+
+function abrirDiagnosticoIA(idx){
+  if(!cloudFunctions){ alert("⚠️ El servicio de diagnóstico con IA no está disponible."); return; }
+  if(typeof firebase !== "undefined" && firebase.auth && !firebase.auth().currentUser){
+    alert("⚠️ Tu sesión expiró. Recarga la página e inicia sesión de nuevo.");
+    return;
+  }
+  _diagIaSeccionIdx = idx;
+  _diagIaFotoSeleccionada = null;
+  _diagIaNuevaFoto = null;
+  document.getElementById("diag-ia-desc").value = "";
+  document.getElementById("diag-ia-nueva-preview").innerHTML = "";
+  document.getElementById("diag-ia-resultado").innerHTML = "";
+
+  const s = _rpSeccionesTemp[idx];
+  const fotos = (s && Array.isArray(s.fotos)) ? s.fotos : [];
+  const cont = document.getElementById("diag-ia-fotos-existentes");
+  if(!fotos.length){
+    cont.innerHTML = `<div style="font-size:10.5px;color:var(--tx2);font-style:italic;">Esta sección aún no tiene fotos — sube una nueva abajo.</div>`;
+  } else {
+    cont.innerHTML = fotos.map((f, fi) => `
+      <div class="diag-ia-thumb" data-fi="${fi}" onclick="_diagIaSeleccionarExistente(${fi})" style="width:56px;height:56px;border-radius:6px;overflow:hidden;cursor:pointer;border:2px solid transparent;flex-shrink:0;">
+        <img src="${f.url}" style="width:100%;height:100%;object-fit:cover;display:block;">
+      </div>`).join("");
+  }
+  document.getElementById("modal-diag-ia").classList.add("open");
+}
+
+// Variante standalone — acceso directo desde el menú principal, SIN estar
+// editando un Reporte de Proceso de Obra. No hay galería de fotos existente
+// que elegir (no hay sección/reporte activo): solo se puede subir una foto
+// nueva. _diagIaSeccionIdx queda en null para marcar este modo.
+function abrirDiagnosticoIAStandalone(){
+  if(!cloudFunctions){ alert("⚠️ El servicio de diagnóstico con IA no está disponible."); return; }
+  if(typeof firebase !== "undefined" && firebase.auth && !firebase.auth().currentUser){
+    alert("⚠️ Tu sesión expiró. Recarga la página e inicia sesión de nuevo.");
+    return;
+  }
+  _diagIaSeccionIdx = null;
+  _diagIaFotoSeleccionada = null;
+  _diagIaNuevaFoto = null;
+  document.getElementById("diag-ia-desc").value = "";
+  document.getElementById("diag-ia-nueva-preview").innerHTML = "";
+  document.getElementById("diag-ia-resultado").innerHTML = "";
+
+  const cont = document.getElementById("diag-ia-fotos-existentes");
+  cont.innerHTML = `<div style="font-size:10.5px;color:var(--tx2);font-style:italic;">Sube una foto del piso/obra dañado abajo para evaluarla.</div>`;
+
+  document.getElementById("modal-diag-ia").classList.add("open");
+}
+
+function _diagIaSeleccionarExistente(fi){
+  const s = _rpSeccionesTemp[_diagIaSeccionIdx];
+  const f = s && s.fotos && s.fotos[fi];
+  if(!f) return;
+  _diagIaFotoSeleccionada = f;
+  _diagIaNuevaFoto = null;
+  document.getElementById("diag-ia-nueva-preview").innerHTML = "";
+  document.querySelectorAll("#diag-ia-fotos-existentes .diag-ia-thumb").forEach(el => {
+    el.style.borderColor = (Number(el.dataset.fi) === fi) ? "#7C3AED" : "transparent";
+  });
+}
+
+async function _diagIaSubirNueva(inputEl){
+  const file = (inputEl.files || [])[0];
+  if(!file) return;
+  if(!storage){ alert("⚠️ Firebase Storage no está disponible."); inputEl.value=""; return; }
+  if(file.size > 20 * 1024 * 1024){ alert("⚠️ La foto pesa más de 20 MB."); inputEl.value=""; return; }
+  if(!file.type.startsWith("image/")){ alert("⚠️ El archivo no es una imagen."); inputEl.value=""; return; }
+
+  document.getElementById("diag-ia-nueva-preview").innerHTML = `<div style="font-size:10.5px;color:var(--tx2);">📦 Subiendo...</div>`;
+  try {
+    const blob = await _rpComprimirImagen(file);
+    const ts = Date.now();
+    const rand = Math.random().toString(36).slice(2,8);
+    const idBase = _reporteEditId || ("tmp-" + ts + "-" + rand);
+    const path = "diagnosticos-ia/" + idBase + "/" + ts + "-" + rand + ".jpg";
+    const ref = storage.ref().child(path);
+    const snapshot = await ref.put(blob, {contentType:"image/jpeg"});
+    const url = await snapshot.ref.getDownloadURL();
+    _diagIaNuevaFoto = {url, path};
+    _diagIaFotoSeleccionada = null;
+    document.querySelectorAll("#diag-ia-fotos-existentes .diag-ia-thumb").forEach(el => el.style.borderColor = "transparent");
+    document.getElementById("diag-ia-nueva-preview").innerHTML = `<img src="${url}" style="width:56px;height:56px;object-fit:cover;border-radius:6px;border:2px solid #7C3AED;display:block;">`;
+  } catch(err){
+    console.error("[ROMSA] Error subiendo foto para diagnóstico IA:", err);
+    document.getElementById("diag-ia-nueva-preview").innerHTML = `<div style="font-size:10.5px;color:#EF4444;">⚠️ Falló la subida, intenta de nuevo.</div>`;
+  }
+  inputEl.value = "";
+}
+
+async function ejecutarDiagnosticoIA(){
+  const foto = _diagIaNuevaFoto || _diagIaFotoSeleccionada;
+  const descripcion = (document.getElementById("diag-ia-desc").value || "").trim();
+  const resultEl = document.getElementById("diag-ia-resultado");
+
+  if(!foto){ resultEl.innerHTML = `<div style="font-size:11px;color:#EF4444;margin-top:8px;">⚠️ Selecciona o sube una foto primero.</div>`; return; }
+  if(!descripcion){ resultEl.innerHTML = `<div style="font-size:11px;color:#EF4444;margin-top:8px;">⚠️ Escribe una descripción breve del problema.</div>`; return; }
+  if(!cloudFunctions){ resultEl.innerHTML = `<div style="font-size:11px;color:#EF4444;margin-top:8px;">⚠️ El servicio de diagnóstico con IA no está disponible.</div>`; return; }
+
+  const btn = document.getElementById("diag-ia-btn-analizar");
+  btn.disabled = true; btn.textContent = "⏳ Analizando...";
+  resultEl.innerHTML = `<div style="font-size:11px;color:var(--tx2);margin-top:8px;">⏳ Consultando diagnóstico visual con IA, esto puede tardar unos segundos...</div>`;
+
+  try {
+    const fn = cloudFunctions.httpsCallable("diagnosticoVisualIA");
+    const res = await fn({ imageUrl: foto.url, descripcion });
+    _diagIaRenderResultado(res.data);
+  } catch(err){
+    console.error("[ROMSA] Error en diagnóstico IA:", err);
+    resultEl.innerHTML = `<div style="font-size:11px;color:#EF4444;margin-top:8px;">⚠️ No se pudo completar el diagnóstico: ${escapeHtml(err.message||"error desconocido")}</div>`;
+  } finally {
+    btn.disabled = false; btn.textContent = "🔍 Analizar";
+  }
+}
+
+function _diagIaRenderResultado(d){
+  const resultEl = document.getElementById("diag-ia-resultado");
+  if(!d){ resultEl.innerHTML = `<div style="font-size:11px;color:#EF4444;margin-top:8px;">⚠️ Respuesta vacía del servicio de diagnóstico.</div>`; return; }
+
+  const RIESGO = {
+    bajo:  {color:"#059669", bg:"#D1FAE5", bd:"#6EE7B7", label:"RIESGO BAJO"},
+    medio: {color:"#B45309", bg:"#FEF3C7", bd:"#FCD34D", label:"RIESGO MEDIO"},
+    alto:  {color:"#B91C1C", bg:"#FEE2E2", bd:"#FCA5A5", label:"RIESGO ALTO"}
+  };
+  const r = RIESGO[d.nivelRiesgo] || RIESGO.medio;
+
+  const RECOM = {
+    "si":           {texto:"✅ SÍ tomar el proyecto", color:"#059669"},
+    "con-reservas": {texto:"⚠️ Con reservas / condiciones", color:"#B45309"},
+    "no":           {texto:"⛔ NO recomendado sin resolver la causa raíz primero", color:"#B91C1C"}
+  };
+  const rec = RECOM[d.recomendacionTomarProyecto] || {texto: d.recomendacionTomarProyecto || "—", color:"#334155"};
+
+  resultEl.innerHTML = `
+    <div style="margin-top:10px;border:1.5px solid ${r.bd};background:${r.bg};border-radius:10px;padding:12px 14px;">
+      <div style="font-size:10px;font-weight:800;letter-spacing:1px;color:${r.color};margin-bottom:8px;">${r.label}</div>
+      <div style="font-size:12.5px;font-weight:800;color:var(--navy);margin-bottom:4px;">${escapeHtml(d.tipoDetectado||"—")}</div>
+      <div style="font-size:11px;color:#334155;line-height:1.6;margin-bottom:6px;"><strong>Causa probable:</strong> ${escapeHtml(d.causaProbable||"—")}</div>
+      <div style="font-size:11px;color:#334155;line-height:1.6;margin-bottom:6px;"><strong>Consecuencias posibles:</strong> ${escapeHtml(d.consecuenciasPosibles||"—")}</div>
+      <div style="font-size:11.5px;font-weight:700;color:${rec.color};margin-bottom:8px;">${rec.texto}</div>
+      <div style="font-size:10px;color:#64748B;line-height:1.5;border-top:1px solid rgba(0,0,0,.08);padding-top:8px;">${escapeHtml(d.notaImportante||"")}</div>
+    </div>`;
+}
+
+window.abrirDiagnosticoIA = abrirDiagnosticoIA;
+window.abrirDiagnosticoIAStandalone = abrirDiagnosticoIAStandalone;
+window._diagIaSeleccionarExistente = _diagIaSeleccionarExistente;
+window._diagIaSubirNueva = _diagIaSubirNueva;
+window.ejecutarDiagnosticoIA = ejecutarDiagnosticoIA;
 
 // Auto-llenar campos desde cotización seleccionada
 function rpAutoLlenarDesdeCot(){
@@ -20260,6 +20565,37 @@ window.bceCalEditarRegla = bceCalEditarRegla;
     <div style="display:flex;gap:8px;">
       <button class="btn btn-secondary" style="flex:1;" onclick="closeModal('modal-obs-finales')">Después</button>
       <button class="btn btn-primary" style="flex:1;" onclick="guardarObsFinales()">💾 Guardar →</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL DIAGNÓSTICO VISUAL CON IA -->
+<div class="moverlay" id="modal-diag-ia" style="z-index:1200;">
+  <div class="modal" style="max-width:480px;">
+    <div class="modal-handle"></div>
+    <div style="font-size:15px;font-weight:800;color:var(--navy);margin-bottom:4px;">🤖 Diagnóstico Visual con IA</div>
+    <div style="font-size:11px;color:var(--tx2);margin-bottom:14px;line-height:1.5;">Apoyo de decisión para evaluar el daño antes de cotizar. No sustituye una inspección técnica en sitio.</div>
+
+    <div class="fg">
+      <label class="flabel">Foto a evaluar <span class="req">*</span></label>
+      <div id="diag-ia-fotos-existentes" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;"></div>
+      <label style="display:flex;align-items:center;gap:8px;border:1.5px dashed var(--g2);border-radius:8px;padding:10px;cursor:pointer;font-size:11.5px;color:var(--tx2);">
+        📤 Subir una foto nueva
+        <input type="file" accept="image/*" id="diag-ia-input-nueva" style="display:none;" onchange="_diagIaSubirNueva(this)">
+      </label>
+      <div id="diag-ia-nueva-preview" style="margin-top:8px;"></div>
+    </div>
+
+    <div class="fg">
+      <label class="flabel">Descripción breve del problema <span class="req">*</span></label>
+      <textarea class="ftextarea" id="diag-ia-desc" placeholder="Ej. Piso con agrietamiento en la zona de tránsito pesado..." style="min-height:70px;"></textarea>
+    </div>
+
+    <div id="diag-ia-resultado"></div>
+
+    <div style="display:flex;gap:8px;margin-top:10px;">
+      <button class="btn btn-secondary" style="flex:1;" onclick="closeModal('modal-diag-ia')">Cerrar</button>
+      <button class="btn btn-primary" style="flex:1;" id="diag-ia-btn-analizar" onclick="ejecutarDiagnosticoIA()">🔍 Analizar</button>
     </div>
   </div>
 </div>
