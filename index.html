@@ -1006,6 +1006,56 @@ body.in-fotoeditor #app{
 .ds-btn-primary{background:var(--ds-mustard);color:var(--ds-mustard-text);}
 .ds-btn-secondary{background:transparent;color:var(--ds-surface-tx, #fff);border:1px solid var(--ds-surface-btn-bd, rgba(255,255,255,.3));}
 
+/* ── DASHBOARD GENERAL (pantalla, fondo claro — usa el mismo sistema
+   de diseño que el selector de módulo, con tokens --ds-surface-*
+   redefinidos para superficie clara) ── */
+#screen-dashboardgeneral{
+  --ds-surface-card:var(--white);
+  --ds-surface-card-bd:var(--g1);
+  --ds-surface-badge-bg:var(--off);
+  --ds-surface-badge-tx:var(--tx2);
+  --ds-surface-btn-bd:var(--g1);
+  --ds-surface-tx:var(--navy);
+}
+.dg-back-btn{background:var(--off);border:1px solid var(--g1);color:var(--tx2);font-size:11.5px;font-weight:600;padding:7px 13px 7px 10px;border-radius:20px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;}
+.dg-back-btn svg{width:13px;height:13px;}
+.dg-refresh-btn{background:var(--blue);border:none;color:#fff;font-size:12px;font-weight:600;padding:8px 15px;border-radius:9px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;}
+.dg-refresh-btn svg{width:13px;height:13px;}
+.dg-live-dot{width:7px;height:7px;border-radius:50%;background:#10B981;flex-shrink:0;display:inline-block;}
+
+.dg-kpi{background:var(--ds-surface-card);border:1px solid var(--ds-surface-card-bd);border-radius:14px;padding:16px;}
+.dg-kpi--atencion{border-left:4px solid var(--ds-mustard);}
+.dg-kpi-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:10px;}
+.dg-kpi-label{color:var(--tx2);line-height:1.35;}
+.dg-kpi-icon{color:var(--tx3);flex-shrink:0;}
+.dg-kpi-icon svg{width:16px;height:16px;display:block;}
+.dg-kpi-val{font-size:24px;color:var(--navy);line-height:1.1;margin-bottom:4px;font-variant-numeric:tabular-nums;}
+.dg-kpi-sub{font-size:10.5px;color:var(--tx2);}
+
+.dg-acceso{background:var(--ds-surface-card);border:1px solid var(--ds-surface-card-bd);border-radius:14px;padding:14px;cursor:pointer;transition:border-color .15s;}
+.dg-acceso:hover{border-color:var(--g2);}
+.dg-acceso-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.dg-acceso-icon{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.dg-acceso-icon svg{width:14px;height:14px;}
+.dg-acceso-arrow{color:var(--tx3);flex-shrink:0;}
+.dg-acceso-arrow svg{width:13px;height:13px;display:block;}
+.dg-acceso-num{font-size:20px;color:var(--navy);}
+.dg-acceso-subinline{font-size:13px;color:var(--tx);}
+.dg-acceso-lbl{font-size:10.5px;color:var(--tx2);margin-top:2px;}
+
+.dg-alert{background:var(--ds-surface-card);border:1px solid var(--ds-surface-card-bd);border-radius:14px;padding:14px 16px;}
+.dg-alert--atencion{background:color-mix(in srgb, var(--ds-mustard) 7%, white);border-color:color-mix(in srgb, var(--ds-mustard) 30%, var(--g1));}
+.dg-alert-top{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.dg-alert-title{color:var(--navy);display:flex;align-items:center;gap:7px;font-size:12.5px;}
+.dg-alert-title svg{width:15px;height:15px;flex-shrink:0;}
+.dg-alert-count{font-size:10.5px;padding:2px 9px;border-radius:10px;background:var(--off);color:var(--tx2);flex-shrink:0;}
+.dg-alert--atencion .dg-alert-count{background:var(--ds-mustard);color:var(--ds-mustard-text);}
+.dg-alert-ok{font-size:10.5px;color:#059669;display:flex;align-items:center;gap:4px;flex-shrink:0;}
+.dg-alert-item{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 0 0;margin-top:9px;border-top:1px solid var(--g1);cursor:pointer;}
+.dg-alert-item-txt{font-size:11.5px;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.dg-alert-item-sub{font-size:9.5px;color:var(--tx3);flex-shrink:0;white-space:nowrap;}
+.dg-alert-more{font-size:10px;color:var(--blue);text-align:center;padding-top:10px;cursor:pointer;}
+
 /* ── DASHBOARD / SELECTOR DE MÓDULO ── */
 #module-selector{
   --gold:var(--ds-mustard);
@@ -3038,33 +3088,66 @@ body.in-fotoeditor #app{
   <!-- ════════════════════════════════════════════════════════════════ -->
   <div id="screen-dashboardgeneral" class="screen" style="padding:0;overflow-y:auto;background:var(--off);">
 
-    <!-- HEADER -->
-    <div style="background:linear-gradient(135deg,#0B1F3A 0%,#1E3A5F 100%);padding:16px 18px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+    <!-- HEADER (claro) -->
+    <div style="background:#fff;border-bottom:1px solid var(--g1);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+      <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
         <div style="display:flex;align-items:center;gap:10px;">
-          <button onclick="volverSelector()" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);color:#fff;font-size:13px;font-weight:700;padding:6px 12px;border-radius:8px;cursor:pointer;font-family:var(--font);">← Menú</button>
+          <div style="width:30px;height:30px;border-radius:8px;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;" class="ds-title">R</div>
           <div>
-            <div style="font-size:9px;font-weight:700;color:#9CC0EE;letter-spacing:2px;text-transform:uppercase;">ROMSA CRM</div>
-            <div style="font-size:18px;font-weight:800;color:#fff;">🏠 Dashboard General</div>
+            <div style="font-size:14px;color:var(--navy);line-height:1.25;" class="ds-title">ROMSA Industrial</div>
+            <div style="font-size:8px;color:var(--tx3);" class="ds-eyebrow">CRM Interno</div>
           </div>
         </div>
-        <button onclick="renderDashboardGeneral()" title="Actualizar" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);color:#fff;font-size:11px;font-weight:700;padding:8px 14px;border-radius:8px;cursor:pointer;font-family:var(--font);">🔄 Actualizar</button>
+        <button class="dg-back-btn" onclick="volverSelector()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+          Menú principal
+        </button>
+      </div>
+      <div style="display:flex;align-items:center;gap:14px;">
+        <div id="dg-fecha" style="font-size:11px;color:var(--tx2);font-variant-numeric:tabular-nums;" class="ds-body-md">—</div>
+        <button class="dg-refresh-btn" onclick="renderDashboardGeneral()" title="Actualizar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
+          Actualizar
+        </button>
       </div>
     </div>
 
-    <div style="padding:16px 18px 32px;">
+    <div style="padding:22px 20px 40px;max-width:1180px;margin:0 auto;">
+
+      <!-- Título + estado en vivo -->
+      <div style="display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:26px;">
+        <div>
+          <div class="ds-eyebrow" style="font-size:9.5px;color:var(--ds-mustard);margin-bottom:5px;">Tablero consolidado</div>
+          <div class="ds-title" style="font-size:26px;color:var(--navy);">Dashboard General</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <span class="dg-live-dot"></span>
+          <span class="ds-body-md" id="dg-datos-vivo" style="font-size:11px;color:var(--tx2);">Datos en vivo · —</span>
+        </div>
+      </div>
 
       <!-- 1. KPIs principales -->
-      <div style="font-size:9px;font-weight:700;color:var(--tx2);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;">📊 KPIs Principales — este mes</div>
-      <div id="dg-kpis" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:10px;margin-bottom:22px;"></div>
+      <div class="ds-eyebrow" style="font-size:9.5px;color:var(--tx2);margin-bottom:10px;">KPIs principales — este mes</div>
+      <div id="dg-kpis" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));gap:12px;margin-bottom:28px;"></div>
 
-      <!-- 2. Alertas importantes -->
-      <div style="font-size:9px;font-weight:700;color:var(--tx2);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;">🚨 Alertas Importantes</div>
-      <div id="dg-alertas" style="display:flex;flex-direction:column;gap:8px;margin-bottom:22px;"></div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(340px, 1fr));gap:24px;align-items:start;">
 
-      <!-- 3. Accesos rápidos con datos en vivo -->
-      <div style="font-size:9px;font-weight:700;color:var(--tx2);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;">⚡ Accesos Rápidos</div>
-      <div id="dg-accesos" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(150px, 1fr));gap:10px;"></div>
+        <!-- 2. Accesos rápidos -->
+        <div>
+          <div class="ds-eyebrow" style="font-size:9.5px;color:var(--tx2);margin-bottom:10px;">Accesos rápidos</div>
+          <div id="dg-accesos" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(130px, 1fr));gap:10px;"></div>
+        </div>
+
+        <!-- 3. Alertas importantes -->
+        <div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+            <div class="ds-eyebrow" style="font-size:9.5px;color:var(--tx2);">Alertas importantes</div>
+            <span class="ds-badge" id="dg-alertas-count" style="font-size:9px;"></span>
+          </div>
+          <div id="dg-alertas" style="display:flex;flex-direction:column;gap:10px;"></div>
+        </div>
+
+      </div>
 
     </div>
   </div><!-- /screen-dashboardgeneral -->
@@ -7785,28 +7868,54 @@ function _obrasSinActividadReciente(dias){
   });
 }
 
-function _dgAlertaItem(texto, sub, onclick){
-  return '<div onclick="'+onclick+'" style="cursor:pointer;padding:8px 10px;border-radius:6px;background:rgba(255,255,255,.6);margin-bottom:4px;display:flex;align-items:center;justify-content:space-between;gap:8px;">'
-    +'<div style="font-size:11.5px;font-weight:700;color:var(--navy);">'+escapeHtml(texto)+'</div>'
-    +'<div style="font-size:10px;color:var(--tx2);white-space:nowrap;">'+escapeHtml(sub)+'</div>'
+// Íconos outline (mismo estilo que el selector de módulo) reutilizados
+// por las tarjetas de KPI, alertas y accesos rápidos de Dashboard General.
+var DG_ICONS = {
+  trendUp: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>',
+  arrowUpRight: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>',
+  activity: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>',
+  doc: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>',
+  clock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></svg>',
+  scale: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M6 7h12M4 7l3-4 3 4-3 5-3-5ZM14 7l3-4 3 4-3 5-3-5Z"/></svg>',
+  building: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 22V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v18"/><path d="M14 9h4a1 1 0 0 1 1 1v12"/><path d="M2 22h20"/><line x1="9" y1="6" x2="9" y2="6.01"/><line x1="9" y1="10" x2="9" y2="10.01"/><line x1="9" y1="14" x2="9" y2="14.01"/><line x1="9" y1="18" x2="9" y2="18.01"/></svg>',
+  calc: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="8" y2="10.01"/><line x1="12" y1="10" x2="12" y2="10.01"/><line x1="16" y1="10" x2="16" y2="10.01"/><line x1="8" y1="14" x2="8" y2="14.01"/><line x1="12" y1="14" x2="12" y2="14.01"/><line x1="16" y1="14" x2="16" y2="17"/><line x1="8" y1="18" x2="12" y2="18"/></svg>',
+  arrowRight: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>'
+};
+
+// KPI de Dashboard General — distinto de _kpiCard() (compartida con
+// Análisis Financiero / Dashboard de Cotizaciones): fondo claro, ícono
+// outline, sin color random en el borde — solo un acento mostaza si
+// opts.atencion es true (única señal de "requiere atención").
+function _dgKpiCard(opts){
+  return '<div class="dg-kpi'+(opts.atencion?' dg-kpi--atencion':'')+'">'
+    +'<div class="dg-kpi-top">'
+      +'<div class="dg-kpi-label ds-eyebrow" style="font-size:9.5px;">'+opts.titulo+'</div>'
+      +'<div class="dg-kpi-icon">'+opts.icono+'</div>'
+    +'</div>'
+    +'<div class="dg-kpi-val ds-title">'+opts.valor+'</div>'
+    +'<div class="dg-kpi-sub ds-body">'+escapeHtml(opts.subtitulo)+'</div>'
   +'</div>';
 }
 
-// opts: {icono, titulo, colorAlerta ("#F59E0B" amarillo | "#B91C1C" rojo), items:[{texto,sub,onclick}]}
+// opts: {icono, titulo, atencion (true = única alerta con tratamiento
+// mostaza cuando tiene items), items:[{texto,sub,onclick}]}
 function _dgAlertaCard(opts){
   var ok = !opts.items.length;
-  var col = ok ? "#059669" : opts.colorAlerta;
-  var esRojo = opts.colorAlerta === "#B91C1C";
-  var bg = ok ? "rgba(16,185,129,.06)" : (esRojo ? "rgba(239,68,68,.06)" : "rgba(245,158,11,.06)");
-  var bd = ok ? "rgba(16,185,129,.25)" : (esRojo ? "rgba(239,68,68,.25)" : "rgba(245,158,11,.3)");
-  var html = '<div class="card" style="padding:14px;border:1px solid '+bd+';background:'+bg+';">'
-    +'<div style="display:flex;align-items:center;justify-content:space-between;'+(ok?"":"margin-bottom:8px;")+'">'
-      +'<div style="font-size:12.5px;font-weight:800;color:var(--navy);">'+opts.icono+' '+opts.titulo+'</div>'
-      +'<div style="font-size:11px;font-weight:800;color:'+col+';background:#fff;padding:2px 9px;border-radius:12px;flex-shrink:0;">'+(ok?"✓ Todo bien":opts.items.length)+'</div>'
+  var html = '<div class="dg-alert'+(opts.atencion && !ok ? ' dg-alert--atencion' : '')+'">'
+    +'<div class="dg-alert-top">'
+      +'<div class="dg-alert-title ds-title">'+opts.icono+' '+opts.titulo+'</div>'
+      +(ok
+        ? '<div class="dg-alert-ok ds-body-md">✓ Todo bien</div>'
+        : '<div class="dg-alert-count ds-body-md">'+opts.items.length+'</div>')
     +'</div>';
   if(!ok){
-    html += opts.items.slice(0,5).map(function(it){ return _dgAlertaItem(it.texto, it.sub, it.onclick); }).join("");
-    if(opts.items.length>5) html += '<div style="font-size:10px;color:var(--tx2);text-align:center;margin-top:2px;">+'+(opts.items.length-5)+' más</div>';
+    html += opts.items.slice(0,5).map(function(it){
+      return '<div class="dg-alert-item" onclick="'+it.onclick+'">'
+        +'<div class="dg-alert-item-txt ds-body-md">'+escapeHtml(it.texto)+'</div>'
+        +'<div class="dg-alert-item-sub ds-mono">'+escapeHtml(it.sub)+'</div>'
+      +'</div>';
+    }).join("");
+    if(opts.items.length>5) html += '<div class="dg-alert-more ds-body-md">+'+(opts.items.length-5)+' más</div>';
   }
   html += '</div>';
   return html;
@@ -7818,6 +7927,19 @@ function renderDashboardGeneral(){
   var costeosMap = _costeosByIdMap();
   var ganadasMes = _cotsGanadasDelPeriodo(periodoActual);
 
+  // ─── Fecha/hora y "datos en vivo" del header ───
+  var elFecha = document.getElementById("dg-fecha");
+  if(elFecha){
+    var mesesCortos = ["ENE","FEB","MAR","ABR","MAY","JUN","JUL","AGO","SEP","OCT","NOV","DIC"];
+    var hh = hoy.getHours(), mm = hoy.getMinutes();
+    elFecha.textContent = hoy.getDate()+" "+mesesCortos[hoy.getMonth()]+" "+hoy.getFullYear()+" · "+(hh<10?"0"+hh:hh)+":"+(mm<10?"0"+mm:mm);
+  }
+  var elVivo = document.getElementById("dg-datos-vivo");
+  if(elVivo){
+    var mesesLargos = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+    elVivo.textContent = "Datos en vivo · "+mesesLargos[hoy.getMonth()]+" "+hoy.getFullYear();
+  }
+
   // ─── 1. KPIs principales del mes ───
   var ingresosMes = ganadasMes.reduce(function(s,c){return s+(parseFloat(c.montoGanado)||0);},0);
   var utilidadMes = 0;
@@ -7828,10 +7950,10 @@ function renderDashboardGeneral(){
   var kpisEl = document.getElementById("dg-kpis");
   if(kpisEl){
     kpisEl.innerHTML = ''
-      +_kpiCard({titulo:"Ingresos ganados (mes)", valor:"$"+fmtPeso(ingresosMes), subtitulo: ganadasMes.length+" proyecto"+(ganadasMes.length===1?"":"s")+" ganado"+(ganadasMes.length===1?"":"s"), color:"#059669", icono:"💰"})
-      +_kpiCard({titulo:"Utilidad (mes)", valor:"$"+fmtPeso(utilidadMes), subtitulo:"Sobre proyectos con costo conocido", color:"#7C3AED", icono:"📈"})
-      +_kpiCard({titulo:"Obras activas", valor:obrasActivas.length, subtitulo:"de "+obras.length+" total", color:"#1E6FD9", icono:"🏗️"})
-      +_kpiCard({titulo:"Cotizaciones pendientes", valor:cotsPendientes.length, subtitulo:"esperando respuesta del cliente", color:"#F59E0B", icono:"⏳"});
+      +_dgKpiCard({titulo:"Ingresos ganados (mes)", valor:"$"+fmtPeso(ingresosMes), subtitulo: ganadasMes.length+" proyecto"+(ganadasMes.length===1?"":"s")+" ganado"+(ganadasMes.length===1?"":"s"), icono:DG_ICONS.trendUp})
+      +_dgKpiCard({titulo:"Utilidad del mes", valor:"$"+fmtPeso(utilidadMes), subtitulo:"Sobre proyectos con costo conocido", icono:DG_ICONS.arrowUpRight})
+      +_dgKpiCard({titulo:"Obras activas", valor:obrasActivas.length, subtitulo:"de "+obras.length+" obras en total", icono:DG_ICONS.activity})
+      +_dgKpiCard({titulo:"Cotizaciones pendientes", valor:cotsPendientes.length, subtitulo:"Esperando respuesta del cliente", icono:DG_ICONS.doc, atencion:true});
   }
 
   // ─── 2. Alertas importantes (reutiliza lógica ya existente, no la recalcula distinto) ───
@@ -7843,36 +7965,45 @@ function renderDashboardGeneral(){
 
     alertasEl.innerHTML = ''
       + _dgAlertaCard({
-          icono:"⏳", titulo:"Cotizaciones por vencer", colorAlerta:"#F59E0B",
+          icono:DG_ICONS.clock, titulo:"Cotizaciones por vencer", atencion:true,
           items: porVencer.map(function(c){ return {texto: c.empresa||"Sin empresa", sub: c.folio||"", onclick:"abrirCot('"+c.id+"')"}; })
         })
       + _dgAlertaCard({
-          icono:"⚖️", titulo:"Margen real por debajo del estimado", colorAlerta:"#B91C1C",
+          icono:DG_ICONS.scale, titulo:"Margen real por debajo del estimado",
           items: margenBajo.map(function(f){ return {texto: f.c.empresa||"Sin empresa", sub: (f.delta>=0?"+":"")+f.delta.toFixed(1)+" pts", onclick:"abrirCot('"+f.c.id+"')"}; })
         })
       + _dgAlertaCard({
-          icono:"💤", titulo:"Obras sin actividad reciente (14+ días)", colorAlerta:"#F59E0B",
+          icono:DG_ICONS.activity, titulo:"Obras sin actividad reciente (14+ días)",
           items: obrasStale.map(function(o){ return {texto: o.nombre||"Sin nombre", sub: o.cliente||"", onclick:"goScreen('obras');setTimeout(function(){abrirObra('"+o.id+"');},200);"}; })
         });
+
+    var elAlertasCount = document.getElementById("dg-alertas-count");
+    if(elAlertasCount){
+      var totalActivas = porVencer.length + margenBajo.length + obrasStale.length;
+      elAlertasCount.textContent = totalActivas+(totalActivas===1?" activa":" activas");
+    }
   }
 
-  // ─── 3. Accesos rápidos con datos en vivo (mismos módulos con badge en el menú) ───
+  // ─── 3. Accesos rápidos con datos en vivo (mismos módulos con badge en el menú,
+  // reutilizando el mismo ícono y color de identidad que su ficha en el menú) ───
   var accesosEl = document.getElementById("dg-accesos");
   if(accesosEl){
     var accesos = [
-      {label:"Cotizaciones", icono:"📋", valor:cotsPendientes.length, sub:"pendientes", mod:"cotizaciones", color:"#7C3AED"},
-      {label:"Seguimiento de Obras", icono:"🏗️", valor:obrasActivas.length, sub:"activas", mod:"obras", color:"#1E6FD9"}
+      {label:"Cotizaciones", icono:DG_ICONS.doc, valor:cotsPendientes.length, sub:"pendientes", mod:"cotizaciones", color:"var(--ds-mod-cotizaciones)"},
+      {label:"Seguimiento de Obras", icono:DG_ICONS.building, valor:obrasActivas.length, sub:"activas", mod:"obras", color:"var(--ds-mod-obras)"}
     ];
     if(window._costeoAcceso){
       var borradores = (_costeoCosteos||[]).filter(function(c){return c.estado==="borrador";}).length;
-      accesos.push({label:"Costeo", icono:"🧮", valor:borradores, sub:"borradores", mod:"costeo", color:"#60A5FA"});
+      accesos.push({label:"Costeo", icono:DG_ICONS.calc, valor:borradores, sub:"borradores", mod:"costeo", color:"var(--ds-mod-costeo)"});
     }
     accesosEl.innerHTML = accesos.map(function(a){
-      return '<div onclick="selectModule(\''+a.mod+'\')" style="cursor:pointer;background:#fff;border:1px solid var(--g1);border-radius:10px;padding:12px;text-align:center;">'
-        +'<div style="font-size:20px;margin-bottom:4px;">'+a.icono+'</div>'
-        +'<div style="font-size:20px;font-weight:900;color:'+a.color+';line-height:1;">'+a.valor+'</div>'
-        +'<div style="font-size:9.5px;color:var(--tx2);margin-top:2px;">'+a.sub+'</div>'
-        +'<div style="font-size:10px;font-weight:700;color:var(--navy);margin-top:4px;">'+a.label+'</div>'
+      return '<div class="dg-acceso" onclick="selectModule(\''+a.mod+'\')">'
+        +'<div class="dg-acceso-top">'
+          +'<div class="dg-acceso-icon" style="background:color-mix(in srgb, '+a.color+' 16%, transparent);color:'+a.color+';">'+a.icono+'</div>'
+          +'<div class="dg-acceso-arrow">'+DG_ICONS.arrowRight+'</div>'
+        +'</div>'
+        +'<div><span class="dg-acceso-num ds-title">'+a.valor+'</span> <span class="dg-acceso-subinline ds-body-md">'+escapeHtml(a.sub)+'</span></div>'
+        +'<div class="dg-acceso-lbl ds-body">'+escapeHtml(a.label)+'</div>'
       +'</div>';
     }).join("");
   }
