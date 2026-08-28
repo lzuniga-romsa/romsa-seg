@@ -3182,13 +3182,14 @@ body.in-fotoeditor #app{
   <div id="screen-contactos" class="screen" style="padding:0;overflow-y:auto;background:var(--off);">
 
     <!-- HEADER del módulo -->
-    <div style="background:linear-gradient(135deg,#FFF7ED 0%,#FFEDD5 100%);border-bottom:1px solid rgba(245,158,11,.2);padding:16px 18px;">
+    <div style="background:linear-gradient(135deg,#EEF0FF 0%,#E0E4FF 100%);border-bottom:1px solid rgba(129,140,248,.25);padding:16px 18px;">
       <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
         <div style="display:flex;align-items:center;gap:10px;">
-          <button onclick="volverSelector()" style="background:rgba(11,31,58,.06);border:1px solid rgba(11,31,58,.1);color:var(--navy);font-size:13px;font-weight:700;padding:6px 12px;border-radius:8px;cursor:pointer;font-family:var(--font);">← Menú</button>
+          <button class="mod-header-back mod-header-back--light" onclick="volverSelector()">← Menú</button>
+          <div class="mod-icon mi-cn" style="width:32px;height:32px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
           <div>
-            <div style="font-size:9px;font-weight:700;color:#C2410C;letter-spacing:2px;text-transform:uppercase;">CRM · Personas</div>
-            <div style="font-size:18px;font-weight:800;color:#0B1F3A;">👥 Contactos</div>
+            <div class="mod-header-eyebrow" style="color:#4338CA;">CRM · Personas</div>
+            <div class="mod-header-title mod-header-title--light" style="font-size:18px;">Contactos</div>
           </div>
         </div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;">
@@ -3233,14 +3234,17 @@ body.in-fotoeditor #app{
   <div id="screen-reportes" class="screen" style="padding:0;overflow-y:auto;background:var(--off);">
 
     <!-- HEADER del módulo -->
-    <div style="background:linear-gradient(135deg,#164E63 0%,#0E7490 100%);padding:18px;color:#fff;position:relative;overflow:hidden;">
-      <div style="position:absolute;right:-30px;top:-30px;width:140px;height:140px;border-radius:50%;background:rgba(103,232,249,.08);"></div>
+    <div style="background:linear-gradient(135deg,#164E63 0%,#0E7490 100%);padding:18px;color:#fff;position:relative;overflow:hidden;--mod-accent:var(--ds-mod-reportes);">
+      <div style="position:absolute;right:-30px;top:-30px;width:140px;height:140px;border-radius:50%;background:rgba(45,212,191,.1);"></div>
       <div style="position:relative;z-index:2;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
         <div style="display:flex;align-items:center;gap:10px;">
-          <button onclick="volverSelector()" style="background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:#fff;font-size:13px;font-weight:700;padding:6px 12px;border-radius:8px;cursor:pointer;font-family:var(--font);">← Menú</button>
+          <button class="mod-header-back" onclick="volverSelector()">← Menú</button>
           <div>
-            <div style="font-size:9px;font-weight:700;color:#67E8F9;letter-spacing:2px;text-transform:uppercase;">CRM · Reportes</div>
-            <div style="font-size:18px;font-weight:800;color:#fff;">📊 Reportes de Obra</div>
+            <div class="mod-header-eyebrow">CRM · Reportes</div>
+            <div class="mod-header-title">
+              <span class="mod-header-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span>
+              Reportes de Obra
+            </div>
           </div>
         </div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;">
@@ -3283,21 +3287,24 @@ body.in-fotoeditor #app{
   <div id="screen-auditoria" class="screen" style="padding:0;overflow-y:auto;background:var(--off);">
 
     <!-- HEADER del módulo -->
-    <div style="background:linear-gradient(135deg,#1E3A5F 0%,#2C5282 100%);padding:18px;color:#fff;position:relative;overflow:hidden;">
-      <div style="position:absolute;right:-30px;top:-30px;width:140px;height:140px;border-radius:50%;background:rgba(147,197,253,.08);"></div>
+    <div style="background:linear-gradient(135deg,#3B2E63 0%,#5B3E93 100%);padding:18px;color:#fff;position:relative;overflow:hidden;--mod-accent:var(--ds-mod-auditoria);">
+      <div style="position:absolute;right:-30px;top:-30px;width:140px;height:140px;border-radius:50%;background:rgba(167,139,250,.1);"></div>
       <div style="position:relative;z-index:2;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
         <div style="display:flex;align-items:center;gap:10px;">
-          <button onclick="volverSelector()" style="background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:#fff;font-size:13px;font-weight:700;padding:6px 12px;border-radius:8px;cursor:pointer;font-family:var(--font);">← Menú</button>
+          <button class="mod-header-back" onclick="volverSelector()">← Menú</button>
           <div>
-            <div style="font-size:9px;font-weight:700;color:#93C5FD;letter-spacing:2px;text-transform:uppercase;">CRM · Auditoría</div>
-            <div style="font-size:18px;font-weight:800;color:#fff;">🔍 Auditoría Técnica</div>
+            <div class="mod-header-eyebrow">CRM · Auditoría</div>
+            <div class="mod-header-title">
+              <span class="mod-header-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></svg></span>
+              Auditoría Técnica
+            </div>
           </div>
         </div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;">
-          <button onclick="abrirEditorAuditoria()" style="background:#93C5FD;border:none;color:#1E3A5F;font-size:11.5px;font-weight:800;padding:8px 14px;border-radius:8px;cursor:pointer;font-family:var(--font);">+ Nueva Auditoría</button>
+          <button onclick="abrirEditorAuditoria()" style="background:#A78BFA;border:none;color:#2E2150;font-size:11.5px;font-weight:800;padding:8px 14px;border-radius:8px;cursor:pointer;font-family:var(--font);">+ Nueva Auditoría</button>
         </div>
       </div>
-      <div style="position:relative;z-index:2;font-size:11px;color:rgba(255,255,255,.65);margin-top:8px;line-height:1.5;max-width:520px;">Diagnóstico profesional de cortesía — un vistazo honesto y de ayuda al estado del piso, sin alarmismo.</div>
+      <div class="mod-header-desc" style="position:relative;z-index:2;">Diagnóstico profesional de cortesía — un vistazo honesto y de ayuda al estado del piso, sin alarmismo.</div>
     </div>
 
     <!-- Stats rápidas -->
@@ -3375,13 +3382,14 @@ body.in-fotoeditor #app{
     </style>
 
     <!-- HEADER del módulo -->
-    <div style="background:linear-gradient(135deg,#ECFDF5 0%,#D1FAE5 100%);border-bottom:1px solid rgba(52,211,153,.25);padding:16px 18px;">
+    <div style="background:linear-gradient(135deg,#F1F5F9 0%,#E2E8F0 100%);border-bottom:1px solid rgba(148,163,184,.3);padding:16px 18px;">
       <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
         <div style="display:flex;align-items:center;gap:10px;">
-          <button onclick="volverSelector()" style="background:rgba(11,31,58,.06);border:1px solid rgba(11,31,58,.1);color:var(--navy);font-size:13px;font-weight:700;padding:6px 12px;border-radius:8px;cursor:pointer;font-family:var(--font);">← Menú</button>
+          <button class="mod-header-back mod-header-back--light" onclick="volverSelector()">← Menú</button>
+          <div class="mod-icon mi-bd" style="width:32px;height:32px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg></div>
           <div>
-            <div style="font-size:9px;font-weight:700;color:#0F766E;letter-spacing:2px;text-transform:uppercase;">CRM · Base de Datos</div>
-            <div style="font-size:18px;font-weight:800;color:var(--navy);">📇 Base de Datos de Contactos</div>
+            <div class="mod-header-eyebrow" style="color:#475569;">CRM · Base de Datos</div>
+            <div class="mod-header-title mod-header-title--light" style="font-size:18px;">Base de Datos de Contactos</div>
           </div>
         </div>
       </div>
