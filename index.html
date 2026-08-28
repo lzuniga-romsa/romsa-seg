@@ -749,12 +749,12 @@ body.in-fotoeditor #app{
 
 /* ═══════════════ EDITOR DE FOTOS ═══════════════ */
 #screen-fotoeditor.active{display:flex;flex-direction:column;height:100dvh;background:#F4F3F7;}
-.fe-topbar{flex-shrink:0;display:flex;align-items:center;justify-content:space-between;padding:calc(env(safe-area-inset-top,0px) + 12px) 16px 12px;background:linear-gradient(135deg,#0A1930 0%,#163057 55%,#1C3A63 100%);color:#fff;position:relative;overflow:hidden;}
-.fe-topbar::before{content:"";position:absolute;top:-30px;right:-30px;width:140px;height:140px;border-radius:50%;background:rgba(30,111,217,.16);pointer-events:none;}
-.fe-topbar::after{content:"";position:absolute;left:-25px;bottom:-45px;width:110px;height:110px;border-radius:50%;background:rgba(30,111,217,.08);pointer-events:none;}
+.fe-topbar{flex-shrink:0;display:flex;align-items:center;justify-content:space-between;padding:calc(env(safe-area-inset-top,0px) + 12px) 16px 12px;background:linear-gradient(135deg,#0A1930 0%,#163057 55%,#1C3A63 100%);color:#fff;position:relative;overflow:hidden;border-bottom:2px solid color-mix(in srgb, var(--ds-mod-fotoeditor) 45%, transparent);}
+.fe-topbar::before{content:"";position:absolute;top:-30px;right:-30px;width:140px;height:140px;border-radius:50%;background:color-mix(in srgb, var(--ds-mod-fotoeditor) 16%, transparent);pointer-events:none;}
+.fe-topbar::after{content:"";position:absolute;left:-25px;bottom:-45px;width:110px;height:110px;border-radius:50%;background:color-mix(in srgb, var(--ds-mod-fotoeditor) 8%, transparent);pointer-events:none;}
 .fe-back,.fe-title{position:relative;z-index:2;}
-.fe-back{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);color:#fff;font-size:11px;font-weight:700;padding:7px 12px;border-radius:8px;cursor:pointer;font-family:inherit;}
-.fe-title{font-size:14px;font-weight:700;letter-spacing:.2px;}
+.fe-back{font-family:var(--ds-font-body);background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);color:#fff;font-size:11px;font-weight:600;padding:7px 12px;border-radius:8px;cursor:pointer;}
+.fe-title{font-family:var(--ds-font-title);font-size:14px;font-weight:700;letter-spacing:.2px;}
 .fe-step-dots{position:relative;z-index:2;display:flex;gap:5px;}
 .fe-step-dots .dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.25);transition:background .2s;}
 .fe-step-dots .dot.active{background:#7B9AD0;}
@@ -1220,7 +1220,7 @@ body.in-fotoeditor #app{
   justify-content:space-between;
   padding:0 16px 8px;
   flex-shrink:0;
-  border-bottom:1px solid rgba(255,255,255,.06);
+  border-bottom:2px solid color-mix(in srgb, var(--ds-mod-levantamientos) 45%, transparent);
   z-index:601;
 }
 #lev-iframe{
@@ -1731,7 +1731,7 @@ body.in-fotoeditor #app{
       <!-- Barra de escape siempre visible sobre el iframe -->
       <div id="lev-escape-bar" style="padding-top:calc(var(--safe-top, env(safe-area-inset-top, 0px)) + 8px);">
         <div style="display:flex;align-items:center;gap:10px;">
-          <button onclick="volverSelector()" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.8);font-size:11px;font-weight:700;padding:6px 12px;border-radius:8px;cursor:pointer;font-family:var(--font);">⌂ Menú principal</button>
+          <button class="mod-header-back" onclick="volverSelector()">⌂ Menú principal</button>
         </div>
         <button onclick="doLogout()" style="background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.2);color:#FCA5A5;font-size:11px;font-weight:600;padding:6px 12px;border-radius:8px;cursor:pointer;font-family:var(--font);">Salir</button>
       </div>
@@ -21718,8 +21718,11 @@ window.bceCalEditarRegla = bceCalEditarRegla;
 <div class="moverlay" id="modal-diag-ia" style="z-index:1200;">
   <div class="modal" style="max-width:480px;">
     <div class="modal-handle"></div>
-    <div style="font-size:15px;font-weight:800;color:var(--navy);margin-bottom:4px;">🤖 Diagnóstico Visual con IA</div>
-    <div style="font-size:11px;color:var(--tx2);margin-bottom:14px;line-height:1.5;">Apoyo de decisión para evaluar el daño antes de cotizar. No sustituye una inspección técnica en sitio.</div>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+      <div class="mod-icon mi-ia" style="width:28px;height:28px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M5.6 18.4l2.8-2.8M15.6 8.4l2.8-2.8"/><circle cx="12" cy="12" r="2.5"/></svg></div>
+      <div class="ds-title" style="font-size:15px;color:var(--navy);">Diagnóstico Visual con IA</div>
+    </div>
+    <div class="ds-body" style="font-size:11px;color:var(--tx2);margin-bottom:14px;line-height:1.5;">Apoyo de decisión para evaluar el daño antes de cotizar. No sustituye una inspección técnica en sitio.</div>
 
     <div class="fg">
       <label class="flabel">Foto a evaluar <span class="req">*</span></label>
