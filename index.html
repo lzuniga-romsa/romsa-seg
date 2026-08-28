@@ -942,54 +942,85 @@ body.in-fotoeditor #app{
   }
 }
 
-/* ── SELECTOR DE MÓDULO ── */
+/* ── DASHBOARD / SELECTOR DE MÓDULO ── */
 #module-selector{
-  position:fixed;inset:0;background:#0B1829;
-  display:flex;flex-direction:column;align-items:center;
-  z-index:999;padding:32px 24px calc(32px + env(safe-area-inset-bottom,0px));
+  --gold:#D4A72C;
+  --sel-card:#101F35;
+  --sel-card-bd:rgba(255,255,255,.08);
+  --sel-tx2:rgba(255,255,255,.45);
+  --sel-tx3:rgba(255,255,255,.28);
+  position:fixed;inset:0;background:#0A1626;
+  display:flex;
+  z-index:999;
   overflow-y:auto;-webkit-overflow-scrolling:touch;
+  padding-left:56px;
 }
 #module-selector.hidden{display:none;}
-.mod-logo{height:46px;width:auto;margin-bottom:32px;flex-shrink:0;}
-.mod-welcome{font-size:10.5px;color:rgba(255,255,255,.42);letter-spacing:2.2px;text-transform:uppercase;margin-bottom:6px;font-weight:700;text-align:center;font-family:var(--font);}
-.mod-welcome-title{font-family:var(--font-display);font-size:20px;font-weight:800;color:#fff;letter-spacing:-.2px;margin-bottom:28px;text-align:center;}
-.mod-sub{font-size:10px;color:rgba(255,255,255,.3);letter-spacing:1.8px;text-transform:uppercase;margin-bottom:40px;}
-.mod-title{font-family:var(--font-display);font-size:12px;font-weight:800;color:rgba(255,255,255,.55);letter-spacing:1.4px;text-transform:uppercase;margin-bottom:16px;text-align:center;}
-.mod-grid{
-  display:grid;grid-template-columns:1fr 1fr;gap:11px;
-  width:100%;max-width:440px;
-}
-.mod-card{
-  background:rgba(255,255,255,.04);
-  border:1px solid rgba(255,255,255,.09);
-  border-radius:14px;padding:16px 14px;
-  display:flex;flex-direction:column;align-items:flex-start;gap:10px;
-  cursor:pointer;
-  transition:all .2s;
-  -webkit-tap-highlight-color:transparent;
-  min-height:118px;
-}
-.mod-card:active{transform:scale(.97);border-color:rgba(255,255,255,.24);}
-.mod-group-section{width:100%;max-width:440px;margin-top:26px;padding-top:22px;border-top:1px solid rgba(255,255,255,.08);display:flex;flex-direction:column;align-items:center;}
+
+/* Riel lateral de íconos (decorativo por ahora — sin funcionalidad propia) */
+.sel-rail{position:fixed;left:0;top:0;bottom:0;width:56px;background:#08111F;border-right:1px solid rgba(255,255,255,.06);display:flex;flex-direction:column;align-items:center;padding:18px 0;gap:10px;z-index:2;}
+.sel-rail-logo{width:34px;height:34px;border-radius:9px;background:var(--blue);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;font-family:var(--font-display);margin-bottom:14px;flex-shrink:0;}
+.sel-rail-btn{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.38);flex-shrink:0;}
+.sel-rail-btn svg{width:17px;height:17px;}
+@media (max-width:640px){ .sel-rail{display:none;} #module-selector{padding-left:0;} }
+
+.sel-main{flex:1;min-width:0;padding:22px 20px calc(40px + env(safe-area-inset-bottom,0px));max-width:900px;margin:0 auto;width:100%;}
+
+/* Header superior */
+.sel-header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:26px;}
+.sel-header-brand{display:flex;align-items:center;gap:10px;}
+.sel-header-logobox{width:34px;height:34px;border-radius:9px;background:var(--blue);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;font-family:var(--font-display);flex-shrink:0;}
+.sel-header-name{font-size:13px;font-weight:800;color:#fff;line-height:1.3;}
+.sel-header-sub{font-size:8.5px;font-weight:700;color:var(--sel-tx3);letter-spacing:1.6px;text-transform:uppercase;}
+.sel-header-right{display:flex;align-items:center;gap:16px;}
+.sel-header-date{font-size:10px;color:var(--sel-tx2);font-family:var(--mono);letter-spacing:.3px;white-space:nowrap;}
+.sel-header-user{display:flex;align-items:center;gap:8px;}
+.sel-header-avatar{width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.1);color:#fff;display:flex;align-items:center;justify-content:center;font-size:10.5px;font-weight:800;flex-shrink:0;}
+.sel-header-uname{font-size:12px;font-weight:700;color:#fff;white-space:nowrap;}
+
+/* Bienvenida */
+.sel-eyebrow{font-size:9.5px;font-weight:800;color:var(--gold);letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;}
+.sel-welcome-row{display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:18px;}
+.sel-welcome-title{font-family:var(--font-display);font-size:23px;font-weight:800;color:#fff;letter-spacing:-.3px;}
+.sel-welcome-stat{font-size:11px;color:var(--sel-tx2);white-space:nowrap;}
+
+/* Tarjeta destacada (Dashboard General) */
+.sel-hero{background:linear-gradient(135deg,#14335C,#1B4A82);border:1px solid rgba(124,169,232,.3);border-radius:16px;padding:20px;display:flex;flex-wrap:wrap;gap:20px;align-items:center;margin-bottom:26px;cursor:pointer;}
+.sel-hero-left{flex:1 1 260px;min-width:220px;}
+.sel-hero-icon{width:44px;height:44px;border-radius:12px;background:rgba(212,167,44,.18);border:1px solid rgba(212,167,44,.35);color:var(--gold);display:flex;align-items:center;justify-content:center;margin-bottom:12px;}
+.sel-hero-icon svg{width:22px;height:22px;}
+.sel-hero-title{font-family:var(--font-display);font-size:17px;font-weight:800;color:#fff;margin-bottom:4px;}
+.sel-hero-desc{font-size:11.5px;color:rgba(255,255,255,.6);line-height:1.5;margin-bottom:14px;max-width:360px;}
+.sel-hero-actions{display:flex;gap:8px;flex-wrap:wrap;}
+.sel-btn-gold{background:var(--gold);color:#1A1305;border:none;font-size:12px;font-weight:800;padding:9px 16px;border-radius:9px;cursor:pointer;font-family:var(--font);}
+.sel-btn-outline{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.3);font-size:12px;font-weight:700;padding:9px 16px;border-radius:9px;cursor:pointer;font-family:var(--font);}
+.sel-hero-kpis{flex:1 1 220px;display:grid;grid-template-columns:1fr 1fr;gap:16px 24px;min-width:200px;}
+.sel-hero-kpi-label{font-size:8.5px;font-weight:700;color:rgba(255,255,255,.45);letter-spacing:1.2px;text-transform:uppercase;margin-bottom:4px;white-space:nowrap;}
+.sel-hero-kpi-val{font-size:21px;font-weight:900;color:#fff;font-family:var(--font-display);line-height:1;}
+
+/* Grid de módulos */
+.sel-modulos-label{font-size:9.5px;font-weight:800;color:var(--sel-tx3);letter-spacing:2px;text-transform:uppercase;margin-bottom:12px;}
+.mod-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;}
+.mod-card{background:var(--sel-card);border:1px solid var(--sel-card-bd);border-radius:13px;padding:14px;display:flex;align-items:center;gap:11px;cursor:pointer;transition:all .15s;-webkit-tap-highlight-color:transparent;}
+.mod-card:active{transform:scale(.98);border-color:rgba(255,255,255,.22);}
+.mod-icon{width:36px;height:36px;border-radius:9px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.09);color:rgba(255,255,255,.75);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.mod-icon svg{width:17px;height:17px;}
+.mod-info{flex:1;min-width:0;}
+.mod-name{font-family:var(--font-display);font-size:12.5px;font-weight:800;color:#fff;margin-bottom:2px;line-height:1.25;letter-spacing:-.1px;}
+.mod-desc{font-size:9.5px;color:rgba(255,255,255,.38);line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.mod-meta{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;margin-left:auto;}
+.mod-code{font-size:8px;font-family:var(--mono);color:rgba(255,255,255,.25);letter-spacing:.5px;white-space:nowrap;}
+.mod-badge{font-size:8.5px;font-weight:800;padding:2px 7px;border-radius:8px;white-space:nowrap;background:rgba(255,255,255,.09);color:rgba(255,255,255,.68);}
+.mod-badge.gold{background:var(--gold);color:#1A1305;}
+.mod-arrow{display:none;}
+
+.mod-group-section{width:100%;margin-top:26px;padding-top:22px;border-top:1px solid rgba(255,255,255,.08);display:flex;flex-direction:column;align-items:center;}
 .mod-group-label{font-family:var(--font-display);font-size:10px;color:rgba(255,255,255,.4);letter-spacing:1.8px;text-transform:uppercase;font-weight:800;margin-bottom:4px;}
 .mod-group-sub{font-size:12px;color:rgba(255,255,255,.5);margin-bottom:14px;}
-.mod-group-logos{display:flex;gap:12px;width:100%;}
+.mod-group-logos{display:flex;gap:12px;width:100%;max-width:440px;}
 .mod-group-logo-card{flex:1;background:rgba(255,255,255,.05);border:1.5px solid rgba(255,255,255,.1);border-radius:14px;padding:14px 10px;display:flex;align-items:center;justify-content:center;min-height:56px;}
 .mod-group-logo-img{max-width:100%;max-height:26px;width:auto;height:auto;object-fit:contain;}
 .mod-group-logo-img-home{max-height:34px;}
-.mod-card.blue{border-color:rgba(30,111,217,.35);background:rgba(30,111,217,.1);}
-.mod-card.green{border-color:rgba(16,185,129,.28);background:rgba(16,185,129,.07);}
-.mod-card.purple{border-color:rgba(124,58,237,.35);background:rgba(124,58,237,.09);}
-.mod-card.purple:active{border-color:rgba(124,58,237,.6);}
-.mod-icon{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-.mod-icon svg{width:19px;height:19px;}
-.mod-icon.blue{background:rgba(30,111,217,.22);}
-.mod-icon.green{background:rgba(16,185,129,.18);}
-.mod-icon.purple{background:rgba(124,58,237,.22);}
-.mod-info{flex:1;}
-.mod-name{font-family:var(--font-display);font-size:13.5px;font-weight:800;color:#fff;margin-bottom:3px;line-height:1.25;letter-spacing:-.1px;}
-.mod-desc{font-size:10.5px;color:rgba(255,255,255,.4);line-height:1.4;}
-.mod-arrow{display:none;}
 
 /* ── LEVANTAMIENTOS FULL-SCREEN ── */
 #screen-levantamientos{
@@ -1184,126 +1215,205 @@ body.in-fotoeditor #app{
   <button class="pwa-close" onclick="dismissPwaBanner()">×</button>
 </div>
 
-<!-- SELECTOR DE MÓDULO -->
+<!-- SELECTOR DE MÓDULO / DASHBOARD -->
 <div id="module-selector" class="hidden">
-  <img class="mod-logo" id="mod-logo-img" alt="ROMSA" src="">
-  <div class="mod-welcome">Bienvenidos al</div>
-  <div class="mod-welcome-title">CRM de ROMSA Industrial</div>
 
-  <div class="mod-grid">
+  <!-- Riel lateral (decorativo, sin acción propia) -->
+  <div class="sel-rail">
+    <div class="sel-rail-logo">R</div>
+    <div class="sel-rail-btn" title="Buscar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
+    <div class="sel-rail-btn" title="Notificaciones"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></div>
+    <div class="sel-rail-btn" title="Documentos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg></div>
+    <div class="sel-rail-btn" title="Perfil"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+    <div class="sel-rail-btn" title="Configuración"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg></div>
+  </div>
 
-    <!-- 0. Dashboard General — vista rápida de todo el negocio -->
-    <div class="mod-card" onclick="selectModule('dashboardgeneral')" style="grid-column:1/-1;background:linear-gradient(135deg,#0B1F3A,#1E3A5F,#164E63);border:1.5px solid rgba(124,169,232,.45);">
-      <div style="display:flex;align-items:center;gap:12px;width:100%;">
-        <div class="mod-icon" style="background:rgba(124,169,232,.22);color:#9CC0EE;flex-shrink:0;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg></div>
-        <div class="mod-info" style="gap:2px;">
-          <div class="mod-name" style="color:#fff;">🏠 Dashboard General</div>
-          <div class="mod-desc" style="color:rgba(255,255,255,.65);">KPIs del mes, alertas importantes y accesos rápidos — todo el negocio de un vistazo</div>
+  <div class="sel-main">
+
+    <!-- Header superior -->
+    <div class="sel-header">
+      <div class="sel-header-brand">
+        <div class="sel-header-logobox">R</div>
+        <div>
+          <div class="sel-header-name">ROMSA Industrial</div>
+          <div class="sel-header-sub">CRM Interno</div>
+        </div>
+      </div>
+      <div class="sel-header-right">
+        <div class="sel-header-date" id="sel-fecha">—</div>
+        <div class="sel-header-user">
+          <div class="sel-header-avatar" id="sel-avatar">–</div>
+          <div class="sel-header-uname" id="sel-uname">Usuario</div>
         </div>
       </div>
     </div>
 
-    <!-- 1. Levantamientos -->
-    <div class="mod-card green" onclick="selectModule('levantamientos')">
-      <div class="mod-icon green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m14.5 12.5 2-2a2.121 2.121 0 0 0-3-3l-2 2M8.5 19.5l-2-2a2.121 2.121 0 0 1 3-3l2 2"/><rect x="2.5" y="14.5" width="16" height="7" rx="1" transform="rotate(-45 10.5 18)"/><path d="m9 15 1.5 1.5M12 12l1.5 1.5M15 9l1.5 1.5"/></svg></div>
-      <div class="mod-info">
-        <div class="mod-name">Levantamientos</div>
-        <div class="mod-desc">Medición de áreas, reparaciones y reporte técnico</div>
+    <!-- Bienvenida -->
+    <div class="sel-eyebrow">Centro de operación</div>
+    <div class="sel-welcome-row">
+      <div class="sel-welcome-title" id="sel-saludo">Buenos días</div>
+      <div class="sel-welcome-stat"><span id="sel-mod-count">— módulos</span> · <span id="sel-tareas-count">— tareas abiertas</span></div>
+    </div>
+
+    <!-- Tarjeta destacada (Dashboard General) -->
+    <div class="sel-hero" onclick="selectModule('dashboardgeneral')">
+      <div class="sel-hero-left">
+        <div class="sel-hero-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg></div>
+        <div class="sel-hero-title">Dashboard General</div>
+        <div class="sel-hero-desc">Estado consolidado de obras, cotizaciones y auditorías en un solo tablero.</div>
+        <div class="sel-hero-actions">
+          <button type="button" class="sel-btn-gold" onclick="event.stopPropagation();selectModule('dashboardgeneral')">Abrir tablero</button>
+          <button type="button" class="sel-btn-outline" onclick="event.stopPropagation();_irADashboardGeneralAlertas()">Ver alertas</button>
+        </div>
+      </div>
+      <div class="sel-hero-kpis">
+        <div>
+          <div class="sel-hero-kpi-label">Obras activas</div>
+          <div class="sel-hero-kpi-val" id="sel-kpi-obras">—</div>
+        </div>
+        <div>
+          <div class="sel-hero-kpi-label">Cotizado mes</div>
+          <div class="sel-hero-kpi-val" id="sel-kpi-cotizado">—</div>
+        </div>
+        <div>
+          <div class="sel-hero-kpi-label">Hallazgos críticos</div>
+          <div class="sel-hero-kpi-val" id="sel-kpi-hallazgos">—</div>
+        </div>
+        <div>
+          <div class="sel-hero-kpi-label">Cotizaciones por vencer</div>
+          <div class="sel-hero-kpi-val" id="sel-kpi-porvencer">—</div>
+        </div>
       </div>
     </div>
 
-    <!-- 2. Auditoría Técnica — Solo visible para admin -->
-    <div id="mod-card-auditoria" class="mod-card" onclick="selectModule('auditoria')" style="display:none;background:linear-gradient(135deg,#1E3A5F,#2C5282);border:1px solid rgba(147,197,253,.4);">
-      <div class="mod-icon" style="background:rgba(147,197,253,.2);color:#93C5FD;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></svg></div>
-      <div class="mod-info">
-        <div class="mod-name" style="color:#fff;">Auditoría Técnica</div>
-        <div class="mod-desc" style="color:rgba(255,255,255,.65);">Diagnóstico de piso, cortesía profesional al cliente</div>
+    <!-- Grid de módulos -->
+    <div class="sel-modulos-label">Módulos</div>
+    <div class="mod-grid">
+
+      <!-- 1. Levantamientos -->
+      <div class="mod-card" onclick="selectModule('levantamientos')">
+        <div class="mod-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m14.5 12.5 2-2a2.121 2.121 0 0 0-3-3l-2 2M8.5 19.5l-2-2a2.121 2.121 0 0 1 3-3l2 2"/><rect x="2.5" y="14.5" width="16" height="7" rx="1" transform="rotate(-45 10.5 18)"/><path d="m9 15 1.5 1.5M12 12l1.5 1.5M15 9l1.5 1.5"/></svg></div>
+        <div class="mod-info">
+          <div class="mod-name">Levantamientos</div>
+          <div class="mod-desc">Medición de áreas, reparaciones y reporte técnico</div>
+        </div>
+        <div class="mod-meta"><span class="mod-code">LV-01</span></div>
       </div>
+
+      <!-- 2. Auditoría Técnica — Solo visible para admin -->
+      <div id="mod-card-auditoria" class="mod-card" onclick="selectModule('auditoria')" style="display:none;">
+        <div class="mod-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></svg></div>
+        <div class="mod-info">
+          <div class="mod-name">Auditoría Técnica</div>
+          <div class="mod-desc">Diagnóstico de piso, cortesía profesional al cliente</div>
+        </div>
+        <div class="mod-meta"><span class="mod-code">AU-02</span></div>
+      </div>
+
+      <!-- 3. Costeo — Solo visible para usuarios autorizados -->
+      <div id="mod-card-costeo" class="mod-card" onclick="selectModule('costeo')" style="display:none;">
+        <div class="mod-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="8" y2="10.01"/><line x1="12" y1="10" x2="12" y2="10.01"/><line x1="16" y1="10" x2="16" y2="10.01"/><line x1="8" y1="14" x2="8" y2="14.01"/><line x1="12" y1="14" x2="12" y2="14.01"/><line x1="16" y1="14" x2="16" y2="17"/><line x1="8" y1="18" x2="12" y2="18"/></svg></div>
+        <div class="mod-info">
+          <div class="mod-name">Costeo</div>
+          <div class="mod-desc">Análisis de costos, materiales y utilidad</div>
+        </div>
+        <div class="mod-meta">
+          <span class="mod-code">CO-03</span>
+          <span id="mod-badge-costeo" class="mod-badge" style="display:none;"></span>
+        </div>
+      </div>
+
+      <!-- 4. Cotizaciones -->
+      <div class="mod-card" onclick="selectModule('cotizaciones')">
+        <div class="mod-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg></div>
+        <div class="mod-info">
+          <div class="mod-name">Cotizaciones</div>
+          <div class="mod-desc">Genera, personaliza y envía cotizaciones en PDF</div>
+        </div>
+        <div class="mod-meta">
+          <span class="mod-code">CT-04</span>
+          <span id="mod-badge-cotizaciones" class="mod-badge" style="display:none;"></span>
+        </div>
+      </div>
+
+      <!-- 5. Seguimiento de Obras -->
+      <div class="mod-card" onclick="selectModule('obras')">
+        <div class="mod-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 22V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v18"/><path d="M14 9h4a1 1 0 0 1 1 1v12"/><path d="M2 22h20"/><line x1="9" y1="6" x2="9" y2="6.01"/><line x1="9" y1="10" x2="9" y2="10.01"/><line x1="9" y1="14" x2="9" y2="14.01"/><line x1="9" y1="18" x2="9" y2="18.01"/></svg></div>
+        <div class="mod-info">
+          <div class="mod-name">Seguimiento de Obras</div>
+          <div class="mod-desc">Avance por etapa y bitácora</div>
+        </div>
+        <div class="mod-meta">
+          <span class="mod-code">OB-05</span>
+          <span id="mod-badge-obras" class="mod-badge" style="display:none;"></span>
+        </div>
+      </div>
+
+      <!-- 6. Reportes de Obra -->
+      <div class="mod-card" onclick="selectModule('reportes')">
+        <div class="mod-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>
+        <div class="mod-info">
+          <div class="mod-name">Reportes de Obra</div>
+          <div class="mod-desc">Genera reportes finales, de avance y entregas</div>
+        </div>
+        <div class="mod-meta"><span class="mod-code">RP-06</span></div>
+      </div>
+
+      <!-- 7. Editor de Fotos -->
+      <div class="mod-card" onclick="selectModule('fotoeditor')">
+        <div class="mod-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg></div>
+        <div class="mod-info">
+          <div class="mod-name">Editor de Fotos</div>
+          <div class="mod-desc">Anotación y marcado de evidencia</div>
+        </div>
+        <div class="mod-meta"><span class="mod-code">FT-07</span></div>
+      </div>
+
+      <!-- 8. Contactos -->
+      <div class="mod-card" onclick="selectModule('contactos')">
+        <div class="mod-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+        <div class="mod-info">
+          <div class="mod-name">Contactos</div>
+          <div class="mod-desc">Directorio de clientes y obra</div>
+        </div>
+        <div class="mod-meta"><span class="mod-code">CN-08</span></div>
+      </div>
+
+      <!-- 8b. Base de Datos de Contactos -->
+      <div class="mod-card" onclick="selectModule('contactosdb')">
+        <div class="mod-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg></div>
+        <div class="mod-info">
+          <div class="mod-name">Base de Datos de Contactos</div>
+          <div class="mod-desc">Segmentación y prospección</div>
+        </div>
+        <div class="mod-meta"><span class="mod-code">BD-09</span></div>
+      </div>
+
+      <!-- 9. Diagnóstico Visual con IA (acceso directo standalone) -->
+      <div class="mod-card" onclick="abrirDiagnosticoIAStandalone()">
+        <div class="mod-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M5.6 18.4l2.8-2.8M15.6 8.4l2.8-2.8"/><circle cx="12" cy="12" r="2.5"/></svg></div>
+        <div class="mod-info">
+          <div class="mod-name">Diagnóstico Visual con IA</div>
+          <div class="mod-desc">Detección de daños en fotografía</div>
+        </div>
+        <div class="mod-meta">
+          <span class="mod-code">IA-10</span>
+          <span class="mod-badge gold">NUEVO</span>
+        </div>
+      </div>
+
     </div>
 
-    <!-- 3. Costeo — Solo visible para usuarios autorizados -->
-    <div id="mod-card-costeo" class="mod-card" onclick="selectModule('costeo')" style="display:none;background:linear-gradient(135deg,#1B3F72,#0B1F3A);border:1px solid rgba(96,165,250,.3);">
-      <div class="mod-icon" style="background:rgba(96,165,250,.2);color:#60A5FA;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="8" y2="10.01"/><line x1="12" y1="10" x2="12" y2="10.01"/><line x1="16" y1="10" x2="16" y2="10.01"/><line x1="8" y1="14" x2="8" y2="14.01"/><line x1="12" y1="14" x2="12" y2="14.01"/><line x1="16" y1="14" x2="16" y2="17"/><line x1="8" y1="18" x2="12" y2="18"/></svg></div>
-      <div class="mod-info">
-        <div class="mod-name" style="color:#fff;">Costeo <span style="font-size:8px;font-weight:700;letter-spacing:1px;color:#60A5FA;margin-left:4px;padding:1px 6px;border:1px solid rgba(96,165,250,.4);border-radius:10px;vertical-align:middle;">INTERNO</span><span id="mod-badge-costeo" style="display:none;font-size:9px;font-weight:800;color:#0B1F3A;background:#60A5FA;margin-left:6px;padding:2px 7px;border-radius:10px;vertical-align:middle;"></span></div>
-        <div class="mod-desc" style="color:rgba(255,255,255,.5);">Análisis de costos, materiales y utilidad</div>
-      </div>
-    </div>
-
-    <!-- 4. Cotizaciones -->
-    <div class="mod-card purple" onclick="selectModule('cotizaciones')">
-      <div class="mod-icon purple"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg></div>
-      <div class="mod-info">
-        <div class="mod-name">Cotizaciones <span id="mod-badge-cotizaciones" style="display:none;font-size:9px;font-weight:800;color:#fff;background:#7C3AED;margin-left:4px;padding:2px 7px;border-radius:10px;vertical-align:middle;"></span></div>
-        <div class="mod-desc">Genera, personaliza y envía cotizaciones en PDF</div>
-      </div>
-    </div>
-
-    <!-- 5. Seguimiento de Obras -->
-    <div class="mod-card blue" onclick="selectModule('obras')">
-      <div class="mod-icon blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 22V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v18"/><path d="M14 9h4a1 1 0 0 1 1 1v12"/><path d="M2 22h20"/><line x1="9" y1="6" x2="9" y2="6.01"/><line x1="9" y1="10" x2="9" y2="10.01"/><line x1="9" y1="14" x2="9" y2="14.01"/><line x1="9" y1="18" x2="9" y2="18.01"/></svg></div>
-      <div class="mod-info">
-        <div class="mod-name">Seguimiento de Obras <span id="mod-badge-obras" style="display:none;font-size:9px;font-weight:800;color:#fff;background:#1E6FD9;margin-left:4px;padding:2px 7px;border-radius:10px;vertical-align:middle;"></span></div>
-        <div class="mod-desc">Avance, etapas, reportes y atención al cliente</div>
-      </div>
-    </div>
-
-    <!-- 6. Reportes de Obra -->
-    <div class="mod-card" onclick="selectModule('reportes')" style="background:linear-gradient(135deg,#164E63,#0E7490);border:1px solid rgba(34,211,238,.35);">
-      <div class="mod-icon" style="background:rgba(34,211,238,.2);color:#67E8F9;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>
-      <div class="mod-info">
-        <div class="mod-name" style="color:#fff;">Reportes de Obra</div>
-        <div class="mod-desc" style="color:rgba(255,255,255,.65);">Genera reportes finales, de avance y entregas</div>
-      </div>
-    </div>
-
-    <!-- 7. Editor de Fotos -->
-    <div class="mod-card" onclick="selectModule('fotoeditor')" style="background:linear-gradient(135deg,#12274D,#0B1F3A);border:1px solid rgba(124,169,232,.4);">
-      <div class="mod-icon" style="background:rgba(124,169,232,.2);color:#9CC0EE;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg></div>
-      <div class="mod-info">
-        <div class="mod-name" style="color:#fff;">Editor de Fotos</div>
-        <div class="mod-desc" style="color:rgba(255,255,255,.65);">Fotos con diseño ROMSA para LinkedIn, Instagram y Facebook</div>
-      </div>
-    </div>
-
-    <!-- 8. Contactos (utilidad general, al final del camino) -->
-    <div class="mod-card" onclick="selectModule('contactos')" style="background:linear-gradient(135deg,#7C2D12,#9A3412);border:1px solid rgba(245,158,11,.4);">
-      <div class="mod-icon" style="background:rgba(245,158,11,.25);color:#FCD34D;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
-      <div class="mod-info">
-        <div class="mod-name" style="color:#fff;">Contactos</div>
-        <div class="mod-desc" style="color:rgba(255,255,255,.65);">Red profesional, leads y directorio de personas</div>
-      </div>
-    </div>
-
-    <!-- 8b. Base de Datos de Contactos (nuevo — import XLS/Drive + envío de correos) -->
-    <div class="mod-card" onclick="selectModule('contactosdb')" style="background:linear-gradient(135deg,#0F5132,#0B3D26);border:1px solid rgba(52,211,153,.4);">
-      <div class="mod-icon" style="background:rgba(52,211,153,.2);color:#6EE7B7;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg></div>
-      <div class="mod-info">
-        <div class="mod-name" style="color:#fff;">Base de Datos de Contactos <span style="font-size:8px;font-weight:700;letter-spacing:1px;color:#6EE7B7;margin-left:4px;padding:1px 6px;border:1px solid rgba(110,231,183,.4);border-radius:10px;vertical-align:middle;">NUEVO</span></div>
-        <div class="mod-desc" style="color:rgba(255,255,255,.65);">Importa Excel o Google Drive, y envía correos a tus contactos</div>
-      </div>
-    </div>
-
-    <!-- 9. Diagnóstico Visual con IA (acceso directo standalone) -->
-    <div class="mod-card" onclick="abrirDiagnosticoIAStandalone()" style="background:linear-gradient(135deg,#4C1D95,#6D28D9);border:1px solid rgba(196,181,253,.4);">
-      <div class="mod-icon" style="background:rgba(196,181,253,.22);color:#EDE9FE;font-size:19px;">🤖</div>
-      <div class="mod-info">
-        <div class="mod-name" style="color:#fff;">Diagnóstico Visual con IA</div>
-        <div class="mod-desc" style="color:rgba(255,255,255,.65);">Evalúa el riesgo de un piso/obra dañado con una foto, antes de cotizar</div>
-      </div>
-    </div>
-
-  </div>
-
-  <div class="mod-group-section">
-    <div class="mod-group-label">Grupo Industrial ROMSA</div>
-    <div class="mod-group-sub">Empresas asociadas</div>
-    <div class="mod-group-logos">
-      <div class="mod-group-logo-card">
-        <img class="mod-group-logo-img" id="mod-group-logo-rackline" alt="Rackline" src="">
-      </div>
-      <div class="mod-group-logo-card">
-        <img class="mod-group-logo-img mod-group-logo-img-home" id="mod-group-logo-home" alt="Home by Romsa" src="">
+    <div class="mod-group-section">
+      <div class="mod-group-label">Grupo Industrial ROMSA</div>
+      <div class="mod-group-sub">Empresas asociadas</div>
+      <div class="mod-group-logos">
+        <div class="mod-group-logo-card">
+          <img class="mod-group-logo-img" id="mod-group-logo-rackline" alt="Rackline" src="">
+        </div>
+        <div class="mod-group-logo-card">
+          <img class="mod-group-logo-img mod-group-logo-img-home" id="mod-group-logo-home" alt="Home by Romsa" src="">
+        </div>
       </div>
     </div>
   </div>
@@ -3789,7 +3899,7 @@ function subscribeObras(){
     document.getElementById("lista-obras").innerHTML="<div class='empty'><div class='empty-ico'>⚠️</div><div class='empty-ttl'>Sin conexión a Firebase</div><div class='empty-sub'>Verifica tu conexión a internet</div></div>";
     return;
   }
-  obrasRef.orderBy("ts","desc").get().then(snap=>{obras=snap.docs.map(d=>d.data());renderObras();renderDashboard();if(typeof _actualizarBadgesMenu === "function") _actualizarBadgesMenu();}).catch(err=>{
+  obrasRef.orderBy("ts","desc").get().then(snap=>{obras=snap.docs.map(d=>d.data());renderObras();renderDashboard();if(typeof _actualizarBadgesMenu === "function") _actualizarBadgesMenu();if(typeof _actualizarHeroSelector === "function") _actualizarHeroSelector();}).catch(err=>{
     console.error("Firebase error:",err);
     document.getElementById("lista-obras").innerHTML="<div class='empty'><div class='empty-ico'>🔴</div><div class='empty-ttl'>Error al cargar obras</div><div class='empty-sub'>"+err.message+"<br><br><button onclick='subscribeObras()' style='background:#1E6FD9;color:#fff;border:none;padding:8px 18px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;'>&#8635; Reintentar</button></div></div>";
   });
@@ -3805,6 +3915,7 @@ function subscribeObras(){
     if(a && a.id==="screen-obras") renderObras();
     renderDashboard();
     if(typeof _actualizarBadgesMenu === "function") _actualizarBadgesMenu();
+    if(typeof _actualizarHeroSelector === "function") _actualizarHeroSelector();
     if(obraActivaId){
       const o=getO();
       if(o){
@@ -6645,6 +6756,7 @@ function showModuleSelector(){
     if(loginLogo && loginLogo.src) ll.src = loginLogo.src;
   }
   if(typeof _actualizarBadgesMenu === "function") _actualizarBadgesMenu();
+  if(typeof _actualizarHeroSelector === "function") _actualizarHeroSelector();
 }
 
 function selectModule(mod){
@@ -6765,6 +6877,7 @@ function subscribeCotizaciones(){
     if(document.getElementById("screen-cotizaciones")?.classList.contains("active"))
       renderListaCot();
     if(typeof _actualizarBadgesMenu === "function") _actualizarBadgesMenu();
+    if(typeof _actualizarHeroSelector === "function") _actualizarHeroSelector();
   });
 }
 
@@ -7658,6 +7771,7 @@ function renderDashboardGeneral(){
   }
 
   if(typeof _actualizarBadgesMenu === "function") _actualizarBadgesMenu();
+  if(typeof _actualizarHeroSelector === "function") _actualizarHeroSelector();
 }
 window.renderDashboardGeneral = renderDashboardGeneral;
 
@@ -7692,6 +7806,100 @@ function _actualizarBadgesMenu(){
   }
 }
 window._actualizarBadgesMenu = _actualizarBadgesMenu;
+
+// ─── Menú principal (rediseño): saludo dinámico, fecha/hora, avatar y
+// KPIs de la tarjeta destacada — reutiliza las mismas funciones ya
+// construidas para Análisis Financiero / Dashboard General, sin
+// recalcular nada distinto. ───
+function _saludoDinamico(){
+  var h = new Date().getHours();
+  if(h < 12) return "Buenos días";
+  if(h < 19) return "Buenas tardes";
+  return "Buenas noches";
+}
+window._saludoDinamico = _saludoDinamico;
+
+function _fmtCompacto(n){
+  n = parseFloat(n) || 0;
+  var abs = Math.abs(n);
+  if(abs >= 1000000) return (n/1000000).toFixed(1).replace(/\.0$/,"") + "M";
+  if(abs >= 1000) return (n/1000).toFixed(1).replace(/\.0$/,"") + "k";
+  return Math.round(n).toString();
+}
+window._fmtCompacto = _fmtCompacto;
+
+function _esObraActiva(o){
+  return o.estado === "activa" || (o.pct > 0 && o.pct < 100);
+}
+window._esObraActiva = _esObraActiva;
+
+function _irADashboardGeneralAlertas(){
+  selectModule("dashboardgeneral");
+  setTimeout(function(){
+    var el = document.getElementById("dg-alertas");
+    if(el && el.scrollIntoView) el.scrollIntoView({behavior:"smooth", block:"start"});
+  }, 250);
+}
+window._irADashboardGeneralAlertas = _irADashboardGeneralAlertas;
+
+function _actualizarHeroSelector(){
+  var elFecha = document.getElementById("sel-fecha");
+  if(elFecha){
+    var ahora = new Date();
+    var meses = ["ENE","FEB","MAR","ABR","MAY","JUN","JUL","AGO","SEP","OCT","NOV","DIC"];
+    var hh = ahora.getHours(), mm = ahora.getMinutes();
+    elFecha.textContent = ahora.getDate()+" "+meses[ahora.getMonth()]+" "+ahora.getFullYear()+" · "+(hh<10?"0"+hh:hh)+":"+(mm<10?"0"+mm:mm);
+  }
+
+  var nombreCompleto = (typeof currentUserProfile !== "undefined" && currentUserProfile && currentUserProfile.nombre)
+    || (typeof currentUser !== "undefined" && currentUser && currentUser.email)
+    || "Usuario";
+  var elUname = document.getElementById("sel-uname");
+  if(elUname) elUname.textContent = nombreCompleto;
+  var elAvatar = document.getElementById("sel-avatar");
+  if(elAvatar){
+    var ini = String(nombreCompleto).trim().split(/\s+/).map(function(w){return w[0]||"";}).join("").slice(0,2).toUpperCase();
+    elAvatar.textContent = ini || "–";
+  }
+  var elSaludo = document.getElementById("sel-saludo");
+  if(elSaludo){
+    var nombreCorto = "";
+    if(typeof currentUserProfile !== "undefined" && currentUserProfile && currentUserProfile.nombre){
+      var partes = currentUserProfile.nombre.trim().split(/\s+/);
+      nombreCorto = partes.length > 1 ? partes[1] : partes[0];
+    }
+    elSaludo.textContent = _saludoDinamico() + (nombreCorto ? ", "+nombreCorto : "");
+  }
+
+  var elModCount = document.getElementById("sel-mod-count");
+  if(elModCount){
+    var n = 0;
+    document.querySelectorAll(".mod-grid .mod-card").forEach(function(card){ if(card.style.display !== "none") n++; });
+    elModCount.textContent = n+" módulo"+(n===1?"":"s");
+  }
+
+  var hoy = new Date();
+  var periodoActual = {anio: hoy.getFullYear(), mes: hoy.getMonth()};
+  var costeosMap = _costeosByIdMap();
+  var cotsMes = _cotsDelPeriodo(periodoActual);
+  var montoCotizadoMes = cotsMes.reduce(function(s,c){ return s+(parseFloat(c.granTotal)||0); }, 0);
+  var obrasActivas = (typeof obras !== "undefined" ? obras : []).filter(_esObraActiva);
+  var porVencer = _cotsPorVencer();
+  var margenBajo = _margenComparativoFilas(costeosMap).filter(function(f){ return f.delta < 0; });
+
+  var elTareas = document.getElementById("sel-tareas-count");
+  if(elTareas) elTareas.textContent = porVencer.length+" tarea"+(porVencer.length===1?"":"s")+" abierta"+(porVencer.length===1?"":"s");
+
+  var elObras = document.getElementById("sel-kpi-obras");
+  if(elObras) elObras.textContent = obrasActivas.length;
+  var elCotizado = document.getElementById("sel-kpi-cotizado");
+  if(elCotizado) elCotizado.textContent = "$"+_fmtCompacto(montoCotizadoMes);
+  var elHallazgos = document.getElementById("sel-kpi-hallazgos");
+  if(elHallazgos) elHallazgos.textContent = margenBajo.length;
+  var elPorVencer = document.getElementById("sel-kpi-porvencer");
+  if(elPorVencer) elPorVencer.textContent = porVencer.length;
+}
+window._actualizarHeroSelector = _actualizarHeroSelector;
 
 // Exponer al window
 window.cambiarPeriodoDash = cambiarPeriodoDash;
@@ -13347,6 +13555,7 @@ function subscribeCosteo(){
     renderKPIsCosteo();
     renderListaCosteos();
     if(typeof _actualizarBadgesMenu === "function") _actualizarBadgesMenu();
+    if(typeof _actualizarHeroSelector === "function") _actualizarHeroSelector();
   }, err=>console.error("Costeos:", err));
 }
 
