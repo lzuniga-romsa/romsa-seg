@@ -942,22 +942,79 @@ body.in-fotoeditor #app{
   }
 }
 
+/* ══════════════════════════════════════════════════════════════
+   SISTEMA DE DISEÑO REUTILIZABLE — pantallas nuevas basadas en el
+   rediseño (selector de módulo, Dashboard General, y las que sigan).
+   Tokens de color + clases tipográficas + componentes base
+   compartidos, para no volver a copiar estilos sueltos por pantalla.
+   ══════════════════════════════════════════════════════════════ */
+:root{
+  /* Superficie oscura (selector de módulo y similares) */
+  --ds-navy-bg:#0A1626;
+  --ds-navy-card:#101F35;
+  --ds-navy-card-bd:rgba(255,255,255,.08);
+
+  /* Mostaza — RESERVADO exclusivamente para señales de "requiere
+     atención" (badge de pendientes, alerta activa, CTA principal).
+     Nunca como color de identidad de un módulo. */
+  --ds-mustard:#D4A72C;
+  --ds-mustard-text:#1A1305;
+
+  /* Colores de identidad por módulo — SOLO para el ícono/chip
+     pequeño de cada ficha; nunca el fondo completo ni bordes grandes. */
+  --ds-mod-levantamientos:#22D3EE;
+  --ds-mod-auditoria:#A78BFA;
+  --ds-mod-costeo:#34D399;
+  --ds-mod-cotizaciones:#60A5FA;
+  --ds-mod-obras:#F97316;
+  --ds-mod-reportes:#2DD4BF;
+  --ds-mod-fotoeditor:#F472B6;
+  --ds-mod-contactos:#818CF8;
+  --ds-mod-contactosdb:#94A3B8;
+  --ds-mod-ia:#C084FC;
+  --ds-mod-dashboardgeneral:var(--ds-mustard); /* excepción intencional: ficha principal */
+
+  /* Familias de los 3 roles tipográficos + mono para folios/códigos */
+  --ds-font-title:"Plus Jakarta Sans",-apple-system,"SF Pro Display",system-ui,sans-serif;
+  --ds-font-body:"Inter",-apple-system,system-ui,sans-serif;
+  --ds-font-mono:"IBM Plex Mono","SF Mono",monospace;
+}
+
+/* Tipografía reutilizable — aplicar junto a la clase de layout del elemento */
+.ds-title{font-family:var(--ds-font-title);font-weight:700;}
+.ds-body{font-family:var(--ds-font-body);font-weight:400;}
+.ds-body-md{font-family:var(--ds-font-body);font-weight:500;}
+.ds-eyebrow{font-family:var(--ds-font-body);font-weight:600;text-transform:uppercase;letter-spacing:.09em;}
+.ds-mono{font-family:var(--ds-font-mono);font-weight:500;}
+
+/* Componentes base — leen tokens --ds-surface-* para adaptarse al
+   fondo oscuro (valor por defecto) o claro (una pantalla clara los
+   redefine en su propio contenedor, igual que --ds-navy-* arriba). */
+.ds-card{
+  background:var(--ds-surface-card, var(--ds-navy-card));
+  border:1px solid var(--ds-surface-card-bd, var(--ds-navy-card-bd));
+  border-radius:14px;
+}
+.ds-badge{
+  font-family:var(--ds-font-body);font-weight:600;font-size:8.5px;
+  padding:2px 7px;border-radius:8px;white-space:nowrap;
+  background:var(--ds-surface-badge-bg, rgba(255,255,255,.09));
+  color:var(--ds-surface-badge-tx, rgba(255,255,255,.68));
+}
+.ds-badge--attention{background:var(--ds-mustard);color:var(--ds-mustard-text);}
+.ds-btn{font-family:var(--ds-font-body);font-weight:600;font-size:12px;padding:9px 16px;border-radius:9px;cursor:pointer;border:none;}
+.ds-btn-primary{background:var(--ds-mustard);color:var(--ds-mustard-text);}
+.ds-btn-secondary{background:transparent;color:var(--ds-surface-tx, #fff);border:1px solid var(--ds-surface-btn-bd, rgba(255,255,255,.3));}
+
 /* ── DASHBOARD / SELECTOR DE MÓDULO ── */
 #module-selector{
-  --gold:#D4A72C;
-  --sel-card:#101F35;
-  --sel-card-bd:rgba(255,255,255,.08);
+  --gold:var(--ds-mustard);
+  --sel-card:var(--ds-navy-card);
+  --sel-card-bd:var(--ds-navy-card-bd);
   --sel-tx2:rgba(255,255,255,.45);
   --sel-tx3:rgba(255,255,255,.28);
-  /* Sistema tipográfico de 3 roles, propio de esta pantalla:
-     títulos/números grandes = Plus Jakarta Sans 700; cuerpo = Inter 400/500;
-     labels en mayúsculas = Inter 600 + tracking; códigos de módulo = IBM Plex Mono 500. */
-  --sel-font-display:"Plus Jakarta Sans",-apple-system,"SF Pro Display",system-ui,sans-serif;
-  --sel-font-body:"Inter",-apple-system,system-ui,sans-serif;
-  --sel-font-label:"Inter",-apple-system,system-ui,sans-serif;
-  --sel-font-mono:"IBM Plex Mono","SF Mono",monospace;
-  font-family:var(--sel-font-body);
-  position:fixed;inset:0;background:#0A1626;
+  font-family:var(--ds-font-body);
+  position:fixed;inset:0;background:var(--ds-navy-bg);
   display:flex;
   z-index:999;
   overflow-y:auto;-webkit-overflow-scrolling:touch;
@@ -967,7 +1024,7 @@ body.in-fotoeditor #app{
 
 /* Riel lateral de íconos (decorativo por ahora — sin funcionalidad propia) */
 .sel-rail{position:fixed;left:0;top:0;bottom:0;width:56px;background:#08111F;border-right:1px solid rgba(255,255,255,.06);display:flex;flex-direction:column;align-items:center;padding:18px 0;gap:10px;z-index:2;}
-.sel-rail-logo{width:34px;height:34px;border-radius:9px;background:var(--blue);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;font-family:var(--sel-font-display);margin-bottom:14px;flex-shrink:0;}
+.sel-rail-logo{width:34px;height:34px;border-radius:9px;background:var(--blue);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;font-family:var(--ds-font-title);margin-bottom:14px;flex-shrink:0;}
 .sel-rail-btn{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.22);flex-shrink:0;cursor:default;}
 .sel-rail-btn svg{width:17px;height:17px;}
 @media (max-width:640px){ .sel-rail{display:none;} #module-selector{padding-left:0;} }
@@ -978,52 +1035,65 @@ body.in-fotoeditor #app{
 .sel-header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:26px;}
 .sel-header-brand{display:flex;align-items:center;gap:12px;}
 .sel-header-logo{height:26px;width:auto;display:block;flex-shrink:0;}
-.sel-header-sub{font-family:var(--sel-font-label);font-size:8.5px;font-weight:600;color:var(--sel-tx3);letter-spacing:.09em;text-transform:uppercase;}
+.sel-header-sub{font-family:var(--ds-font-body);font-size:8.5px;font-weight:600;color:var(--sel-tx3);letter-spacing:.09em;text-transform:uppercase;}
 .sel-header-right{display:flex;align-items:center;gap:16px;}
-.sel-header-date{font-family:var(--sel-font-body);font-size:10px;color:var(--sel-tx2);font-weight:500;letter-spacing:.2px;white-space:nowrap;font-variant-numeric:tabular-nums;}
+.sel-header-date{font-family:var(--ds-font-body);font-size:10px;color:var(--sel-tx2);font-weight:500;letter-spacing:.2px;white-space:nowrap;font-variant-numeric:tabular-nums;}
 .sel-header-user{display:flex;align-items:center;gap:8px;}
-.sel-header-avatar{width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.1);color:#fff;display:flex;align-items:center;justify-content:center;font-family:var(--sel-font-display);font-size:10.5px;font-weight:700;flex-shrink:0;}
-.sel-header-uname{font-family:var(--sel-font-body);font-size:12px;font-weight:500;color:#fff;white-space:nowrap;}
+.sel-header-avatar{width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.1);color:#fff;display:flex;align-items:center;justify-content:center;font-family:var(--ds-font-title);font-size:10.5px;font-weight:700;flex-shrink:0;}
+.sel-header-uname{font-family:var(--ds-font-body);font-size:12px;font-weight:500;color:#fff;white-space:nowrap;}
 
 /* Bienvenida */
-.sel-eyebrow{font-family:var(--sel-font-label);font-size:9.5px;font-weight:600;color:var(--gold);letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px;}
+.sel-eyebrow{font-family:var(--ds-font-body);font-size:9.5px;font-weight:600;color:var(--gold);letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px;}
 .sel-welcome-row{display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:18px;}
-.sel-welcome-title{font-family:var(--sel-font-display);font-size:23px;font-weight:700;color:#fff;letter-spacing:-.3px;}
-.sel-welcome-stat{font-family:var(--sel-font-body);font-size:11px;font-weight:500;color:var(--sel-tx2);white-space:nowrap;}
+.sel-welcome-title{font-family:var(--ds-font-title);font-size:23px;font-weight:700;color:#fff;letter-spacing:-.3px;}
+.sel-welcome-stat{font-family:var(--ds-font-body);font-size:11px;font-weight:500;color:var(--sel-tx2);white-space:nowrap;}
 
 /* Tarjeta destacada (Dashboard General) */
 .sel-hero{background:linear-gradient(135deg,#14335C,#1B4A82);border:1px solid rgba(124,169,232,.3);border-radius:16px;padding:20px;display:flex;flex-wrap:wrap;gap:20px;align-items:center;margin-bottom:26px;cursor:pointer;}
 .sel-hero-left{flex:1 1 260px;min-width:220px;}
 .sel-hero-icon{width:44px;height:44px;border-radius:12px;background:rgba(212,167,44,.18);border:1px solid rgba(212,167,44,.35);color:var(--gold);display:flex;align-items:center;justify-content:center;margin-bottom:12px;box-shadow:0 0 0 1px rgba(212,167,44,.12),0 0 22px 4px rgba(212,167,44,.35),0 0 46px 10px rgba(30,111,217,.18);}
 .sel-hero-icon svg{width:22px;height:22px;}
-.sel-hero-title{font-family:var(--sel-font-display);font-size:17px;font-weight:700;color:#fff;margin-bottom:4px;}
-.sel-hero-desc{font-family:var(--sel-font-body);font-size:11.5px;font-weight:400;color:rgba(255,255,255,.6);line-height:1.5;margin-bottom:14px;max-width:360px;}
+.sel-hero-title{font-family:var(--ds-font-title);font-size:17px;font-weight:700;color:#fff;margin-bottom:4px;}
+.sel-hero-desc{font-family:var(--ds-font-body);font-size:11.5px;font-weight:400;color:rgba(255,255,255,.6);line-height:1.5;margin-bottom:14px;max-width:360px;}
 .sel-hero-actions{display:flex;gap:8px;flex-wrap:wrap;}
-.sel-btn-gold{background:var(--gold);color:#1A1305;border:none;font-family:var(--sel-font-label);font-size:12px;font-weight:600;padding:9px 16px;border-radius:9px;cursor:pointer;}
-.sel-btn-outline{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.3);font-family:var(--sel-font-label);font-size:12px;font-weight:600;padding:9px 16px;border-radius:9px;cursor:pointer;}
+
 .sel-hero-kpis{flex:1 1 220px;display:grid;grid-template-columns:1fr 1fr;gap:16px 24px;min-width:200px;}
-.sel-hero-kpi-label{font-family:var(--sel-font-label);font-size:8.5px;font-weight:600;color:rgba(255,255,255,.45);letter-spacing:.09em;text-transform:uppercase;margin-bottom:4px;white-space:nowrap;}
-.sel-hero-kpi-val{font-family:var(--sel-font-display);font-size:21px;font-weight:700;color:#fff;line-height:1;}
+.sel-hero-kpi-label{font-family:var(--ds-font-body);font-size:8.5px;font-weight:600;color:rgba(255,255,255,.45);letter-spacing:.09em;text-transform:uppercase;margin-bottom:4px;white-space:nowrap;}
+.sel-hero-kpi-val{font-family:var(--ds-font-title);font-size:21px;font-weight:700;color:#fff;line-height:1;}
 
 /* Grid de módulos */
-.sel-modulos-label{font-family:var(--sel-font-label);font-size:9.5px;font-weight:600;color:var(--sel-tx3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:12px;}
+.sel-modulos-label{font-family:var(--ds-font-body);font-size:9.5px;font-weight:600;color:var(--sel-tx3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:12px;}
 .mod-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;}
-.mod-card{background:var(--sel-card);border:1px solid var(--sel-card-bd);border-radius:13px;padding:14px;display:flex;align-items:center;gap:11px;cursor:pointer;transition:all .15s;-webkit-tap-highlight-color:transparent;}
+.mod-card{padding:14px;display:flex;align-items:center;gap:11px;cursor:pointer;transition:all .15s;-webkit-tap-highlight-color:transparent;}
 .mod-card:active{transform:scale(.98);border-color:rgba(255,255,255,.22);}
-.mod-icon{width:36px;height:36px;border-radius:9px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.09);color:rgba(255,255,255,.75);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.mod-icon{
+  --mod-accent:rgba(255,255,255,.75);
+  width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  background:color-mix(in srgb, var(--mod-accent) 16%, transparent);
+  border:1px solid color-mix(in srgb, var(--mod-accent) 32%, transparent);
+  color:var(--mod-accent);
+}
 .mod-icon svg{width:17px;height:17px;}
+.mod-icon.mi-lv{--mod-accent:var(--ds-mod-levantamientos);}
+.mod-icon.mi-au{--mod-accent:var(--ds-mod-auditoria);}
+.mod-icon.mi-co{--mod-accent:var(--ds-mod-costeo);}
+.mod-icon.mi-ct{--mod-accent:var(--ds-mod-cotizaciones);}
+.mod-icon.mi-ob{--mod-accent:var(--ds-mod-obras);}
+.mod-icon.mi-rp{--mod-accent:var(--ds-mod-reportes);}
+.mod-icon.mi-ft{--mod-accent:var(--ds-mod-fotoeditor);}
+.mod-icon.mi-cn{--mod-accent:var(--ds-mod-contactos);}
+.mod-icon.mi-bd{--mod-accent:var(--ds-mod-contactosdb);}
+.mod-icon.mi-ia{--mod-accent:var(--ds-mod-ia);}
 .mod-info{flex:1;min-width:0;}
-.mod-name{font-family:var(--sel-font-display);font-size:12.5px;font-weight:700;color:#fff;margin-bottom:2px;line-height:1.25;letter-spacing:-.1px;}
-.mod-desc{font-family:var(--sel-font-body);font-size:9.5px;font-weight:400;color:rgba(255,255,255,.38);line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.mod-name{font-family:var(--ds-font-title);font-size:12.5px;font-weight:700;color:#fff;margin-bottom:2px;line-height:1.25;letter-spacing:-.1px;}
+.mod-desc{font-family:var(--ds-font-body);font-size:9.5px;font-weight:400;color:rgba(255,255,255,.38);line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .mod-meta{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;margin-left:auto;}
-.mod-code{font-family:var(--sel-font-mono);font-weight:500;font-size:8px;color:rgba(255,255,255,.25);letter-spacing:.5px;white-space:nowrap;}
-.mod-badge{font-family:var(--sel-font-label);font-size:8.5px;font-weight:600;padding:2px 7px;border-radius:8px;white-space:nowrap;background:rgba(255,255,255,.09);color:rgba(255,255,255,.68);}
-.mod-badge.gold{background:var(--gold);color:#1A1305;}
+.mod-code{font-family:var(--ds-font-mono);font-weight:500;font-size:8px;color:rgba(255,255,255,.25);letter-spacing:.5px;white-space:nowrap;}
 .mod-arrow{display:none;}
 
 .mod-group-section{width:100%;margin-top:26px;padding-top:22px;border-top:1px solid rgba(255,255,255,.08);display:flex;flex-direction:column;align-items:center;}
-.mod-group-label{font-family:var(--sel-font-label);font-size:10px;color:rgba(255,255,255,.4);letter-spacing:.1em;text-transform:uppercase;font-weight:600;margin-bottom:4px;}
-.mod-group-sub{font-family:var(--sel-font-body);font-size:12px;font-weight:400;color:rgba(255,255,255,.5);margin-bottom:14px;}
+.mod-group-label{font-family:var(--ds-font-body);font-size:10px;color:rgba(255,255,255,.4);letter-spacing:.1em;text-transform:uppercase;font-weight:600;margin-bottom:4px;}
+.mod-group-sub{font-family:var(--ds-font-body);font-size:12px;font-weight:400;color:rgba(255,255,255,.5);margin-bottom:14px;}
 .mod-group-logos{display:flex;gap:12px;width:100%;max-width:440px;}
 .mod-group-logo-card{flex:1;background:rgba(255,255,255,.05);border:1.5px solid rgba(255,255,255,.1);border-radius:14px;padding:14px 10px;display:flex;align-items:center;justify-content:center;min-height:56px;}
 .mod-group-logo-img{max-width:100%;max-height:26px;width:auto;height:auto;object-fit:contain;}
@@ -1047,7 +1117,7 @@ body.in-fotoeditor #app{
   .sel-hero-icon svg{width:28px;height:28px;}
   .sel-hero-title{font-size:22px;margin-bottom:6px;}
   .sel-hero-desc{font-size:13.5px;max-width:420px;margin-bottom:18px;}
-  .sel-btn-gold,.sel-btn-outline{font-size:13.5px;padding:11px 20px;border-radius:10px;}
+  .ds-btn{font-size:13.5px;padding:11px 20px;border-radius:10px;}
   .sel-hero-kpis{gap:20px 32px;}
   .sel-hero-kpi-label{font-size:10px;margin-bottom:6px;}
   .sel-hero-kpi-val{font-size:28px;}
@@ -1299,8 +1369,8 @@ body.in-fotoeditor #app{
         <div class="sel-hero-title">Dashboard General</div>
         <div class="sel-hero-desc">Estado consolidado de obras, cotizaciones y auditorías en un solo tablero.</div>
         <div class="sel-hero-actions">
-          <button type="button" class="sel-btn-gold" onclick="event.stopPropagation();selectModule('dashboardgeneral')">Abrir tablero</button>
-          <button type="button" class="sel-btn-outline" onclick="event.stopPropagation();_irADashboardGeneralAlertas()">Ver alertas</button>
+          <button type="button" class="ds-btn ds-btn-primary" onclick="event.stopPropagation();selectModule('dashboardgeneral')">Abrir tablero</button>
+          <button type="button" class="ds-btn ds-btn-secondary" onclick="event.stopPropagation();_irADashboardGeneralAlertas()">Ver alertas</button>
         </div>
       </div>
       <div class="sel-hero-kpis">
@@ -1328,8 +1398,8 @@ body.in-fotoeditor #app{
     <div class="mod-grid">
 
       <!-- 1. Levantamientos -->
-      <div class="mod-card" onclick="selectModule('levantamientos')">
-        <div class="mod-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m14.5 12.5 2-2a2.121 2.121 0 0 0-3-3l-2 2M8.5 19.5l-2-2a2.121 2.121 0 0 1 3-3l2 2"/><rect x="2.5" y="14.5" width="16" height="7" rx="1" transform="rotate(-45 10.5 18)"/><path d="m9 15 1.5 1.5M12 12l1.5 1.5M15 9l1.5 1.5"/></svg></div>
+      <div class="mod-card ds-card" onclick="selectModule('levantamientos')">
+        <div class="mod-icon mi-lv"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m14.5 12.5 2-2a2.121 2.121 0 0 0-3-3l-2 2M8.5 19.5l-2-2a2.121 2.121 0 0 1 3-3l2 2"/><rect x="2.5" y="14.5" width="16" height="7" rx="1" transform="rotate(-45 10.5 18)"/><path d="m9 15 1.5 1.5M12 12l1.5 1.5M15 9l1.5 1.5"/></svg></div>
         <div class="mod-info">
           <div class="mod-name">Levantamientos</div>
           <div class="mod-desc">Medición de áreas, reparaciones y reporte técnico</div>
@@ -1338,8 +1408,8 @@ body.in-fotoeditor #app{
       </div>
 
       <!-- 2. Auditoría Técnica — Solo visible para admin -->
-      <div id="mod-card-auditoria" class="mod-card" onclick="selectModule('auditoria')" style="display:none;">
-        <div class="mod-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></svg></div>
+      <div id="mod-card-auditoria" class="mod-card ds-card" onclick="selectModule('auditoria')" style="display:none;">
+        <div class="mod-icon mi-au"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></svg></div>
         <div class="mod-info">
           <div class="mod-name">Auditoría Técnica</div>
           <div class="mod-desc">Diagnóstico de piso, cortesía profesional al cliente</div>
@@ -1348,47 +1418,47 @@ body.in-fotoeditor #app{
       </div>
 
       <!-- 3. Costeo — Solo visible para usuarios autorizados -->
-      <div id="mod-card-costeo" class="mod-card" onclick="selectModule('costeo')" style="display:none;">
-        <div class="mod-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="8" y2="10.01"/><line x1="12" y1="10" x2="12" y2="10.01"/><line x1="16" y1="10" x2="16" y2="10.01"/><line x1="8" y1="14" x2="8" y2="14.01"/><line x1="12" y1="14" x2="12" y2="14.01"/><line x1="16" y1="14" x2="16" y2="17"/><line x1="8" y1="18" x2="12" y2="18"/></svg></div>
+      <div id="mod-card-costeo" class="mod-card ds-card" onclick="selectModule('costeo')" style="display:none;">
+        <div class="mod-icon mi-co"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="8" y2="10.01"/><line x1="12" y1="10" x2="12" y2="10.01"/><line x1="16" y1="10" x2="16" y2="10.01"/><line x1="8" y1="14" x2="8" y2="14.01"/><line x1="12" y1="14" x2="12" y2="14.01"/><line x1="16" y1="14" x2="16" y2="17"/><line x1="8" y1="18" x2="12" y2="18"/></svg></div>
         <div class="mod-info">
           <div class="mod-name">Costeo</div>
           <div class="mod-desc">Análisis de costos, materiales y utilidad</div>
         </div>
         <div class="mod-meta">
           <span class="mod-code">CO-03</span>
-          <span id="mod-badge-costeo" class="mod-badge" style="display:none;"></span>
+          <span id="mod-badge-costeo" class="mod-badge ds-badge" style="display:none;"></span>
         </div>
       </div>
 
       <!-- 4. Cotizaciones -->
-      <div class="mod-card" onclick="selectModule('cotizaciones')">
-        <div class="mod-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg></div>
+      <div class="mod-card ds-card" onclick="selectModule('cotizaciones')">
+        <div class="mod-icon mi-ct"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg></div>
         <div class="mod-info">
           <div class="mod-name">Cotizaciones</div>
           <div class="mod-desc">Genera, personaliza y envía cotizaciones en PDF</div>
         </div>
         <div class="mod-meta">
           <span class="mod-code">CT-04</span>
-          <span id="mod-badge-cotizaciones" class="mod-badge" style="display:none;"></span>
+          <span id="mod-badge-cotizaciones" class="mod-badge ds-badge" style="display:none;"></span>
         </div>
       </div>
 
       <!-- 5. Seguimiento de Obras -->
-      <div class="mod-card" onclick="selectModule('obras')">
-        <div class="mod-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 22V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v18"/><path d="M14 9h4a1 1 0 0 1 1 1v12"/><path d="M2 22h20"/><line x1="9" y1="6" x2="9" y2="6.01"/><line x1="9" y1="10" x2="9" y2="10.01"/><line x1="9" y1="14" x2="9" y2="14.01"/><line x1="9" y1="18" x2="9" y2="18.01"/></svg></div>
+      <div class="mod-card ds-card" onclick="selectModule('obras')">
+        <div class="mod-icon mi-ob"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 22V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v18"/><path d="M14 9h4a1 1 0 0 1 1 1v12"/><path d="M2 22h20"/><line x1="9" y1="6" x2="9" y2="6.01"/><line x1="9" y1="10" x2="9" y2="10.01"/><line x1="9" y1="14" x2="9" y2="14.01"/><line x1="9" y1="18" x2="9" y2="18.01"/></svg></div>
         <div class="mod-info">
           <div class="mod-name">Seguimiento de Obras</div>
           <div class="mod-desc">Avance por etapa y bitácora</div>
         </div>
         <div class="mod-meta">
           <span class="mod-code">OB-05</span>
-          <span id="mod-badge-obras" class="mod-badge" style="display:none;"></span>
+          <span id="mod-badge-obras" class="mod-badge ds-badge" style="display:none;"></span>
         </div>
       </div>
 
       <!-- 6. Reportes de Obra -->
-      <div class="mod-card" onclick="selectModule('reportes')">
-        <div class="mod-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>
+      <div class="mod-card ds-card" onclick="selectModule('reportes')">
+        <div class="mod-icon mi-rp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>
         <div class="mod-info">
           <div class="mod-name">Reportes de Obra</div>
           <div class="mod-desc">Genera reportes finales, de avance y entregas</div>
@@ -1397,8 +1467,8 @@ body.in-fotoeditor #app{
       </div>
 
       <!-- 7. Editor de Fotos -->
-      <div class="mod-card" onclick="selectModule('fotoeditor')">
-        <div class="mod-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg></div>
+      <div class="mod-card ds-card" onclick="selectModule('fotoeditor')">
+        <div class="mod-icon mi-ft"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg></div>
         <div class="mod-info">
           <div class="mod-name">Editor de Fotos</div>
           <div class="mod-desc">Anotación y marcado de evidencia</div>
@@ -1407,8 +1477,8 @@ body.in-fotoeditor #app{
       </div>
 
       <!-- 8. Contactos -->
-      <div class="mod-card" onclick="selectModule('contactos')">
-        <div class="mod-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+      <div class="mod-card ds-card" onclick="selectModule('contactos')">
+        <div class="mod-icon mi-cn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
         <div class="mod-info">
           <div class="mod-name">Contactos</div>
           <div class="mod-desc">Directorio de clientes y obra</div>
@@ -1417,8 +1487,8 @@ body.in-fotoeditor #app{
       </div>
 
       <!-- 8b. Base de Datos de Contactos -->
-      <div class="mod-card" onclick="selectModule('contactosdb')">
-        <div class="mod-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg></div>
+      <div class="mod-card ds-card" onclick="selectModule('contactosdb')">
+        <div class="mod-icon mi-bd"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg></div>
         <div class="mod-info">
           <div class="mod-name">Base de Datos de Contactos</div>
           <div class="mod-desc">Segmentación y prospección</div>
@@ -1427,15 +1497,15 @@ body.in-fotoeditor #app{
       </div>
 
       <!-- 9. Diagnóstico Visual con IA (acceso directo standalone) -->
-      <div class="mod-card" onclick="abrirDiagnosticoIAStandalone()">
-        <div class="mod-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M5.6 18.4l2.8-2.8M15.6 8.4l2.8-2.8"/><circle cx="12" cy="12" r="2.5"/></svg></div>
+      <div class="mod-card ds-card" onclick="abrirDiagnosticoIAStandalone()">
+        <div class="mod-icon mi-ia"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M5.6 18.4l2.8-2.8M15.6 8.4l2.8-2.8"/><circle cx="12" cy="12" r="2.5"/></svg></div>
         <div class="mod-info">
           <div class="mod-name">Diagnóstico Visual con IA</div>
           <div class="mod-desc">Detección de daños en fotografía</div>
         </div>
         <div class="mod-meta">
           <span class="mod-code">IA-10</span>
-          <span class="mod-badge gold">NUEVO</span>
+          <span class="mod-badge ds-badge ds-badge--attention">NUEVO</span>
         </div>
       </div>
 
