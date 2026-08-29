@@ -716,28 +716,27 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
 /* ══ MÓDULO COSTEO ══ */
 #screen-costeo.active{display:flex;flex-direction:column;}
 
-/* Modo fullscreen para Cotizaciones y Costeo (oculta menú general) */
-body.in-cotizaciones #topbar,
-body.in-cotizaciones #subnav,
-body.in-cotizaciones #navbar,
-body.in-cotizaciones .fab,
-body.in-cotizaciones #fab,
-body.in-costeo #topbar,
-body.in-costeo #subnav,
-body.in-costeo #navbar,
-body.in-costeo .fab,
-body.in-costeo #fab,
-body.in-fotoeditor #topbar,
-body.in-fotoeditor #subnav,
-body.in-fotoeditor #navbar,
-body.in-fotoeditor .fab,
-body.in-fotoeditor #fab{
+/* Modo fullscreen por módulo (oculta el shell general: topbar navy +
+   subnav + navbar) — cada módulo depende únicamente de su propio
+   header, sin la barra global duplicando el botón de menú. */
+body.in-cotizaciones #topbar, body.in-cotizaciones #subnav, body.in-cotizaciones #navbar, body.in-cotizaciones .fab, body.in-cotizaciones #fab,
+body.in-costeo #topbar, body.in-costeo #subnav, body.in-costeo #navbar, body.in-costeo .fab, body.in-costeo #fab,
+body.in-fotoeditor #topbar, body.in-fotoeditor #subnav, body.in-fotoeditor #navbar, body.in-fotoeditor .fab, body.in-fotoeditor #fab,
+body.in-reportes #topbar, body.in-reportes #subnav, body.in-reportes #navbar, body.in-reportes .fab, body.in-reportes #fab,
+body.in-auditoria #topbar, body.in-auditoria #subnav, body.in-auditoria #navbar, body.in-auditoria .fab, body.in-auditoria #fab,
+body.in-dashboardgeneral #topbar, body.in-dashboardgeneral #subnav, body.in-dashboardgeneral #navbar, body.in-dashboardgeneral .fab, body.in-dashboardgeneral #fab{
+  display:none !important;
+}
+/* Seguimiento de Obras: oculta el topbar (avatar/logo/salir) Y el
+   subnav global viejo — la navegación interna real (Inicio/Obras/
+   +Nueva) se conserva, pero reestilizada como .mod-tabs dentro de la
+   propia pantalla, debajo de su header unificado. */
+body.in-seguimiento #topbar, body.in-seguimiento #subnav{
   display:none !important;
 }
 /* Cuando se oculta el navbar, ajustar padding del screen activo para que ocupe todo */
-body.in-cotizaciones #app,
-body.in-costeo #app,
-body.in-fotoeditor #app{
+body.in-cotizaciones #app, body.in-costeo #app, body.in-fotoeditor #app,
+body.in-reportes #app, body.in-auditoria #app, body.in-dashboardgeneral #app{
   padding-bottom:0 !important;
 }
 .cos-tab{padding:12px 14px;font-size:11px;font-weight:700;color:var(--tx2);letter-spacing:.3px;cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;}
@@ -1006,20 +1005,37 @@ body.in-fotoeditor #app{
 .ds-btn-primary{background:var(--ds-mustard);color:var(--ds-mustard-text);}
 .ds-btn-secondary{background:transparent;color:var(--ds-surface-tx, #fff);border:1px solid var(--ds-surface-btn-bd, rgba(255,255,255,.3));}
 
-/* ── ENCABEZADO DE MÓDULO (portada) — reutilizable en las 10 pantallas
-   de módulo. Cada header define --mod-accent con el color de identidad
-   del módulo (los mismos --ds-mod-* de las fichas del menú); estas
-   clases solo tocan tipografía/acento, NO el contenido debajo. ── */
+/* ── ENCABEZADO DE MÓDULO (portada) — reutilizable en las 11 pantallas
+   de módulo (10 módulos + Dashboard General). Cada header define
+   --mod-accent con el color de identidad del módulo (los mismos
+   --ds-mod-* de las fichas del menú). Estructura vertical fija:
+   1) botón "← Menú" solo,  2) breadcrumb (eyebrow + código),
+   3) fila ícono+título junto con la acción primaria (si existe),
+   4) descripción (si existe). Estas clases solo tocan
+   tipografía/acento/layout del header, NO el contenido debajo. ── */
+.mod-header-top{margin-bottom:10px;}
 .mod-header-back{font-family:var(--ds-font-body);background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:#fff;font-size:12px;font-weight:600;padding:7px 13px;border-radius:8px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;}
 .mod-header-back svg{width:13px;height:13px;flex-shrink:0;}
 .mod-header-back--light{background:rgba(11,31,58,.06);border-color:rgba(11,31,58,.1);color:var(--navy);}
 .mod-header-icon{color:var(--mod-accent, #93C5FD);display:inline-flex;flex-shrink:0;}
 .mod-header-icon svg{width:17px;height:17px;display:block;}
-.mod-header-eyebrow{font-family:var(--ds-font-body);font-weight:600;text-transform:uppercase;letter-spacing:.09em;font-size:9px;color:var(--mod-accent, #93C5FD);margin-bottom:3px;}
+.mod-header-crumb{display:flex;align-items:center;gap:7px;margin-bottom:6px;}
+.mod-header-eyebrow{font-family:var(--ds-font-body);font-weight:600;text-transform:uppercase;letter-spacing:.09em;font-size:9px;color:var(--mod-accent, #93C5FD);}
+.mod-header-code{font-family:var(--ds-font-mono);font-weight:500;font-size:8px;letter-spacing:.03em;padding:1px 6px;border-radius:5px;background:rgba(255,255,255,.12);color:rgba(255,255,255,.55);}
+.mod-header-code--light{background:rgba(11,31,58,.06);color:var(--tx2);}
+.mod-header-row{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;}
 .mod-header-title{font-family:var(--ds-font-title);font-weight:700;font-size:18px;color:#fff;line-height:1.25;display:flex;align-items:center;gap:8px;}
 .mod-header-title--light{color:var(--navy);}
 .mod-header-desc{font-family:var(--ds-font-body);font-weight:400;font-size:11px;color:rgba(255,255,255,.65);margin-top:6px;line-height:1.5;max-width:520px;}
 .mod-header-desc--light{color:var(--tx2);}
+
+/* Tabs funcionales bajo el header (solo Seguimiento de Obras, que
+   necesita navegación interna real Inicio/Obras/+Nueva) — mismas
+   clases/ids que ya usa la lógica JS existente (snav-*), solo se
+   reestiliza visualmente. */
+.mod-tabs{display:flex;gap:4px;padding:0 18px;background:#0B1F3A;border-top:1px solid rgba(255,255,255,.08);}
+.mod-tabs .snav{flex:none;padding:10px 12px;font-family:var(--ds-font-body);font-size:11px;font-weight:600;color:rgba(255,255,255,.45);letter-spacing:.02em;text-transform:none;border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap;}
+.mod-tabs .snav.active{color:#fff;border-bottom-color:var(--mod-accent, #F97316);}
 
 /* ── DASHBOARD GENERAL (pantalla, fondo claro — usa el mismo sistema
    de diseño que el selector de módulo, con tokens --ds-surface-*
@@ -1032,8 +1048,6 @@ body.in-fotoeditor #app{
   --ds-surface-btn-bd:var(--g1);
   --ds-surface-tx:var(--navy);
 }
-.dg-back-btn{background:var(--off);border:1px solid var(--g1);color:var(--tx2);font-size:11.5px;font-weight:600;padding:7px 13px 7px 10px;border-radius:20px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;}
-.dg-back-btn svg{width:13px;height:13px;}
 .dg-refresh-btn{background:var(--blue);border:none;color:#fff;font-size:12px;font-weight:600;padding:8px 15px;border-radius:9px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;}
 .dg-refresh-btn svg{width:13px;height:13px;}
 .dg-live-dot{width:7px;height:7px;border-radius:50%;background:#10B981;flex-shrink:0;display:inline-block;}
@@ -1647,6 +1661,24 @@ body.in-fotoeditor #app{
 
     <!-- OBRAS LIST -->
     <div id="screen-obras" class="screen">
+      <div style="background:#0B1F3A;padding:14px 18px 16px;--mod-accent:var(--ds-mod-obras);">
+        <div class="mod-header-top">
+          <button class="mod-header-back" onclick="volverSelector()">← Menú</button>
+        </div>
+        <div class="mod-header-crumb">
+          <span class="mod-header-eyebrow">ROMSA Industrial · Seguimiento de Obras</span>
+          <span class="mod-header-code">OB-05</span>
+        </div>
+        <div class="mod-header-title">
+          <span class="mod-header-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 22V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v18"/><path d="M14 9h4a1 1 0 0 1 1 1v12"/><path d="M2 22h20"/><line x1="9" y1="6" x2="9" y2="6.01"/><line x1="9" y1="10" x2="9" y2="10.01"/><line x1="9" y1="14" x2="9" y2="14.01"/><line x1="9" y1="18" x2="9" y2="18.01"/></svg></span>
+          Seguimiento de Obras
+        </div>
+      </div>
+      <div class="mod-tabs" style="--mod-accent:var(--ds-mod-obras);">
+        <div class="snav" data-nav="dashboard" onclick="goScreen('dashboard')">Inicio</div>
+        <div class="snav active" data-nav="obras" onclick="goScreen('obras')">Obras</div>
+        <div class="snav" data-nav="nueva" onclick="showNueva()">+ Nueva</div>
+      </div>
       <div class="section">
         <div class="sec-row">
           <span class="sec-lbl">Obras activas</span>
@@ -1662,11 +1694,25 @@ body.in-fotoeditor #app{
     <!-- OBRA DETALLE -->
     <div id="screen-dashboard" class="screen active">
       <div style="background:#0B1F3A;padding:14px 18px 16px;--mod-accent:var(--ds-mod-obras);">
-        <div class="mod-header-eyebrow">Seguimiento de Obras · ROMSA</div>
+        <div class="mod-header-top">
+          <button class="mod-header-back" onclick="volverSelector()">← Menú</button>
+        </div>
+        <div class="mod-header-crumb">
+          <span class="mod-header-eyebrow">ROMSA Industrial · Seguimiento de Obras</span>
+          <span class="mod-header-code">OB-05</span>
+        </div>
         <div class="mod-header-title">
           <span class="mod-header-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 22V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v18"/><path d="M14 9h4a1 1 0 0 1 1 1v12"/><path d="M2 22h20"/><line x1="9" y1="6" x2="9" y2="6.01"/><line x1="9" y1="10" x2="9" y2="10.01"/><line x1="9" y1="14" x2="9" y2="14.01"/><line x1="9" y1="18" x2="9" y2="18.01"/></svg></span>
           Control total de tu <span style="color:var(--mod-accent);">obra en campo</span>
         </div>
+      </div>
+      <!-- Pestañas funcionales del módulo (Inicio/Obras/+Nueva) — mismo
+           comportamiento que el subnav global, solo reestilizadas y
+           reubicadas debajo del header propio. -->
+      <div class="mod-tabs" style="--mod-accent:var(--ds-mod-obras);">
+        <div class="snav active" data-nav="dashboard" onclick="goScreen('dashboard')">Inicio</div>
+        <div class="snav" data-nav="obras" onclick="goScreen('obras')">Obras</div>
+        <div class="snav" data-nav="nueva" onclick="showNueva()">+ Nueva</div>
       </div>
       <div style="background:#F0F3F8;padding:16px 18px;">
         <!-- KPIs Obras: activas, completadas, % avance promedio -->
@@ -2093,21 +2139,24 @@ body.in-fotoeditor #app{
   <div id="screen-cotizaciones" class="screen" style="display:none;padding:0;flex-direction:column;height:100%;overflow:hidden;">
 
     <!-- TOPBAR -->
-    <div style="background:#0B1F3A;padding:calc(var(--safe-top)+10px) 18px 12px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;--mod-accent:var(--ds-mod-cotizaciones);">
-      <div style="display:flex;align-items:center;gap:10px;">
-        <button onclick="volverSelector()" title="Menú principal" style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.7);font-size:14px;width:32px;height:32px;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:var(--font);flex-shrink:0;">⌂</button>
-        <div>
-          <div class="mod-header-eyebrow">ROMSA Industrial</div>
-          <div class="mod-header-title" style="font-size:17px;">
-            <span class="mod-header-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg></span>
-            Cotizaciones
-          </div>
-        </div>
+    <div style="background:#0B1F3A;padding:calc(var(--safe-top)+10px) 18px 12px;flex-shrink:0;--mod-accent:var(--ds-mod-cotizaciones);">
+      <div class="mod-header-top">
+        <button class="mod-header-back" onclick="volverSelector()">← Menú</button>
       </div>
-      <button onclick="showNuevaCot()" style="background:#7C3AED;border:none;color:#fff;font-size:12px;font-weight:700;padding:8px 16px;border-radius:10px;cursor:pointer;font-family:var(--font);display:flex;align-items:center;gap:6px;">
-        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1v10M1 6h10" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></svg>
-        Nueva
-      </button>
+      <div class="mod-header-crumb">
+        <span class="mod-header-eyebrow">ROMSA Industrial · Cotizaciones</span>
+        <span class="mod-header-code">CT-04</span>
+      </div>
+      <div class="mod-header-row">
+        <div class="mod-header-title" style="font-size:17px;">
+          <span class="mod-header-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg></span>
+          Cotizaciones
+        </div>
+        <button onclick="showNuevaCot()" style="background:#7C3AED;border:none;color:#fff;font-size:12px;font-weight:700;padding:8px 16px;border-radius:10px;cursor:pointer;font-family:var(--font);display:flex;align-items:center;gap:6px;">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1v10M1 6h10" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></svg>
+          Nueva
+        </button>
+      </div>
     </div>
 
     <!-- SUB-PESTAÑAS DEL MÓDULO COTIZACIONES -->
@@ -3113,42 +3162,34 @@ body.in-fotoeditor #app{
   <div id="screen-dashboardgeneral" class="screen" style="padding:0;overflow-y:auto;background:var(--off);">
 
     <!-- HEADER (claro) -->
-    <div style="background:#fff;border-bottom:1px solid var(--g1);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
-      <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
-        <div style="display:flex;align-items:center;gap:10px;">
-          <div style="width:30px;height:30px;border-radius:8px;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;" class="ds-title">R</div>
-          <div>
-            <div style="font-size:14px;color:var(--navy);line-height:1.25;" class="ds-title">ROMSA Industrial</div>
-            <div style="font-size:8px;color:var(--tx3);" class="ds-eyebrow">CRM Interno</div>
+    <div style="background:#fff;border-bottom:1px solid var(--g1);padding:16px 20px;--mod-accent:var(--ds-mustard);">
+      <div class="mod-header-top" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+        <button class="mod-header-back mod-header-back--light" onclick="volverSelector()">← Menú</button>
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+          <div style="display:flex;align-items:center;gap:6px;">
+            <span class="dg-live-dot"></span>
+            <span class="ds-body-md" id="dg-datos-vivo" style="font-size:11px;color:var(--tx2);">Datos en vivo · —</span>
           </div>
+          <div id="dg-fecha" style="font-size:11px;color:var(--tx2);font-variant-numeric:tabular-nums;" class="ds-body-md">—</div>
         </div>
-        <button class="dg-back-btn" onclick="volverSelector()">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
-          Menú principal
-        </button>
       </div>
-      <div style="display:flex;align-items:center;gap:14px;">
-        <div id="dg-fecha" style="font-size:11px;color:var(--tx2);font-variant-numeric:tabular-nums;" class="ds-body-md">—</div>
+      <div class="mod-header-crumb">
+        <span class="mod-header-eyebrow">ROMSA Industrial · Dashboard General</span>
+      </div>
+      <div class="mod-header-row">
+        <div class="mod-header-title mod-header-title--light" style="font-size:22px;">
+          <span class="mod-header-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg></span>
+          Dashboard General
+        </div>
         <button class="dg-refresh-btn" onclick="renderDashboardGeneral()" title="Actualizar">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
           Actualizar
         </button>
       </div>
+      <div class="mod-header-desc mod-header-desc--light">Estado consolidado de obras, cotizaciones y auditorías en un solo tablero.</div>
     </div>
 
     <div style="padding:22px 20px 40px;max-width:1180px;margin:0 auto;">
-
-      <!-- Título + estado en vivo -->
-      <div style="display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:26px;">
-        <div>
-          <div class="ds-eyebrow" style="font-size:9.5px;color:var(--ds-mustard);margin-bottom:5px;">Tablero consolidado</div>
-          <div class="ds-title" style="font-size:26px;color:var(--navy);">Dashboard General</div>
-        </div>
-        <div style="display:flex;align-items:center;gap:6px;">
-          <span class="dg-live-dot"></span>
-          <span class="ds-body-md" id="dg-datos-vivo" style="font-size:11px;color:var(--tx2);">Datos en vivo · —</span>
-        </div>
-      </div>
 
       <!-- 1. KPIs principales -->
       <div class="ds-eyebrow" style="font-size:9.5px;color:var(--tx2);margin-bottom:10px;">KPIs principales — este mes</div>
@@ -3236,18 +3277,19 @@ body.in-fotoeditor #app{
     <!-- HEADER del módulo -->
     <div style="background:linear-gradient(135deg,#164E63 0%,#0E7490 100%);padding:18px;color:#fff;position:relative;overflow:hidden;--mod-accent:var(--ds-mod-reportes);">
       <div style="position:absolute;right:-30px;top:-30px;width:140px;height:140px;border-radius:50%;background:rgba(45,212,191,.1);"></div>
-      <div style="position:relative;z-index:2;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
-        <div style="display:flex;align-items:center;gap:10px;">
+      <div style="position:relative;z-index:2;">
+        <div class="mod-header-top">
           <button class="mod-header-back" onclick="volverSelector()">← Menú</button>
-          <div>
-            <div class="mod-header-eyebrow">CRM · Reportes</div>
-            <div class="mod-header-title">
-              <span class="mod-header-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span>
-              Reportes de Obra
-            </div>
-          </div>
         </div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+        <div class="mod-header-crumb">
+          <span class="mod-header-eyebrow">ROMSA Industrial · Reportes de Obra</span>
+          <span class="mod-header-code">RP-06</span>
+        </div>
+        <div class="mod-header-row">
+          <div class="mod-header-title">
+            <span class="mod-header-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span>
+            Reportes de Obra
+          </div>
           <button onclick="abrirEditorReporte()" style="background:#67E8F9;border:none;color:#164E63;font-size:11.5px;font-weight:800;padding:8px 14px;border-radius:8px;cursor:pointer;font-family:var(--font);">+ Nuevo Reporte</button>
         </div>
       </div>
@@ -3289,22 +3331,23 @@ body.in-fotoeditor #app{
     <!-- HEADER del módulo -->
     <div style="background:linear-gradient(135deg,#3B2E63 0%,#5B3E93 100%);padding:18px;color:#fff;position:relative;overflow:hidden;--mod-accent:var(--ds-mod-auditoria);">
       <div style="position:absolute;right:-30px;top:-30px;width:140px;height:140px;border-radius:50%;background:rgba(167,139,250,.1);"></div>
-      <div style="position:relative;z-index:2;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
-        <div style="display:flex;align-items:center;gap:10px;">
+      <div style="position:relative;z-index:2;">
+        <div class="mod-header-top">
           <button class="mod-header-back" onclick="volverSelector()">← Menú</button>
-          <div>
-            <div class="mod-header-eyebrow">CRM · Auditoría</div>
-            <div class="mod-header-title">
-              <span class="mod-header-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></svg></span>
-              Auditoría Técnica
-            </div>
-          </div>
         </div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+        <div class="mod-header-crumb">
+          <span class="mod-header-eyebrow">ROMSA Industrial · Auditoría Técnica</span>
+          <span class="mod-header-code">AU-02</span>
+        </div>
+        <div class="mod-header-row">
+          <div class="mod-header-title">
+            <span class="mod-header-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></svg></span>
+            Auditoría Técnica
+          </div>
           <button onclick="abrirEditorAuditoria()" style="background:#A78BFA;border:none;color:#2E2150;font-size:11.5px;font-weight:800;padding:8px 14px;border-radius:8px;cursor:pointer;font-family:var(--font);">+ Nueva Auditoría</button>
         </div>
+        <div class="mod-header-desc">Diagnóstico profesional de cortesía — un vistazo honesto y de ayuda al estado del piso, sin alarmismo.</div>
       </div>
-      <div class="mod-header-desc" style="position:relative;z-index:2;">Diagnóstico profesional de cortesía — un vistazo honesto y de ayuda al estado del piso, sin alarmismo.</div>
     </div>
 
     <!-- Stats rápidas -->
@@ -4174,13 +4217,29 @@ function goScreen(n){
   var sc=document.getElementById("screen-"+n);if(sc)sc.classList.add("active");
   document.getElementById("nb-"+n)?.classList.add("active");
   document.getElementById("snav-"+n)?.classList.add("active");
+  // Pestañas locales de Seguimiento de Obras (.mod-tabs, duplicadas en
+  // screen-dashboard y screen-obras) — se activan por data-nav en vez
+  // de id porque ambas copias comparten los mismos nombres de destino.
+  document.querySelectorAll('.mod-tabs [data-nav="'+n+'"]').forEach(function(el){ el.classList.add("active"); });
   document.getElementById("fab").style.display=n==="obras"?"flex":"none";
 
-  // Modo fullscreen — ocultar topbar/subnav del módulo de seguimiento
-  document.body.classList.remove("in-cotizaciones","in-costeo","in-fotoeditor");
+  // Modo fullscreen — ocultar el shell general (topbar/subnav/navbar) para
+  // que cada módulo dependa únicamente de su propio header, sin duplicar
+  // el botón de menú principal.
+  document.body.classList.remove("in-cotizaciones","in-costeo","in-fotoeditor","in-reportes","in-auditoria","in-dashboardgeneral","in-seguimiento");
   if(n === "cotizaciones") document.body.classList.add("in-cotizaciones");
   if(n === "costeo" || n === "costeo-editor") document.body.classList.add("in-costeo");
   if(n === "fotoeditor") document.body.classList.add("in-fotoeditor");
+  if(n === "reportes") document.body.classList.add("in-reportes");
+  if(n === "auditoria") document.body.classList.add("in-auditoria");
+  if(n === "dashboardgeneral") document.body.classList.add("in-dashboardgeneral");
+  // Seguimiento de Obras: oculta el topbar y el subnav global viejo —
+  // su navegación interna real (Inicio/Obras/+Nueva) sigue funcionando
+  // vía las mismas onclick, ahora como .mod-tabs dentro de la pantalla.
+  // (screen-obra, el detalle de una obra específica, mantiene el shell
+  // original por ahora — ya tiene su propio "←" para volver al listado,
+  // rediseñarlo es un cambio más profundo, fuera de este alcance.)
+  if(n === "dashboard" || n === "obras") document.body.classList.add("in-seguimiento");
 
   if(n==="dashboard")renderDashboard();
   if(n==="levantamientos"){
