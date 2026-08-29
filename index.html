@@ -724,7 +724,9 @@ body.in-costeo #topbar, body.in-costeo #subnav, body.in-costeo #navbar, body.in-
 body.in-fotoeditor #topbar, body.in-fotoeditor #subnav, body.in-fotoeditor #navbar, body.in-fotoeditor .fab, body.in-fotoeditor #fab,
 body.in-reportes #topbar, body.in-reportes #subnav, body.in-reportes #navbar, body.in-reportes .fab, body.in-reportes #fab,
 body.in-auditoria #topbar, body.in-auditoria #subnav, body.in-auditoria #navbar, body.in-auditoria .fab, body.in-auditoria #fab,
-body.in-dashboardgeneral #topbar, body.in-dashboardgeneral #subnav, body.in-dashboardgeneral #navbar, body.in-dashboardgeneral .fab, body.in-dashboardgeneral #fab{
+body.in-dashboardgeneral #topbar, body.in-dashboardgeneral #subnav, body.in-dashboardgeneral #navbar, body.in-dashboardgeneral .fab, body.in-dashboardgeneral #fab,
+body.in-contactos #topbar, body.in-contactos #subnav, body.in-contactos #navbar, body.in-contactos .fab, body.in-contactos #fab,
+body.in-contactosdb #topbar, body.in-contactosdb #subnav, body.in-contactosdb #navbar, body.in-contactosdb .fab, body.in-contactosdb #fab{
   display:none !important;
 }
 /* Seguimiento de Obras: oculta el topbar (avatar/logo/salir) Y el
@@ -736,7 +738,8 @@ body.in-seguimiento #topbar, body.in-seguimiento #subnav{
 }
 /* Cuando se oculta el navbar, ajustar padding del screen activo para que ocupe todo */
 body.in-cotizaciones #app, body.in-costeo #app, body.in-fotoeditor #app,
-body.in-reportes #app, body.in-auditoria #app, body.in-dashboardgeneral #app{
+body.in-reportes #app, body.in-auditoria #app, body.in-dashboardgeneral #app,
+body.in-contactos #app, body.in-contactosdb #app{
   padding-bottom:0 !important;
 }
 .cos-tab{padding:12px 14px;font-size:11px;font-weight:700;color:var(--tx2);letter-spacing:.3px;cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;}
@@ -2841,12 +2844,14 @@ body.in-reportes #app, body.in-auditoria #app, body.in-dashboardgeneral #app{
 
     <!-- Header Hero -->
     <div style="background:linear-gradient(135deg,#1B3F72,#0B1F3A);padding:16px 18px;border-bottom:1px solid rgba(255,255,255,.05);position:relative;--mod-accent:var(--ds-mod-costeo);">
-      <!-- Botones de navegación -->
-      <div style="display:flex;gap:6px;margin-bottom:10px;">
-        <button class="mod-header-back" onclick="volverSelector()" title="Menú principal">⌂ Menú</button>
+      <div class="mod-header-top" style="display:flex;gap:6px;">
+        <button class="mod-header-back" onclick="volverSelector()">← Menú</button>
         <button onclick="goScreen('obras')" title="Volver a obras" style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:#fff;font-size:11px;font-weight:700;padding:6px 11px;border-radius:7px;cursor:pointer;font-family:var(--font);display:flex;align-items:center;gap:4px;">← Atrás</button>
       </div>
-      <div class="mod-header-eyebrow">Módulo interno · ROMSA</div>
+      <div class="mod-header-crumb">
+        <span class="mod-header-eyebrow">ROMSA Industrial · Costeo</span>
+        <span class="mod-header-code">CO-03</span>
+      </div>
       <div class="mod-header-title" style="font-size:18px;">
         <span class="mod-header-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="8" y2="10.01"/><line x1="12" y1="10" x2="12" y2="10.01"/><line x1="16" y1="10" x2="16" y2="10.01"/><line x1="8" y1="14" x2="8" y2="14.01"/><line x1="12" y1="14" x2="12" y2="14.01"/><line x1="16" y1="14" x2="16" y2="17"/><line x1="8" y1="18" x2="12" y2="18"/></svg></span>
         Costeo de proyectos
@@ -3224,14 +3229,17 @@ body.in-reportes #app, body.in-auditoria #app, body.in-dashboardgeneral #app{
 
     <!-- HEADER del módulo -->
     <div style="background:linear-gradient(135deg,#EEF0FF 0%,#E0E4FF 100%);border-bottom:1px solid rgba(129,140,248,.25);padding:16px 18px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
-        <div style="display:flex;align-items:center;gap:10px;">
-          <button class="mod-header-back mod-header-back--light" onclick="volverSelector()">← Menú</button>
-          <div class="mod-icon mi-cn" style="width:32px;height:32px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
-          <div>
-            <div class="mod-header-eyebrow" style="color:#4338CA;">CRM · Personas</div>
-            <div class="mod-header-title mod-header-title--light" style="font-size:18px;">Contactos</div>
-          </div>
+      <div class="mod-header-top">
+        <button class="mod-header-back mod-header-back--light" onclick="volverSelector()">← Menú</button>
+      </div>
+      <div class="mod-header-crumb">
+        <span class="mod-header-eyebrow" style="color:#4338CA;">ROMSA Industrial · Contactos</span>
+        <span class="mod-header-code mod-header-code--light">CN-08</span>
+      </div>
+      <div class="mod-header-row">
+        <div class="mod-header-title mod-header-title--light" style="font-size:18px;">
+          <div class="mod-icon mi-cn" style="width:28px;height:28px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+          Contactos
         </div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;">
           <button onclick="exportarContactosExcel()" style="background:#10B981;border:none;color:#fff;font-size:11.5px;font-weight:700;padding:8px 14px;border-radius:8px;cursor:pointer;font-family:var(--font);">📊 Exportar Excel</button>
@@ -3426,15 +3434,16 @@ body.in-reportes #app, body.in-auditoria #app, body.in-dashboardgeneral #app{
 
     <!-- HEADER del módulo -->
     <div style="background:linear-gradient(135deg,#F1F5F9 0%,#E2E8F0 100%);border-bottom:1px solid rgba(148,163,184,.3);padding:16px 18px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
-        <div style="display:flex;align-items:center;gap:10px;">
-          <button class="mod-header-back mod-header-back--light" onclick="volverSelector()">← Menú</button>
-          <div class="mod-icon mi-bd" style="width:32px;height:32px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg></div>
-          <div>
-            <div class="mod-header-eyebrow" style="color:#475569;">CRM · Base de Datos</div>
-            <div class="mod-header-title mod-header-title--light" style="font-size:18px;">Base de Datos de Contactos</div>
-          </div>
-        </div>
+      <div class="mod-header-top">
+        <button class="mod-header-back mod-header-back--light" onclick="volverSelector()">← Menú</button>
+      </div>
+      <div class="mod-header-crumb">
+        <span class="mod-header-eyebrow" style="color:#475569;">ROMSA Industrial · Base de Datos de Contactos</span>
+        <span class="mod-header-code mod-header-code--light">BD-09</span>
+      </div>
+      <div class="mod-header-title mod-header-title--light" style="font-size:18px;">
+        <div class="mod-icon mi-bd" style="width:28px;height:28px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg></div>
+        Base de Datos de Contactos
       </div>
     </div>
 
@@ -4226,13 +4235,15 @@ function goScreen(n){
   // Modo fullscreen — ocultar el shell general (topbar/subnav/navbar) para
   // que cada módulo dependa únicamente de su propio header, sin duplicar
   // el botón de menú principal.
-  document.body.classList.remove("in-cotizaciones","in-costeo","in-fotoeditor","in-reportes","in-auditoria","in-dashboardgeneral","in-seguimiento");
+  document.body.classList.remove("in-cotizaciones","in-costeo","in-fotoeditor","in-reportes","in-auditoria","in-dashboardgeneral","in-seguimiento","in-contactos","in-contactosdb");
   if(n === "cotizaciones") document.body.classList.add("in-cotizaciones");
   if(n === "costeo" || n === "costeo-editor") document.body.classList.add("in-costeo");
   if(n === "fotoeditor") document.body.classList.add("in-fotoeditor");
   if(n === "reportes") document.body.classList.add("in-reportes");
   if(n === "auditoria") document.body.classList.add("in-auditoria");
   if(n === "dashboardgeneral") document.body.classList.add("in-dashboardgeneral");
+  if(n === "contactos") document.body.classList.add("in-contactos");
+  if(n === "contactosdb") document.body.classList.add("in-contactosdb");
   // Seguimiento de Obras: oculta el topbar y el subnav global viejo —
   // su navegación interna real (Inicio/Obras/+Nueva) sigue funcionando
   // vía las mismas onclick, ahora como .mod-tabs dentro de la pantalla.
