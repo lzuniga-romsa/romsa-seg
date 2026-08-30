@@ -12062,7 +12062,11 @@ async function guardarCot(){
         proc:        p.proc         || "",
         qty:         parseFloat(p.qty) || 0,
         unit:        p.unit         || "m²",
-        precio:      parseFloat(p.precio) || 0
+        precio:      parseFloat(p.precio) || 0,
+        // Vínculo con el sistema de costeo de origen (si esta partida vino
+        // de un costeo) + línea base de sincronización de precio.
+        sistemaId:      p.sistemaId,
+        syncPrecioUnit: p.syncPrecioUnit
       };
     }),
     subtotal:tots.sub,iva:tots.iva,granTotal:tots.total,
@@ -12106,6 +12110,9 @@ async function guardarCot(){
     if(typeof window._actualizarVinculoPostGuardadoCotizacion === "function" && window._cotizacionCosteoOrigen){
       window._actualizarVinculoPostGuardadoCotizacion(cot);
     }
+    // Sincronización cotización → costeo (solo mientras esta cotización
+    // esté "pendiente"/"vencida" y sea el vínculo vigente del costeo origen)
+    if(typeof _verificarSyncCotizacionACosteo === "function") _verificarSyncCotizacionACosteo(cot);
     showToast("✅ Cotización guardada — "+folio);
     return cot;
   }catch(e){
@@ -14760,6 +14767,7 @@ function _htmlSistema(s, idx){
         +'</span>'
       +'</div>'
       +(s.cantidad>0?'<div class="cos-totales-row"><span class="cos-totales-label">Precio por '+(s.unidad||"m²")+'</span><strong>$'+_fmt(tot.precio/s.cantidad)+'</strong></div>':'')
+      +(s.syncAjusteManual?'<div style="font-size:9px;color:#FCA5A5;line-height:1.4;margin-top:6px;padding-top:6px;border-top:1px dashed rgba(255,255,255,.15);">⚠️ Precio de venta ajustado manualmente desde la cotización vinculada: <strong>$'+_fmt(s.syncPrecioUnit||0)+'</strong>/'+(s.unidad||"m²")+' (no coincide con la suma de partidas de arriba)</div>':'')
     +'</div>'
   +'</div>';
 }
@@ -15086,6 +15094,17 @@ window.ceSetAnticipo = ceSetAnticipo;
 window.ceGuardarAnticipoLocal = ceGuardarAnticipoLocal;
 
 // ── Acciones: Sistemas ────────────────────────────────────────
+// Asegura que cada sistema tenga un id estable (para vincular con la
+// partida de cotización correspondiente al sincronizar precios). Los
+// costeos creados antes de esta función simplemente no tienen id hasta
+// que se llama aquí; es idempotente y segura de invocar repetidamente.
+function _asegurarIdsSistemas(costeo){
+  if(!costeo || !Array.isArray(costeo.sistemas)) return;
+  let maxId = 0;
+  costeo.sistemas.forEach(s=>{ if(typeof s.id === "number" && s.id > maxId) maxId = s.id; });
+  costeo.sistemas.forEach(s=>{ if(!s.id){ maxId++; s.id = maxId; } });
+}
+
 function agregarSistema(){
   if(!_ceCosteo) return;
   _ceSnapshot(true);  // snapshot antes del cambio
@@ -15095,6 +15114,7 @@ function agregarSistema(){
     unidad: "m²",
     partidas: []
   });
+  _asegurarIdsSistemas(_ceCosteo);
   _renderSistemas();
 }
 
@@ -15834,6 +15854,10 @@ async function guardarCosteoActual(){
       : await _generarFolioCosteo(_ceCosteo.prefijo, _ceCosteo.fecha);
   }
 
+  // Ids estables por sistema, necesarios para la sincronización de precios
+  // con la cotización vinculada (ver _verificarSyncCosteoACotizacion).
+  _asegurarIdsSistemas(_ceCosteo);
+
   // Calcular totales globales
   let costo=0, precio=0, utilidad=0;
   _ceCosteo.sistemas.forEach(s=>{
@@ -15886,6 +15910,10 @@ async function guardarCosteoActual(){
         showToast("⚠️ Costeo guardado, pero no se pudo actualizar el costo real en la cotización: "+e2.message);
       }
     }
+
+    // Sincronización costeo → cotización (solo mientras la cotización
+    // vinculada esté "pendiente"/"vencida"; ver _verificarSyncCosteoACotizacion)
+    if(typeof _verificarSyncCosteoACotizacion === "function") _verificarSyncCosteoACotizacion(_ceCosteo);
   }catch(e){
     console.error(e);
     showToast("⚠️ Error al guardar: "+e.message);
@@ -15962,6 +15990,206 @@ const _origActualizarResumenGlobal = typeof _actualizarResumenGlobal === "functi
   };
 })();
 
+// ── Sincronización de precios costeo ↔ cotización ────────────
+// Solo aplica mientras la cotización vinculada esté "pendiente" o
+// "vencida" (nunca en aceptada/en_obra/cerrada/rechazada — ahí el monto
+// ya quedó fijado). Nunca actualiza en silencio: siempre pregunta con
+// un banner Actualizar/Ignorar, y nunca dos veces por el mismo cambio.
+//
+// Cada sistema de costeo tiene un id estable y dos campos de control:
+//   syncPrecioUnit     → último precio "acordado" con la cotización
+//                        (puede venir del cálculo propio del sistema o de
+//                        un ajuste manual empujado desde la cotización).
+//   syncPrecioCalcBase → último precio CALCULADO (suma de partidas) que
+//                        ya se revisó. Se compara contra esto, no contra
+//                        syncPrecioUnit, para que un ajuste manual (que no
+//                        toca las partidas) no se detecte como "cambio
+//                        del costeo" en la siguiente revisión.
+//   syncAjusteManual   → true si syncPrecioUnit vino de la cotización y
+//                        no coincide con la suma real de partidas.
+// Cada partida de cotización generada desde un sistema tiene sistemaId
+// (vínculo) y syncPrecioUnit (línea base desde el lado de la cotización).
+
+function _cotEstadoSincronizable(cot){
+  const estado = (cot && cot.estado) || "pendiente";
+  return estado === "pendiente" || estado === "vencida";
+}
+
+function _quitarBannersSync(){
+  document.querySelectorAll(".sync-banner").forEach(el=>el.remove());
+}
+
+function _crearBannerSync(titulo, detalleHtml, lblIgnorar, lblActualizar, onIgnorar, onActualizar){
+  _quitarBannersSync();
+  const div = document.createElement("div");
+  div.className = "sync-banner";
+  div.style.cssText = "position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:99999;background:#0B1F3A;color:#fff;border:1px solid rgba(255,255,255,.15);border-radius:14px;padding:16px 18px;max-width:420px;width:90vw;box-shadow:0 12px 32px rgba(0,0,0,.4);font-family:var(--font);";
+  div.innerHTML = '<div style="font-size:12.5px;font-weight:700;margin-bottom:6px;">'+titulo+'</div>'
+    +'<div style="font-size:11px;color:rgba(255,255,255,.85);line-height:1.6;margin-bottom:12px;">'+detalleHtml+'</div>'
+    +'<div style="display:flex;gap:8px;justify-content:flex-end;">'
+      +'<button data-act="ignorar" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;font-size:11px;font-weight:600;padding:8px 14px;border-radius:8px;cursor:pointer;font-family:var(--font);">'+lblIgnorar+'</button>'
+      +'<button data-act="actualizar" style="background:#22C55E;border:none;color:#052E14;font-size:11px;font-weight:700;padding:8px 14px;border-radius:8px;cursor:pointer;font-family:var(--font);">'+lblActualizar+'</button>'
+    +'</div>';
+  document.body.appendChild(div);
+  div.querySelector('[data-act="ignorar"]').onclick = function(){ div.remove(); onIgnorar(); };
+  div.querySelector('[data-act="actualizar"]').onclick = function(){ div.remove(); onActualizar(); };
+  return div;
+}
+
+// Dirección 1: cambió el costeo → ¿reflejarlo en la cotización pendiente?
+function _verificarSyncCosteoACotizacion(costeo){
+  try{
+    if(!costeo || !Array.isArray(costeo.sistemas) || !costeo.cotizacionIdGenerada) return;
+    const cot = (typeof cotizaciones !== "undefined" ? cotizaciones : []).find(c=>c.id===costeo.cotizacionIdGenerada);
+    if(!cot || !_cotEstadoSincronizable(cot)) return;
+
+    _asegurarIdsSistemas(costeo);
+    let dirty = false;
+    const cambios = [];
+
+    costeo.sistemas.forEach(s=>{
+      if(!s.id) return;
+      const t = _calcSistema(s);
+      const precioCalc = (s.cantidad||0) > 0 ? Math.round((t.precio/s.cantidad)*100)/100 : 0;
+      const partida = (cot.partidas||[]).find(p=>p.sistemaId===s.id);
+      if(!partida) return; // sin match (se agregó/quitó una línea desde la generación): no sincroniza
+
+      if(s.syncPrecioCalcBase === undefined){
+        // Primera revisión con tracking: adoptar el valor actual como línea base, sin preguntar.
+        s.syncPrecioCalcBase = precioCalc;
+        if(s.syncPrecioUnit === undefined) s.syncPrecioUnit = precioCalc;
+        dirty = true;
+        return;
+      }
+      if(Math.abs(precioCalc - s.syncPrecioCalcBase) > 0.01){
+        cambios.push({sistemaId:s.id, sistemaNombre:s.nombre||("Sistema"), precioAnterior:s.syncPrecioCalcBase, precioNuevo:precioCalc});
+      }
+    });
+
+    if(dirty && costeo.id){
+      costeoCosteosRef.doc(costeo.id).update({sistemas:_sanitizarParaFirestore(costeo.sistemas)}).catch(e=>console.error("Error guardando línea base de sincronización:", e));
+    }
+    if(cambios.length) _mostrarBannerSyncCosteoACotizacion(costeo, cot, cambios);
+  }catch(e){ console.error("Error verificando sincronización costeo→cotización:", e); }
+}
+
+function _mostrarBannerSyncCosteoACotizacion(costeo, cot, cambios){
+  const detalle = cambios.map(c=>escapeHtml(c.sistemaNombre)+": $"+_fmt(c.precioAnterior)+" → $"+_fmt(c.precioNuevo)+"/unidad").join("<br>")
+    +"<br><br>¿Actualizar la cotización <strong>"+escapeHtml(cot.folio||"")+"</strong> con estos valores?";
+
+  _crearBannerSync("⚠️ El costeo cambió", detalle, "Ignorar", "Actualizar cotización",
+    function onIgnorar(){
+      cambios.forEach(c=>{
+        const s = costeo.sistemas.find(x=>x.id===c.sistemaId);
+        if(s) s.syncPrecioCalcBase = c.precioNuevo; // no preguntar de nuevo por este mismo cambio
+      });
+      if(costeo.id) costeoCosteosRef.doc(costeo.id).update({sistemas:_sanitizarParaFirestore(costeo.sistemas)}).catch(e=>console.error(e));
+      showToast("Cambio del costeo ignorado — la cotización no se modificó");
+    },
+    async function onActualizar(){
+      cambios.forEach(c=>{
+        const s = costeo.sistemas.find(x=>x.id===c.sistemaId);
+        if(s){ s.syncPrecioCalcBase = c.precioNuevo; s.syncPrecioUnit = c.precioNuevo; s.syncAjusteManual = false; }
+      });
+      const nuevasPartidas = (cot.partidas||[]).map(p=>{
+        const c = cambios.find(x=>x.sistemaId===p.sistemaId);
+        return c ? Object.assign({}, p, {precio:c.precioNuevo, syncPrecioUnit:c.precioNuevo}) : p;
+      });
+      const sub = nuevasPartidas.reduce((sum,p)=>sum+((parseFloat(p.qty)||0)*(parseFloat(p.precio)||0)),0);
+      const iva = sub*0.08;
+      try{
+        if(costeo.id) await costeoCosteosRef.doc(costeo.id).update({sistemas:_sanitizarParaFirestore(costeo.sistemas)});
+        await cotRef.doc(cot.id).update({partidas:_sanitizarParaFirestore(nuevasPartidas), subtotal:sub, iva:iva, granTotal:sub+iva});
+        cot.partidas = nuevasPartidas;
+        cot.subtotal = sub; cot.iva = iva; cot.granTotal = sub+iva;
+        if(typeof cotActivaId !== "undefined" && cotActivaId === cot.id){
+          _cotPartidas = nuevasPartidas.map(function(p,i){ return Object.assign({id:i+1}, p); });
+          if(typeof renderPartidasCot === "function") renderPartidasCot();
+          if(typeof calcTotalesCot === "function") calcTotalesCot();
+        }
+        if(typeof _ceCosteo !== "undefined" && _ceCosteo && _ceCosteo.id === costeo.id && typeof _renderSistemas === "function") _renderSistemas();
+        showToast("✅ Cotización "+cot.folio+" actualizada con los nuevos precios del costeo");
+      }catch(e){
+        console.error("Error sincronizando cotización:", e);
+        showToast("⚠️ Error al actualizar la cotización: "+e.message);
+      }
+    }
+  );
+}
+
+// Dirección 2: cambió el precio en la cotización → ¿reflejarlo en el costeo origen?
+function _verificarSyncCotizacionACosteo(cot){
+  try{
+    if(!cot || !cot.costeoIdOrigen || !Array.isArray(cot.partidas) || !_cotEstadoSincronizable(cot)) return;
+    const costeo = (typeof _costeoCosteos !== "undefined" ? _costeoCosteos : []).find(c=>c.id===cot.costeoIdOrigen);
+    if(!costeo || costeo.cotizacionIdGenerada !== cot.id) return; // solo el vínculo vigente del costeo
+
+    _asegurarIdsSistemas(costeo);
+    let dirty = false;
+    const cambios = [];
+
+    cot.partidas.forEach(p=>{
+      if(!p.sistemaId) return;
+      const s = costeo.sistemas.find(x=>x.id===p.sistemaId);
+      if(!s) return;
+      const precioActual = Math.round((parseFloat(p.precio)||0)*100)/100;
+
+      if(p.syncPrecioUnit === undefined){
+        p.syncPrecioUnit = precioActual;
+        dirty = true;
+        return;
+      }
+      if(Math.abs(precioActual - p.syncPrecioUnit) > 0.01){
+        cambios.push({sistemaId:s.id, sistemaNombre:s.nombre||"Sistema", precioAnterior:p.syncPrecioUnit, precioNuevo:precioActual});
+      }
+    });
+
+    if(dirty){
+      cotRef.doc(cot.id).update({partidas:_sanitizarParaFirestore(cot.partidas)}).catch(e=>console.error("Error guardando línea base de sincronización:", e));
+    }
+    if(cambios.length) _mostrarBannerSyncCotizacionACosteo(cot, costeo, cambios);
+  }catch(e){ console.error("Error verificando sincronización cotización→costeo:", e); }
+}
+
+function _mostrarBannerSyncCotizacionACosteo(cot, costeo, cambios){
+  const detalle = cambios.map(c=>escapeHtml(c.sistemaNombre)+": $"+_fmt(c.precioAnterior)+" → $"+_fmt(c.precioNuevo)+"/unidad").join("<br>")
+    +"<br><br>¿Reflejarlo en el costeo <strong>"+escapeHtml(costeo.folio||"")+"</strong> de origen?";
+
+  _crearBannerSync("⚠️ Cambiaste el precio en la cotización", detalle, "Ignorar", "Actualizar costeo",
+    function onIgnorar(){
+      cambios.forEach(c=>{
+        const p = cot.partidas.find(x=>x.sistemaId===c.sistemaId);
+        if(p) p.syncPrecioUnit = c.precioNuevo; // no preguntar de nuevo por este mismo cambio
+      });
+      cotRef.doc(cot.id).update({partidas:_sanitizarParaFirestore(cot.partidas)}).catch(e=>console.error(e));
+      showToast("Cambio de la cotización ignorado — el costeo no se modificó");
+    },
+    async function onActualizar(){
+      cambios.forEach(c=>{
+        const s = costeo.sistemas.find(x=>x.id===c.sistemaId);
+        if(s){ s.syncPrecioUnit = c.precioNuevo; s.syncAjusteManual = true; } // no toca las partidas del sistema, ver nota en _htmlSistema
+        const p = cot.partidas.find(x=>x.sistemaId===c.sistemaId);
+        if(p) p.syncPrecioUnit = c.precioNuevo;
+      });
+      try{
+        await costeoCosteosRef.doc(costeo.id).update({sistemas:_sanitizarParaFirestore(costeo.sistemas)});
+        await cotRef.doc(cot.id).update({partidas:_sanitizarParaFirestore(cot.partidas)});
+        if(typeof _ceCosteo !== "undefined" && _ceCosteo && _ceCosteo.id === costeo.id){
+          cambios.forEach(c=>{
+            const s = _ceCosteo.sistemas.find(x=>x.id===c.sistemaId);
+            if(s){ s.syncPrecioUnit = c.precioNuevo; s.syncAjusteManual = true; }
+          });
+          if(typeof _renderSistemas === "function") _renderSistemas();
+        }
+        showToast("✅ Costeo "+costeo.folio+" actualizado con el ajuste manual de la cotización");
+      }catch(e){
+        console.error("Error sincronizando costeo:", e);
+        showToast("⚠️ Error al actualizar el costeo: "+e.message);
+      }
+    }
+  );
+}
+
 // ── Generar Cotización desde Costeo ──────────────────────────
 async function generarCotizacionDesdeCosteo(){
   if(!_ceCosteo){ showToast("⚠️ Sin costeo activo"); return; }
@@ -16037,6 +16265,10 @@ function _llenarCotizacionDesdeCosteo(costeo){
       if(fInput) fInput.value = costeo.fecha;
     }
 
+    // Ids estables por sistema, para poder vincular cada partida generada
+    // con su sistema de origen (sincronización de precios bidireccional).
+    _asegurarIdsSistemas(costeo);
+
     // Limpiar partidas existentes y agregar una por sistema
     _cotPartidas = [];
     costeo.sistemas.forEach((s,i)=>{
@@ -16064,6 +16296,8 @@ function _llenarCotizacionDesdeCosteo(costeo){
         proc = "";
       }
 
+      const precioRedondeado = Math.round(precioUnit*100)/100;
+
       _cotPartidas.push({
         id: i+1,
         servicio: servicioFinal,
@@ -16071,9 +16305,26 @@ function _llenarCotizacionDesdeCosteo(costeo){
         proc: proc,
         qty: s.cantidad || 0,
         unit: s.unidad || "m²",
-        precio: Math.round(precioUnit*100)/100
+        precio: precioRedondeado,
+        // Vínculo con el sistema de origen + línea base de sincronización
+        // (ver _verificarSyncCosteoACotizacion / _verificarSyncCotizacionACosteo)
+        sistemaId: s.id,
+        syncPrecioUnit: precioRedondeado
       });
+
+      // El sistema arranca "en sincronía" con la partida recién generada.
+      s.syncPrecioUnit = precioRedondeado;
+      s.syncPrecioCalcBase = precioRedondeado;
+      s.syncAjusteManual = false;
     });
+
+    // Persistir de una vez los ids + línea base de sincronización en el
+    // costeo (independiente de si esta cotización se guarda o no).
+    if(costeo.id && typeof costeoCosteosRef !== "undefined" && costeoCosteosRef){
+      costeoCosteosRef.doc(costeo.id).update({sistemas:_sanitizarParaFirestore(costeo.sistemas)})
+        .catch(e=>console.error("Error guardando línea base de sincronización:", e));
+    }
+
     if(typeof renderPartidasCot === "function") renderPartidasCot();
     if(typeof calcTotalesCot === "function") calcTotalesCot();
 
