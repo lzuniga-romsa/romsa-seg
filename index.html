@@ -820,14 +820,20 @@ body.in-contactos #app, body.in-contactosdb #app{
 
 /* ── HOME by ROMSA · plantillas sociales (dentro de Editor de Fotos) ── */
 .fe-home-btn{position:relative;z-index:2;background:rgba(195,111,74,.22);border:1px solid rgba(195,111,74,.4);color:#fff;font-size:11px;font-weight:700;padding:7px 11px;border-radius:8px;cursor:pointer;font-family:var(--ds-font-body);display:flex;align-items:center;gap:5px;white-space:nowrap;}
-#feh-root{position:absolute;inset:0;background:#F7F3EE;z-index:25;display:none;flex-direction:column;overflow-y:auto;}
+/* position:fixed (no absolute) para escapar del ancho máximo de #app
+   (500px, pensado para el resto del CRM tipo "app móvil") — igual que
+   #screen-levantamientos, esta área usa toda la pantalla en desktop. */
+#feh-root{position:fixed;inset:0;background:#F7F3EE;z-index:500;display:none;flex-direction:column;overflow-y:auto;}
 .feh-topbar{flex-shrink:0;display:flex;align-items:center;justify-content:space-between;padding:calc(env(safe-area-inset-top,0px) + 12px) 16px 12px;background:#0B1F3A;color:#fff;}
 .feh-back{font-family:var(--ds-font-body);background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);color:#fff;font-size:11px;font-weight:600;padding:7px 12px;border-radius:8px;cursor:pointer;}
 .feh-title{font-family:"Playfair Display",serif;font-size:15px;font-weight:700;}
 .feh-title em{color:#C36F4A;font-style:italic;}
 .feh-step{flex:1;display:none;flex-direction:column;overflow-y:auto;min-height:0;}
 .feh-step.active{display:flex;}
-.feh-picker-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px;padding:16px;}
+.feh-picker-section{padding:18px 16px 4px;}
+.feh-picker-section-title{font-family:"Playfair Display",serif;font-size:18px;font-weight:700;color:#0B1F3A;margin-bottom:2px;}
+.feh-picker-section-sub{font-size:11px;color:#8A7F73;margin-bottom:12px;}
+.feh-picker-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px;padding:0 16px 8px;}
 .feh-picker-card{background:#fff;border:1.5px solid #E7DFD5;border-radius:14px;overflow:hidden;cursor:pointer;transition:border-color .15s,transform .15s;text-align:left;font-family:inherit;}
 .feh-picker-card:hover{border-color:#C36F4A;transform:translateY(-2px);}
 .feh-picker-thumb{width:100%;aspect-ratio:4/5;display:block;background:#0B1F3A;}
@@ -850,6 +856,20 @@ body.in-contactos #app, body.in-contactosdb #app{
 .feh-btn-primary{background:#C36F4A;color:#fff;flex:1.3;}
 .feh-btn-primary:disabled{background:#D9CFC4;color:#fff;cursor:not-allowed;}
 .feh-hint{font-size:11px;color:#8A7F73;line-height:1.5;background:#EFE7DC;border-radius:8px;padding:9px 11px;}
+
+/* Desktop: #feh-root ya no está limitado por #app (500px) — aprovechar
+   el ancho real disponible en vez de mantener el layout tipo celular. */
+@media (min-width:900px){
+  .feh-picker-section{padding:26px 40px 4px;}
+  .feh-picker-section-title{font-size:22px;}
+  .feh-picker-grid{grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:22px;padding:0 40px 8px;max-width:1400px;}
+  .feh-picker-label{padding:12px 14px 14px;}
+  .feh-picker-name{font-size:13.5px;}
+  .feh-step-editor.active{flex-direction:row;align-items:stretch;}
+  .feh-canvas-area{flex:1;padding:32px;}
+  .feh-canvas-area canvas{max-height:82vh;}
+  .feh-form-wrap{width:400px;flex-shrink:0;overflow-y:auto;padding:24px;border-left:1px solid #E7DFD5;}
+}
 
 .cos-card-meta{font-size:10px;color:var(--tx2);margin-top:2px;}
 .cos-input{width:100%;padding:8px 10px;border:1px solid var(--g1);border-radius:6px;font-size:12px;font-family:var(--font);color:var(--navy);background:#fff;}
@@ -3747,14 +3767,25 @@ body.in-contactos #app, body.in-contactosdb #app{
         <div style="width:56px;"></div>
       </div>
 
-      <!-- Paso 1: elegir plantilla -->
+      <!-- Paso 1: elegir plantilla, agrupada en Posts / Historias -->
       <div id="feh-step-picker" class="feh-step active">
         <div class="feh-hint" style="margin:14px 16px 0;">Elige una plantilla. Los recuadros con textura son las fotos que vas a subir.</div>
-        <div class="feh-picker-grid" id="feh-picker-grid"></div>
+
+        <div class="feh-picker-section">
+          <div class="feh-picker-section-title">Posts</div>
+          <div class="feh-picker-section-sub">Feed · 1080 × 1350 px</div>
+        </div>
+        <div class="feh-picker-grid" id="feh-picker-grid-feed"></div>
+
+        <div class="feh-picker-section">
+          <div class="feh-picker-section-title">Historias</div>
+          <div class="feh-picker-section-sub">Story · 1080 × 1920 px</div>
+        </div>
+        <div class="feh-picker-grid" id="feh-picker-grid-story"></div>
       </div>
 
       <!-- Paso 2: editor de la plantilla elegida -->
-      <div id="feh-step-editor" class="feh-step">
+      <div id="feh-step-editor" class="feh-step feh-step-editor">
         <div class="feh-canvas-area">
           <canvas id="feh-canvas"></canvas>
         </div>
@@ -3762,6 +3793,13 @@ body.in-contactos #app, body.in-contactosdb #app{
           <div id="feh-photo-slots"></div>
           <div id="feh-text-fields"></div>
           <div class="feh-hint">Toca cada recuadro para subir su foto. El texto se puede editar libremente antes de descargar.</div>
+          <div class="feh-ctrl-group">
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <label class="feh-ctrl-label" style="margin:0;">Copy sugerido para la publicación</label>
+              <button type="button" class="fe-copy-btn" onclick="fehCopyPostText()">📋 Copiar</button>
+            </div>
+            <textarea id="feh-post-copy" class="fe-textarea-copy" rows="5" readonly></textarea>
+          </div>
           <div class="feh-actions">
             <button class="feh-btn feh-btn-ghost" onclick="fehVolverPicker()">‹ Otra plantilla</button>
             <button class="feh-btn feh-btn-primary" id="feh-download-btn" onclick="fehDescargar()" disabled>⬇ Descargar PNG</button>
@@ -21836,13 +21874,16 @@ function fehAtras(){
 }
 
 function fehRenderPicker(){
-  document.getElementById("feh-picker-grid").innerHTML = HOME_TEMPLATES.map(t=>{
+  const cardHtml = t=>{
     const dims = t.w+" × "+t.h+" px";
     return '<button type="button" class="feh-picker-card" onclick="fehElegirPlantilla(\''+t.id+'\')">'
       +'<canvas class="feh-picker-thumb'+(t.cat==="story"?" feh-thumb-story":"")+'" data-thumb="'+t.id+'"></canvas>'
       +'<div class="feh-picker-label"><div class="feh-picker-name">'+escapeHtml(t.label)+'</div><div class="feh-picker-dims">'+dims+'</div></div>'
     +'</button>';
-  }).join("");
+  };
+  // Dos grupos separados y siempre visibles: Posts (feed) e Historias (story)
+  document.getElementById("feh-picker-grid-feed").innerHTML = HOME_TEMPLATES.filter(t=>t.cat==="feed").map(cardHtml).join("");
+  document.getElementById("feh-picker-grid-story").innerHTML = HOME_TEMPLATES.filter(t=>t.cat==="story").map(cardHtml).join("");
   // Miniaturas: se dibujan a baja resolución con datos de ejemplo, una vez que las fuentes están listas
   (_fehFontsReady || Promise.resolve()).then(()=>{
     HOME_TEMPLATES.forEach(t=>{
@@ -21938,6 +21979,60 @@ function fehRenderPreview(){
   canvas.width = t.w; canvas.height = t.h;
   const ctx = canvas.getContext("2d");
   t.draw(ctx, t.w, t.h, FEH, t);
+  fehGenerateCopy(t, FEH);
+}
+
+// Un pilar por plantilla (de los 4 del manual), para no meter los 4 en un
+// copy corto — el manual pide que "aparezcan en todo material de venta",
+// aquí se rota uno relevante por pieza.
+const HOME_PILAR_POR_TPL = {
+  "feed-a": "Garantía escrita al entregar la obra.",
+  "feed-b": "Precio cerrado desde la cotización — sin sorpresas en el camino.",
+  "feed-c": "Reporte diario del avance por WhatsApp, con supervisor asignado.",
+  "story-a": "Reporte diario del avance por WhatsApp, con supervisor asignado.",
+  "story-b": "Somos la división residencial de ROMSA Industrial — respaldo empresarial real.",
+  "story-c": "Garantía escrita al entregar la obra.",
+};
+
+function fehGenerateCopy(t, st){
+  const el = document.getElementById("feh-post-copy");
+  if(!el) return "";
+  const v = st.values || {};
+  const titulo = (v.titulo || "").trim() || "Nuestro trabajo más reciente";
+  const lugar = (v.ubicacion || v.subtitulo || "").trim();
+  const tel = (v.tel || HOME_TEL_DEFAULT).trim();
+  const pilar = HOME_PILAR_POR_TPL[t.id] || "";
+
+  let cuerpo;
+  if(t.cat === "story"){
+    cuerpo = [titulo, lugar, "", "Desliza para más info 👉"].filter(Boolean).join("\n");
+  } else {
+    cuerpo = [
+      titulo,
+      lugar,
+      "",
+      pilar,
+      "",
+      "¿Quieres una cotización sin costo? Escríbenos por WhatsApp al " + tel + ".",
+      "",
+      "#HOMEbyROMSA #PisosResidenciales #Mexicali"
+    ].filter(Boolean).join("\n");
+  }
+  el.value = cuerpo.trim();
+  return el.value;
+}
+
+function fehCopyPostText(){
+  const el = document.getElementById("feh-post-copy");
+  if(!el || !el.value){ showToast("⚠️ No hay texto para copiar todavía"); return; }
+  el.select();
+  el.setSelectionRange(0, 999999);
+  try{
+    navigator.clipboard.writeText(el.value).then(()=>showToast("📋 Texto copiado"));
+  }catch(e){
+    document.execCommand("copy");
+    showToast("📋 Texto copiado");
+  }
 }
 
 async function fehDescargar(){
@@ -21987,8 +22082,14 @@ function fehDrawPhoto(ctx, img, x, y, w, h, label){
   ctx.restore();
 }
 function fehFillTextTracked(ctx, text, x, y, spacing){
+  // Fuerza textAlign="left": si el caller dejó "center"/"right" (habitual
+  // antes de llamar aquí, para calcular x), cada carácter se dibujaría
+  // alineado individualmente y el texto saldría con espaciado errático.
+  const prevAlign = ctx.textAlign;
+  ctx.textAlign = "left";
   let cx = x;
   for(const ch of text){ ctx.fillText(ch, cx, y); cx += ctx.measureText(ch).width + spacing; }
+  ctx.textAlign = prevAlign;
 }
 function fehTrackedWidth(ctx, text, spacing){
   let w = 0;
@@ -22063,7 +22164,7 @@ function fehDrawPill(ctx, text, x, y, opts){
   ctx.fillStyle = opts.color || HOME_BRAND.navy;
   ctx.textBaseline = "middle";
   ctx.textAlign = "left";
-  const ty = y + h/2 + (opts.fontSize||20)*0.35;
+  const ty = y + h/2; // textBaseline "middle" ya centra el glifo en ty
   if(spacing) fehFillTextTracked(ctx, text, rx + padX, ty, spacing);
   else ctx.fillText(text, rx + padX, ty);
   return { x:rx, y, w, h };
@@ -22093,7 +22194,7 @@ function fehTag(ctx, text, x, y, bg, color){
   ctx.fillRect(x, y, w, h);
   ctx.fillStyle = color;
   ctx.textAlign = "left"; ctx.textBaseline = "middle";
-  ctx.fillText(text, x+padX, y+h/2+2);
+  ctx.fillText(text, x+padX, y+h/2); // textBaseline "middle" ya centra el glifo
   return h;
 }
 
@@ -22119,7 +22220,7 @@ function fehDrawFeedA(ctx, W, H, st){
   fehTag(ctx, "DESPUÉS", 56+colW+gap, gridY, HOME_BRAND.terracota, HOME_BRAND.navy);
 
   const footY = H - 78;
-  ctx.font = '500 27px "JetBrains Mono"';
+  ctx.font = '500 27px "Inter"';
   ctx.fillStyle = "#FFFFFF"; ctx.textAlign = "left"; ctx.textBaseline = "middle";
   ctx.fillText("WhatsApp "+(v.tel||""), 56, footY);
   ctx.font = '600 22px "Inter"'; ctx.fillStyle = HOME_BRAND.terracota; ctx.textAlign = "right";
@@ -22156,7 +22257,7 @@ function fehDrawFeedB(ctx, W, H, st){
   ctx.strokeStyle = "rgba(255,255,255,.28)"; ctx.lineWidth = 2;
   ctx.beginPath(); ctx.moveTo(56, titleBottom+42); ctx.lineTo(W-56, titleBottom+42); ctx.stroke();
 
-  ctx.font = '500 27px "JetBrains Mono"'; ctx.fillStyle = "#FFFFFF"; ctx.textAlign = "left"; ctx.textBaseline = "middle";
+  ctx.font = '500 27px "Inter"'; ctx.fillStyle = "#FFFFFF"; ctx.textAlign = "left"; ctx.textBaseline = "middle";
   ctx.fillText("WhatsApp "+(v.tel||""), 56, titleBottom+80);
   fehDrawPill(ctx, "Cotización sin costo", W-56, titleBottom+58, {align:"right", bg:HOME_BRAND.terracota, color:HOME_BRAND.navy, font:'700 21px "Inter"', fontSize:21});
 }
@@ -22171,9 +22272,12 @@ function fehDrawFeedC(ctx, W, H, st){
   fehDrawPill(ctx, "Cotización sin costo", W-56, 40, {align:"right", bg:HOME_BRAND.terracota, color:HOME_BRAND.navy, font:'700 22px "Inter"', fontSize:22});
 
   let cy = 300;
-  ctx.fillStyle = HOME_BRAND.terracota; ctx.fillRect(72, cy-4, 64, 4);
-  ctx.font = '700 26px "Inter"'; ctx.fillStyle = HOME_BRAND.navy; ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
+  // Texto y línea decorativa se anclan al MISMO cy con textBaseline "middle"
+  // en ambos, para que queden centrados verticalmente entre sí sin adivinar
+  // el alto de las mayúsculas a mano.
+  ctx.font = '700 26px "Inter"'; ctx.fillStyle = HOME_BRAND.navy; ctx.textAlign = "left"; ctx.textBaseline = "middle";
   fehFillTextTracked(ctx, (v.eyebrow||"").toUpperCase(), 152, cy, 3);
+  ctx.fillStyle = HOME_BRAND.terracota; ctx.fillRect(72, cy-2, 64, 4);
   cy += 70;
 
   const lines = fehWrapTitleTokens(ctx, v.titulo||"", (HOME_TEMPLATES[2].fields[1]).italic, W-144, '700 84px "Playfair Display"', 'italic 700 84px "Playfair Display"');
@@ -22197,7 +22301,7 @@ function fehDrawFeedC(ctx, W, H, st){
   });
 
   ctx.fillStyle = HOME_BRAND.navy; ctx.fillRect(0, H-92, W, 92);
-  ctx.font = '500 27px "JetBrains Mono"'; ctx.fillStyle = "#FFFFFF"; ctx.textAlign = "left"; ctx.textBaseline = "middle";
+  ctx.font = '500 27px "Inter"'; ctx.fillStyle = "#FFFFFF"; ctx.textAlign = "left"; ctx.textBaseline = "middle";
   ctx.fillText("WhatsApp "+(v.tel||""), 56, H-46);
   ctx.font = '600 22px "Inter"'; ctx.fillStyle = HOME_BRAND.terracota; ctx.textAlign = "right";
   fehFillTextTracked(ctx, "MEXICALI, B.C.", W-56 - fehTrackedWidth(ctx,"MEXICALI, B.C.",3), H-44, 3);
@@ -22245,7 +22349,7 @@ function fehDrawStoryB(ctx, W, H, st){
   const lines = fehWrapTitleTokens(ctx, v.titulo||"", (HOME_TEMPLATES[4].fields[1]).italic, W-128, '700 76px "Playfair Display"', 'italic 700 76px "Playfair Display"');
   cy = fehDrawTitleLines(ctx, lines, 64, cy+76, 78, "#FFFFFF", HOME_BRAND.terracota, '700 76px "Playfair Display"', 'italic 700 76px "Playfair Display"');
   cy += 46;
-  ctx.font = '500 27px "JetBrains Mono"'; ctx.fillStyle = "rgba(247,243,238,.85)"; ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
+  ctx.font = '500 27px "Inter"'; ctx.fillStyle = "rgba(247,243,238,.85)"; ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
   ctx.fillText("WhatsApp "+(v.tel||""), 64, cy);
 }
 
@@ -22276,6 +22380,7 @@ window.fehElegirPlantilla = fehElegirPlantilla;
 window.fehSetValor = fehSetValor;
 window.fehCargarFoto = fehCargarFoto;
 window.fehDescargar = fehDescargar;
+window.fehCopyPostText = fehCopyPostText;
 
 // ══════════════════════════════════════════════════════════════
 // CALENDARIO DE PUBLICACIONES — sugerencias por día de la semana
