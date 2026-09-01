@@ -22203,7 +22203,8 @@ function fehDrawFeedA(ctx, W, H, st){
   const v = st.values, ph = st.photos;
   ctx.fillStyle = HOME_BRAND.navy; ctx.fillRect(0,0,W,H);
 
-  fehDrawLogoLockup(ctx, 56, 44, 46, true);
+  ctx.fillStyle = "rgba(11,31,58,.92)"; ctx.fillRect(56, 40, 200, 46);
+  fehDrawLogoLockup(ctx, 66, 44, 38, false);
   fehDrawPill(ctx, "Cotización sin costo", W-56, 40, {align:"right", bg:HOME_BRAND.terracota, color:HOME_BRAND.navy, font:'700 22px "Inter"', fontSize:22});
 
   const lines = fehWrapTitleTokens(ctx, v.titulo||"", (HOME_TEMPLATES[0].fields[0]).italic, W-112, '700 74px "Playfair Display"', 'italic 700 74px "Playfair Display"');
@@ -22268,7 +22269,8 @@ function fehDrawFeedC(ctx, W, H, st){
   ctx.fillStyle = HOME_BRAND.crema; ctx.fillRect(0,0,W,H);
 
   ctx.fillStyle = HOME_BRAND.navy; ctx.fillRect(0,0,W,164);
-  fehDrawLogoLockup(ctx, 56, 44, 46, true);
+  ctx.fillStyle = "rgba(11,31,58,.92)"; ctx.fillRect(56, 40, 200, 46);
+  fehDrawLogoLockup(ctx, 66, 44, 38, false);
   fehDrawPill(ctx, "Cotización sin costo", W-56, 40, {align:"right", bg:HOME_BRAND.terracota, color:HOME_BRAND.navy, font:'700 22px "Inter"', fontSize:22});
 
   let cy = 300;
@@ -22358,7 +22360,8 @@ function fehDrawStoryC(ctx, W, H, st){
   const v = st.values, ph = st.photos;
   ctx.fillStyle = HOME_BRAND.navy; ctx.fillRect(0,0,W,H);
 
-  fehDrawLogoLockup(ctx, 64, 64, 34, true);
+  ctx.fillStyle = "rgba(11,31,58,.92)"; ctx.fillRect(64, 58, 190, 44);
+  fehDrawLogoLockup(ctx, 74, 62, 36, false);
   ctx.font = '600 22px "Inter"'; ctx.fillStyle = "rgba(247,243,238,.75)"; ctx.textAlign = "right"; ctx.textBaseline = "alphabetic";
   fehFillTextTracked(ctx, "MEXICALI, B.C.", W-64 - fehTrackedWidth(ctx,"MEXICALI, B.C.",2), 100, 2);
 
