@@ -811,14 +811,22 @@ body.in-contactos #app, body.in-contactosdb #app{
 .fe-cal-day{min-height:52px;border-radius:8px;background:#F7F8FA;border:1px solid #EAEDF2;padding:4px 3px;cursor:pointer;display:flex;flex-direction:column;gap:2px;}
 .fe-cal-day.otro-mes{opacity:.35;}
 .fe-cal-day.hoy{border-color:#0B1F3A;border-width:1.5px;}
-.fe-cal-day-num{font-size:10px;color:#5A6472;font-weight:700;}
+.fe-cal-day-num{font-size:10px;color:#5A6472;font-weight:700;display:flex;align-items:center;justify-content:space-between;}
+.fe-cal-day-warn{font-size:9px;line-height:1;}
+.fe-cal-day.tiene-nota{background:#FFF8EC;border-color:#F3C77A;}
 .fe-cal-pill{font-size:7.5px;font-weight:800;color:#fff;border-radius:4px;padding:1px 3px;line-height:1.5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .fe-cal-daypanel{margin-top:14px;background:#F7F8FA;border-radius:12px;padding:14px;}
 .fe-cal-daypanel-title{font-size:12.5px;font-weight:800;color:#1B1B1F;margin-bottom:10px;text-transform:capitalize;}
+.fe-cal-nota-banner{background:#FFF3D6;border:1px solid #F3C77A;color:#8A5A00;font-size:11.5px;font-weight:700;padding:8px 10px;border-radius:8px;margin-bottom:8px;}
+.fe-cal-entry-card{background:#fff;border:1px solid #E3E7EE;border-radius:9px;padding:8px;margin-bottom:8px;}
 .fe-cal-entry-row{display:flex;gap:6px;align-items:center;margin-bottom:6px;}
 .fe-cal-entry-row select{flex:1;font-size:11px;padding:6px 8px;border-radius:7px;border:1.5px solid #E3E7EE;font-family:inherit;}
+.fe-cal-entry-text{width:100%;box-sizing:border-box;font-size:11px;padding:6px 8px;border-radius:7px;border:1.5px solid #E3E7EE;font-family:inherit;margin-bottom:6px;}
+.fe-cal-entry-text:last-child{margin-bottom:0;}
+.fe-cal-entry-text.fe-cal-entry-nota{border-color:#F3C77A;background:#FFF8EC;color:#8A5A00;}
 .fe-cal-entry-remove{background:none;border:none;color:#DC2626;font-size:15px;cursor:pointer;padding:0 4px;}
 .fe-cal-entry-add{background:#0B1F3A;color:#fff;border:none;border-radius:7px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;margin-top:2px;font-family:inherit;}
+.fe-cal-import-btn{background:#EEF3FA;color:#0B1F3A;border:1.5px solid #D7E3F5;border-radius:8px;padding:7px 12px;font-size:11px;font-weight:700;cursor:pointer;margin-bottom:14px;font-family:inherit;}
 .fe-cal-rules-toggle{background:none;border:none;color:#5A6472;font-size:11.5px;font-weight:700;cursor:pointer;margin-top:16px;padding:6px 0;font-family:inherit;}
 .fe-cal-reglas{margin-top:8px;background:#F7F8FA;border-radius:12px;padding:12px;}
 .fe-cal-regla-dia{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
@@ -3598,6 +3606,8 @@ body.in-contactos #app, body.in-contactosdb #app{
       </div>
 
       <div class="fe-cal-brandfilter" id="fe-cal-brandfilter"></div>
+
+      <button type="button" class="fe-cal-import-btn" onclick="bceCalImportarPlanHome()">📥 Importar calendario de contenido HOME (sep–dic 2026)</button>
 
       <div class="fe-cal-month-nav">
         <button class="fe-cal-nav-btn" onclick="bceCalMoverMes(-1)">‹</button>
@@ -22523,7 +22533,11 @@ let BCE_CALENDAR = {
     6: [{ brand: "home",       template: "minimal"   }], // Sábado: HOME, fin de semana
     0: [],
   },
-  fechas: {}, // "YYYY-MM-DD": [{brand, template, nota}]
+  // "YYYY-MM-DD": [{brand, template, plantillaHome, tema, nota}]
+  // plantillaHome: id de HOME_TEMPLATES (solo aplica cuando brand==="home",
+  // ej. "feed-a"); tema: tema/pilar de contenido; nota: aviso especial
+  // (fecha sensible — se muestra como banner en el calendario).
+  fechas: {},
 };
 let _bceCalCargado = false;
 let _bceCalMesActual = new Date();
@@ -22633,13 +22647,14 @@ function bceCalRenderMes(){
     const iso = _bceCalFechaISO(c.date);
     const dow = c.date.getDay();
     const entradas = bceCalEntradasDe(iso, dow);
+    const tieneNota = entradas.some(e => e.nota);
     const pills = entradas.slice(0,3).map(e => {
       const bc = BCE_BRANDS[e.brand] || BCE_BRANDS.industrial;
       const tplLabel = (BCE_TEMPLATES.find(t=>t.key===e.template)||{label:e.template}).label;
       return `<div class="fe-cal-pill" style="background:${bc.navy};">${tplLabel}</div>`;
     }).join("");
-    return `<div class="fe-cal-day${c.otroMes?' otro-mes':''}${iso===hoyISO?' hoy':''}" onclick="bceCalClickDia('${iso}')">
-      <div class="fe-cal-day-num">${c.date.getDate()}</div>
+    return `<div class="fe-cal-day${c.otroMes?' otro-mes':''}${iso===hoyISO?' hoy':''}${tieneNota?' tiene-nota':''}" onclick="bceCalClickDia('${iso}')">
+      <div class="fe-cal-day-num"><span>${c.date.getDate()}</span>${tieneNota?'<span class="fe-cal-day-warn" title="Fecha con nota especial">⚠️</span>':''}</div>
       ${pills}
     </div>`;
   }).join("");
@@ -22662,9 +22677,13 @@ function bceCalRenderPanel(){
   const entradas = tieneOverride ? BCE_CALENDAR.fechas[iso] : (BCE_CALENDAR.semanal[dow] || []).map(e => ({...e}));
 
   const panel = document.getElementById("fe-cal-daypanel");
+  const notasHtml = entradas.filter(e => e.nota).map(e =>
+    `<div class="fe-cal-nota-banner">⚠️ ${escapeHtml(e.nota)}</div>`
+  ).join("");
   panel.innerHTML = `
     <div class="fe-cal-daypanel-title">${BCE_DOW_NOMBRES[dow]} ${d} de ${BCE_MES_NOMBRES[m-1]}</div>
     ${!tieneOverride ? '<div style="font-size:11px;color:#9AA3B2;margin-bottom:8px;">Mostrando la regla semanal por default — cualquier cambio aquí crea una excepción solo para este día.</div>' : ''}
+    ${notasHtml}
     <div id="fe-cal-entries">
       ${entradas.map((e,i) => bceCalEntryRowHtml(e,i)).join("")}
     </div>
@@ -22677,10 +22696,21 @@ function bceCalRenderPanel(){
 function bceCalEntryRowHtml(e, i){
   const brandOpts = Object.keys(BCE_BRANDS).map(k => `<option value="${k}"${e.brand===k?' selected':''}>${BCE_BRANDS[k].label}</option>`).join("");
   const tplOpts = BCE_TEMPLATES.map(t => `<option value="${t.key}"${e.template===t.key?' selected':''}>${t.label}</option>`).join("");
-  return `<div class="fe-cal-entry-row" data-idx="${i}">
-    <select onchange="bceCalEditarEntrada(${i},'brand',this.value)">${brandOpts}</select>
-    <select onchange="bceCalEditarEntrada(${i},'template',this.value)">${tplOpts}</select>
-    <button type="button" class="fe-cal-entry-remove" onclick="bceCalQuitarEntrada(${i})">×</button>
+  const plantillaHomeSelect = e.brand === "home"
+    ? `<select onchange="bceCalEditarEntrada(${i},'plantillaHome',this.value)">
+        <option value="">— Plantilla HOME sin definir —</option>
+        ${HOME_TEMPLATES.map(t => `<option value="${t.id}"${e.plantillaHome===t.id?' selected':''}>${t.label}</option>`).join("")}
+      </select>`
+    : "";
+  return `<div class="fe-cal-entry-card" data-idx="${i}">
+    <div class="fe-cal-entry-row">
+      <select onchange="bceCalEditarEntrada(${i},'brand',this.value)">${brandOpts}</select>
+      <select onchange="bceCalEditarEntrada(${i},'template',this.value)">${tplOpts}</select>
+      <button type="button" class="fe-cal-entry-remove" onclick="bceCalQuitarEntrada(${i})">×</button>
+    </div>
+    ${plantillaHomeSelect ? `<div class="fe-cal-entry-row">${plantillaHomeSelect}</div>` : ""}
+    <input type="text" class="fe-cal-entry-text" placeholder="Tema / pilar (opcional)" value="${escapeHtml(e.tema||"")}" onchange="bceCalEditarEntrada(${i},'tema',this.value)">
+    <input type="text" class="fe-cal-entry-text fe-cal-entry-nota" placeholder="Nota especial — ej. evitar contenido comercial" value="${escapeHtml(e.nota||"")}" onchange="bceCalEditarEntrada(${i},'nota',this.value)">
   </div>`;
 }
 
@@ -22689,6 +22719,7 @@ function bceCalEditarEntrada(i, campo, valor){
   panel._entradasTemp[i][campo] = valor;
   BCE_CALENDAR.fechas[_bceCalDiaSeleccionado] = panel._entradasTemp;
   bceCalGuardar();
+  if(campo === "brand") bceCalRenderPanel();
   bceCalRenderMes();
 }
 
@@ -22760,6 +22791,144 @@ function bceCalEditarRegla(dow, campo, valor){
   bceCalRenderMes();
 }
 
+// Calendario de contenido HOME by ROMSA sep–dic 2026, tal como lo entregó
+// Luis Fernando en Excel (fecha, plantilla de las 6 de HOME_TEMPLATES ya
+// normalizada, tema/pilar, y nota especial para fechas sensibles como
+// Día de la Independencia, Buen Fin, Guadalupe o fin de año).
+const HOME_PLAN_2026_IMPORT = [
+  { fecha:"2026-09-01", plantillaHome:"feed-a", tema:"Antes/Después de proyecto real", nota:"" },
+  { fecha:"2026-09-02", plantillaHome:"story-a", tema:"Avance de obra en proceso", nota:"" },
+  { fecha:"2026-09-03", plantillaHome:"story-b", tema:"Detrás de cámaras del equipo", nota:"" },
+  { fecha:"2026-09-04", plantillaHome:"feed-b", tema:"Tip educativo de mantenimiento", nota:"" },
+  { fecha:"2026-09-05", plantillaHome:"story-c", tema:"Antes/Después rápido", nota:"" },
+  { fecha:"2026-09-07", plantillaHome:"story-a", tema:"Avance de obra en proceso", nota:"" },
+  { fecha:"2026-09-08", plantillaHome:"feed-c", tema:"Testimonio o reseña de cliente", nota:"" },
+  { fecha:"2026-09-09", plantillaHome:"story-b", tema:"Detrás de cámaras del equipo", nota:"" },
+  { fecha:"2026-09-10", plantillaHome:"story-c", tema:"Antes/Después rápido", nota:"" },
+  { fecha:"2026-09-11", plantillaHome:"feed-a", tema:"Antes/Después de proyecto real", nota:"" },
+  { fecha:"2026-09-12", plantillaHome:"story-a", tema:"Avance de obra en proceso", nota:"" },
+  { fecha:"2026-09-13", plantillaHome:"feed-b", tema:"Tip educativo de mantenimiento", nota:"" },
+  { fecha:"2026-09-14", plantillaHome:"story-b", tema:"Detrás de cámaras del equipo", nota:"" },
+  { fecha:"2026-09-15", plantillaHome:"feed-c", tema:"Testimonio o reseña de cliente", nota:"" },
+  { fecha:"2026-09-16", plantillaHome:"story-c", tema:"Antes/Después rápido", nota:"Día de la Independencia — tono festivo, sin descuentos" },
+  { fecha:"2026-09-17", plantillaHome:"story-a", tema:"Avance de obra en proceso", nota:"" },
+  { fecha:"2026-09-18", plantillaHome:"feed-a", tema:"Antes/Después de proyecto real", nota:"" },
+  { fecha:"2026-09-19", plantillaHome:"story-b", tema:"Detrás de cámaras del equipo", nota:"" },
+  { fecha:"2026-09-21", plantillaHome:"story-c", tema:"Antes/Después rápido", nota:"" },
+  { fecha:"2026-09-22", plantillaHome:"feed-b", tema:"Tip educativo de mantenimiento", nota:"" },
+  { fecha:"2026-09-23", plantillaHome:"story-a", tema:"Avance de obra en proceso", nota:"" },
+  { fecha:"2026-09-24", plantillaHome:"story-b", tema:"Detrás de cámaras del equipo", nota:"" },
+  { fecha:"2026-09-25", plantillaHome:"feed-c", tema:"Testimonio o reseña de cliente", nota:"" },
+  { fecha:"2026-09-26", plantillaHome:"story-c", tema:"Antes/Después rápido", nota:"" },
+  { fecha:"2026-09-27", plantillaHome:"feed-a", tema:"Antes/Después de proyecto real", nota:"" },
+  { fecha:"2026-09-28", plantillaHome:"story-a", tema:"Avance de obra en proceso", nota:"" },
+  { fecha:"2026-09-29", plantillaHome:"feed-b", tema:"Tip educativo de mantenimiento", nota:"" },
+  { fecha:"2026-09-30", plantillaHome:"story-b", tema:"Detrás de cámaras del equipo", nota:"" },
+  { fecha:"2026-10-01", plantillaHome:"story-c", tema:"Antes/Después rápido", nota:"" },
+  { fecha:"2026-10-02", plantillaHome:"feed-c", tema:"Testimonio o reseña de cliente", nota:"" },
+  { fecha:"2026-10-03", plantillaHome:"story-a", tema:"Avance de obra en proceso", nota:"" },
+  { fecha:"2026-10-05", plantillaHome:"story-b", tema:"Detrás de cámaras del equipo", nota:"" },
+  { fecha:"2026-10-06", plantillaHome:"feed-a", tema:"Antes/Después de proyecto real", nota:"" },
+  { fecha:"2026-10-07", plantillaHome:"story-c", tema:"Antes/Después rápido", nota:"" },
+  { fecha:"2026-10-08", plantillaHome:"story-a", tema:"Avance de obra en proceso", nota:"" },
+  { fecha:"2026-10-09", plantillaHome:"feed-b", tema:"Tip educativo de mantenimiento", nota:"" },
+  { fecha:"2026-10-10", plantillaHome:"story-b", tema:"Detrás de cámaras del equipo", nota:"" },
+  { fecha:"2026-10-11", plantillaHome:"feed-c", tema:"Testimonio o reseña de cliente", nota:"" },
+  { fecha:"2026-10-12", plantillaHome:"story-c", tema:"Antes/Después rápido", nota:"" },
+  { fecha:"2026-10-13", plantillaHome:"feed-a", tema:"Antes/Después de proyecto real", nota:"" },
+  { fecha:"2026-10-14", plantillaHome:"story-a", tema:"Avance de obra en proceso", nota:"" },
+  { fecha:"2026-10-15", plantillaHome:"story-b", tema:"Detrás de cámaras del equipo", nota:"" },
+  { fecha:"2026-10-16", plantillaHome:"feed-b", tema:"Tip educativo de mantenimiento", nota:"" },
+  { fecha:"2026-10-17", plantillaHome:"story-c", tema:"Antes/Después rápido", nota:"" },
+  { fecha:"2026-10-19", plantillaHome:"story-a", tema:"Avance de obra en proceso", nota:"" },
+  { fecha:"2026-10-20", plantillaHome:"feed-c", tema:"Testimonio o reseña de cliente", nota:"" },
+  { fecha:"2026-10-21", plantillaHome:"story-b", tema:"Detrás de cámaras del equipo", nota:"" },
+  { fecha:"2026-10-22", plantillaHome:"story-c", tema:"Antes/Después rápido", nota:"" },
+  { fecha:"2026-10-23", plantillaHome:"feed-a", tema:"Antes/Después de proyecto real", nota:"" },
+  { fecha:"2026-10-24", plantillaHome:"story-a", tema:"Avance de obra en proceso", nota:"" },
+  { fecha:"2026-10-25", plantillaHome:"feed-b", tema:"Tip educativo de mantenimiento", nota:"" },
+  { fecha:"2026-10-26", plantillaHome:"story-b", tema:"Detrás de cámaras del equipo", nota:"" },
+  { fecha:"2026-10-27", plantillaHome:"feed-c", tema:"Testimonio o reseña de cliente", nota:"" },
+  { fecha:"2026-10-28", plantillaHome:"story-c", tema:"Antes/Después rápido", nota:"" },
+  { fecha:"2026-10-29", plantillaHome:"story-a", tema:"Avance de obra en proceso", nota:"" },
+  { fecha:"2026-10-30", plantillaHome:"feed-a", tema:"Antes/Después de proyecto real", nota:"" },
+  { fecha:"2026-10-31", plantillaHome:"story-b", tema:"Detrás de cámaras del equipo", nota:"" },
+  { fecha:"2026-11-03", plantillaHome:"feed-b", tema:"Tip educativo de mantenimiento", nota:"" },
+  { fecha:"2026-11-04", plantillaHome:"story-c", tema:"Antes/Después rápido", nota:"" },
+  { fecha:"2026-11-05", plantillaHome:"story-a", tema:"Avance de obra en proceso", nota:"" },
+  { fecha:"2026-11-06", plantillaHome:"feed-c", tema:"Testimonio o reseña de cliente", nota:"" },
+  { fecha:"2026-11-07", plantillaHome:"story-b", tema:"Detrás de cámaras del equipo", nota:"" },
+  { fecha:"2026-11-08", plantillaHome:"feed-a", tema:"Antes/Después de proyecto real", nota:"" },
+  { fecha:"2026-11-09", plantillaHome:"story-c", tema:"Antes/Después rápido", nota:"" },
+  { fecha:"2026-11-10", plantillaHome:"feed-b", tema:"Tip educativo de mantenimiento", nota:"" },
+  { fecha:"2026-11-11", plantillaHome:"story-a", tema:"Avance de obra en proceso", nota:"" },
+  { fecha:"2026-11-12", plantillaHome:"story-b", tema:"Detrás de cámaras del equipo", nota:"" },
+  { fecha:"2026-11-13", plantillaHome:"feed-c", tema:"Testimonio o reseña de cliente", nota:"" },
+  { fecha:"2026-11-14", plantillaHome:"story-c", tema:"Antes/Después rápido", nota:"" },
+  { fecha:"2026-11-16", plantillaHome:"story-a", tema:"Avance de obra en proceso", nota:"" },
+  { fecha:"2026-11-17", plantillaHome:"feed-a", tema:"Antes/Después de proyecto real", nota:"" },
+  { fecha:"2026-11-18", plantillaHome:"story-b", tema:"Detrás de cámaras del equipo", nota:"" },
+  { fecha:"2026-11-19", plantillaHome:"story-c", tema:"Antes/Después rápido", nota:"" },
+  { fecha:"2026-11-20", plantillaHome:"feed-b", tema:"Tip educativo de mantenimiento", nota:"Puente Revolución Mexicana / cierre de Buen Fin — contenido normal, sin descuentos" },
+  { fecha:"2026-11-21", plantillaHome:"story-a", tema:"Avance de obra en proceso", nota:"" },
+  { fecha:"2026-11-22", plantillaHome:"feed-c", tema:"Testimonio o reseña de cliente", nota:"" },
+  { fecha:"2026-11-23", plantillaHome:"story-b", tema:"Detrás de cámaras del equipo", nota:"" },
+  { fecha:"2026-11-24", plantillaHome:"feed-a", tema:"Antes/Después de proyecto real", nota:"" },
+  { fecha:"2026-11-25", plantillaHome:"story-c", tema:"Antes/Después rápido", nota:"" },
+  { fecha:"2026-11-26", plantillaHome:"story-a", tema:"Avance de obra en proceso", nota:"" },
+  { fecha:"2026-11-27", plantillaHome:"feed-b", tema:"Tip educativo de mantenimiento", nota:"" },
+  { fecha:"2026-11-28", plantillaHome:"story-b", tema:"Detrás de cámaras del equipo", nota:"" },
+  { fecha:"2026-11-30", plantillaHome:"story-c", tema:"Antes/Después rápido", nota:"" },
+  { fecha:"2026-12-01", plantillaHome:"feed-c", tema:"Testimonio o reseña de cliente", nota:"" },
+  { fecha:"2026-12-02", plantillaHome:"story-a", tema:"Avance de obra en proceso", nota:"" },
+  { fecha:"2026-12-03", plantillaHome:"story-b", tema:"Detrás de cámaras del equipo", nota:"" },
+  { fecha:"2026-12-04", plantillaHome:"feed-a", tema:"Antes/Después de proyecto real", nota:"" },
+  { fecha:"2026-12-05", plantillaHome:"story-c", tema:"Antes/Después rápido", nota:"" },
+  { fecha:"2026-12-06", plantillaHome:"feed-b", tema:"Tip educativo de mantenimiento", nota:"" },
+  { fecha:"2026-12-07", plantillaHome:"story-a", tema:"Avance de obra en proceso", nota:"" },
+  { fecha:"2026-12-08", plantillaHome:"feed-c", tema:"Testimonio o reseña de cliente", nota:"" },
+  { fecha:"2026-12-09", plantillaHome:"story-b", tema:"Detrás de cámaras del equipo", nota:"" },
+  { fecha:"2026-12-10", plantillaHome:"story-c", tema:"Antes/Después rápido", nota:"" },
+  { fecha:"2026-12-11", plantillaHome:"feed-a", tema:"Antes/Después de proyecto real", nota:"" },
+  { fecha:"2026-12-12", plantillaHome:"story-a", tema:"Avance de obra en proceso", nota:"Día de la Virgen de Guadalupe — tono respetuoso si se publica" },
+  { fecha:"2026-12-14", plantillaHome:"story-b", tema:"Detrás de cámaras del equipo", nota:"" },
+  { fecha:"2026-12-15", plantillaHome:"feed-b", tema:"Tip educativo de mantenimiento", nota:"" },
+  { fecha:"2026-12-16", plantillaHome:"story-c", tema:"Antes/Después rápido", nota:"" },
+  { fecha:"2026-12-17", plantillaHome:"story-a", tema:"Avance de obra en proceso", nota:"" },
+  { fecha:"2026-12-18", plantillaHome:"feed-c", tema:"Testimonio o reseña de cliente", nota:"" },
+  { fecha:"2026-12-19", plantillaHome:"story-b", tema:"Detrás de cámaras del equipo", nota:"" },
+  { fecha:"2026-12-20", plantillaHome:"feed-a", tema:"Antes/Después de proyecto real", nota:"" },
+  { fecha:"2026-12-21", plantillaHome:"story-c", tema:"Antes/Después rápido", nota:"" },
+  { fecha:"2026-12-22", plantillaHome:"feed-b", tema:"Tip educativo de mantenimiento", nota:"" },
+  { fecha:"2026-12-23", plantillaHome:"story-a", tema:"Avance de obra en proceso", nota:"" },
+  { fecha:"2026-12-26", plantillaHome:"story-b", tema:"Detrás de cámaras del equipo", nota:"" },
+  { fecha:"2026-12-28", plantillaHome:"story-c", tema:"Antes/Después rápido", nota:"" },
+  { fecha:"2026-12-29", plantillaHome:"feed-c", tema:"Testimonio o reseña de cliente", nota:"" },
+  { fecha:"2026-12-30", plantillaHome:"story-a", tema:"Avance de obra en proceso", nota:"" },
+  { fecha:"2026-12-31", plantillaHome:"story-b", tema:"Detrás de cámaras del equipo", nota:"Fin de año — mensaje de cierre de año, sin venta dura" },
+];
+
+// Importa el plan de contenido de arriba al calendario de publicaciones,
+// una fecha a la vez. Si esa fecha ya tenía una publicación de HOME
+// programada, la reemplaza (conserva las de otras marcas ese mismo día).
+// El campo genérico "template" (estilo Corporate/Editorial/Minimal/Impacto,
+// compartido con ROMSA y RACKLINE) se deja en "editorial" por default —
+// la plantilla real a usar es "plantillaHome", una de las 6 de HOME_TEMPLATES.
+function bceCalImportarPlanHome(){
+  const total = HOME_PLAN_2026_IMPORT.length;
+  const ok = confirm(`Se van a crear/actualizar ${total} publicaciones de HOME by ROMSA en el calendario (1 de septiembre al 31 de diciembre de 2026). Si alguna de esas fechas ya tiene una publicación de HOME programada, se reemplazará.\n\n¿Continuar?`);
+  if(!ok) return;
+  HOME_PLAN_2026_IMPORT.forEach(row => {
+    const otras = (BCE_CALENDAR.fechas[row.fecha] || []).filter(e => e.brand !== "home");
+    otras.push({ brand:"home", template:"editorial", plantillaHome:row.plantillaHome, tema:row.tema, nota:row.nota });
+    BCE_CALENDAR.fechas[row.fecha] = otras;
+  });
+  bceCalGuardar();
+  bceCalRenderMes();
+  if(_bceCalDiaSeleccionado) bceCalRenderPanel();
+  showToast(`✅ Importadas ${total} publicaciones de HOME by ROMSA (sep–dic 2026)`);
+}
+
 window.bceAbrirCalendario = bceAbrirCalendario;
 window.bceCerrarCalendario = bceCerrarCalendario;
 window.bceCalFiltrarMarca = bceCalFiltrarMarca;
@@ -22768,6 +22937,7 @@ window.bceCalClickDia = bceCalClickDia;
 window.bceCalEditarEntrada = bceCalEditarEntrada;
 window.bceCalAgregarEntrada = bceCalAgregarEntrada;
 window.bceCalQuitarEntrada = bceCalQuitarEntrada;
+window.bceCalImportarPlanHome = bceCalImportarPlanHome;
 window.bceCalQuitarOverride = bceCalQuitarOverride;
 window.bceCalToggleReglas = bceCalToggleReglas;
 window.bceCalEditarRegla = bceCalEditarRegla;
