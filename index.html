@@ -15,7 +15,7 @@
 <meta name="apple-mobile-web-app-title" content="ROMSA">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Manrope:wght@700;800&family=Plus+Jakarta+Sans:wght@700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Manrope:wght@700;800&family=Plus+Jakarta+Sans:wght@700&family=IBM+Plex+Mono:wght@500&family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 
   <!-- 
     ⚠️ REGLAS FIRESTORE REQUERIDAS para Levantamientos:
@@ -817,6 +817,60 @@ body.in-contactos #app, body.in-contactosdb #app{
 .fe-cal-reglas{margin-top:8px;background:#F7F8FA;border-radius:12px;padding:12px;}
 .fe-cal-regla-dia{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
 .fe-cal-regla-dia-label{font-size:11px;font-weight:700;color:#1B1B1F;width:32px;flex-shrink:0;}
+
+/* ── HOME by ROMSA · plantillas sociales (dentro de Editor de Fotos) ── */
+.fe-home-btn{position:relative;z-index:2;background:rgba(195,111,74,.22);border:1px solid rgba(195,111,74,.4);color:#fff;font-size:11px;font-weight:700;padding:7px 11px;border-radius:8px;cursor:pointer;font-family:var(--ds-font-body);display:flex;align-items:center;gap:5px;white-space:nowrap;}
+/* position:fixed (no absolute) para escapar del ancho máximo de #app
+   (500px, pensado para el resto del CRM tipo "app móvil") — igual que
+   #screen-levantamientos, esta área usa toda la pantalla en desktop. */
+#feh-root{position:fixed;inset:0;background:#F7F3EE;z-index:500;display:none;flex-direction:column;overflow-y:auto;}
+.feh-topbar{flex-shrink:0;display:flex;align-items:center;justify-content:space-between;padding:calc(env(safe-area-inset-top,0px) + 12px) 16px 12px;background:#0B1F3A;color:#fff;}
+.feh-back{font-family:var(--ds-font-body);background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);color:#fff;font-size:11px;font-weight:600;padding:7px 12px;border-radius:8px;cursor:pointer;}
+.feh-title{font-family:"Playfair Display",serif;font-size:15px;font-weight:700;}
+.feh-title em{color:#C36F4A;font-style:italic;}
+.feh-step{flex:1;display:none;flex-direction:column;overflow-y:auto;min-height:0;}
+.feh-step.active{display:flex;}
+.feh-picker-section{padding:18px 16px 4px;}
+.feh-picker-section-title{font-family:"Playfair Display",serif;font-size:18px;font-weight:700;color:#0B1F3A;margin-bottom:2px;}
+.feh-picker-section-sub{font-size:11px;color:#8A7F73;margin-bottom:12px;}
+.feh-picker-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px;padding:0 16px 8px;}
+.feh-picker-card{background:#fff;border:1.5px solid #E7DFD5;border-radius:14px;overflow:hidden;cursor:pointer;transition:border-color .15s,transform .15s;text-align:left;font-family:inherit;}
+.feh-picker-card:hover{border-color:#C36F4A;transform:translateY(-2px);}
+.feh-picker-thumb{width:100%;aspect-ratio:4/5;display:block;background:#0B1F3A;}
+.feh-picker-thumb.feh-thumb-story{aspect-ratio:9/16;}
+.feh-picker-label{padding:9px 10px 11px;}
+.feh-picker-name{font-size:12px;font-weight:700;color:#0B1F3A;margin-bottom:2px;}
+.feh-picker-dims{font-family:"JetBrains Mono",monospace;font-size:9.5px;color:#8A7F73;}
+.feh-canvas-area{flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:16px;background:#EFE7DC;}
+.feh-canvas-area canvas{max-width:100%;max-height:60vh;box-shadow:0 4px 24px rgba(11,31,58,.18);border-radius:2px;background:#ccc;}
+.feh-form-wrap{padding:16px;display:flex;flex-direction:column;gap:14px;}
+.feh-ctrl-group{display:flex;flex-direction:column;gap:5px;}
+.feh-ctrl-label{font-size:10px;font-weight:700;color:#8A7F73;text-transform:uppercase;letter-spacing:.5px;font-family:var(--ds-font-body);}
+.feh-input{border:1.5px solid #E7DFD5;border-radius:10px;padding:9px 11px;font-size:13px;font-family:inherit;color:#0B1F3A;background:#fff;width:100%;}
+.feh-input:focus{outline:none;border-color:#C36F4A;}
+.feh-photoslot{border:2px dashed #C9BBAE;border-radius:12px;padding:14px;text-align:center;cursor:pointer;background:#fff;font-size:11.5px;color:#8A7F73;font-weight:600;}
+.feh-photoslot.feh-filled{border-style:solid;border-color:#C36F4A;color:#0B1F3A;}
+.feh-actions{display:flex;gap:8px;margin-top:2px;}
+.feh-btn{flex:1;padding:12px;border-radius:10px;font-size:12.5px;font-weight:700;border:none;cursor:pointer;font-family:inherit;}
+.feh-btn-ghost{background:#EFE7DC;color:#0B1F3A;}
+.feh-btn-primary{background:#C36F4A;color:#fff;flex:1.3;}
+.feh-btn-primary:disabled{background:#D9CFC4;color:#fff;cursor:not-allowed;}
+.feh-hint{font-size:11px;color:#8A7F73;line-height:1.5;background:#EFE7DC;border-radius:8px;padding:9px 11px;}
+
+/* Desktop: #feh-root ya no está limitado por #app (500px) — aprovechar
+   el ancho real disponible en vez de mantener el layout tipo celular. */
+@media (min-width:900px){
+  .feh-picker-section{padding:26px 40px 4px;}
+  .feh-picker-section-title{font-size:22px;}
+  .feh-picker-grid{grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:22px;padding:0 40px 8px;max-width:1400px;}
+  .feh-picker-label{padding:12px 14px 14px;}
+  .feh-picker-name{font-size:13.5px;}
+  .feh-step-editor.active{flex-direction:row;align-items:stretch;}
+  .feh-canvas-area{flex:1;padding:32px;}
+  .feh-canvas-area canvas{max-height:82vh;}
+  .feh-form-wrap{width:400px;flex-shrink:0;overflow-y:auto;padding:24px;border-left:1px solid #E7DFD5;}
+}
+
 .cos-card-meta{font-size:10px;color:var(--tx2);margin-top:2px;}
 .cos-input{width:100%;padding:8px 10px;border:1px solid var(--g1);border-radius:6px;font-size:12px;font-family:var(--font);color:var(--navy);background:#fff;}
 .cos-input:focus{outline:none;border-color:#1E6FD9;}
@@ -3519,6 +3573,7 @@ body.in-contactos #app, body.in-contactosdb #app{
     <div class="fe-topbar">
       <button class="fe-back" onclick="volverSelector()">← Menú</button>
       <div class="fe-title" id="fe-title">Motor de Marca ROMSA</div>
+      <button class="fe-home-btn" onclick="fehAbrir()" title="HOME by ROMSA — Plantillas sociales">🏠 HOME</button>
       <button class="fe-cal-btn" onclick="bceAbrirCalendario()" title="Calendario de publicaciones">📅</button>
       <div class="fe-step-dots" id="fe-step-dots"><span class="dot active"></span><span class="dot"></span></div>
     </div>
@@ -3700,6 +3755,55 @@ body.in-contactos #app, body.in-contactosdb #app{
         <div class="fe-actions">
           <button class="fe-btn fe-btn-ghost" onclick="bceChangePhoto()">🔄 Cambiar foto</button>
           <button class="fe-btn fe-btn-primary" onclick="bceDownload()">⬇ Descargar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ HOME by ROMSA · plantillas sociales (área independiente) ══ -->
+    <div id="feh-root">
+      <div class="feh-topbar">
+        <button class="feh-back" id="feh-back-btn" onclick="fehAtras()">← Atrás</button>
+        <div class="feh-title">HOME <em>by ROMSA</em> · Plantillas</div>
+        <div style="width:56px;"></div>
+      </div>
+
+      <!-- Paso 1: elegir plantilla, agrupada en Posts / Historias -->
+      <div id="feh-step-picker" class="feh-step active">
+        <div class="feh-hint" style="margin:14px 16px 0;">Elige una plantilla. Los recuadros con textura son las fotos que vas a subir.</div>
+
+        <div class="feh-picker-section">
+          <div class="feh-picker-section-title">Posts</div>
+          <div class="feh-picker-section-sub">Feed · 1080 × 1350 px</div>
+        </div>
+        <div class="feh-picker-grid" id="feh-picker-grid-feed"></div>
+
+        <div class="feh-picker-section">
+          <div class="feh-picker-section-title">Historias</div>
+          <div class="feh-picker-section-sub">Story · 1080 × 1920 px</div>
+        </div>
+        <div class="feh-picker-grid" id="feh-picker-grid-story"></div>
+      </div>
+
+      <!-- Paso 2: editor de la plantilla elegida -->
+      <div id="feh-step-editor" class="feh-step feh-step-editor">
+        <div class="feh-canvas-area">
+          <canvas id="feh-canvas"></canvas>
+        </div>
+        <div class="feh-form-wrap">
+          <div id="feh-photo-slots"></div>
+          <div id="feh-text-fields"></div>
+          <div class="feh-hint">Toca cada recuadro para subir su foto. El texto se puede editar libremente antes de descargar.</div>
+          <div class="feh-ctrl-group">
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <label class="feh-ctrl-label" style="margin:0;">Copy sugerido para la publicación</label>
+              <button type="button" class="fe-copy-btn" onclick="fehCopyPostText()">📋 Copiar</button>
+            </div>
+            <textarea id="feh-post-copy" class="fe-textarea-copy" rows="5" readonly></textarea>
+          </div>
+          <div class="feh-actions">
+            <button class="feh-btn feh-btn-ghost" onclick="fehVolverPicker()">‹ Otra plantilla</button>
+            <button class="feh-btn feh-btn-primary" id="feh-download-btn" onclick="fehDescargar()" disabled>⬇ Descargar PNG</button>
+          </div>
         </div>
       </div>
     </div>
@@ -21664,6 +21768,619 @@ window.bceUiSelectFormat = bceUiSelectFormat;
 window.bceApplyService = bceApplyService;
 window.bceCopyPostText = bceCopyPostText;
 window.bceDownload = bceDownload;
+
+// ══════════════════════════════════════════════════════════════
+// HOME by ROMSA — plantillas sociales (área independiente dentro de
+// Editor de Fotos). Paleta y tipografía según el manual de marca oficial:
+// Navy #0B1F3A + Terracota #C36F4A (único acento) + Crema arena #F7F3EE
+// como sistema principal; Azul marca #1E5BA8 y Gris grafito #2A2F38 son
+// secundarios y se usan con moderación. Nunca más de 3 colores por diseño.
+// Tipografía: Playfair Display (títulos, palabra clave en italic terracota)
+// + Inter (cuerpo/botones) + JetBrains Mono (solo folios/teléfonos).
+// ══════════════════════════════════════════════════════════════
+const HOME_BRAND = { navy:"#0B1F3A", azul:"#1E5BA8", terracota:"#C36F4A", crema:"#F7F3EE", grafito:"#2A2F38" };
+const HOME_TEL_DEFAULT = (typeof window !== "undefined" && window._homeTel) || "686 175 4812";
+
+const HOME_TEMPLATES = [
+  { id:"feed-a", cat:"feed", w:1080, h:1350, label:"Antes / Después vertical",
+    photos:[{key:"antes",label:"Foto ANTES (vertical)"},{key:"despues",label:"Foto DESPUÉS (vertical)"}],
+    fields:[
+      {key:"titulo", label:"Título del servicio", default:"Restauración de banquetas", italic:"banquetas"},
+      {key:"ubicacion", label:"Ubicación / detalle", default:"Colonia Nueva, Mexicali · 3 días de obra"},
+      {key:"tel", label:"WhatsApp", default:HOME_TEL_DEFAULT}
+    ],
+    draw: fehDrawFeedA },
+  { id:"feed-b", cat:"feed", w:1080, h:1350, label:"Antes / Después a sangre",
+    photos:[{key:"antes",label:"Foto ANTES (horizontal)"},{key:"despues",label:"Foto DESPUÉS (horizontal)"}],
+    fields:[
+      {key:"franja", label:"Frase de la franja", default:"Mismo lugar · 3 días"},
+      {key:"titulo", label:"Título del servicio", default:"Piso estampado para cochera", italic:"cochera"},
+      {key:"tel", label:"WhatsApp", default:HOME_TEL_DEFAULT}
+    ],
+    draw: fehDrawFeedB },
+  { id:"feed-c", cat:"feed", w:1080, h:1350, label:"Tip o testimonio",
+    photos:[],
+    fields:[
+      {key:"eyebrow", label:"Etiqueta superior", default:"Tip de mantenimiento"},
+      {key:"titulo", label:"Pregunta o frase principal", default:"Tu banqueta se está agrietando", italic:"agrietando"},
+      {key:"cuerpo", label:"Texto de desarrollo", default:"Las grietas finas se sellan; las que abren más de 5 mm casi siempre vienen de la base. Repararlas sin corregir el terreno solo retrasa el problema unos meses."},
+      {key:"tag1", label:"Etiqueta 1", default:"Banquetas"},
+      {key:"tag2", label:"Etiqueta 2", default:"Colado de concreto"},
+      {key:"tag3", label:"Etiqueta 3", default:"Piso residencial"},
+      {key:"tel", label:"WhatsApp", default:HOME_TEL_DEFAULT}
+    ],
+    draw: fehDrawFeedC },
+  { id:"story-a", cat:"story", w:1080, h:1920, label:"Foto a sangre + avance",
+    photos:[{key:"foto",label:"Foto o fotograma vertical"}],
+    fields:[
+      {key:"dia", label:"Etiqueta de progreso", default:"Día 2"},
+      {key:"titulo", label:"Título", default:"Colado listo en Calle Novena", italic:"Novena"},
+      {key:"subtitulo", label:"Subtítulo", default:"Curado de 7 días antes de dar paso"}
+    ],
+    draw: fehDrawStoryA },
+  { id:"story-b", cat:"story", w:1080, h:1920, label:"Foto + banda de servicio",
+    photos:[{key:"foto",label:"Foto vertical"}],
+    fields:[
+      {key:"eyebrow", label:"Tipo de servicio", default:"Servicio residencial"},
+      {key:"titulo", label:"Título", default:"Renovación de patio y andadores", italic:"andadores"},
+      {key:"tel", label:"WhatsApp", default:HOME_TEL_DEFAULT}
+    ],
+    draw: fehDrawStoryB },
+  { id:"story-c", cat:"story", w:1080, h:1920, label:"Antes / Después rápido",
+    photos:[{key:"antes",label:"Foto ANTES"},{key:"despues",label:"Foto DESPUÉS"}],
+    fields:[
+      {key:"titulo", label:"Título final", default:"Banqueta nueva en 3 días", italic:"3 días"}
+    ],
+    draw: fehDrawStoryC },
+];
+
+let FEH = { tplId:null, photos:{}, values:{} };
+let _fehInited = false;
+let _fehFontsReady = null;
+let _fehLogoBlanco = null;      // Image: wordmark completo, blanco (fondos navy)
+let _fehLogoBlancoIcono = null; // Image: solo ícono, blanco (chips pequeños)
+
+function fehAbrir(){
+  if(!_fehInited){
+    _fehInited = true;
+    _fehLogoBlanco = new Image();
+    _fehLogoBlanco.src = (typeof window!=="undefined" && window._homeLogoBlanco) || "";
+    _fehLogoBlancoIcono = new Image();
+    _fehLogoBlancoIcono.src = (typeof window!=="undefined" && (window._homeLogoBlancoIcono || window._homeLogoBlanco)) || "";
+    if(document.fonts && document.fonts.load){
+      _fehFontsReady = Promise.all([
+        document.fonts.load('700 60px "Playfair Display"'),
+        document.fonts.load('italic 700 60px "Playfair Display"'),
+        document.fonts.load('400 30px "Playfair Display"'),
+        document.fonts.load('italic 400 30px "Playfair Display"'),
+        document.fonts.load('400 20px "Inter"'),
+        document.fonts.load('500 20px "Inter"'),
+        document.fonts.load('600 20px "Inter"'),
+        document.fonts.load('700 20px "Inter"'),
+        document.fonts.load('500 18px "JetBrains Mono"'),
+        document.fonts.load('700 18px "JetBrains Mono"'),
+      ]).catch(()=>{});
+    } else {
+      _fehFontsReady = Promise.resolve();
+    }
+    fehRenderPicker();
+  }
+  document.getElementById("feh-root").style.display = "flex";
+  fehVolverPicker();
+}
+
+function fehAtras(){
+  document.getElementById("feh-root").style.display = "none";
+}
+
+function fehRenderPicker(){
+  const cardHtml = t=>{
+    const dims = t.w+" × "+t.h+" px";
+    return '<button type="button" class="feh-picker-card" onclick="fehElegirPlantilla(\''+t.id+'\')">'
+      +'<canvas class="feh-picker-thumb'+(t.cat==="story"?" feh-thumb-story":"")+'" data-thumb="'+t.id+'"></canvas>'
+      +'<div class="feh-picker-label"><div class="feh-picker-name">'+escapeHtml(t.label)+'</div><div class="feh-picker-dims">'+dims+'</div></div>'
+    +'</button>';
+  };
+  // Dos grupos separados y siempre visibles: Posts (feed) e Historias (story)
+  document.getElementById("feh-picker-grid-feed").innerHTML = HOME_TEMPLATES.filter(t=>t.cat==="feed").map(cardHtml).join("");
+  document.getElementById("feh-picker-grid-story").innerHTML = HOME_TEMPLATES.filter(t=>t.cat==="story").map(cardHtml).join("");
+  // Miniaturas: se dibujan a baja resolución con datos de ejemplo, una vez que las fuentes están listas
+  (_fehFontsReady || Promise.resolve()).then(()=>{
+    HOME_TEMPLATES.forEach(t=>{
+      const cvs = document.querySelector('canvas[data-thumb="'+t.id+'"]');
+      if(!cvs) return;
+      const scale = 220 / t.w;
+      cvs.width = t.w * scale; cvs.height = t.h * scale;
+      const ctx = cvs.getContext("2d");
+      ctx.save();
+      ctx.scale(scale, scale);
+      const previewState = { photos:{}, values:{} };
+      t.fields.forEach(f=>{ previewState.values[f.key] = f.default; });
+      t.draw(ctx, t.w, t.h, previewState, t);
+      ctx.restore();
+    });
+  });
+}
+
+function fehVolverPicker(){
+  document.getElementById("feh-step-picker").classList.add("active");
+  document.getElementById("feh-step-editor").classList.remove("active");
+  document.getElementById("feh-back-btn").onclick = fehAtras;
+}
+
+function fehElegirPlantilla(id){
+  const t = HOME_TEMPLATES.find(x=>x.id===id);
+  if(!t) return;
+  FEH = { tplId:id, photos:{}, values:{} };
+  t.fields.forEach(f=>{ FEH.values[f.key] = f.default; });
+
+  document.getElementById("feh-step-picker").classList.remove("active");
+  document.getElementById("feh-step-editor").classList.add("active");
+  document.getElementById("feh-back-btn").onclick = fehVolverPicker;
+
+  document.getElementById("feh-photo-slots").innerHTML = t.photos.map(p=>
+    '<div class="feh-ctrl-group">'
+      +'<label class="feh-ctrl-label">'+escapeHtml(p.label)+'</label>'
+      +'<div class="feh-photoslot" id="feh-slot-'+p.key+'" onclick="document.getElementById(\'feh-file-'+p.key+'\').click()">📷 Toca para subir</div>'
+      +'<input type="file" accept="image/*" id="feh-file-'+p.key+'" style="display:none;" onchange="fehCargarFoto(\''+p.key+'\',event)">'
+    +'</div>'
+  ).join("");
+
+  document.getElementById("feh-text-fields").innerHTML = t.fields.map(f=>
+    '<div class="feh-ctrl-group">'
+      +'<label class="feh-ctrl-label">'+escapeHtml(f.label)+'</label>'
+      +(f.key==="cuerpo"
+        ? '<textarea class="feh-input" rows="3" oninput="fehSetValor(\''+f.key+'\',this.value)">'+escapeHtml(f.default)+'</textarea>'
+        : '<input type="text" class="feh-input" value="'+escapeHtml(f.default)+'" oninput="fehSetValor(\''+f.key+'\',this.value)">')
+    +'</div>'
+  ).join("");
+
+  fehActualizarBotonDescarga();
+  (_fehFontsReady || Promise.resolve()).then(fehRenderPreview);
+}
+
+function fehSetValor(key, val){
+  FEH.values[key] = val;
+  fehRenderPreview();
+}
+
+function fehCargarFoto(key, e){
+  const file = e.target.files && e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev)=>{
+    const img = new Image();
+    img.onload = ()=>{
+      FEH.photos[key] = img;
+      const slot = document.getElementById("feh-slot-"+key);
+      if(slot){ slot.classList.add("feh-filled"); slot.textContent = "✓ Foto cargada — toca para cambiar"; }
+      fehActualizarBotonDescarga();
+      fehRenderPreview();
+    };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+  e.target.value = "";
+}
+
+function fehActualizarBotonDescarga(){
+  const t = HOME_TEMPLATES.find(x=>x.id===FEH.tplId);
+  const btn = document.getElementById("feh-download-btn");
+  if(!t || !btn) return;
+  const faltan = t.photos.filter(p=>!FEH.photos[p.key]);
+  btn.disabled = faltan.length > 0;
+  btn.title = faltan.length ? "Sube todas las fotos primero" : "";
+}
+
+function fehRenderPreview(){
+  const t = HOME_TEMPLATES.find(x=>x.id===FEH.tplId);
+  if(!t) return;
+  const canvas = document.getElementById("feh-canvas");
+  canvas.width = t.w; canvas.height = t.h;
+  const ctx = canvas.getContext("2d");
+  t.draw(ctx, t.w, t.h, FEH, t);
+  fehGenerateCopy(t, FEH);
+}
+
+// Un pilar por plantilla (de los 4 del manual), para no meter los 4 en un
+// copy corto — el manual pide que "aparezcan en todo material de venta",
+// aquí se rota uno relevante por pieza.
+const HOME_PILAR_POR_TPL = {
+  "feed-a": "Garantía escrita al entregar la obra.",
+  "feed-b": "Precio cerrado desde la cotización — sin sorpresas en el camino.",
+  "feed-c": "Reporte diario del avance por WhatsApp, con supervisor asignado.",
+  "story-a": "Reporte diario del avance por WhatsApp, con supervisor asignado.",
+  "story-b": "Somos la división residencial de ROMSA Industrial — respaldo empresarial real.",
+  "story-c": "Garantía escrita al entregar la obra.",
+};
+
+function fehGenerateCopy(t, st){
+  const el = document.getElementById("feh-post-copy");
+  if(!el) return "";
+  const v = st.values || {};
+  const titulo = (v.titulo || "").trim() || "Nuestro trabajo más reciente";
+  const lugar = (v.ubicacion || v.subtitulo || "").trim();
+  const tel = (v.tel || HOME_TEL_DEFAULT).trim();
+  const pilar = HOME_PILAR_POR_TPL[t.id] || "";
+
+  let cuerpo;
+  if(t.cat === "story"){
+    cuerpo = [titulo, lugar, "", "Desliza para más info 👉"].filter(Boolean).join("\n");
+  } else {
+    cuerpo = [
+      titulo,
+      lugar,
+      "",
+      pilar,
+      "",
+      "¿Quieres una cotización sin costo? Escríbenos por WhatsApp al " + tel + ".",
+      "",
+      "#HOMEbyROMSA #PisosResidenciales #Mexicali"
+    ].filter(Boolean).join("\n");
+  }
+  el.value = cuerpo.trim();
+  return el.value;
+}
+
+function fehCopyPostText(){
+  const el = document.getElementById("feh-post-copy");
+  if(!el || !el.value){ showToast("⚠️ No hay texto para copiar todavía"); return; }
+  el.select();
+  el.setSelectionRange(0, 999999);
+  try{
+    navigator.clipboard.writeText(el.value).then(()=>showToast("📋 Texto copiado"));
+  }catch(e){
+    document.execCommand("copy");
+    showToast("📋 Texto copiado");
+  }
+}
+
+async function fehDescargar(){
+  const t = HOME_TEMPLATES.find(x=>x.id===FEH.tplId);
+  if(!t) return;
+  const faltan = t.photos.filter(p=>!FEH.photos[p.key]);
+  if(faltan.length){ showToast("⚠️ Sube "+(faltan.length>1?"todas las fotos":"la foto")+" primero"); return; }
+  if(_fehFontsReady) await _fehFontsReady;
+  const canvas = document.createElement("canvas");
+  canvas.width = t.w; canvas.height = t.h;
+  const ctx = canvas.getContext("2d");
+  t.draw(ctx, t.w, t.h, FEH, t);
+  canvas.toBlob((blob)=>{
+    if(!blob){ showToast("⚠️ No se pudo generar la imagen"); return; }
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "HOME_"+t.id+"_"+Date.now()+".png";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url), 2000);
+    showToast("⬇ Plantilla HOME descargada en alta resolución");
+  }, "image/png", 1.0);
+}
+
+// ── Helpers de dibujo compartidos por las 6 plantillas ──────────
+function fehCoverRect(img, x, y, w, h){
+  const scale = Math.max(w / img.naturalWidth, h / img.naturalHeight);
+  const dw = img.naturalWidth * scale, dh = img.naturalHeight * scale;
+  return { dx: x + (w - dw) / 2, dy: y + (h - dh) / 2, dw, dh };
+}
+function fehDrawPhoto(ctx, img, x, y, w, h, label){
+  ctx.save();
+  ctx.beginPath(); ctx.rect(x, y, w, h); ctx.clip();
+  if(img){
+    const r = fehCoverRect(img, x, y, w, h);
+    ctx.drawImage(img, r.dx, r.dy, r.dw, r.dh);
+  } else {
+    ctx.fillStyle = "#D8DDE8";
+    ctx.fillRect(x, y, w, h);
+    ctx.fillStyle = "#8A93A3";
+    ctx.font = '500 22px "JetBrains Mono"';
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillText(label || "foto", x + w/2, y + h/2);
+  }
+  ctx.restore();
+}
+function fehFillTextTracked(ctx, text, x, y, spacing){
+  // Fuerza textAlign="left": si el caller dejó "center"/"right" (habitual
+  // antes de llamar aquí, para calcular x), cada carácter se dibujaría
+  // alineado individualmente y el texto saldría con espaciado errático.
+  const prevAlign = ctx.textAlign;
+  ctx.textAlign = "left";
+  let cx = x;
+  for(const ch of text){ ctx.fillText(ch, cx, y); cx += ctx.measureText(ch).width + spacing; }
+  ctx.textAlign = prevAlign;
+}
+function fehTrackedWidth(ctx, text, spacing){
+  let w = 0;
+  for(const ch of text) w += ctx.measureText(ch).width + spacing;
+  return Math.max(0, w - spacing);
+}
+// Envuelve un título en líneas, marcando una palabra clave para dibujarse
+// en italic + terracota (regla del manual: "palabras destacadas en italic").
+function fehWrapTitleTokens(ctx, text, italicWord, maxWidth, fontNormal, fontItalic){
+  const words = String(text).split(/\s+/).filter(Boolean);
+  const norm = s => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^\w]/g,"");
+  // Soporta frases de varias palabras (ej. "3 días") buscando la secuencia
+  // completa dentro de las palabras del título, no solo coincidencia de una.
+  const italicWords = italicWord ? String(italicWord).split(/\s+/).filter(Boolean).map(norm) : [];
+  const isItalicAt = new Array(words.length).fill(false);
+  if(italicWords.length){
+    outer:
+    for(let i=0;i<=words.length-italicWords.length;i++){
+      for(let k=0;k<italicWords.length;k++){
+        if(norm(words[i+k]) !== italicWords[k]) continue outer;
+      }
+      for(let k=0;k<italicWords.length;k++) isItalicAt[i+k] = true;
+      break;
+    }
+  }
+  ctx.font = fontNormal;
+  const spaceW = ctx.measureText(" ").width;
+  const lines = []; let cur = []; let curWidth = 0;
+  words.forEach((w,i)=>{
+    const isIt = isItalicAt[i];
+    ctx.font = isIt ? fontItalic : fontNormal;
+    const ww = ctx.measureText(w).width;
+    const extra = cur.length ? spaceW : 0;
+    if(curWidth + extra + ww > maxWidth && cur.length){
+      lines.push(cur); cur = [{text:w, italic:isIt, width:ww}]; curWidth = ww;
+    } else {
+      cur.push({text:w, italic:isIt, width:ww}); curWidth += extra + ww;
+    }
+  });
+  if(cur.length) lines.push(cur);
+  return lines;
+}
+function fehDrawTitleLines(ctx, lines, x, y, lineHeight, colorNormal, colorItalic, fontNormal, fontItalic){
+  ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
+  ctx.font = fontNormal;
+  const spaceW = ctx.measureText(" ").width;
+  let cy = y;
+  lines.forEach(line=>{
+    let cx = x;
+    line.forEach(tok=>{
+      ctx.font = tok.italic ? fontItalic : fontNormal;
+      ctx.fillStyle = tok.italic ? colorItalic : colorNormal;
+      ctx.fillText(tok.text, cx, cy);
+      cx += tok.width + spaceW;
+    });
+    cy += lineHeight;
+  });
+  return cy - lineHeight; // baseline de la última línea dibujada
+}
+function fehDrawPill(ctx, text, x, y, opts){
+  opts = opts || {};
+  const padX = opts.padX ?? 22, padY = opts.padY ?? 12;
+  const font = opts.font || '700 20px "Inter"';
+  ctx.font = font;
+  const spacing = opts.spacing ?? 0;
+  const textW = spacing ? fehTrackedWidth(ctx, text, spacing) : ctx.measureText(text).width;
+  const w = textW + padX*2, h = (opts.fontSize||20) + padY*2;
+  const rx = opts.align === "right" ? x - w : x;
+  ctx.fillStyle = opts.bg || HOME_BRAND.terracota;
+  fehRoundRect(ctx, rx, y, w, h, h/2);
+  ctx.fill();
+  ctx.fillStyle = opts.color || HOME_BRAND.navy;
+  ctx.textBaseline = "middle";
+  ctx.textAlign = "left";
+  const ty = y + h/2; // textBaseline "middle" ya centra el glifo en ty
+  if(spacing) fehFillTextTracked(ctx, text, rx + padX, ty, spacing);
+  else ctx.fillText(text, rx + padX, ty);
+  return { x:rx, y, w, h };
+}
+function fehRoundRect(ctx, x, y, w, h, r){
+  ctx.beginPath();
+  ctx.moveTo(x+r, y);
+  ctx.arcTo(x+w, y, x+w, y+h, r);
+  ctx.arcTo(x+w, y+h, x, y+h, r);
+  ctx.arcTo(x, y+h, x, y, r);
+  ctx.arcTo(x, y, x+w, y, r);
+  ctx.closePath();
+}
+function fehDrawLogoLockup(ctx, x, y, targetH, full){
+  const img = full ? _fehLogoBlanco : (_fehLogoBlancoIcono || _fehLogoBlanco);
+  if(!img || !img.naturalWidth) return 0;
+  const scale = targetH / img.naturalHeight;
+  const w = img.naturalWidth * scale;
+  ctx.drawImage(img, x, y, w, targetH);
+  return w;
+}
+function fehTag(ctx, text, x, y, bg, color){
+  ctx.font = '700 24px "Inter"';
+  const padX = 20, padY = 12;
+  const w = ctx.measureText(text).width + padX*2, h = 24 + padY*2;
+  ctx.fillStyle = bg;
+  ctx.fillRect(x, y, w, h);
+  ctx.fillStyle = color;
+  ctx.textAlign = "left"; ctx.textBaseline = "middle";
+  ctx.fillText(text, x+padX, y+h/2); // textBaseline "middle" ya centra el glifo
+  return h;
+}
+
+// ── FEED A · antes/después vertical ─────────────────────────────
+function fehDrawFeedA(ctx, W, H, st){
+  const v = st.values, ph = st.photos;
+  ctx.fillStyle = HOME_BRAND.navy; ctx.fillRect(0,0,W,H);
+
+  fehDrawLogoLockup(ctx, 56, 44, 46, true);
+  fehDrawPill(ctx, "Cotización sin costo", W-56, 40, {align:"right", bg:HOME_BRAND.terracota, color:HOME_BRAND.navy, font:'700 22px "Inter"', fontSize:22});
+
+  const lines = fehWrapTitleTokens(ctx, v.titulo||"", (HOME_TEMPLATES[0].fields[0]).italic, W-112, '700 74px "Playfair Display"', 'italic 700 74px "Playfair Display"');
+  const titleBottom = fehDrawTitleLines(ctx, lines, 56, 220, 76, "#FFFFFF", HOME_BRAND.terracota, '700 74px "Playfair Display"', 'italic 700 74px "Playfair Display"');
+  ctx.font = '500 28px "Inter"';
+  ctx.fillStyle = "rgba(247,243,238,.72)";
+  ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
+  ctx.fillText(v.ubicacion||"", 56, titleBottom + 46);
+
+  const gridY = titleBottom + 90, gridH = H - 120 - gridY, gap = 8, colW = (W-112-gap)/2;
+  fehDrawPhoto(ctx, ph.antes, 56, gridY, colW, gridH, "foto ANTES");
+  fehDrawPhoto(ctx, ph.despues, 56+colW+gap, gridY, colW, gridH, "foto DESPUÉS");
+  fehTag(ctx, "ANTES", 56, gridY, HOME_BRAND.grafito, "#FFFFFF");
+  fehTag(ctx, "DESPUÉS", 56+colW+gap, gridY, HOME_BRAND.terracota, HOME_BRAND.navy);
+
+  const footY = H - 78;
+  ctx.font = '500 27px "Inter"';
+  ctx.fillStyle = "#FFFFFF"; ctx.textAlign = "left"; ctx.textBaseline = "middle";
+  ctx.fillText("WhatsApp "+(v.tel||""), 56, footY);
+  ctx.font = '600 22px "Inter"'; ctx.fillStyle = HOME_BRAND.terracota; ctx.textAlign = "right";
+  fehFillTextTracked(ctx, "MEXICALI, B.C.", W-56 - fehTrackedWidth(ctx,"MEXICALI, B.C.",3), footY+2, 3);
+
+  ctx.fillStyle = HOME_BRAND.terracota; ctx.fillRect(0, H-12, W, 12);
+}
+
+// ── FEED B · antes/después a sangre ─────────────────────────────
+function fehDrawFeedB(ctx, W, H, st){
+  const v = st.values, ph = st.photos;
+  ctx.fillStyle = HOME_BRAND.navy; ctx.fillRect(0,0,W,H);
+  const rowH = H/2;
+  fehDrawPhoto(ctx, ph.antes, 0, 0, W, rowH, "foto ANTES · horizontal");
+  fehDrawPhoto(ctx, ph.despues, 0, rowH, W, rowH, "foto DESPUÉS · horizontal");
+  fehTag(ctx, "ANTES", W-56-140, 56, HOME_BRAND.grafito, "#FFFFFF");
+  fehTag(ctx, "DESPUÉS", W-56-170, rowH+56, HOME_BRAND.terracota, HOME_BRAND.navy);
+
+  ctx.fillStyle = HOME_BRAND.terracota;
+  ctx.fillRect(0, rowH-27, W, 54);
+  ctx.font = '700 26px "Inter"'; ctx.fillStyle = HOME_BRAND.navy; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  fehFillTextTracked(ctx, (v.franja||"").toUpperCase(), W/2 - fehTrackedWidth(ctx,(v.franja||"").toUpperCase(),3)/2, rowH+2, 3);
+
+  const grad = ctx.createLinearGradient(0, H-520, 0, H);
+  grad.addColorStop(0, "rgba(11,31,58,0)"); grad.addColorStop(0.42, "rgba(11,31,58,.86)"); grad.addColorStop(1, HOME_BRAND.navy);
+  ctx.fillStyle = grad; ctx.fillRect(0, H-520, W, 520);
+
+  ctx.fillStyle = "rgba(11,31,58,.92)"; ctx.fillRect(56, 44, 230, 54);
+  fehDrawLogoLockup(ctx, 66, 50, 42, false);
+
+  const lines = fehWrapTitleTokens(ctx, v.titulo||"", (HOME_TEMPLATES[1].fields[1]).italic, W-112, '700 80px "Playfair Display"', 'italic 700 80px "Playfair Display"');
+  const titleBottom = fehDrawTitleLines(ctx, lines, 56, H-260, 80, "#FFFFFF", HOME_BRAND.terracota, '700 80px "Playfair Display"', 'italic 700 80px "Playfair Display"');
+
+  ctx.strokeStyle = "rgba(255,255,255,.28)"; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(56, titleBottom+42); ctx.lineTo(W-56, titleBottom+42); ctx.stroke();
+
+  ctx.font = '500 27px "Inter"'; ctx.fillStyle = "#FFFFFF"; ctx.textAlign = "left"; ctx.textBaseline = "middle";
+  ctx.fillText("WhatsApp "+(v.tel||""), 56, titleBottom+80);
+  fehDrawPill(ctx, "Cotización sin costo", W-56, titleBottom+58, {align:"right", bg:HOME_BRAND.terracota, color:HOME_BRAND.navy, font:'700 21px "Inter"', fontSize:21});
+}
+
+// ── FEED C · tip o testimonio (sin foto) ────────────────────────
+function fehDrawFeedC(ctx, W, H, st){
+  const v = st.values;
+  ctx.fillStyle = HOME_BRAND.crema; ctx.fillRect(0,0,W,H);
+
+  ctx.fillStyle = HOME_BRAND.navy; ctx.fillRect(0,0,W,164);
+  fehDrawLogoLockup(ctx, 56, 44, 46, true);
+  fehDrawPill(ctx, "Cotización sin costo", W-56, 40, {align:"right", bg:HOME_BRAND.terracota, color:HOME_BRAND.navy, font:'700 22px "Inter"', fontSize:22});
+
+  let cy = 300;
+  // Texto y línea decorativa se anclan al MISMO cy con textBaseline "middle"
+  // en ambos, para que queden centrados verticalmente entre sí sin adivinar
+  // el alto de las mayúsculas a mano.
+  ctx.font = '700 26px "Inter"'; ctx.fillStyle = HOME_BRAND.navy; ctx.textAlign = "left"; ctx.textBaseline = "middle";
+  fehFillTextTracked(ctx, (v.eyebrow||"").toUpperCase(), 152, cy, 3);
+  ctx.fillStyle = HOME_BRAND.terracota; ctx.fillRect(72, cy-2, 64, 4);
+  cy += 70;
+
+  const lines = fehWrapTitleTokens(ctx, v.titulo||"", (HOME_TEMPLATES[2].fields[1]).italic, W-144, '700 84px "Playfair Display"', 'italic 700 84px "Playfair Display"');
+  cy = fehDrawTitleLines(ctx, lines, 72, cy+84, 92, HOME_BRAND.navy, HOME_BRAND.terracota, '700 84px "Playfair Display"', 'italic 700 84px "Playfair Display"');
+  cy += 60;
+
+  ctx.font = '400 34px "Inter"'; ctx.fillStyle = HOME_BRAND.grafito;
+  const bodyLines = bceWrapText(ctx, v.cuerpo||"", W-144);
+  bodyLines.forEach(l=>{ ctx.fillText(l, 72, cy); cy += 48; });
+  cy += 24;
+
+  let tx = 72;
+  [v.tag1, v.tag2, v.tag3].filter(Boolean).forEach(tag=>{
+    ctx.font = '600 22px "Inter"';
+    const w = ctx.measureText(tag).width + 44;
+    ctx.strokeStyle = HOME_BRAND.navy; ctx.lineWidth = 2;
+    fehRoundRect(ctx, tx, cy, w, 52, 26); ctx.stroke();
+    ctx.fillStyle = HOME_BRAND.navy; ctx.textAlign = "left"; ctx.textBaseline = "middle";
+    ctx.fillText(tag, tx+22, cy+27);
+    tx += w + 14;
+  });
+
+  ctx.fillStyle = HOME_BRAND.navy; ctx.fillRect(0, H-92, W, 92);
+  ctx.font = '500 27px "Inter"'; ctx.fillStyle = "#FFFFFF"; ctx.textAlign = "left"; ctx.textBaseline = "middle";
+  ctx.fillText("WhatsApp "+(v.tel||""), 56, H-46);
+  ctx.font = '600 22px "Inter"'; ctx.fillStyle = HOME_BRAND.terracota; ctx.textAlign = "right";
+  fehFillTextTracked(ctx, "MEXICALI, B.C.", W-56 - fehTrackedWidth(ctx,"MEXICALI, B.C.",3), H-44, 3);
+  ctx.fillStyle = HOME_BRAND.terracota; ctx.fillRect(0, H-12, W, 12);
+}
+
+// ── STORY A · foto a sangre + avance de obra ────────────────────
+function fehDrawStoryA(ctx, W, H, st){
+  const v = st.values, ph = st.photos;
+  fehDrawPhoto(ctx, ph.foto, 0, 0, W, H, "foto o video vertical");
+
+  ctx.fillStyle = "rgba(11,31,58,.9)"; ctx.fillRect(56, 64, 210, 50);
+  fehDrawLogoLockup(ctx, 66, 68, 42, false);
+
+  const grad = ctx.createLinearGradient(0, H-900, 0, H);
+  grad.addColorStop(0, "rgba(16,19,24,0)"); grad.addColorStop(0.55, "rgba(16,19,24,.62)"); grad.addColorStop(1, "rgba(16,19,24,.86)");
+  ctx.fillStyle = grad; ctx.fillRect(0, H-900, W, 900);
+
+  let cy = H-560;
+  fehDrawPill(ctx, (v.dia||"").toUpperCase(), 64, cy, {bg:HOME_BRAND.terracota, color:HOME_BRAND.navy, font:'700 22px "Inter"', fontSize:22, spacing:2});
+  cy += 100;
+
+  const lines = fehWrapTitleTokens(ctx, v.titulo||"", (HOME_TEMPLATES[3].fields[1]).italic, W-128, '700 82px "Playfair Display"', 'italic 700 82px "Playfair Display"');
+  cy = fehDrawTitleLines(ctx, lines, 64, cy+82, 84, "#FFFFFF", HOME_BRAND.terracota, '700 82px "Playfair Display"', 'italic 700 82px "Playfair Display"');
+  cy += 44;
+  ctx.font = '500 32px "Inter"'; ctx.fillStyle = "#DDE3F0"; ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
+  ctx.fillText(v.subtitulo||"", 64, cy);
+}
+
+// ── STORY B · foto + banda de servicio ──────────────────────────
+function fehDrawStoryB(ctx, W, H, st){
+  const v = st.values, ph = st.photos;
+  ctx.fillStyle = HOME_BRAND.navy; ctx.fillRect(0,0,W,H);
+  const photoH = 1180;
+  fehDrawPhoto(ctx, ph.foto, 0, 0, W, photoH, "foto vertical");
+  ctx.fillStyle = "rgba(11,31,58,.9)"; ctx.fillRect(56, 64, 210, 50);
+  fehDrawLogoLockup(ctx, 66, 68, 42, false);
+  ctx.fillStyle = HOME_BRAND.terracota; ctx.fillRect(0, photoH, W, 10);
+
+  let cy = photoH + 110;
+  ctx.font = '700 24px "Inter"'; ctx.fillStyle = HOME_BRAND.terracota; ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
+  fehFillTextTracked(ctx, (v.eyebrow||"").toUpperCase(), 64, cy, 3);
+  cy += 76;
+
+  const lines = fehWrapTitleTokens(ctx, v.titulo||"", (HOME_TEMPLATES[4].fields[1]).italic, W-128, '700 76px "Playfair Display"', 'italic 700 76px "Playfair Display"');
+  cy = fehDrawTitleLines(ctx, lines, 64, cy+76, 78, "#FFFFFF", HOME_BRAND.terracota, '700 76px "Playfair Display"', 'italic 700 76px "Playfair Display"');
+  cy += 46;
+  ctx.font = '500 27px "Inter"'; ctx.fillStyle = "rgba(247,243,238,.85)"; ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
+  ctx.fillText("WhatsApp "+(v.tel||""), 64, cy);
+}
+
+// ── STORY C · antes/después rápido ──────────────────────────────
+function fehDrawStoryC(ctx, W, H, st){
+  const v = st.values, ph = st.photos;
+  ctx.fillStyle = HOME_BRAND.navy; ctx.fillRect(0,0,W,H);
+
+  fehDrawLogoLockup(ctx, 64, 64, 34, true);
+  ctx.font = '600 22px "Inter"'; ctx.fillStyle = "rgba(247,243,238,.75)"; ctx.textAlign = "right"; ctx.textBaseline = "alphabetic";
+  fehFillTextTracked(ctx, "MEXICALI, B.C.", W-64 - fehTrackedWidth(ctx,"MEXICALI, B.C.",2), 100, 2);
+
+  const gridY = 190, gridH = H - 190 - 220, gap = 10;
+  const rowH = (gridH-gap)/2;
+  fehDrawPhoto(ctx, ph.antes, 64, gridY, W-128, rowH, "foto ANTES");
+  fehDrawPhoto(ctx, ph.despues, 64, gridY+rowH+gap, W-128, rowH, "foto DESPUÉS");
+  fehTag(ctx, "ANTES", 64, gridY, HOME_BRAND.grafito, "#FFFFFF");
+  fehTag(ctx, "DESPUÉS", 64, gridY+rowH+gap, HOME_BRAND.terracota, HOME_BRAND.navy);
+
+  const lines = fehWrapTitleTokens(ctx, v.titulo||"", (HOME_TEMPLATES[5].fields[0]).italic, W-128, '700 64px "Playfair Display"', 'italic 700 64px "Playfair Display"');
+  fehDrawTitleLines(ctx, lines, 64, gridY+gridH+82, 68, "#FFFFFF", HOME_BRAND.terracota, '700 64px "Playfair Display"', 'italic 700 64px "Playfair Display"');
+}
+
+window.fehAbrir = fehAbrir;
+window.fehAtras = fehAtras;
+window.fehVolverPicker = fehVolverPicker;
+window.fehElegirPlantilla = fehElegirPlantilla;
+window.fehSetValor = fehSetValor;
+window.fehCargarFoto = fehCargarFoto;
+window.fehDescargar = fehDescargar;
+window.fehCopyPostText = fehCopyPostText;
 
 // ══════════════════════════════════════════════════════════════
 // CALENDARIO DE PUBLICACIONES — sugerencias por día de la semana
