@@ -843,16 +843,17 @@ body.in-contactos #app, body.in-contactosdb #app{
 .feh-picker-dims{font-family:"JetBrains Mono",monospace;font-size:9.5px;color:#8A7F73;}
 .feh-canvas-area{flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:16px;background:#EFE7DC;}
 .feh-canvas-area canvas{max-width:100%;max-height:60vh;box-shadow:0 4px 24px rgba(11,31,58,.18);border-radius:2px;background:#ccc;}
-.feh-form-wrap{padding:16px;display:flex;flex-direction:column;gap:14px;}
-.feh-ctrl-group{display:flex;flex-direction:column;gap:5px;}
+.feh-form-wrap{padding:16px;display:flex;flex-direction:column;gap:22px;}
+.feh-ctrl-group{display:flex;flex-direction:column;gap:7px;margin-bottom:18px;}
+.feh-ctrl-group:last-child{margin-bottom:0;}
 .feh-ctrl-label{font-size:10px;font-weight:700;color:#8A7F73;text-transform:uppercase;letter-spacing:.5px;font-family:var(--ds-font-body);}
 .feh-input{border:1.5px solid #E7DFD5;border-radius:10px;padding:9px 11px;font-size:13px;font-family:inherit;color:#0B1F3A;background:#fff;width:100%;}
 .feh-input:focus{outline:none;border-color:#C36F4A;}
 .feh-photoslot{border:2px dashed #C9BBAE;border-radius:12px;padding:14px;text-align:center;cursor:pointer;background:#fff;font-size:11.5px;color:#8A7F73;font-weight:600;}
 .feh-photoslot.feh-filled{border-style:solid;border-color:#C36F4A;color:#0B1F3A;}
-.feh-pan-ctrl{display:flex;flex-direction:column;}
+.feh-pan-ctrl{display:flex;flex-direction:column;gap:4px;}
 .feh-range{width:100%;accent-color:#C36F4A;}
-.feh-check-row{display:flex;align-items:center;gap:8px;font-size:12px;color:#0B1F3A;font-weight:600;cursor:pointer;font-family:inherit;}
+.feh-check-row{display:flex;align-items:center;gap:8px;font-size:12px;color:#0B1F3A;font-weight:600;cursor:pointer;font-family:inherit;margin-top:6px;}
 .feh-actions{display:flex;gap:8px;margin-top:2px;}
 .feh-btn{flex:1;padding:12px;border-radius:10px;font-size:12.5px;font-weight:700;border:none;cursor:pointer;font-family:inherit;}
 .feh-btn-ghost{background:#EFE7DC;color:#0B1F3A;}
@@ -21790,6 +21791,7 @@ const HOME_TEMPLATES = [
     fields:[
       {key:"titulo", label:"Título del servicio", default:"Restauración de banquetas"},
       {key:"ubicacion", label:"Ubicación / detalle", default:"Mexicali, Baja California"},
+      {key:"ciudad", label:"Ciudad (etiqueta de esquina)", default:"Mexicali, B.C."},
       {key:"tel", label:"WhatsApp", default:HOME_TEL_DEFAULT}
     ],
     draw: fehDrawFeedA },
@@ -21810,6 +21812,7 @@ const HOME_TEMPLATES = [
       {key:"tag1", label:"Etiqueta 1", default:"Banquetas"},
       {key:"tag2", label:"Etiqueta 2", default:"Colado de concreto"},
       {key:"tag3", label:"Etiqueta 3", default:"Piso residencial"},
+      {key:"ciudad", label:"Ciudad (etiqueta de esquina)", default:"Mexicali, B.C."},
       {key:"tel", label:"WhatsApp", default:HOME_TEL_DEFAULT}
     ],
     draw: fehDrawFeedC },
@@ -21832,7 +21835,8 @@ const HOME_TEMPLATES = [
   { id:"story-c", cat:"story", w:1080, h:1920, label:"Antes / Después rápido",
     photos:[{key:"antes",label:"Foto ANTES"},{key:"despues",label:"Foto DESPUÉS"}],
     fields:[
-      {key:"titulo", label:"Título final", default:"Banqueta nueva en 3 días"}
+      {key:"titulo", label:"Título final", default:"Banqueta nueva en 3 días"},
+      {key:"ciudad", label:"Ciudad (etiqueta de esquina)", default:"Mexicali, B.C."}
     ],
     draw: fehDrawStoryC },
 ];
@@ -22121,9 +22125,17 @@ async function fehDescargar(){
 // offX/offY: -1..1 (0 = centrado, como antes). Permiten reencuadrar la
 // foto dentro de su marco cuando el recorte automático (cover-fit) corta
 // mal el elemento importante de la imagen.
+//
+// Con un cover-fit "puro" (scale = max(w/imgW, h/imgH)), matemáticamente
+// SIEMPRE hay sobrante en un solo eje (el otro queda exacto, sobrante=0)
+// — cuál de los dos depende de la relación de aspecto de la foto contra
+// el marco. Eso hacía que uno de los dos sliders no tuviera ningún efecto
+// visible según la foto (no era un listener roto: no había a dónde mover
+// la imagen en ese eje). Se agrega un 20% de zoom extra fijo para que
+// SIEMPRE quede margen de reencuadre en ambos ejes, sin importar la foto.
 function fehCoverRect(img, x, y, w, h, offX, offY){
   offX = offX || 0; offY = offY || 0;
-  const scale = Math.max(w / img.naturalWidth, h / img.naturalHeight);
+  const scale = Math.max(w / img.naturalWidth, h / img.naturalHeight) * 1.2;
   const dw = img.naturalWidth * scale, dh = img.naturalHeight * scale;
   const overflowX = dw - w, overflowY = dh - h;
   const dx = x - overflowX * ((offX + 1) / 2);
@@ -22283,8 +22295,11 @@ function fehDrawFeedA(ctx, W, H, st){
   ctx.font = '500 27px "Inter"';
   ctx.fillStyle = "#FFFFFF"; ctx.textAlign = "left"; ctx.textBaseline = "middle";
   ctx.fillText("WhatsApp "+(v.tel||""), 56, footY);
+  // Etiqueta de ciudad: viene del campo "ciudad" tal cual lo escribió el
+  // usuario, sin forzar mayúsculas (antes era un literal fijo en caps).
   ctx.font = '600 22px "Inter"'; ctx.fillStyle = HOME_BRAND.terracota; ctx.textAlign = "right";
-  fehFillTextTracked(ctx, "MEXICALI, B.C.", W-56 - fehTrackedWidth(ctx,"MEXICALI, B.C.",3), footY+2, 3);
+  const ciudadA = v.ciudad || "Mexicali, B.C.";
+  fehFillTextTracked(ctx, ciudadA, W-56 - fehTrackedWidth(ctx,ciudadA,3), footY+2, 3);
 
   ctx.fillStyle = HOME_BRAND.terracota; ctx.fillRect(0, H-12, W, 12);
 }
@@ -22301,8 +22316,10 @@ function fehDrawFeedB(ctx, W, H, st){
 
   ctx.fillStyle = HOME_BRAND.terracota;
   ctx.fillRect(0, rowH-27, W, 54);
-  ctx.font = '700 26px "Inter"'; ctx.fillStyle = HOME_BRAND.navy; ctx.textAlign = "center"; ctx.textBaseline = "middle";
-  fehFillTextTracked(ctx, (v.franja||"").toUpperCase(), W/2 - fehTrackedWidth(ctx,(v.franja||"").toUpperCase(),3)/2, rowH+2, 3);
+  // Peso más ligero y tracking más cerrado que antes (700/3px se veía
+  // pesado y tosco, tipo "máquina de escribir").
+  ctx.font = '500 22px "Inter"'; ctx.fillStyle = HOME_BRAND.navy; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  fehFillTextTracked(ctx, (v.franja||"").toUpperCase(), W/2 - fehTrackedWidth(ctx,(v.franja||"").toUpperCase(),1.5)/2, rowH+2, 1.5);
 
   // Degradado más alto y en varios pasos (en vez de un salto brusco a los
   // 2/5 de su altura) para que la transición hacia el panel de texto no se
@@ -22378,7 +22395,8 @@ function fehDrawFeedC(ctx, W, H, st){
   ctx.font = '500 27px "Inter"'; ctx.fillStyle = "#FFFFFF"; ctx.textAlign = "left"; ctx.textBaseline = "middle";
   ctx.fillText("WhatsApp "+(v.tel||""), 56, H-46);
   ctx.font = '600 22px "Inter"'; ctx.fillStyle = HOME_BRAND.terracota; ctx.textAlign = "right";
-  fehFillTextTracked(ctx, "MEXICALI, B.C.", W-56 - fehTrackedWidth(ctx,"MEXICALI, B.C.",3), H-44, 3);
+  const ciudadC = v.ciudad || "Mexicali, B.C.";
+  fehFillTextTracked(ctx, ciudadC, W-56 - fehTrackedWidth(ctx,ciudadC,3), H-44, 3);
   ctx.fillStyle = HOME_BRAND.terracota; ctx.fillRect(0, H-12, W, 12);
 }
 
@@ -22420,17 +22438,19 @@ function fehDrawStoryB(ctx, W, H, st){
   fehDrawLogoLockup(ctx, 66, 68, 42, false);
   ctx.fillStyle = HOME_BRAND.terracota; ctx.fillRect(0, photoH, W, 10);
 
-  let cy = photoH + 55;
+  // Más separación entre eyebrow, título y WhatsApp — la ronda anterior
+  // aún se sentía amontonada entre los 3 elementos.
+  let cy = photoH + 50;
   ctx.font = '700 24px "Inter"'; ctx.fillStyle = HOME_BRAND.terracota; ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
   fehFillTextTracked(ctx, (v.eyebrow||"").toUpperCase(), 64, cy, 3);
-  cy += 38;
+  cy += 46;
 
   const lines = fehWrapTitleTokens(ctx, v.titulo||"", W-128, '700 76px "Playfair Display"', 'italic 700 76px "Playfair Display"');
-  cy = fehDrawTitleLines(ctx, lines, 64, cy+38, 78, "#FFFFFF", HOME_BRAND.terracota, '700 76px "Playfair Display"', 'italic 700 76px "Playfair Display"');
+  cy = fehDrawTitleLines(ctx, lines, 64, cy+46, 78, "#FFFFFF", HOME_BRAND.terracota, '700 76px "Playfair Display"', 'italic 700 76px "Playfair Display"');
   // Espacio suficiente entre la última línea del título y el WhatsApp: la
   // separación anterior (23px) no dejaba lugar para el descendente del
   // título (Playfair 76px) + el ascendente del WhatsApp, y quedaban pegados.
-  cy += 44;
+  cy += 58;
   ctx.font = '500 27px "Inter"'; ctx.fillStyle = "rgba(247,243,238,.85)"; ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
   ctx.fillText("WhatsApp "+(v.tel||""), 64, cy);
 }
@@ -22443,7 +22463,8 @@ function fehDrawStoryC(ctx, W, H, st){
   ctx.fillStyle = "rgba(11,31,58,.92)"; ctx.fillRect(64, 58, 190, 44);
   fehDrawLogoLockup(ctx, 74, 62, 36, false);
   ctx.font = '600 22px "Inter"'; ctx.fillStyle = "rgba(247,243,238,.75)"; ctx.textAlign = "right"; ctx.textBaseline = "alphabetic";
-  fehFillTextTracked(ctx, "MEXICALI, B.C.", W-64 - fehTrackedWidth(ctx,"MEXICALI, B.C.",2), 100, 2);
+  const ciudadSC = v.ciudad || "Mexicali, B.C.";
+  fehFillTextTracked(ctx, ciudadSC, W-64 - fehTrackedWidth(ctx,ciudadSC,2), 100, 2);
 
   const gridY = 190, gridH = H - 190 - 220, gap = 10, po = st.photoOffsets || {};
   const rowH = (gridH-gap)/2;
