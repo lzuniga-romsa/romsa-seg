@@ -22210,7 +22210,7 @@ function fehDrawFeedA(ctx, W, H, st){
   const lines = fehWrapTitleTokens(ctx, v.titulo||"", (HOME_TEMPLATES[0].fields[0]).italic, W-112, '700 74px "Playfair Display"', 'italic 700 74px "Playfair Display"');
   const titleBottom = fehDrawTitleLines(ctx, lines, 56, 220, 76, "#FFFFFF", HOME_BRAND.terracota, '700 74px "Playfair Display"', 'italic 700 74px "Playfair Display"');
   ctx.font = '500 28px "Inter"';
-  ctx.fillStyle = "rgba(247,243,238,.72)";
+  ctx.fillStyle = "rgba(247,243,238,.88)"; // subtítulo: más opaco para legibilidad sobre navy
   ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
   ctx.fillText(v.ubicacion||"", 56, titleBottom + 46);
 
@@ -22245,12 +22245,22 @@ function fehDrawFeedB(ctx, W, H, st){
   ctx.font = '700 26px "Inter"'; ctx.fillStyle = HOME_BRAND.navy; ctx.textAlign = "center"; ctx.textBaseline = "middle";
   fehFillTextTracked(ctx, (v.franja||"").toUpperCase(), W/2 - fehTrackedWidth(ctx,(v.franja||"").toUpperCase(),3)/2, rowH+2, 3);
 
-  const grad = ctx.createLinearGradient(0, H-520, 0, H);
-  grad.addColorStop(0, "rgba(11,31,58,0)"); grad.addColorStop(0.42, "rgba(11,31,58,.86)"); grad.addColorStop(1, HOME_BRAND.navy);
-  ctx.fillStyle = grad; ctx.fillRect(0, H-520, W, 520);
+  // Degradado más alto y en varios pasos (en vez de un salto brusco a los
+  // 2/5 de su altura) para que la transición hacia el panel de texto no se
+  // vea como un corte duro contra la foto.
+  const gradH = 680;
+  const grad = ctx.createLinearGradient(0, H-gradH, 0, H);
+  grad.addColorStop(0, "rgba(11,31,58,0)");
+  grad.addColorStop(0.35, "rgba(11,31,58,.35)");
+  grad.addColorStop(0.65, "rgba(11,31,58,.82)");
+  grad.addColorStop(1, HOME_BRAND.navy);
+  ctx.fillStyle = grad; ctx.fillRect(0, H-gradH, W, gradH);
 
   ctx.fillStyle = "rgba(11,31,58,.92)"; ctx.fillRect(56, 44, 230, 54);
   fehDrawLogoLockup(ctx, 66, 50, 42, false);
+  // Sello "Cotización sin costo" en posición fija arriba a la derecha,
+  // igual que en Feed A y Feed C (antes vivía abajo, junto al WhatsApp).
+  fehDrawPill(ctx, "Cotización sin costo", W-56, 40, {align:"right", bg:HOME_BRAND.terracota, color:HOME_BRAND.navy, font:'700 22px "Inter"', fontSize:22});
 
   const lines = fehWrapTitleTokens(ctx, v.titulo||"", (HOME_TEMPLATES[1].fields[1]).italic, W-112, '700 80px "Playfair Display"', 'italic 700 80px "Playfair Display"');
   const titleBottom = fehDrawTitleLines(ctx, lines, 56, H-260, 80, "#FFFFFF", HOME_BRAND.terracota, '700 80px "Playfair Display"', 'italic 700 80px "Playfair Display"');
@@ -22260,7 +22270,6 @@ function fehDrawFeedB(ctx, W, H, st){
 
   ctx.font = '500 27px "Inter"'; ctx.fillStyle = "#FFFFFF"; ctx.textAlign = "left"; ctx.textBaseline = "middle";
   ctx.fillText("WhatsApp "+(v.tel||""), 56, titleBottom+80);
-  fehDrawPill(ctx, "Cotización sin costo", W-56, titleBottom+58, {align:"right", bg:HOME_BRAND.terracota, color:HOME_BRAND.navy, font:'700 21px "Inter"', fontSize:21});
 }
 
 // ── FEED C · tip o testimonio (sin foto) ────────────────────────
@@ -22329,7 +22338,9 @@ function fehDrawStoryA(ctx, W, H, st){
   const lines = fehWrapTitleTokens(ctx, v.titulo||"", (HOME_TEMPLATES[3].fields[1]).italic, W-128, '700 82px "Playfair Display"', 'italic 700 82px "Playfair Display"');
   cy = fehDrawTitleLines(ctx, lines, 64, cy+82, 84, "#FFFFFF", HOME_BRAND.terracota, '700 82px "Playfair Display"', 'italic 700 82px "Playfair Display"');
   cy += 44;
-  ctx.font = '500 32px "Inter"'; ctx.fillStyle = "#DDE3F0"; ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
+  // Subtítulo: mismo tono crema-sobre-navy que el resto de subtítulos (antes
+  // era un azul pálido fuera de paleta, y de bajo contraste sobre la foto).
+  ctx.font = '500 32px "Inter"'; ctx.fillStyle = "rgba(247,243,238,.88)"; ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
   ctx.fillText(v.subtitulo||"", 64, cy);
 }
 
@@ -22337,20 +22348,23 @@ function fehDrawStoryA(ctx, W, H, st){
 function fehDrawStoryB(ctx, W, H, st){
   const v = st.values, ph = st.photos;
   ctx.fillStyle = HOME_BRAND.navy; ctx.fillRect(0,0,W,H);
-  const photoH = 1180;
+  // Banda inferior reducida a la mitad (740px -> 370px): la foto crece para
+  // ocupar el espacio liberado; los espacios internos se comprimen a la
+  // mitad manteniendo la misma tipografía y el mismo ritmo proporcional.
+  const photoH = 1550;
   fehDrawPhoto(ctx, ph.foto, 0, 0, W, photoH, "foto vertical");
   ctx.fillStyle = "rgba(11,31,58,.9)"; ctx.fillRect(56, 64, 210, 50);
   fehDrawLogoLockup(ctx, 66, 68, 42, false);
   ctx.fillStyle = HOME_BRAND.terracota; ctx.fillRect(0, photoH, W, 10);
 
-  let cy = photoH + 110;
+  let cy = photoH + 55;
   ctx.font = '700 24px "Inter"'; ctx.fillStyle = HOME_BRAND.terracota; ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
   fehFillTextTracked(ctx, (v.eyebrow||"").toUpperCase(), 64, cy, 3);
-  cy += 76;
+  cy += 38;
 
   const lines = fehWrapTitleTokens(ctx, v.titulo||"", (HOME_TEMPLATES[4].fields[1]).italic, W-128, '700 76px "Playfair Display"', 'italic 700 76px "Playfair Display"');
-  cy = fehDrawTitleLines(ctx, lines, 64, cy+76, 78, "#FFFFFF", HOME_BRAND.terracota, '700 76px "Playfair Display"', 'italic 700 76px "Playfair Display"');
-  cy += 46;
+  cy = fehDrawTitleLines(ctx, lines, 64, cy+38, 78, "#FFFFFF", HOME_BRAND.terracota, '700 76px "Playfair Display"', 'italic 700 76px "Playfair Display"');
+  cy += 23;
   ctx.font = '500 27px "Inter"'; ctx.fillStyle = "rgba(247,243,238,.85)"; ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
   ctx.fillText("WhatsApp "+(v.tel||""), 64, cy);
 }
