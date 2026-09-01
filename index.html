@@ -791,7 +791,13 @@ body.in-contactos #app, body.in-contactosdb #app{
 .fe-brand-tab.active{background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.12);}
 .fe-cal-btn{background:#EEF1F6;border:none;border-radius:8px;width:34px;height:34px;font-size:15px;cursor:pointer;flex-shrink:0;margin:0 6px;}
 #screen-fotoeditor{position:relative;}
-.fe-cal-overlay{position:absolute;inset:0;background:#fff;z-index:20;overflow-y:auto;padding:14px 16px 30px;}
+/* position:fixed (no absolute) + z-index por encima de #feh-root (500):
+   este calendario también se abre desde dentro del área HOME, que usa
+   position:fixed;inset:0 para escapar los 500px de #app — si el
+   calendario se quedara con position:absolute (relativo al angosto
+   #screen-fotoeditor) o con un z-index menor, quedaría atrapado detrás
+   o encogido a esos 500px en vez de cubrir toda la pantalla. */
+.fe-cal-overlay{position:fixed;inset:0;background:#fff;z-index:600;overflow-y:auto;padding:14px 16px 30px;}
 .fe-cal-header{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
 .fe-cal-close{background:#EEF1F6;border:none;border-radius:8px;padding:7px 12px;font-size:12px;font-weight:700;color:#0B1F3A;cursor:pointer;font-family:inherit;}
 .fe-cal-title{font-size:15px;font-weight:800;color:#1B1B1F;}
@@ -3768,7 +3774,7 @@ body.in-contactos #app, body.in-contactosdb #app{
       <div class="feh-topbar">
         <button class="feh-back" id="feh-back-btn" onclick="fehAtras()">← Atrás</button>
         <div class="feh-title">HOME <em>by ROMSA</em> · Plantillas</div>
-        <div style="width:56px;"></div>
+        <button class="feh-back" onclick="fehAbrirCalendario()" title="Calendario de publicaciones — HOME by ROMSA">📅 Calendario</button>
       </div>
 
       <!-- Paso 1: elegir plantilla, agrupada en Posts / Historias -->
@@ -21880,6 +21886,14 @@ function fehAtras(){
   document.getElementById("feh-root").style.display = "none";
 }
 
+// Acceso directo al calendario de publicaciones (compartido con el resto
+// del Editor de Fotos) desde dentro del área HOME, ya filtrado a "HOME by
+// ROMSA" — antes había que salir de esta área para encontrarlo.
+async function fehAbrirCalendario(){
+  await bceAbrirCalendario();
+  bceCalFiltrarMarca("home");
+}
+
 function fehRenderPicker(){
   const cardHtml = t=>{
     const dims = t.w+" × "+t.h+" px";
@@ -22479,6 +22493,7 @@ function fehDrawStoryC(ctx, W, H, st){
 
 window.fehAbrir = fehAbrir;
 window.fehAtras = fehAtras;
+window.fehAbrirCalendario = fehAbrirCalendario;
 window.fehVolverPicker = fehVolverPicker;
 window.fehElegirPlantilla = fehElegirPlantilla;
 window.fehSetValor = fehSetValor;
