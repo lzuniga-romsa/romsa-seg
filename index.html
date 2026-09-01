@@ -850,6 +850,9 @@ body.in-contactos #app, body.in-contactosdb #app{
 .feh-input:focus{outline:none;border-color:#C36F4A;}
 .feh-photoslot{border:2px dashed #C9BBAE;border-radius:12px;padding:14px;text-align:center;cursor:pointer;background:#fff;font-size:11.5px;color:#8A7F73;font-weight:600;}
 .feh-photoslot.feh-filled{border-style:solid;border-color:#C36F4A;color:#0B1F3A;}
+.feh-pan-ctrl{display:flex;flex-direction:column;}
+.feh-range{width:100%;accent-color:#C36F4A;}
+.feh-check-row{display:flex;align-items:center;gap:8px;font-size:12px;color:#0B1F3A;font-weight:600;cursor:pointer;font-family:inherit;}
 .feh-actions{display:flex;gap:8px;margin-top:2px;}
 .feh-btn{flex:1;padding:12px;border-radius:10px;font-size:12.5px;font-weight:700;border:none;cursor:pointer;font-family:inherit;}
 .feh-btn-ghost{background:#EFE7DC;color:#0B1F3A;}
@@ -21782,27 +21785,27 @@ const HOME_BRAND = { navy:"#0B1F3A", azul:"#1E5BA8", terracota:"#C36F4A", crema:
 const HOME_TEL_DEFAULT = (typeof window !== "undefined" && window._homeTel) || "686 175 4812";
 
 const HOME_TEMPLATES = [
-  { id:"feed-a", cat:"feed", w:1080, h:1350, label:"Antes / Después vertical",
+  { id:"feed-a", cat:"feed", w:1080, h:1350, label:"Antes / Después vertical", hasPill:true,
     photos:[{key:"antes",label:"Foto ANTES (vertical)"},{key:"despues",label:"Foto DESPUÉS (vertical)"}],
     fields:[
-      {key:"titulo", label:"Título del servicio", default:"Restauración de banquetas", italic:"banquetas"},
-      {key:"ubicacion", label:"Ubicación / detalle", default:"Colonia Nueva, Mexicali · 3 días de obra"},
+      {key:"titulo", label:"Título del servicio", default:"Restauración de banquetas"},
+      {key:"ubicacion", label:"Ubicación / detalle", default:"Mexicali, Baja California"},
       {key:"tel", label:"WhatsApp", default:HOME_TEL_DEFAULT}
     ],
     draw: fehDrawFeedA },
-  { id:"feed-b", cat:"feed", w:1080, h:1350, label:"Antes / Después a sangre",
+  { id:"feed-b", cat:"feed", w:1080, h:1350, label:"Antes / Después a sangre", hasPill:true,
     photos:[{key:"antes",label:"Foto ANTES (horizontal)"},{key:"despues",label:"Foto DESPUÉS (horizontal)"}],
     fields:[
       {key:"franja", label:"Frase de la franja", default:"Mismo lugar · 3 días"},
-      {key:"titulo", label:"Título del servicio", default:"Piso estampado para cochera", italic:"cochera"},
+      {key:"titulo", label:"Título del servicio", default:"Piso estampado para cochera"},
       {key:"tel", label:"WhatsApp", default:HOME_TEL_DEFAULT}
     ],
     draw: fehDrawFeedB },
-  { id:"feed-c", cat:"feed", w:1080, h:1350, label:"Tip o testimonio",
+  { id:"feed-c", cat:"feed", w:1080, h:1350, label:"Tip o testimonio", hasPill:true,
     photos:[],
     fields:[
       {key:"eyebrow", label:"Etiqueta superior", default:"Tip de mantenimiento"},
-      {key:"titulo", label:"Pregunta o frase principal", default:"Tu banqueta se está agrietando", italic:"agrietando"},
+      {key:"titulo", label:"Pregunta o frase principal", default:"Tu banqueta se está agrietando"},
       {key:"cuerpo", label:"Texto de desarrollo", default:"Las grietas finas se sellan; las que abren más de 5 mm casi siempre vienen de la base. Repararlas sin corregir el terreno solo retrasa el problema unos meses."},
       {key:"tag1", label:"Etiqueta 1", default:"Banquetas"},
       {key:"tag2", label:"Etiqueta 2", default:"Colado de concreto"},
@@ -21814,7 +21817,7 @@ const HOME_TEMPLATES = [
     photos:[{key:"foto",label:"Foto o fotograma vertical"}],
     fields:[
       {key:"dia", label:"Etiqueta de progreso", default:"Día 2"},
-      {key:"titulo", label:"Título", default:"Colado listo en Calle Novena", italic:"Novena"},
+      {key:"titulo", label:"Título", default:"Colado listo en Calle Novena"},
       {key:"subtitulo", label:"Subtítulo", default:"Curado de 7 días antes de dar paso"}
     ],
     draw: fehDrawStoryA },
@@ -21822,14 +21825,14 @@ const HOME_TEMPLATES = [
     photos:[{key:"foto",label:"Foto vertical"}],
     fields:[
       {key:"eyebrow", label:"Tipo de servicio", default:"Servicio residencial"},
-      {key:"titulo", label:"Título", default:"Renovación de patio y andadores", italic:"andadores"},
+      {key:"titulo", label:"Título", default:"Renovación de patio y andadores"},
       {key:"tel", label:"WhatsApp", default:HOME_TEL_DEFAULT}
     ],
     draw: fehDrawStoryB },
   { id:"story-c", cat:"story", w:1080, h:1920, label:"Antes / Después rápido",
     photos:[{key:"antes",label:"Foto ANTES"},{key:"despues",label:"Foto DESPUÉS"}],
     fields:[
-      {key:"titulo", label:"Título final", default:"Banqueta nueva en 3 días", italic:"3 días"}
+      {key:"titulo", label:"Título final", default:"Banqueta nueva en 3 días"}
     ],
     draw: fehDrawStoryC },
 ];
@@ -21911,7 +21914,7 @@ function fehVolverPicker(){
 function fehElegirPlantilla(id){
   const t = HOME_TEMPLATES.find(x=>x.id===id);
   if(!t) return;
-  FEH = { tplId:id, photos:{}, values:{} };
+  FEH = { tplId:id, photos:{}, values:{}, photoOffsets:{}, showBadge:true };
   t.fields.forEach(f=>{ FEH.values[f.key] = f.default; });
 
   document.getElementById("feh-step-picker").classList.remove("active");
@@ -21923,6 +21926,12 @@ function fehElegirPlantilla(id){
       +'<label class="feh-ctrl-label">'+escapeHtml(p.label)+'</label>'
       +'<div class="feh-photoslot" id="feh-slot-'+p.key+'" onclick="document.getElementById(\'feh-file-'+p.key+'\').click()">📷 Toca para subir</div>'
       +'<input type="file" accept="image/*" id="feh-file-'+p.key+'" style="display:none;" onchange="fehCargarFoto(\''+p.key+'\',event)">'
+      +'<div class="feh-pan-ctrl" id="feh-pan-'+p.key+'" style="display:none;">'
+        +'<label class="feh-ctrl-label" style="margin-top:8px;">Mover foto — horizontal</label>'
+        +'<input type="range" class="feh-range" min="-100" max="100" value="0" oninput="fehSetOffset(\''+p.key+'\',\'x\',this.value)">'
+        +'<label class="feh-ctrl-label" style="margin-top:6px;">Mover foto — vertical</label>'
+        +'<input type="range" class="feh-range" min="-100" max="100" value="0" oninput="fehSetOffset(\''+p.key+'\',\'y\',this.value)">'
+      +'</div>'
     +'</div>'
   ).join("");
 
@@ -21933,10 +21942,24 @@ function fehElegirPlantilla(id){
         ? '<textarea class="feh-input" rows="3" oninput="fehSetValor(\''+f.key+'\',this.value)">'+escapeHtml(f.default)+'</textarea>'
         : '<input type="text" class="feh-input" value="'+escapeHtml(f.default)+'" oninput="fehSetValor(\''+f.key+'\',this.value)">')
     +'</div>'
-  ).join("");
+  ).join("") + (t.hasPill
+    ? '<label class="feh-check-row"><input type="checkbox" checked onchange="fehSetShowBadge(this.checked)"> Mostrar sello "Cotización sin costo"</label>'
+    : "");
 
   fehActualizarBotonDescarga();
   (_fehFontsReady || Promise.resolve()).then(fehRenderPreview);
+}
+
+function fehSetOffset(key, axis, val){
+  if(!FEH.photoOffsets) FEH.photoOffsets = {};
+  if(!FEH.photoOffsets[key]) FEH.photoOffsets[key] = {x:0,y:0};
+  FEH.photoOffsets[key][axis] = parseFloat(val)/100; // rango -1..1
+  fehRenderPreview();
+}
+
+function fehSetShowBadge(checked){
+  FEH.showBadge = checked;
+  fehRenderPreview();
 }
 
 function fehSetValor(key, val){
@@ -21952,8 +21975,17 @@ function fehCargarFoto(key, e){
     const img = new Image();
     img.onload = ()=>{
       FEH.photos[key] = img;
+      // Reiniciar el encuadre manual: una foto nueva no debe heredar el
+      // ajuste de posición de la que tenía antes ese mismo recuadro.
+      if(!FEH.photoOffsets) FEH.photoOffsets = {};
+      FEH.photoOffsets[key] = {x:0, y:0};
       const slot = document.getElementById("feh-slot-"+key);
       if(slot){ slot.classList.add("feh-filled"); slot.textContent = "✓ Foto cargada — toca para cambiar"; }
+      const panCtrl = document.getElementById("feh-pan-"+key);
+      if(panCtrl){
+        panCtrl.style.display = "block";
+        panCtrl.querySelectorAll('input[type="range"]').forEach(r=>{ r.value = 0; });
+      }
       fehActualizarBotonDescarga();
       fehRenderPreview();
     };
@@ -21994,31 +22026,57 @@ const HOME_PILAR_POR_TPL = {
   "story-c": "Garantía escrita al entregar la obra.",
 };
 
+// Un generador de copy por plantilla (sin IA, plantilla de texto simple):
+// cada uno usa los campos REALES de esa plantilla específica (no un
+// molde genérico título+lugar repetido igual en las 6), para que el copy
+// hable del antes/después, el tip, el avance de obra, etc. según toque.
+const HOME_COPY_BUILDERS = {
+  "feed-a": (v, tel, pilar) => [
+    v.titulo, v.ubicacion, "",
+    "Antes y después reales del trabajo — sin retoques.",
+    pilar, "",
+    "¿Quieres un antes y después así en tu casa? Escríbenos por WhatsApp al " + tel + " — cotización sin costo.",
+    "", "#HOMEbyROMSA #AntesYDespues #Mexicali"
+  ],
+  "feed-b": (v, tel, pilar) => [
+    v.titulo, v.franja, "",
+    pilar, "",
+    "¿Quieres una cotización sin costo? Escríbenos por WhatsApp al " + tel + ".",
+    "", "#HOMEbyROMSA #PisosResidenciales #Mexicali"
+  ],
+  "feed-c": (v, tel, pilar) => [
+    v.titulo, "",
+    v.cuerpo, "",
+    [v.tag1, v.tag2, v.tag3].filter(Boolean).join(" · "),
+    "", "¿Dudas sobre tu piso? Escríbenos por WhatsApp al " + tel + " — te asesoramos sin costo.",
+    "", "#HOMEbyROMSA #TipsDeMantenimiento #Mexicali"
+  ],
+  "story-a": (v) => [
+    v.titulo, v.subtitulo, "",
+    ((v.dia||"").trim() ? v.dia + " del proyecto — " : "") + "reporte diario del avance por WhatsApp, como siempre.",
+    "", "Desliza para ver el avance completo 👉"
+  ],
+  "story-b": (v, tel) => [
+    v.eyebrow, v.titulo, "",
+    "¿Quieres una cotización sin costo? Escríbenos por WhatsApp al " + tel + ".",
+    "", "Desliza para agendar tu visita técnica 👉"
+  ],
+  "story-c": (v) => [
+    v.titulo, "",
+    "Antes y después — así de rápido.",
+    "", "Desliza para ver el resultado completo 👉"
+  ],
+};
+
 function fehGenerateCopy(t, st){
   const el = document.getElementById("feh-post-copy");
   if(!el) return "";
   const v = st.values || {};
-  const titulo = (v.titulo || "").trim() || "Nuestro trabajo más reciente";
-  const lugar = (v.ubicacion || v.subtitulo || "").trim();
   const tel = (v.tel || HOME_TEL_DEFAULT).trim();
   const pilar = HOME_PILAR_POR_TPL[t.id] || "";
-
-  let cuerpo;
-  if(t.cat === "story"){
-    cuerpo = [titulo, lugar, "", "Desliza para más info 👉"].filter(Boolean).join("\n");
-  } else {
-    cuerpo = [
-      titulo,
-      lugar,
-      "",
-      pilar,
-      "",
-      "¿Quieres una cotización sin costo? Escríbenos por WhatsApp al " + tel + ".",
-      "",
-      "#HOMEbyROMSA #PisosResidenciales #Mexicali"
-    ].filter(Boolean).join("\n");
-  }
-  el.value = cuerpo.trim();
+  const builder = HOME_COPY_BUILDERS[t.id];
+  const lineas = builder ? builder(v, tel, pilar) : [v.titulo];
+  el.value = lineas.map(l=>(l||"").toString().trim()).filter((l,i,arr)=> l !== "" || arr[i-1] !== "").join("\n").trim();
   return el.value;
 }
 
@@ -22060,16 +22118,24 @@ async function fehDescargar(){
 }
 
 // ── Helpers de dibujo compartidos por las 6 plantillas ──────────
-function fehCoverRect(img, x, y, w, h){
+// offX/offY: -1..1 (0 = centrado, como antes). Permiten reencuadrar la
+// foto dentro de su marco cuando el recorte automático (cover-fit) corta
+// mal el elemento importante de la imagen.
+function fehCoverRect(img, x, y, w, h, offX, offY){
+  offX = offX || 0; offY = offY || 0;
   const scale = Math.max(w / img.naturalWidth, h / img.naturalHeight);
   const dw = img.naturalWidth * scale, dh = img.naturalHeight * scale;
-  return { dx: x + (w - dw) / 2, dy: y + (h - dh) / 2, dw, dh };
+  const overflowX = dw - w, overflowY = dh - h;
+  const dx = x - overflowX * ((offX + 1) / 2);
+  const dy = y - overflowY * ((offY + 1) / 2);
+  return { dx, dy, dw, dh };
 }
-function fehDrawPhoto(ctx, img, x, y, w, h, label){
+function fehDrawPhoto(ctx, img, x, y, w, h, label, offset){
   ctx.save();
   ctx.beginPath(); ctx.rect(x, y, w, h); ctx.clip();
   if(img){
-    const r = fehCoverRect(img, x, y, w, h);
+    const o = offset || {x:0,y:0};
+    const r = fehCoverRect(img, x, y, w, h, o.x, o.y);
     ctx.drawImage(img, r.dx, r.dy, r.dw, r.dh);
   } else {
     ctx.fillStyle = "#D8DDE8";
@@ -22096,25 +22162,15 @@ function fehTrackedWidth(ctx, text, spacing){
   for(const ch of text) w += ctx.measureText(ch).width + spacing;
   return Math.max(0, w - spacing);
 }
-// Envuelve un título en líneas, marcando una palabra clave para dibujarse
-// en italic + terracota (regla del manual: "palabras destacadas en italic").
-function fehWrapTitleTokens(ctx, text, italicWord, maxWidth, fontNormal, fontItalic){
+// Envuelve un título en líneas. La ÚLTIMA PALABRA del texto actual siempre
+// se dibuja en italic + terracota (regla del manual: "palabras destacadas
+// en italic") — se calcula dinámicamente sobre lo que el usuario haya
+// escrito, no sobre una palabra fija del texto de ejemplo original, para
+// que el formato no se pierda al editar el campo.
+function fehWrapTitleTokens(ctx, text, maxWidth, fontNormal, fontItalic){
   const words = String(text).split(/\s+/).filter(Boolean);
-  const norm = s => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^\w]/g,"");
-  // Soporta frases de varias palabras (ej. "3 días") buscando la secuencia
-  // completa dentro de las palabras del título, no solo coincidencia de una.
-  const italicWords = italicWord ? String(italicWord).split(/\s+/).filter(Boolean).map(norm) : [];
   const isItalicAt = new Array(words.length).fill(false);
-  if(italicWords.length){
-    outer:
-    for(let i=0;i<=words.length-italicWords.length;i++){
-      for(let k=0;k<italicWords.length;k++){
-        if(norm(words[i+k]) !== italicWords[k]) continue outer;
-      }
-      for(let k=0;k<italicWords.length;k++) isItalicAt[i+k] = true;
-      break;
-    }
-  }
+  if(words.length) isItalicAt[words.length - 1] = true;
   ctx.font = fontNormal;
   const spaceW = ctx.measureText(" ").width;
   const lines = []; let cur = []; let curWidth = 0;
@@ -22205,18 +22261,21 @@ function fehDrawFeedA(ctx, W, H, st){
 
   ctx.fillStyle = "rgba(11,31,58,.92)"; ctx.fillRect(56, 40, 200, 46);
   fehDrawLogoLockup(ctx, 66, 44, 38, false);
-  fehDrawPill(ctx, "Cotización sin costo", W-56, 40, {align:"right", bg:HOME_BRAND.terracota, color:HOME_BRAND.navy, font:'700 22px "Inter"', fontSize:22});
+  if(st.showBadge !== false){
+    fehDrawPill(ctx, "Cotización sin costo", W-56, 40, {align:"right", bg:HOME_BRAND.terracota, color:HOME_BRAND.navy, font:'700 22px "Inter"', fontSize:22});
+  }
 
-  const lines = fehWrapTitleTokens(ctx, v.titulo||"", (HOME_TEMPLATES[0].fields[0]).italic, W-112, '700 74px "Playfair Display"', 'italic 700 74px "Playfair Display"');
+  const lines = fehWrapTitleTokens(ctx, v.titulo||"", W-112, '700 74px "Playfair Display"', 'italic 700 74px "Playfair Display"');
   const titleBottom = fehDrawTitleLines(ctx, lines, 56, 220, 76, "#FFFFFF", HOME_BRAND.terracota, '700 74px "Playfair Display"', 'italic 700 74px "Playfair Display"');
   ctx.font = '500 28px "Inter"';
   ctx.fillStyle = "rgba(247,243,238,.88)"; // subtítulo: más opaco para legibilidad sobre navy
   ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
   ctx.fillText(v.ubicacion||"", 56, titleBottom + 46);
 
+  const po = st.photoOffsets || {};
   const gridY = titleBottom + 90, gridH = H - 120 - gridY, gap = 8, colW = (W-112-gap)/2;
-  fehDrawPhoto(ctx, ph.antes, 56, gridY, colW, gridH, "foto ANTES");
-  fehDrawPhoto(ctx, ph.despues, 56+colW+gap, gridY, colW, gridH, "foto DESPUÉS");
+  fehDrawPhoto(ctx, ph.antes, 56, gridY, colW, gridH, "foto ANTES", po.antes);
+  fehDrawPhoto(ctx, ph.despues, 56+colW+gap, gridY, colW, gridH, "foto DESPUÉS", po.despues);
   fehTag(ctx, "ANTES", 56, gridY, HOME_BRAND.grafito, "#FFFFFF");
   fehTag(ctx, "DESPUÉS", 56+colW+gap, gridY, HOME_BRAND.terracota, HOME_BRAND.navy);
 
@@ -22234,9 +22293,9 @@ function fehDrawFeedA(ctx, W, H, st){
 function fehDrawFeedB(ctx, W, H, st){
   const v = st.values, ph = st.photos;
   ctx.fillStyle = HOME_BRAND.navy; ctx.fillRect(0,0,W,H);
-  const rowH = H/2;
-  fehDrawPhoto(ctx, ph.antes, 0, 0, W, rowH, "foto ANTES · horizontal");
-  fehDrawPhoto(ctx, ph.despues, 0, rowH, W, rowH, "foto DESPUÉS · horizontal");
+  const rowH = H/2, po = st.photoOffsets || {};
+  fehDrawPhoto(ctx, ph.antes, 0, 0, W, rowH, "foto ANTES · horizontal", po.antes);
+  fehDrawPhoto(ctx, ph.despues, 0, rowH, W, rowH, "foto DESPUÉS · horizontal", po.despues);
   fehTag(ctx, "ANTES", W-56-140, 56, HOME_BRAND.grafito, "#FFFFFF");
   fehTag(ctx, "DESPUÉS", W-56-170, rowH+56, HOME_BRAND.terracota, HOME_BRAND.navy);
 
@@ -22260,9 +22319,11 @@ function fehDrawFeedB(ctx, W, H, st){
   fehDrawLogoLockup(ctx, 66, 50, 42, false);
   // Sello "Cotización sin costo" en posición fija arriba a la derecha,
   // igual que en Feed A y Feed C (antes vivía abajo, junto al WhatsApp).
-  fehDrawPill(ctx, "Cotización sin costo", W-56, 40, {align:"right", bg:HOME_BRAND.terracota, color:HOME_BRAND.navy, font:'700 22px "Inter"', fontSize:22});
+  if(st.showBadge !== false){
+    fehDrawPill(ctx, "Cotización sin costo", W-56, 40, {align:"right", bg:HOME_BRAND.terracota, color:HOME_BRAND.navy, font:'700 22px "Inter"', fontSize:22});
+  }
 
-  const lines = fehWrapTitleTokens(ctx, v.titulo||"", (HOME_TEMPLATES[1].fields[1]).italic, W-112, '700 80px "Playfair Display"', 'italic 700 80px "Playfair Display"');
+  const lines = fehWrapTitleTokens(ctx, v.titulo||"", W-112, '700 80px "Playfair Display"', 'italic 700 80px "Playfair Display"');
   const titleBottom = fehDrawTitleLines(ctx, lines, 56, H-260, 80, "#FFFFFF", HOME_BRAND.terracota, '700 80px "Playfair Display"', 'italic 700 80px "Playfair Display"');
 
   ctx.strokeStyle = "rgba(255,255,255,.28)"; ctx.lineWidth = 2;
@@ -22280,7 +22341,9 @@ function fehDrawFeedC(ctx, W, H, st){
   ctx.fillStyle = HOME_BRAND.navy; ctx.fillRect(0,0,W,164);
   ctx.fillStyle = "rgba(11,31,58,.92)"; ctx.fillRect(56, 40, 200, 46);
   fehDrawLogoLockup(ctx, 66, 44, 38, false);
-  fehDrawPill(ctx, "Cotización sin costo", W-56, 40, {align:"right", bg:HOME_BRAND.terracota, color:HOME_BRAND.navy, font:'700 22px "Inter"', fontSize:22});
+  if(st.showBadge !== false){
+    fehDrawPill(ctx, "Cotización sin costo", W-56, 40, {align:"right", bg:HOME_BRAND.terracota, color:HOME_BRAND.navy, font:'700 22px "Inter"', fontSize:22});
+  }
 
   let cy = 300;
   // Texto y línea decorativa se anclan al MISMO cy con textBaseline "middle"
@@ -22291,7 +22354,7 @@ function fehDrawFeedC(ctx, W, H, st){
   ctx.fillStyle = HOME_BRAND.terracota; ctx.fillRect(72, cy-2, 64, 4);
   cy += 70;
 
-  const lines = fehWrapTitleTokens(ctx, v.titulo||"", (HOME_TEMPLATES[2].fields[1]).italic, W-144, '700 84px "Playfair Display"', 'italic 700 84px "Playfair Display"');
+  const lines = fehWrapTitleTokens(ctx, v.titulo||"", W-144, '700 84px "Playfair Display"', 'italic 700 84px "Playfair Display"');
   cy = fehDrawTitleLines(ctx, lines, 72, cy+84, 92, HOME_BRAND.navy, HOME_BRAND.terracota, '700 84px "Playfair Display"', 'italic 700 84px "Playfair Display"');
   cy += 60;
 
@@ -22321,8 +22384,8 @@ function fehDrawFeedC(ctx, W, H, st){
 
 // ── STORY A · foto a sangre + avance de obra ────────────────────
 function fehDrawStoryA(ctx, W, H, st){
-  const v = st.values, ph = st.photos;
-  fehDrawPhoto(ctx, ph.foto, 0, 0, W, H, "foto o video vertical");
+  const v = st.values, ph = st.photos, po = st.photoOffsets || {};
+  fehDrawPhoto(ctx, ph.foto, 0, 0, W, H, "foto o video vertical", po.foto);
 
   ctx.fillStyle = "rgba(11,31,58,.9)"; ctx.fillRect(56, 64, 210, 50);
   fehDrawLogoLockup(ctx, 66, 68, 42, false);
@@ -22335,7 +22398,7 @@ function fehDrawStoryA(ctx, W, H, st){
   fehDrawPill(ctx, (v.dia||"").toUpperCase(), 64, cy, {bg:HOME_BRAND.terracota, color:HOME_BRAND.navy, font:'700 22px "Inter"', fontSize:22, spacing:2});
   cy += 100;
 
-  const lines = fehWrapTitleTokens(ctx, v.titulo||"", (HOME_TEMPLATES[3].fields[1]).italic, W-128, '700 82px "Playfair Display"', 'italic 700 82px "Playfair Display"');
+  const lines = fehWrapTitleTokens(ctx, v.titulo||"", W-128, '700 82px "Playfair Display"', 'italic 700 82px "Playfair Display"');
   cy = fehDrawTitleLines(ctx, lines, 64, cy+82, 84, "#FFFFFF", HOME_BRAND.terracota, '700 82px "Playfair Display"', 'italic 700 82px "Playfair Display"');
   cy += 44;
   // Subtítulo: mismo tono crema-sobre-navy que el resto de subtítulos (antes
@@ -22346,13 +22409,13 @@ function fehDrawStoryA(ctx, W, H, st){
 
 // ── STORY B · foto + banda de servicio ──────────────────────────
 function fehDrawStoryB(ctx, W, H, st){
-  const v = st.values, ph = st.photos;
+  const v = st.values, ph = st.photos, po = st.photoOffsets || {};
   ctx.fillStyle = HOME_BRAND.navy; ctx.fillRect(0,0,W,H);
   // Banda inferior reducida a la mitad (740px -> 370px): la foto crece para
   // ocupar el espacio liberado; los espacios internos se comprimen a la
   // mitad manteniendo la misma tipografía y el mismo ritmo proporcional.
   const photoH = 1550;
-  fehDrawPhoto(ctx, ph.foto, 0, 0, W, photoH, "foto vertical");
+  fehDrawPhoto(ctx, ph.foto, 0, 0, W, photoH, "foto vertical", po.foto);
   ctx.fillStyle = "rgba(11,31,58,.9)"; ctx.fillRect(56, 64, 210, 50);
   fehDrawLogoLockup(ctx, 66, 68, 42, false);
   ctx.fillStyle = HOME_BRAND.terracota; ctx.fillRect(0, photoH, W, 10);
@@ -22362,9 +22425,12 @@ function fehDrawStoryB(ctx, W, H, st){
   fehFillTextTracked(ctx, (v.eyebrow||"").toUpperCase(), 64, cy, 3);
   cy += 38;
 
-  const lines = fehWrapTitleTokens(ctx, v.titulo||"", (HOME_TEMPLATES[4].fields[1]).italic, W-128, '700 76px "Playfair Display"', 'italic 700 76px "Playfair Display"');
+  const lines = fehWrapTitleTokens(ctx, v.titulo||"", W-128, '700 76px "Playfair Display"', 'italic 700 76px "Playfair Display"');
   cy = fehDrawTitleLines(ctx, lines, 64, cy+38, 78, "#FFFFFF", HOME_BRAND.terracota, '700 76px "Playfair Display"', 'italic 700 76px "Playfair Display"');
-  cy += 23;
+  // Espacio suficiente entre la última línea del título y el WhatsApp: la
+  // separación anterior (23px) no dejaba lugar para el descendente del
+  // título (Playfair 76px) + el ascendente del WhatsApp, y quedaban pegados.
+  cy += 44;
   ctx.font = '500 27px "Inter"'; ctx.fillStyle = "rgba(247,243,238,.85)"; ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
   ctx.fillText("WhatsApp "+(v.tel||""), 64, cy);
 }
@@ -22379,14 +22445,14 @@ function fehDrawStoryC(ctx, W, H, st){
   ctx.font = '600 22px "Inter"'; ctx.fillStyle = "rgba(247,243,238,.75)"; ctx.textAlign = "right"; ctx.textBaseline = "alphabetic";
   fehFillTextTracked(ctx, "MEXICALI, B.C.", W-64 - fehTrackedWidth(ctx,"MEXICALI, B.C.",2), 100, 2);
 
-  const gridY = 190, gridH = H - 190 - 220, gap = 10;
+  const gridY = 190, gridH = H - 190 - 220, gap = 10, po = st.photoOffsets || {};
   const rowH = (gridH-gap)/2;
-  fehDrawPhoto(ctx, ph.antes, 64, gridY, W-128, rowH, "foto ANTES");
-  fehDrawPhoto(ctx, ph.despues, 64, gridY+rowH+gap, W-128, rowH, "foto DESPUÉS");
+  fehDrawPhoto(ctx, ph.antes, 64, gridY, W-128, rowH, "foto ANTES", po.antes);
+  fehDrawPhoto(ctx, ph.despues, 64, gridY+rowH+gap, W-128, rowH, "foto DESPUÉS", po.despues);
   fehTag(ctx, "ANTES", 64, gridY, HOME_BRAND.grafito, "#FFFFFF");
   fehTag(ctx, "DESPUÉS", 64, gridY+rowH+gap, HOME_BRAND.terracota, HOME_BRAND.navy);
 
-  const lines = fehWrapTitleTokens(ctx, v.titulo||"", (HOME_TEMPLATES[5].fields[0]).italic, W-128, '700 64px "Playfair Display"', 'italic 700 64px "Playfair Display"');
+  const lines = fehWrapTitleTokens(ctx, v.titulo||"", W-128, '700 64px "Playfair Display"', 'italic 700 64px "Playfair Display"');
   fehDrawTitleLines(ctx, lines, 64, gridY+gridH+82, 68, "#FFFFFF", HOME_BRAND.terracota, '700 64px "Playfair Display"', 'italic 700 64px "Playfair Display"');
 }
 
@@ -22396,6 +22462,8 @@ window.fehVolverPicker = fehVolverPicker;
 window.fehElegirPlantilla = fehElegirPlantilla;
 window.fehSetValor = fehSetValor;
 window.fehCargarFoto = fehCargarFoto;
+window.fehSetOffset = fehSetOffset;
+window.fehSetShowBadge = fehSetShowBadge;
 window.fehDescargar = fehDescargar;
 window.fehCopyPostText = fehCopyPostText;
 
