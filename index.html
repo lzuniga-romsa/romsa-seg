@@ -22300,16 +22300,21 @@ function fehTag(ctx, text, x, y, bg, color){
 // Aviso opcional "pago a meses con tarjeta" (Mercado Pago), apagado por
 // default — copy fijo y genérico, sin porcentajes/plazos/"sin intereses"
 // porque el interés varía según los meses y hay comisión de pago con
-// tarjeta que no se quiere tener que explicar en la imagen.
-const HOME_AVISO_TEXT = "💳 Pregunta por pago a meses con tarjeta";
+// tarjeta que no se quiere tener que explicar en la imagen. Sin ícono de
+// tarjeta y con el mismo tratamiento tipográfico (versalitas + tracking)
+// que la franja de Feed B, para que se vea como un elemento de marca y
+// no como un aviso suelto.
+const HOME_AVISO_TEXT = "Pregunta por pago a meses con tarjeta";
 const HOME_AVISO_BAND_H = 42;
 function fehDrawAvisoMeses(ctx, W, y, bg, color){
   ctx.fillStyle = bg;
   ctx.fillRect(0, y, W, HOME_AVISO_BAND_H);
-  ctx.font = '600 22px "Inter"';
+  const text = HOME_AVISO_TEXT.toUpperCase();
+  ctx.font = '500 20px "Inter"';
   ctx.fillStyle = color;
-  ctx.textAlign = "center"; ctx.textBaseline = "middle";
-  ctx.fillText(HOME_AVISO_TEXT, W/2, y + HOME_AVISO_BAND_H/2);
+  ctx.textBaseline = "middle";
+  const w = fehTrackedWidth(ctx, text, 1.5);
+  fehFillTextTracked(ctx, text, (W-w)/2, y + HOME_AVISO_BAND_H/2, 1.5);
 }
 // Ubica la franja pegada al borde inferior sin encimarse con el contenido
 // ya dibujado arriba (cyMin) ni salirse del lienzo — clave porque el
@@ -22723,10 +22728,16 @@ function bceCalRenderMes(){
       const bc = BCE_BRANDS[e.brand] || BCE_BRANDS.industrial;
       // Para HOME, mostrar la plantilla real sugerida (una de las 6 del
       // plan importado) en vez del estilo genérico Corporate/Editorial/
-      // Minimal/Impacto — es la que realmente coincide con el Excel.
-      const tplLabel = (e.brand === "home" && e.plantillaHome)
-        ? (HOME_TEMPLATES.find(t=>t.id===e.plantillaHome)||{label:e.plantillaHome}).label
-        : (BCE_TEMPLATES.find(t=>t.key===e.template)||{label:e.template}).label;
+      // Minimal/Impacto — es la que realmente coincide con el Excel. Se
+      // antepone un ícono según sea Post (🖼️) o Historia (📱) para que se
+      // distinga de un vistazo, sin depender solo del texto.
+      let tplLabel;
+      if(e.brand === "home" && e.plantillaHome){
+        const th = HOME_TEMPLATES.find(t=>t.id===e.plantillaHome);
+        tplLabel = th ? (th.cat==="story" ? "📱 " : "🖼️ ") + th.label : e.plantillaHome;
+      } else {
+        tplLabel = (BCE_TEMPLATES.find(t=>t.key===e.template)||{label:e.template}).label;
+      }
       return `<div class="fe-cal-pill" style="background:${bc.navy};">${tplLabel}</div>`;
     }).join("");
     return `<div class="fe-cal-day${c.otroMes?' otro-mes':''}${iso===hoyISO?' hoy':''}${tieneNota?' tiene-nota':''}" onclick="bceCalClickDia('${iso}')">
@@ -22788,20 +22799,33 @@ function bceCalEntryRowHtml(e, i){
   const brandSelect = _bceCalModoExclusivoHome
     ? ""
     : `<select onchange="bceCalEditarEntrada(${i},'brand',this.value)">${Object.keys(BCE_BRANDS).map(k => `<option value="${k}"${e.brand===k?' selected':''}>${BCE_BRANDS[k].label}</option>`).join("")}</select>`;
-  const tplOpts = BCE_TEMPLATES.map(t => `<option value="${t.key}"${e.template===t.key?' selected':''}>${t.label}</option>`).join("");
+  // El selector genérico Corporate/Editorial/Minimal/Impacto es del sistema
+  // de ROMSA/RACKLINE y no significa nada dentro de HOME — se oculta en el
+  // calendario exclusivo de HOME; ahí solo queda la plantilla real.
+  const tplSelect = _bceCalModoExclusivoHome
+    ? ""
+    : `<select onchange="bceCalEditarEntrada(${i},'template',this.value)">${BCE_TEMPLATES.map(t => `<option value="${t.key}"${e.template===t.key?' selected':''}>${t.label}</option>`).join("")}</select>`;
+  // Agrupada en "Posts" / "Historias" (mismas 2 categorías del selector de
+  // plantillas dentro de HOME) para que se note de inmediato qué es cada una.
   const plantillaHomeSelect = e.brand === "home"
     ? `<select onchange="bceCalEditarEntrada(${i},'plantillaHome',this.value)">
         <option value="">— Plantilla HOME sin definir —</option>
-        ${HOME_TEMPLATES.map(t => `<option value="${t.id}"${e.plantillaHome===t.id?' selected':''}>${t.label}</option>`).join("")}
+        <optgroup label="Posts">
+          ${HOME_TEMPLATES.filter(t=>t.cat==="feed").map(t => `<option value="${t.id}"${e.plantillaHome===t.id?' selected':''}>${t.label}</option>`).join("")}
+        </optgroup>
+        <optgroup label="Historias">
+          ${HOME_TEMPLATES.filter(t=>t.cat==="story").map(t => `<option value="${t.id}"${e.plantillaHome===t.id?' selected':''}>${t.label}</option>`).join("")}
+        </optgroup>
       </select>`
     : "";
   return `<div class="fe-cal-entry-card" data-idx="${i}">
     <div class="fe-cal-entry-row">
       ${brandSelect}
-      <select onchange="bceCalEditarEntrada(${i},'template',this.value)">${tplOpts}</select>
+      ${tplSelect}
+      ${_bceCalModoExclusivoHome ? plantillaHomeSelect : ""}
       <button type="button" class="fe-cal-entry-remove" onclick="bceCalQuitarEntrada(${i})">×</button>
     </div>
-    ${plantillaHomeSelect ? `<div class="fe-cal-entry-row">${plantillaHomeSelect}</div>` : ""}
+    ${!_bceCalModoExclusivoHome && plantillaHomeSelect ? `<div class="fe-cal-entry-row">${plantillaHomeSelect}</div>` : ""}
     <input type="text" class="fe-cal-entry-text" placeholder="Tema / pilar (opcional)" value="${escapeHtml(e.tema||"")}" onchange="bceCalEditarEntrada(${i},'tema',this.value)">
     <input type="text" class="fe-cal-entry-text fe-cal-entry-nota" placeholder="Nota especial — ej. evitar contenido comercial" value="${escapeHtml(e.nota||"")}" onchange="bceCalEditarEntrada(${i},'nota',this.value)">
   </div>`;
