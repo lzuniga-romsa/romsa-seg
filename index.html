@@ -802,6 +802,7 @@ body.in-contactos #app, body.in-contactosdb #app{
 .fe-cal-close{background:#EEF1F6;border:none;border-radius:8px;padding:7px 12px;font-size:12px;font-weight:700;color:#0B1F3A;cursor:pointer;font-family:inherit;}
 .fe-cal-title{font-size:15px;font-weight:800;color:#1B1B1F;}
 .fe-cal-brandfilter{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;}
+.fe-cal-exclusivo-badge{background:#0B1F3A;color:#fff;border-radius:20px;padding:8px 14px;font-size:11px;font-weight:700;display:inline-block;}
 .fe-cal-month-nav{display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:10px;}
 .fe-cal-nav-btn{background:#EEF1F6;border:none;border-radius:8px;width:30px;height:30px;font-size:16px;cursor:pointer;color:#0B1F3A;font-weight:700;}
 .fe-cal-month-label{font-size:13px;font-weight:700;color:#1B1B1F;min-width:130px;text-align:center;text-transform:capitalize;}
@@ -3622,7 +3623,7 @@ body.in-contactos #app, body.in-contactosdb #app{
 
       <div class="fe-cal-daypanel" id="fe-cal-daypanel" style="display:none;"></div>
 
-      <button class="fe-cal-rules-toggle" onclick="bceCalToggleReglas()">⚙️ Editar reglas semanales por default</button>
+      <button id="fe-cal-rules-toggle" class="fe-cal-rules-toggle" onclick="bceCalToggleReglas()">⚙️ Editar reglas semanales por default</button>
       <div id="fe-cal-reglas" class="fe-cal-reglas" style="display:none;"></div>
     </div>
 
@@ -21811,7 +21812,7 @@ const HOME_TEMPLATES = [
       {key:"tel", label:"WhatsApp", default:HOME_TEL_DEFAULT}
     ],
     draw: fehDrawFeedA },
-  { id:"feed-b", cat:"feed", w:1080, h:1350, label:"Antes / Después a sangre", hasPill:true,
+  { id:"feed-b", cat:"feed", w:1080, h:1350, label:"Antes / Después a sangre",
     photos:[{key:"antes",label:"Foto ANTES (horizontal)"},{key:"despues",label:"Foto DESPUÉS (horizontal)"}],
     fields:[
       {key:"franja", label:"Frase de la franja", default:"Mismo lugar · 3 días"},
@@ -21897,11 +21898,12 @@ function fehAtras(){
 }
 
 // Acceso directo al calendario de publicaciones (compartido con el resto
-// del Editor de Fotos) desde dentro del área HOME, ya filtrado a "HOME by
-// ROMSA" — antes había que salir de esta área para encontrarlo.
+// del Editor de Fotos) desde dentro del área HOME — antes había que salir
+// de esta área para encontrarlo. Se abre en modo exclusivo: sin pestañas
+// de otras marcas, solo contenido de HOME by ROMSA.
 async function fehAbrirCalendario(){
+  _bceCalModoExclusivoHome = true;
   await bceAbrirCalendario();
-  bceCalFiltrarMarca("home");
 }
 
 function fehRenderPicker(){
@@ -22358,11 +22360,10 @@ function fehDrawFeedB(ctx, W, H, st){
 
   ctx.fillStyle = "rgba(11,31,58,.92)"; ctx.fillRect(56, 44, 230, 54);
   fehDrawLogoLockup(ctx, 66, 50, 42, false);
-  // Sello "Cotización sin costo" en posición fija arriba a la derecha,
-  // igual que en Feed A y Feed C (antes vivía abajo, junto al WhatsApp).
-  if(st.showBadge !== false){
-    fehDrawPill(ctx, "Cotización sin costo", W-56, 40, {align:"right", bg:HOME_BRAND.terracota, color:HOME_BRAND.navy, font:'700 22px "Inter"', fontSize:22});
-  }
+  // Sin sello "Cotización sin costo" en este formato: la etiqueta "ANTES"
+  // ya ocupa esa misma esquina superior derecha (línea de arriba) y ambas
+  // se encimaban. A diferencia de Feed A/C, aquí no hay espacio libre para
+  // el sello sin taparlo.
 
   const lines = fehWrapTitleTokens(ctx, v.titulo||"", W-112, '700 80px "Playfair Display"', 'italic 700 80px "Playfair Display"');
   const titleBottom = fehDrawTitleLines(ctx, lines, 56, H-260, 80, "#FFFFFF", HOME_BRAND.terracota, '700 80px "Playfair Display"', 'italic 700 80px "Playfair Display"');
@@ -22543,6 +22544,10 @@ let _bceCalCargado = false;
 let _bceCalMesActual = new Date();
 let _bceCalFiltroMarca = "todas";
 let _bceCalDiaSeleccionado = null;
+// true cuando el calendario se abrió desde dentro de HOME by ROMSA
+// (fehAbrirCalendario): oculta las pestañas de otras marcas y las reglas
+// semanales generales, y limita el contenido a solo HOME by ROMSA.
+let _bceCalModoExclusivoHome = false;
 
 function _bceCalFechaISO(d){
   return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
@@ -22581,18 +22586,31 @@ async function bceAbrirCalendario(){
   _bceCalDiaSeleccionado = null;
   document.getElementById("fe-cal-daypanel").style.display = "none";
 
-  // Filtro de marca (Todas + una pestaña por marca)
   const filterEl = document.getElementById("fe-cal-brandfilter");
-  filterEl.innerHTML = ['<button type="button" class="fe-tpl-btn active" data-filtromarca="todas" onclick="bceCalFiltrarMarca(\'todas\')">Todas</button>']
-    .concat(Object.keys(BCE_BRANDS).map(key =>
-      `<button type="button" class="fe-tpl-btn" data-filtromarca="${key}" onclick="bceCalFiltrarMarca('${key}')">${BCE_BRANDS[key].label}</button>`
-    )).join("");
+  const reglasToggle = document.getElementById("fe-cal-rules-toggle");
+  if(_bceCalModoExclusivoHome){
+    // Modo exclusivo: sin pestañas de otras marcas ni reglas semanales
+    // generales — este calendario, abierto desde dentro de HOME, es
+    // solo de HOME by ROMSA.
+    _bceCalFiltroMarca = "home";
+    filterEl.innerHTML = '<div class="fe-cal-exclusivo-badge">HOME by ROMSA</div>';
+    reglasToggle.style.display = "none";
+    document.getElementById("fe-cal-reglas").style.display = "none";
+  } else {
+    _bceCalFiltroMarca = "todas";
+    filterEl.innerHTML = ['<button type="button" class="fe-tpl-btn active" data-filtromarca="todas" onclick="bceCalFiltrarMarca(\'todas\')">Todas</button>']
+      .concat(Object.keys(BCE_BRANDS).map(key =>
+        `<button type="button" class="fe-tpl-btn" data-filtromarca="${key}" onclick="bceCalFiltrarMarca('${key}')">${BCE_BRANDS[key].label}</button>`
+      )).join("");
+    reglasToggle.style.display = "";
+  }
 
   bceCalRenderMes();
 }
 
 function bceCerrarCalendario(){
   document.getElementById("fe-cal-overlay").style.display = "none";
+  _bceCalModoExclusivoHome = false;
 }
 
 function bceCalFiltrarMarca(marca){
@@ -22650,7 +22668,12 @@ function bceCalRenderMes(){
     const tieneNota = entradas.some(e => e.nota);
     const pills = entradas.slice(0,3).map(e => {
       const bc = BCE_BRANDS[e.brand] || BCE_BRANDS.industrial;
-      const tplLabel = (BCE_TEMPLATES.find(t=>t.key===e.template)||{label:e.template}).label;
+      // Para HOME, mostrar la plantilla real sugerida (una de las 6 del
+      // plan importado) en vez del estilo genérico Corporate/Editorial/
+      // Minimal/Impacto — es la que realmente coincide con el Excel.
+      const tplLabel = (e.brand === "home" && e.plantillaHome)
+        ? (HOME_TEMPLATES.find(t=>t.id===e.plantillaHome)||{label:e.plantillaHome}).label
+        : (BCE_TEMPLATES.find(t=>t.key===e.template)||{label:e.template}).label;
       return `<div class="fe-cal-pill" style="background:${bc.navy};">${tplLabel}</div>`;
     }).join("");
     return `<div class="fe-cal-day${c.otroMes?' otro-mes':''}${iso===hoyISO?' hoy':''}${tieneNota?' tiene-nota':''}" onclick="bceCalClickDia('${iso}')">
@@ -22674,7 +22697,12 @@ function bceCalRenderPanel(){
   const fecha = new Date(y, m-1, d);
   const dow = fecha.getDay();
   const tieneOverride = BCE_CALENDAR.fechas[iso] !== undefined;
-  const entradas = tieneOverride ? BCE_CALENDAR.fechas[iso] : (BCE_CALENDAR.semanal[dow] || []).map(e => ({...e}));
+  const todas = tieneOverride ? BCE_CALENDAR.fechas[iso] : (BCE_CALENDAR.semanal[dow] || []).map(e => ({...e}));
+  // En modo exclusivo HOME, el panel solo muestra/edita las entradas de esa
+  // marca; las de ROMSA/RACKLINE que compartan el día se guardan aparte y
+  // se reinyectan intactas al escribir (ver _bceCalEntradasParaGuardar).
+  const entradas = _bceCalModoExclusivoHome ? todas.filter(e => e.brand === "home").map(e => ({...e})) : todas;
+  const otrasMarcas = _bceCalModoExclusivoHome ? todas.filter(e => e.brand !== "home") : [];
 
   const panel = document.getElementById("fe-cal-daypanel");
   const notasHtml = entradas.filter(e => e.nota).map(e =>
@@ -22691,10 +22719,22 @@ function bceCalRenderPanel(){
     ${tieneOverride ? '<button type="button" class="fe-cal-entry-add" style="background:#EEF1F6;color:#0B1F3A;margin-left:6px;" onclick="bceCalQuitarOverride()">↩ Volver a la regla semanal</button>' : ''}
   `;
   panel._entradasTemp = entradas;
+  panel._otrasMarcasTemp = otrasMarcas;
+}
+
+// Combina las entradas editables del panel con las de otras marcas que
+// compartan el mismo día (solo existen en modo exclusivo HOME), para no
+// perderlas al guardar.
+function _bceCalEntradasParaGuardar(panel){
+  return (panel._entradasTemp || []).concat(panel._otrasMarcasTemp || []);
 }
 
 function bceCalEntryRowHtml(e, i){
-  const brandOpts = Object.keys(BCE_BRANDS).map(k => `<option value="${k}"${e.brand===k?' selected':''}>${BCE_BRANDS[k].label}</option>`).join("");
+  // En modo exclusivo HOME, la marca ya está fija ("home") — no tiene caso
+  // ofrecer un selector para cambiarla a ROMSA/RACKLINE desde esta vista.
+  const brandSelect = _bceCalModoExclusivoHome
+    ? ""
+    : `<select onchange="bceCalEditarEntrada(${i},'brand',this.value)">${Object.keys(BCE_BRANDS).map(k => `<option value="${k}"${e.brand===k?' selected':''}>${BCE_BRANDS[k].label}</option>`).join("")}</select>`;
   const tplOpts = BCE_TEMPLATES.map(t => `<option value="${t.key}"${e.template===t.key?' selected':''}>${t.label}</option>`).join("");
   const plantillaHomeSelect = e.brand === "home"
     ? `<select onchange="bceCalEditarEntrada(${i},'plantillaHome',this.value)">
@@ -22704,7 +22744,7 @@ function bceCalEntryRowHtml(e, i){
     : "";
   return `<div class="fe-cal-entry-card" data-idx="${i}">
     <div class="fe-cal-entry-row">
-      <select onchange="bceCalEditarEntrada(${i},'brand',this.value)">${brandOpts}</select>
+      ${brandSelect}
       <select onchange="bceCalEditarEntrada(${i},'template',this.value)">${tplOpts}</select>
       <button type="button" class="fe-cal-entry-remove" onclick="bceCalQuitarEntrada(${i})">×</button>
     </div>
@@ -22717,7 +22757,7 @@ function bceCalEntryRowHtml(e, i){
 function bceCalEditarEntrada(i, campo, valor){
   const panel = document.getElementById("fe-cal-daypanel");
   panel._entradasTemp[i][campo] = valor;
-  BCE_CALENDAR.fechas[_bceCalDiaSeleccionado] = panel._entradasTemp;
+  BCE_CALENDAR.fechas[_bceCalDiaSeleccionado] = _bceCalEntradasParaGuardar(panel);
   bceCalGuardar();
   if(campo === "brand") bceCalRenderPanel();
   bceCalRenderMes();
@@ -22726,8 +22766,8 @@ function bceCalEditarEntrada(i, campo, valor){
 function bceCalAgregarEntrada(){
   const panel = document.getElementById("fe-cal-daypanel");
   panel._entradasTemp = panel._entradasTemp || [];
-  panel._entradasTemp.push({ brand: "industrial", template: "corporate" });
-  BCE_CALENDAR.fechas[_bceCalDiaSeleccionado] = panel._entradasTemp;
+  panel._entradasTemp.push(_bceCalModoExclusivoHome ? { brand: "home", template: "editorial" } : { brand: "industrial", template: "corporate" });
+  BCE_CALENDAR.fechas[_bceCalDiaSeleccionado] = _bceCalEntradasParaGuardar(panel);
   bceCalRenderPanel();
   bceCalRenderMes();
   bceCalGuardar();
@@ -22736,14 +22776,19 @@ function bceCalAgregarEntrada(){
 function bceCalQuitarEntrada(i){
   const panel = document.getElementById("fe-cal-daypanel");
   panel._entradasTemp.splice(i,1);
-  BCE_CALENDAR.fechas[_bceCalDiaSeleccionado] = panel._entradasTemp;
+  BCE_CALENDAR.fechas[_bceCalDiaSeleccionado] = _bceCalEntradasParaGuardar(panel);
   bceCalRenderPanel();
   bceCalRenderMes();
   bceCalGuardar();
 }
 
 function bceCalQuitarOverride(){
-  delete BCE_CALENDAR.fechas[_bceCalDiaSeleccionado];
+  const panel = document.getElementById("fe-cal-daypanel");
+  // En modo exclusivo, "volver a la regla semanal" solo aplica a HOME:
+  // si ese día tenía además una entrada de otra marca, se conserva.
+  const otras = _bceCalModoExclusivoHome ? (panel._otrasMarcasTemp || []) : [];
+  if(otras.length) BCE_CALENDAR.fechas[_bceCalDiaSeleccionado] = otras;
+  else delete BCE_CALENDAR.fechas[_bceCalDiaSeleccionado];
   bceCalRenderPanel();
   bceCalRenderMes();
   bceCalGuardar();
