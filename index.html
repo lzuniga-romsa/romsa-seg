@@ -815,6 +815,7 @@ body.in-contactos #app, body.in-contactosdb #app{
 .fe-cal-day-num{font-size:10px;color:#5A6472;font-weight:700;display:flex;align-items:center;justify-content:space-between;}
 .fe-cal-day-warn{font-size:9px;line-height:1;}
 .fe-cal-day.tiene-nota{background:#FFF8EC;border-color:#F3C77A;}
+.fe-cal-day-draft{font-size:9px;line-height:1;}
 .fe-cal-pill{font-size:7.5px;font-weight:800;color:#fff;border-radius:4px;padding:1px 3px;line-height:1.5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .fe-cal-daypanel{margin-top:14px;background:#F7F8FA;border-radius:12px;padding:14px;}
 .fe-cal-daypanel-title{font-size:12.5px;font-weight:800;color:#1B1B1F;margin-bottom:10px;text-transform:capitalize;}
@@ -826,6 +827,7 @@ body.in-contactos #app, body.in-contactosdb #app{
 .fe-cal-entry-text:last-child{margin-bottom:0;}
 .fe-cal-entry-text.fe-cal-entry-nota{border-color:#F3C77A;background:#FFF8EC;color:#8A5A00;}
 .fe-cal-entry-remove{background:none;border:none;color:#DC2626;font-size:15px;cursor:pointer;padding:0 4px;}
+.fe-cal-entry-generate{width:100%;box-sizing:border-box;background:#C36F4A;color:#fff;border:none;border-radius:7px;padding:8px 12px;font-size:11.5px;font-weight:700;cursor:pointer;margin-top:2px;font-family:inherit;}
 .fe-cal-entry-add{background:#0B1F3A;color:#fff;border:none;border-radius:7px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;margin-top:2px;font-family:inherit;}
 .fe-cal-import-btn{background:#EEF3FA;color:#0B1F3A;border:1.5px solid #D7E3F5;border-radius:8px;padding:7px 12px;font-size:11px;font-weight:700;cursor:pointer;margin-bottom:14px;font-family:inherit;}
 .fe-cal-rules-toggle{background:none;border:none;color:#5A6472;font-size:11.5px;font-weight:700;cursor:pointer;margin-top:16px;padding:6px 0;font-family:inherit;}
@@ -875,6 +877,7 @@ body.in-contactos #app, body.in-contactosdb #app{
 .feh-btn-primary{background:#C36F4A;color:#fff;flex:1.3;}
 .feh-btn-primary:disabled{background:#D9CFC4;color:#fff;cursor:not-allowed;}
 .feh-hint{font-size:11px;color:#8A7F73;line-height:1.5;background:#EFE7DC;border-radius:8px;padding:9px 11px;}
+.feh-draft-banner{font-size:11.5px;font-weight:700;color:#0B1F3A;background:#EEF3FA;border:1.5px solid #D7E3F5;border-radius:8px;padding:9px 11px;margin-bottom:4px;}
 
 /* Desktop: #feh-root ya no está limitado por #app (500px) — aprovechar
    el ancho real disponible en vez de mantener el layout tipo celular. */
@@ -3811,6 +3814,7 @@ body.in-contactos #app, body.in-contactosdb #app{
           <canvas id="feh-canvas"></canvas>
         </div>
         <div class="feh-form-wrap">
+          <div id="feh-draft-banner" class="feh-draft-banner" style="display:none;"></div>
           <div id="feh-photo-slots"></div>
           <div id="feh-text-fields"></div>
           <div class="feh-hint">Toca cada recuadro para subir su foto. El texto se puede editar libremente antes de descargar.</div>
@@ -3825,6 +3829,7 @@ body.in-contactos #app, body.in-contactosdb #app{
             <button class="feh-btn feh-btn-ghost" onclick="fehVolverPicker()">‹ Otra plantilla</button>
             <button class="feh-btn feh-btn-primary" id="feh-download-btn" onclick="fehDescargar()" disabled>⬇ Descargar PNG</button>
           </div>
+          <button type="button" class="feh-btn feh-btn-ghost" id="feh-guardar-borrador-btn" style="display:none;width:100%;margin-top:8px;" onclick="fehGuardarBorrador()">💾 Guardar borrador en esta fecha</button>
         </div>
       </div>
     </div>
@@ -21859,6 +21864,12 @@ const HOME_TEMPLATES = [
 ];
 
 let FEH = { tplId:null, photos:{}, values:{} };
+// Cuando no es null, el editor está preparando la publicación de una
+// fecha específica del calendario (ver bceCalGenerarPost): {iso, idx}
+// apunta a qué entrada de BCE_CALENDAR.fechas actualizar al guardar el
+// borrador de texto (fehGuardarBorrador). Las fotos NO se guardan — solo
+// texto — así que hay que volver a subirlas el día de la publicación.
+let _fehDraftCtx = null;
 let _fehInited = false;
 let _fehFontsReady = null;
 let _fehLogoBlanco = null;      // Image: wordmark completo, blanco (fondos navy)
@@ -21895,6 +21906,7 @@ function fehAbrir(){
 
 function fehAtras(){
   document.getElementById("feh-root").style.display = "none";
+  _fehDraftCtx = null;
 }
 
 // Acceso directo al calendario de publicaciones (compartido con el resto
@@ -21939,11 +21951,16 @@ function fehVolverPicker(){
   document.getElementById("feh-step-picker").classList.add("active");
   document.getElementById("feh-step-editor").classList.remove("active");
   document.getElementById("feh-back-btn").onclick = fehAtras;
+  // Cambiar de plantilla suelta el vínculo con la fecha del calendario —
+  // si sigue queriendo prepararla con anticipación, vuelve a entrar desde
+  // el botón de esa fecha.
+  _fehDraftCtx = null;
 }
 
 function fehElegirPlantilla(id){
   const t = HOME_TEMPLATES.find(x=>x.id===id);
   if(!t) return;
+  _fehDraftCtx = null;
   FEH = { tplId:id, photos:{}, values:{}, photoOffsets:{}, showBadge:true, showAviso:false };
   t.fields.forEach(f=>{ FEH.values[f.key] = f.default; });
 
@@ -21977,6 +21994,7 @@ function fehElegirPlantilla(id){
     + '<label class="feh-check-row"><input type="checkbox" onchange="fehSetShowAviso(this.checked)"> Mostrar aviso de pago a meses</label>';
 
   fehActualizarBotonDescarga();
+  fehActualizarBannerBorrador();
   (_fehFontsReady || Promise.resolve()).then(fehRenderPreview);
 }
 
@@ -22000,6 +22018,61 @@ function fehSetShowAviso(checked){
 function fehSetValor(key, val){
   FEH.values[key] = val;
   fehRenderPreview();
+}
+
+function fehFormatoFechaCorta(iso){
+  const [y,m,d] = iso.split("-").map(Number);
+  const fecha = new Date(y, m-1, d);
+  return BCE_DOW_NOMBRES[fecha.getDay()] + " " + d + " de " + BCE_MES_NOMBRES[m-1];
+}
+
+// Refleja en los <input>/<textarea> y checkboxes ya renderizados los
+// valores cargados desde un borrador guardado — fehElegirPlantilla ya
+// pintó los inputs con los defaults de la plantilla antes de que
+// bceCalGenerarPost sobreescriba FEH.values, así que hay que actualizar
+// el DOM a mano para que el usuario vea el texto guardado, no el default.
+function fehSincronizarCamposUI(){
+  document.querySelectorAll("#feh-text-fields input[type=text], #feh-text-fields textarea").forEach(el=>{
+    const m = (el.getAttribute("oninput")||"").match(/fehSetValor\('([^']+)'/);
+    if(m && FEH.values[m[1]] !== undefined) el.value = FEH.values[m[1]];
+  });
+  const badgeCk = document.querySelector('#feh-text-fields input[type=checkbox][onchange*="fehSetShowBadge"]');
+  if(badgeCk) badgeCk.checked = FEH.showBadge !== false;
+  const avisoCk = document.querySelector('#feh-text-fields input[type=checkbox][onchange*="fehSetShowAviso"]');
+  if(avisoCk) avisoCk.checked = !!FEH.showAviso;
+}
+
+// Muestra/oculta el aviso "vinculado a esta fecha" y el botón de guardar
+// borrador, según si el editor se abrió desde el calendario o de forma
+// independiente (picker normal).
+function fehActualizarBannerBorrador(){
+  const banner = document.getElementById("feh-draft-banner");
+  const btn = document.getElementById("feh-guardar-borrador-btn");
+  if(_fehDraftCtx){
+    banner.style.display = "block";
+    banner.textContent = "📅 Preparando la publicación de: " + fehFormatoFechaCorta(_fehDraftCtx.iso) + " — las fotos no se guardan, solo el texto.";
+    btn.style.display = "block";
+  } else {
+    banner.style.display = "none";
+    btn.style.display = "none";
+  }
+}
+
+// Guarda SOLO el texto (título, subtítulo, etc. — nunca las fotos, por el
+// límite de tamaño del documento del calendario en Firestore) para poder
+// retomarlo después: el usuario vuelve a esta fecha cuando le toque
+// publicar, sube la foto real ese día y descarga.
+function fehGuardarBorrador(){
+  if(!_fehDraftCtx) return;
+  const { iso, idx } = _fehDraftCtx;
+  const entradas = BCE_CALENDAR.fechas[iso];
+  if(!entradas || !entradas[idx]){
+    showToast("⚠️ No se pudo guardar: la fecha ya no tiene esa entrada");
+    return;
+  }
+  entradas[idx].borrador = { valores: {...FEH.values}, showBadge: FEH.showBadge !== false, showAviso: !!FEH.showAviso };
+  bceCalGuardar();
+  showToast("✅ Borrador guardado — vuelve a esta fecha cuando toque publicar");
 }
 
 function fehCargarFoto(key, e){
@@ -22045,6 +22118,8 @@ function fehRenderPreview(){
   const canvas = document.getElementById("feh-canvas");
   canvas.width = t.w; canvas.height = t.h;
   const ctx = canvas.getContext("2d");
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
   t.draw(ctx, t.w, t.h, FEH, t);
   fehGenerateCopy(t, FEH);
 }
@@ -22128,6 +22203,13 @@ function fehCopyPostText(){
   }
 }
 
+// Exporta al doble de la resolución base de cada plantilla (ej. 1080×1350
+// -> 2160×2700) para que el texto y las fotos salgan más nítidos: se
+// dibuja sobre un lienzo más grande con ctx.scale(2,2), así el código de
+// dibujo (fehDrawFeedA, etc.) no cambia — sigue "pensando" en 1080/1920,
+// pero cada trazo se rasteriza al doble de detalle.
+const HOME_EXPORT_SCALE = 2;
+
 async function fehDescargar(){
   const t = HOME_TEMPLATES.find(x=>x.id===FEH.tplId);
   if(!t) return;
@@ -22135,8 +22217,11 @@ async function fehDescargar(){
   if(faltan.length){ showToast("⚠️ Sube "+(faltan.length>1?"todas las fotos":"la foto")+" primero"); return; }
   if(_fehFontsReady) await _fehFontsReady;
   const canvas = document.createElement("canvas");
-  canvas.width = t.w; canvas.height = t.h;
+  canvas.width = t.w * HOME_EXPORT_SCALE; canvas.height = t.h * HOME_EXPORT_SCALE;
   const ctx = canvas.getContext("2d");
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
+  ctx.scale(HOME_EXPORT_SCALE, HOME_EXPORT_SCALE);
   t.draw(ctx, t.w, t.h, FEH, t);
   canvas.toBlob((blob)=>{
     if(!blob){ showToast("⚠️ No se pudo generar la imagen"); return; }
@@ -22148,7 +22233,7 @@ async function fehDescargar(){
     a.click();
     a.remove();
     setTimeout(()=>URL.revokeObjectURL(url), 2000);
-    showToast("⬇ Plantilla HOME descargada en alta resolución");
+    showToast("⬇ Descargada en alta resolución ("+canvas.width+"×"+canvas.height+"px)");
   }, "image/png", 1.0);
 }
 
@@ -22569,6 +22654,7 @@ window.fehCargarFoto = fehCargarFoto;
 window.fehSetOffset = fehSetOffset;
 window.fehSetShowBadge = fehSetShowBadge;
 window.fehSetShowAviso = fehSetShowAviso;
+window.fehGuardarBorrador = fehGuardarBorrador;
 window.fehDescargar = fehDescargar;
 window.fehCopyPostText = fehCopyPostText;
 
@@ -22592,10 +22678,13 @@ let BCE_CALENDAR = {
     6: [{ brand: "home",       template: "minimal"   }], // Sábado: HOME, fin de semana
     0: [],
   },
-  // "YYYY-MM-DD": [{brand, template, plantillaHome, tema, nota}]
+  // "YYYY-MM-DD": [{brand, template, plantillaHome, tema, nota, borrador}]
   // plantillaHome: id de HOME_TEMPLATES (solo aplica cuando brand==="home",
   // ej. "feed-a"); tema: tema/pilar de contenido; nota: aviso especial
-  // (fecha sensible — se muestra como banner en el calendario).
+  // (fecha sensible — se muestra como banner en el calendario); borrador:
+  // {valores, showBadge, showAviso} guardado desde el editor de HOME para
+  // preparar el post con anticipación (solo texto, sin fotos — ver
+  // fehGuardarBorrador/bceCalGenerarPost).
   fechas: {},
 };
 let _bceCalCargado = false;
@@ -22724,6 +22813,7 @@ function bceCalRenderMes(){
     const dow = c.date.getDay();
     const entradas = bceCalEntradasDe(iso, dow);
     const tieneNota = entradas.some(e => e.nota);
+    const tieneBorrador = entradas.some(e => e.borrador);
     const pills = entradas.slice(0,3).map(e => {
       const bc = BCE_BRANDS[e.brand] || BCE_BRANDS.industrial;
       // Para HOME, mostrar la plantilla real sugerida (una de las 6 del
@@ -22741,7 +22831,7 @@ function bceCalRenderMes(){
       return `<div class="fe-cal-pill" style="background:${bc.navy};">${tplLabel}</div>`;
     }).join("");
     return `<div class="fe-cal-day${c.otroMes?' otro-mes':''}${iso===hoyISO?' hoy':''}${tieneNota?' tiene-nota':''}" onclick="bceCalClickDia('${iso}')">
-      <div class="fe-cal-day-num"><span>${c.date.getDate()}</span>${tieneNota?'<span class="fe-cal-day-warn" title="Fecha con nota especial">⚠️</span>':''}</div>
+      <div class="fe-cal-day-num"><span>${c.date.getDate()}</span><span>${tieneNota?'<span class="fe-cal-day-warn" title="Fecha con nota especial">⚠️</span>':''}${tieneBorrador?'<span class="fe-cal-day-draft" title="Ya tiene un borrador preparado">📝</span>':''}</span></div>
       ${pills}
     </div>`;
   }).join("");
@@ -22828,7 +22918,32 @@ function bceCalEntryRowHtml(e, i){
     ${!_bceCalModoExclusivoHome && plantillaHomeSelect ? `<div class="fe-cal-entry-row">${plantillaHomeSelect}</div>` : ""}
     <input type="text" class="fe-cal-entry-text" placeholder="Tema / pilar (opcional)" value="${escapeHtml(e.tema||"")}" onchange="bceCalEditarEntrada(${i},'tema',this.value)">
     <input type="text" class="fe-cal-entry-text fe-cal-entry-nota" placeholder="Nota especial — ej. evitar contenido comercial" value="${escapeHtml(e.nota||"")}" onchange="bceCalEditarEntrada(${i},'nota',this.value)">
+    ${e.brand === "home" && e.plantillaHome
+      ? `<button type="button" class="fe-cal-entry-generate" onclick="bceCalGenerarPost(${i})">${e.borrador ? "✏️ Editar borrador guardado" : "🎨 Preparar publicación con anticipación"}</button>`
+      : ""}
   </div>`;
+}
+
+// Abre el editor de HOME ya cargado con la plantilla sugerida de esta
+// fecha, para preparar el post con anticipación. Si ya había un borrador
+// de texto guardado (sin fotos — ver fehGuardarBorrador), lo recupera.
+function bceCalGenerarPost(i){
+  const panel = document.getElementById("fe-cal-daypanel");
+  const entry = panel._entradasTemp && panel._entradasTemp[i];
+  if(!entry || !entry.plantillaHome) return;
+  const iso = _bceCalDiaSeleccionado;
+  bceCerrarCalendario();
+  fehAbrir();
+  fehElegirPlantilla(entry.plantillaHome);
+  _fehDraftCtx = { iso, idx: i };
+  if(entry.borrador && entry.borrador.valores){
+    Object.assign(FEH.values, entry.borrador.valores);
+    if(typeof entry.borrador.showBadge === "boolean") FEH.showBadge = entry.borrador.showBadge;
+    if(typeof entry.borrador.showAviso === "boolean") FEH.showAviso = entry.borrador.showAviso;
+    fehSincronizarCamposUI();
+  }
+  fehActualizarBannerBorrador();
+  fehRenderPreview();
 }
 
 function bceCalEditarEntrada(i, campo, valor){
@@ -23056,6 +23171,7 @@ window.bceCerrarCalendario = bceCerrarCalendario;
 window.bceCalFiltrarMarca = bceCalFiltrarMarca;
 window.bceCalMoverMes = bceCalMoverMes;
 window.bceCalClickDia = bceCalClickDia;
+window.bceCalGenerarPost = bceCalGenerarPost;
 window.bceCalEditarEntrada = bceCalEditarEntrada;
 window.bceCalAgregarEntrada = bceCalAgregarEntrada;
 window.bceCalQuitarEntrada = bceCalQuitarEntrada;
