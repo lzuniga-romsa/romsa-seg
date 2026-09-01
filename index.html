@@ -21944,7 +21944,7 @@ function fehVolverPicker(){
 function fehElegirPlantilla(id){
   const t = HOME_TEMPLATES.find(x=>x.id===id);
   if(!t) return;
-  FEH = { tplId:id, photos:{}, values:{}, photoOffsets:{}, showBadge:true };
+  FEH = { tplId:id, photos:{}, values:{}, photoOffsets:{}, showBadge:true, showAviso:false };
   t.fields.forEach(f=>{ FEH.values[f.key] = f.default; });
 
   document.getElementById("feh-step-picker").classList.remove("active");
@@ -21972,9 +21972,9 @@ function fehElegirPlantilla(id){
         ? '<textarea class="feh-input" rows="3" oninput="fehSetValor(\''+f.key+'\',this.value)">'+escapeHtml(f.default)+'</textarea>'
         : '<input type="text" class="feh-input" value="'+escapeHtml(f.default)+'" oninput="fehSetValor(\''+f.key+'\',this.value)">')
     +'</div>'
-  ).join("") + (t.hasPill
-    ? '<label class="feh-check-row"><input type="checkbox" checked onchange="fehSetShowBadge(this.checked)"> Mostrar sello "Cotización sin costo"</label>'
-    : "");
+  ).join("")
+    + (t.hasPill ? '<label class="feh-check-row"><input type="checkbox" checked onchange="fehSetShowBadge(this.checked)"> Mostrar sello "Cotización sin costo"</label>' : "")
+    + '<label class="feh-check-row"><input type="checkbox" onchange="fehSetShowAviso(this.checked)"> Mostrar aviso de pago a meses</label>';
 
   fehActualizarBotonDescarga();
   (_fehFontsReady || Promise.resolve()).then(fehRenderPreview);
@@ -21989,6 +21989,11 @@ function fehSetOffset(key, axis, val){
 
 function fehSetShowBadge(checked){
   FEH.showBadge = checked;
+  fehRenderPreview();
+}
+
+function fehSetShowAviso(checked){
+  FEH.showAviso = checked;
   fehRenderPreview();
 }
 
@@ -22292,6 +22297,28 @@ function fehTag(ctx, text, x, y, bg, color){
   return h;
 }
 
+// Aviso opcional "pago a meses con tarjeta" (Mercado Pago), apagado por
+// default — copy fijo y genérico, sin porcentajes/plazos/"sin intereses"
+// porque el interés varía según los meses y hay comisión de pago con
+// tarjeta que no se quiere tener que explicar en la imagen.
+const HOME_AVISO_TEXT = "💳 Pregunta por pago a meses con tarjeta";
+const HOME_AVISO_BAND_H = 42;
+function fehDrawAvisoMeses(ctx, W, y, bg, color){
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, y, W, HOME_AVISO_BAND_H);
+  ctx.font = '600 22px "Inter"';
+  ctx.fillStyle = color;
+  ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  ctx.fillText(HOME_AVISO_TEXT, W/2, y + HOME_AVISO_BAND_H/2);
+}
+// Ubica la franja pegada al borde inferior sin encimarse con el contenido
+// ya dibujado arriba (cyMin) ni salirse del lienzo — clave porque el
+// contenido de arriba (título, foto, WhatsApp) cambia de posición según
+// cuánto texto haya escrito el usuario.
+function fehAvisoBandY(H, cyMin){
+  return Math.min(Math.max(cyMin, H - HOME_AVISO_BAND_H - 40), H - HOME_AVISO_BAND_H - 8);
+}
+
 // ── FEED A · antes/después vertical ─────────────────────────────
 function fehDrawFeedA(ctx, W, H, st){
   const v = st.values, ph = st.photos;
@@ -22328,6 +22355,9 @@ function fehDrawFeedA(ctx, W, H, st){
   fehFillTextTracked(ctx, ciudadA, W-56 - fehTrackedWidth(ctx,ciudadA,3), footY+2, 3);
 
   ctx.fillStyle = HOME_BRAND.terracota; ctx.fillRect(0, H-12, W, 12);
+  if(st.showAviso){
+    fehDrawAvisoMeses(ctx, W, fehAvisoBandY(H, footY+36), HOME_BRAND.terracota, HOME_BRAND.navy);
+  }
 }
 
 // ── FEED B · antes/después a sangre ─────────────────────────────
@@ -22373,6 +22403,10 @@ function fehDrawFeedB(ctx, W, H, st){
 
   ctx.font = '500 27px "Inter"'; ctx.fillStyle = "#FFFFFF"; ctx.textAlign = "left"; ctx.textBaseline = "middle";
   ctx.fillText("WhatsApp "+(v.tel||""), 56, titleBottom+80);
+
+  if(st.showAviso){
+    fehDrawAvisoMeses(ctx, W, fehAvisoBandY(H, titleBottom+80+36), HOME_BRAND.terracota, HOME_BRAND.navy);
+  }
 }
 
 // ── FEED C · tip o testimonio (sin foto) ────────────────────────
@@ -22416,7 +22450,13 @@ function fehDrawFeedC(ctx, W, H, st){
     tx += w + 14;
   });
 
-  ctx.fillStyle = HOME_BRAND.navy; ctx.fillRect(0, H-92, W, 92);
+  // La barra navy crece hacia arriba cuando el aviso está activo, y el
+  // aviso ocupa esa franja nueva — el WhatsApp/ciudad de abajo no se mueven.
+  const barH = 92 + (st.showAviso ? HOME_AVISO_BAND_H : 0);
+  ctx.fillStyle = HOME_BRAND.navy; ctx.fillRect(0, H-barH, W, barH);
+  if(st.showAviso){
+    fehDrawAvisoMeses(ctx, W, H-barH, HOME_BRAND.terracota, HOME_BRAND.navy);
+  }
   ctx.font = '500 27px "Inter"'; ctx.fillStyle = "#FFFFFF"; ctx.textAlign = "left"; ctx.textBaseline = "middle";
   ctx.fillText("WhatsApp "+(v.tel||""), 56, H-46);
   ctx.font = '600 22px "Inter"'; ctx.fillStyle = HOME_BRAND.terracota; ctx.textAlign = "right";
@@ -22448,6 +22488,10 @@ function fehDrawStoryA(ctx, W, H, st){
   // era un azul pálido fuera de paleta, y de bajo contraste sobre la foto).
   ctx.font = '500 32px "Inter"'; ctx.fillStyle = "rgba(247,243,238,.88)"; ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
   ctx.fillText(v.subtitulo||"", 64, cy);
+
+  if(st.showAviso){
+    fehDrawAvisoMeses(ctx, W, fehAvisoBandY(H, cy+36), HOME_BRAND.terracota, HOME_BRAND.navy);
+  }
 }
 
 // ── STORY B · foto + banda de servicio ──────────────────────────
@@ -22478,6 +22522,10 @@ function fehDrawStoryB(ctx, W, H, st){
   cy += 58;
   ctx.font = '500 27px "Inter"'; ctx.fillStyle = "rgba(247,243,238,.85)"; ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
   ctx.fillText("WhatsApp "+(v.tel||""), 64, cy);
+
+  if(st.showAviso){
+    fehDrawAvisoMeses(ctx, W, fehAvisoBandY(H, cy+36), HOME_BRAND.terracota, HOME_BRAND.navy);
+  }
 }
 
 // ── STORY C · antes/después rápido ──────────────────────────────
@@ -22499,7 +22547,11 @@ function fehDrawStoryC(ctx, W, H, st){
   fehTag(ctx, "DESPUÉS", 64, gridY+rowH+gap, HOME_BRAND.terracota, HOME_BRAND.navy);
 
   const lines = fehWrapTitleTokens(ctx, v.titulo||"", W-128, '700 64px "Playfair Display"', 'italic 700 64px "Playfair Display"');
-  fehDrawTitleLines(ctx, lines, 64, gridY+gridH+82, 68, "#FFFFFF", HOME_BRAND.terracota, '700 64px "Playfair Display"', 'italic 700 64px "Playfair Display"');
+  const titleBottomSC = fehDrawTitleLines(ctx, lines, 64, gridY+gridH+82, 68, "#FFFFFF", HOME_BRAND.terracota, '700 64px "Playfair Display"', 'italic 700 64px "Playfair Display"');
+
+  if(st.showAviso){
+    fehDrawAvisoMeses(ctx, W, fehAvisoBandY(H, titleBottomSC+36), HOME_BRAND.terracota, HOME_BRAND.navy);
+  }
 }
 
 window.fehAbrir = fehAbrir;
@@ -22511,6 +22563,7 @@ window.fehSetValor = fehSetValor;
 window.fehCargarFoto = fehCargarFoto;
 window.fehSetOffset = fehSetOffset;
 window.fehSetShowBadge = fehSetShowBadge;
+window.fehSetShowAviso = fehSetShowAviso;
 window.fehDescargar = fehDescargar;
 window.fehCopyPostText = fehCopyPostText;
 
