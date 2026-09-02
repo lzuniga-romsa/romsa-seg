@@ -22573,7 +22573,10 @@ function fehDrawStoryA(ctx, W, H, st){
 
   const lines = fehWrapTitleTokens(ctx, v.titulo||"", W-128, '700 82px "Playfair Display"', 'italic 700 82px "Playfair Display"');
   cy = fehDrawTitleLines(ctx, lines, 64, cy+82, 84, "#FFFFFF", HOME_BRAND.terracota, '700 82px "Playfair Display"', 'italic 700 82px "Playfair Display"');
-  cy += 44;
+  // 44px no dejaba lugar para el descendente del título (Playfair 82px) +
+  // el ascendente del subtítulo, y quedaban pegados — mismo ajuste ya
+  // aplicado en Story B entre título y WhatsApp.
+  cy += 58;
   // Subtítulo: mismo tono crema-sobre-navy que el resto de subtítulos (antes
   // era un azul pálido fuera de paleta, y de bajo contraste sobre la foto).
   ctx.font = '500 32px "Inter"'; ctx.fillStyle = "rgba(247,243,238,.88)"; ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
