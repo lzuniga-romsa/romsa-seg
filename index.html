@@ -1371,12 +1371,14 @@ body.in-contactos #app, body.in-contactosdb #app{
 .user-avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;}
 .user-avatar.admin{background:rgba(30,111,217,.15);color:var(--blue);}
 .user-avatar.tecnico{background:rgba(16,185,129,.12);color:#0B7A5A;}
+.user-avatar.editor-fotos{background:var(--amber-dim);color:#92600A;}
 .user-info{flex:1;min-width:0;}
 .user-name{font-size:13px;font-weight:600;color:var(--tx);}
 .user-email{font-size:11px;color:var(--tx2);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .user-role-badge{font-size:9px;font-weight:700;padding:2px 8px;border-radius:10px;}
 .role-admin{background:rgba(30,111,217,.1);color:var(--blue);}
 .role-tecnico{background:rgba(16,185,129,.1);color:#0B7A5A;}
+.role-editor-fotos{background:var(--amber-dim);color:#92600A;}
 
 /* ── PWA INSTALL BANNER ── */
 #pwa-banner{
@@ -1625,7 +1627,7 @@ body.in-contactos #app, body.in-contactosdb #app{
       </div>
 
       <!-- 7. Editor de Fotos -->
-      <div class="mod-card ds-card" onclick="selectModule('fotoeditor')">
+      <div id="mod-card-fotoeditor" class="mod-card ds-card" onclick="selectModule('fotoeditor')">
         <div class="mod-icon mi-ft"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg></div>
         <div class="mod-info">
           <div class="mod-name">Editor de Fotos</div>
@@ -2165,14 +2167,20 @@ body.in-contactos #app, body.in-contactosdb #app{
         <div id="admin-users-list"><div style="font-size:12px;color:var(--g3);padding:8px 0;">Cargando...</div></div>
       </div>
       <div class="admin-section">
-        <div class="admin-sec-title">➕ Crear nuevo técnico</div>
+        <div class="admin-sec-title">➕ Crear nuevo usuario</div>
         <div class="card">
           <div class="card-body">
             <div class="fg"><label class="flabel">Nombre completo <span class="req">*</span></label><input class="finput" id="new-user-nombre" placeholder="Nombre Apellido"></div>
             <div class="fg"><label class="flabel">Correo electrónico <span class="req">*</span></label><input class="finput" id="new-user-email" type="email" placeholder="tecnico@romsa.mx"></div>
             <div class="fg"><label class="flabel">Contraseña temporal <span class="req">*</span></label><input class="finput" id="new-user-pass" type="password" placeholder="Mínimo 6 caracteres"></div>
             <div class="fg"><label class="flabel">Teléfono</label><input class="finput" id="new-user-tel" type="tel" placeholder="664 000 0000"></div>
-            <button class="btn btn-primary btn-block" id="btn-crear-usuario" onclick="crearTecnico()">Crear técnico →</button>
+            <div class="fg"><label class="flabel">Tipo de acceso</label>
+              <select class="fselect" id="new-user-rol">
+                <option value="tecnico">Técnico — acceso normal</option>
+                <option value="editor_fotos">Editor de Fotos — solo ese módulo</option>
+              </select>
+            </div>
+            <button class="btn btn-primary btn-block" id="btn-crear-usuario" onclick="crearTecnico()">Crear usuario →</button>
           </div>
         </div>
       </div>
@@ -4347,6 +4355,17 @@ function subscribeObras(){
 
 // ─── NAVIGATION ──────────────────────────────────
 function goScreen(n){
+  // Candado real de navegación: un usuario "editor_fotos" solo puede
+  // llegar a la pantalla de fotoeditor — esta verificación corre PRIMERO,
+  // antes de tocar el DOM, así que ninguna otra pantalla llega siquiera a
+  // activarse ni por un instante, sin importar cómo se haya invocado
+  // goScreen (clic en el menú, un botón interno, o directo desde la
+  // consola del navegador saltándose selectModule).
+  if(window._esSoloFotos && n !== "fotoeditor"){
+    showToast("🔒 Tu cuenta solo tiene acceso a Editor de Fotos");
+    goScreen("fotoeditor");
+    return;
+  }
   document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
   // Ocultar iframe cuando no estamos en levantamientos
   var levScr=document.getElementById("screen-levantamientos");
@@ -7176,8 +7195,23 @@ function showModuleSelector(){
     const loginLogo = document.getElementById('login-logo-img');
     if(loginLogo && loginLogo.src) ll.src = loginLogo.src;
   }
+  _aplicarRestriccionSoloFotos();
   if(typeof _actualizarBadgesMenu === "function") _actualizarBadgesMenu();
   if(typeof _actualizarHeroSelector === "function") _actualizarHeroSelector();
+}
+
+// Para el rol "editor_fotos": el menú principal solo debe mostrar la
+// ficha de Editor de Fotos — ni la tarjeta destacada de Dashboard General
+// ni ninguna otra ficha de módulo, no solo deshabilitadas visualmente
+// sino sin dibujarse. Se reaplica cada vez que se muestra el selector
+// (idempotente) para no depender de que nada más lo deje intacto.
+function _aplicarRestriccionSoloFotos(){
+  if(!window._esSoloFotos) return;
+  const hero = document.querySelector(".sel-hero");
+  if(hero) hero.style.display = "none";
+  document.querySelectorAll(".mod-card").forEach(c=>{
+    if(c.id !== "mod-card-fotoeditor") c.style.display = "none";
+  });
 }
 
 function selectModule(mod){
@@ -16821,6 +16855,12 @@ auth.onAuthStateChanged(async user => {
       }
     }catch(e){ console.error("Error cargando perfil:", e); }
 
+    // Rol restringido: acceso único al módulo Editor de Fotos (ver
+    // goScreen/selectModule para el bloqueo real de navegación, y
+    // showModuleSelector para el filtrado de fichas del menú).
+    const _esSoloFotos = (currentUserProfile && currentUserProfile.rol === "editor_fotos") && !isAdmin;
+    window._esSoloFotos = _esSoloFotos;
+
     // Registrar check-in automático al ingresar
     await autoCheckinLogin(currentUserProfile);
 
@@ -16829,7 +16869,11 @@ auth.onAuthStateChanged(async user => {
     document.getElementById("app").style.display = "";
     // Mostrar selector de módulo si no hay uno guardado
     const _savedMod = localStorage.getItem("romsa_module");
-    if(!_savedMod){
+    if(_esSoloFotos){
+      // Sin selección posible: entra directo a su único módulo, sin
+      // importar qué había guardado antes en localStorage.
+      selectModule("fotoeditor");
+    } else if(!_savedMod){
       showModuleSelector();
     } else if(_savedMod === "levantamientos"){
       goScreen("levantamientos");
@@ -16840,7 +16884,7 @@ auth.onAuthStateChanged(async user => {
     const nombre = currentUserProfile?.nombre || user.email;
     document.getElementById("tb-tecnico-name").textContent = nombre;
     const roleEl = document.getElementById("tb-user-role");
-    if(roleEl) roleEl.textContent = isAdmin ? "ADMINISTRADOR" : "TÉCNICO";
+    if(roleEl) roleEl.textContent = isAdmin ? "ADMINISTRADOR" : (_esSoloFotos ? "EDITOR DE FOTOS" : "TÉCNICO");
     const avatarEl = document.getElementById("tb-user-avatar");
     if(avatarEl) avatarEl.textContent = nombre.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase();
     const badge = document.getElementById("tb-user-badge");
@@ -16883,23 +16927,28 @@ auth.onAuthStateChanged(async user => {
     const ml = document.getElementById("tb-logo-img");
     if(ll && ml) ll.src = ml.src;
 
-    // Inicializar app
-    subscribeObras();
-  subscribeCotizaciones();
-    if(_tieneCosteo) subscribeCosteo();
-    // Pre-cargar catálogo de conceptos en background (para que CAT_SERVICIOS esté actualizado al crear cotización)
-    if(typeof cargarCatalogoConceptos === "function"){
-      cargarCatalogoConceptos().catch(function(e){ console.warn("[ROMSA] Catálogo no se pudo precargar:", e); });
-    }
-    // Pre-cargar clientes y plantillas en background (Sesión 6+7)
-    if(typeof cargarClientes === "function"){
-      cargarClientes().catch(function(e){ console.warn("[ROMSA] Clientes no se pudieron precargar:", e); });
-    }
-    if(typeof cargarPlantillasCondiciones === "function"){
-      cargarPlantillasCondiciones().catch(function(e){ console.warn("[ROMSA] Plantillas no se pudieron precargar:", e); });
-    }
-    if(typeof cargarCuadrillas === "function"){
-      cargarCuadrillas().catch(function(e){ console.warn("[ROMSA] Cuadrillas no se pudieron precargar:", e); });
+    // Inicializar app — un usuario "editor_fotos" no necesita ninguno de
+    // estos datos (Obras/Cotizaciones/Costeo/Clientes/etc.), así que ni
+    // siquiera se piden: además de no verlos en pantalla, no llegan al
+    // navegador.
+    if(!_esSoloFotos){
+      subscribeObras();
+      subscribeCotizaciones();
+      if(_tieneCosteo) subscribeCosteo();
+      // Pre-cargar catálogo de conceptos en background (para que CAT_SERVICIOS esté actualizado al crear cotización)
+      if(typeof cargarCatalogoConceptos === "function"){
+        cargarCatalogoConceptos().catch(function(e){ console.warn("[ROMSA] Catálogo no se pudo precargar:", e); });
+      }
+      // Pre-cargar clientes y plantillas en background (Sesión 6+7)
+      if(typeof cargarClientes === "function"){
+        cargarClientes().catch(function(e){ console.warn("[ROMSA] Clientes no se pudieron precargar:", e); });
+      }
+      if(typeof cargarPlantillasCondiciones === "function"){
+        cargarPlantillasCondiciones().catch(function(e){ console.warn("[ROMSA] Plantillas no se pudieron precargar:", e); });
+      }
+      if(typeof cargarCuadrillas === "function"){
+        cargarCuadrillas().catch(function(e){ console.warn("[ROMSA] Cuadrillas no se pudieron precargar:", e); });
+      }
     }
     checkUrlParams();
     updateHoraCi();
@@ -17019,14 +17068,26 @@ async function loadAdminUsers(){
       const u = doc.data();
       const ini = (u.nombre||"?").split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase();
       const isMe = u.uid === currentUser?.uid;
+      const rolClase = u.rol==='admin' ? 'admin' : (u.rol==='editor_fotos' ? 'editor-fotos' : 'tecnico');
+      const rolLabel = u.rol==='admin' ? 'Admin' : (u.rol==='editor_fotos' ? 'Editor de Fotos' : 'Técnico');
+      // El rol de admin no se cambia desde aquí (se otorga por la lista
+      // fija del código o directamente en Firestore) — solo se puede
+      // alternar entre Técnico y Editor de Fotos.
+      const rolSelector = u.rol!=='admin'
+        ? `<select onchange="cambiarRolUsuario('${u.uid}',this.value)" style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:8px;border:1px solid var(--g1);background:#fff;color:var(--tx2);cursor:pointer;">
+            <option value="tecnico"${u.rol!=='editor_fotos'?' selected':''}>Técnico</option>
+            <option value="editor_fotos"${u.rol==='editor_fotos'?' selected':''}>Editor de Fotos</option>
+          </select>`
+        : "";
       return `<div class="user-row" style="flex-wrap:wrap;gap:8px;">
-        <div class="user-avatar ${u.rol==='admin'?'admin':'tecnico'}">${ini}</div>
+        <div class="user-avatar ${rolClase}">${ini}</div>
         <div class="user-info">
           <div class="user-name">${u.nombre}${isMe?' <span style="font-size:9px;color:var(--g3);">(tú)</span>':''}</div>
           <div class="user-email">${u.email}</div>
         </div>
         <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px;">
-          <span class="user-role-badge ${u.rol==='admin'?'role-admin':'role-tecnico'}">${u.rol==='admin'?'Admin':'Técnico'}</span>
+          <span class="user-role-badge role-${rolClase}">${rolLabel}</span>
+          ${rolSelector}
           <button onclick="editarUsuario('${u.uid}','${u.nombre}','${u.email}')" style="font-size:9px;font-weight:700;padding:2px 8px;border-radius:8px;border:none;cursor:pointer;background:var(--blue-dim);color:var(--blue);">✎ Editar</button>
           ${u.rol==='tecnico'?`<button onclick="togglePermisoTecnico('${u.uid}','${u.nombre}')" style="font-size:9px;font-weight:700;padding:2px 8px;border-radius:8px;border:none;cursor:pointer;background:${u.puedeEditarTodas?'var(--amber-dim)':'var(--off)'};color:${u.puedeEditarTodas?'#92600A':'var(--g3)'};">${u.puedeEditarTodas?'✏️ Edita todo':'🔒 Solo sus obras'}</button>`:''}
           ${!isMe?`<button onclick="toggleUserActivo('${u.uid}',${u.activo})" style="font-size:9px;font-weight:700;padding:2px 8px;border-radius:8px;border:none;cursor:pointer;background:${u.activo?'var(--red-dim)':'var(--green-dim)'};color:${u.activo?'var(--red)':'#0B7A5A'};">${u.activo?'Desactivar':'Activar'}</button>`:''}
@@ -17043,6 +17104,7 @@ async function crearTecnico(){
   const email = document.getElementById("new-user-email").value.trim();
   const pass = document.getElementById("new-user-pass").value;
   const tel = document.getElementById("new-user-tel").value.trim();
+  const rol = document.getElementById("new-user-rol").value || "tecnico";
   if(!nombre||!email||!pass){ showToast("⚠️ Nombre, correo y contraseña son requeridos"); return; }
   if(pass.length < 6){ showToast("⚠️ La contraseña debe tener mínimo 6 caracteres"); return; }
   const btn = document.getElementById("btn-crear-usuario");
@@ -17052,17 +17114,18 @@ async function crearTecnico(){
     const cred = await auth.createUserWithEmailAndPassword(email, pass);
     const uid = cred.user.uid;
     // Guardar perfil en Firestore
-    await usersRef.doc(uid).set({uid, nombre, email, tel, rol:"tecnico", activo:true, creadoEn:Date.now()});
+    await usersRef.doc(uid).set({uid, nombre, email, tel, rol, activo:true, creadoEn:Date.now()});
     // Volver a iniciar sesión como admin (createUser cambia la sesión activa)
     // No es necesario — Firebase Web no cambia la sesión al crear usuarios con compat SDK
     ["new-user-nombre","new-user-email","new-user-pass","new-user-tel"].forEach(id=>document.getElementById(id).value="");
-    showToast("✅ Técnico "+nombre+" creado");
+    document.getElementById("new-user-rol").value = "tecnico";
+    showToast("✅ "+nombre+" creado ("+(rol==="editor_fotos"?"Editor de Fotos":"Técnico")+")");
     loadAdminUsers();
   }catch(e){
     const msgs = {"auth/email-already-in-use":"Este correo ya está registrado","auth/invalid-email":"Correo inválido"};
     showToast("❌ "+(msgs[e.code]||e.message));
   }
-  btn.disabled = false; btn.textContent = "Crear técnico →";
+  btn.disabled = false; btn.textContent = "Crear usuario →";
 }
 
 // ── Admin: log de accesos ────────────────────────────────────────
@@ -17111,6 +17174,18 @@ async function toggleUserActivo(uid, activo){
   if(!isAdmin) return;
   await usersRef.doc(uid).update({activo: !activo});
   showToast(activo ? "🔒 Usuario desactivado" : "✅ Usuario activado");
+  loadAdminUsers();
+}
+
+// ── Admin: cambiar entre Técnico y Editor de Fotos ───────────────
+// El rol "admin" no se toca desde aquí — este selector solo alterna
+// entre los otros dos, a propósito, para no poder degradar una cuenta
+// de admin por accidente desde un control tan directo.
+async function cambiarRolUsuario(uid, nuevoRol){
+  if(!isAdmin) return;
+  if(nuevoRol !== "tecnico" && nuevoRol !== "editor_fotos") return;
+  await usersRef.doc(uid).update({rol: nuevoRol});
+  showToast("✅ Rol actualizado a "+(nuevoRol==="editor_fotos"?"Editor de Fotos":"Técnico"));
   loadAdminUsers();
 }
 
