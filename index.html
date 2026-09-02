@@ -21935,6 +21935,15 @@ const HOME_TEMPLATES = [
       {key:"tel", label:"WhatsApp", default:HOME_TEL_DEFAULT}
     ],
     draw: fehDrawFeedC },
+  { id:"feed-d", cat:"feed", w:1080, h:1350, label:"Foto protagonista", hasPill:true,
+    photos:[{key:"foto",label:"Foto principal (vertical o cuadrada)"}],
+    fields:[
+      {key:"eyebrow", label:"Etiqueta superior", default:"Proyecto terminado"},
+      {key:"titulo", label:"Frase / eslogan del proyecto", default:"Un patio nuevo, listo para vivirse"},
+      {key:"descripcion", label:"Servicio / ubicación", default:"Piso estampado residencial · Mexicali, B.C."},
+      {key:"tel", label:"WhatsApp (opcional — vacío = sin pie)", default:HOME_TEL_DEFAULT}
+    ],
+    draw: fehDrawFeedD },
   { id:"story-a", cat:"story", w:1080, h:1920, label:"Foto a sangre + avance",
     photos:[{key:"foto",label:"Foto o fotograma vertical"}],
     fields:[
@@ -22650,6 +22659,67 @@ function fehDrawFeedC(ctx, W, H, st){
   const ciudadC = v.ciudad || "Mexicali, B.C.";
   fehFillTextTracked(ctx, ciudadC, W-56 - fehTrackedWidth(ctx,ciudadC,3), H-44, 3);
   ctx.fillStyle = HOME_BRAND.terracota; ctx.fillRect(0, H-12, W, 12);
+}
+
+// ── FEED D · foto protagonista (una sola foto a sangre + eslogan) ──
+function fehDrawFeedD(ctx, W, H, st){
+  const v = st.values, ph = st.photos, po = st.photoOffsets || {};
+  ctx.fillStyle = HOME_BRAND.navy; ctx.fillRect(0,0,W,H);
+  fehDrawPhoto(ctx, ph.foto, 0, 0, W, H, "foto principal · vertical", po.foto);
+
+  const gradH = 760;
+  const grad = ctx.createLinearGradient(0, H-gradH, 0, H);
+  grad.addColorStop(0, "rgba(11,31,58,0)");
+  grad.addColorStop(0.4, "rgba(11,31,58,.4)");
+  grad.addColorStop(0.7, "rgba(11,31,58,.85)");
+  grad.addColorStop(1, HOME_BRAND.navy);
+  ctx.fillStyle = grad; ctx.fillRect(0, H-gradH, W, gradH);
+
+  // Logo: mismo tratamiento que Feed A/B — chip navy + isotipo
+  ctx.fillStyle = "rgba(11,31,58,.92)"; ctx.fillRect(56, 40, 200, 46);
+  fehDrawLogoLockup(ctx, 66, 44, 38, false);
+  if(st.showBadge !== false){
+    fehDrawPill(ctx, "Cotización sin costo", W-56, 40, {align:"right", bg:HOME_BRAND.terracota, color:HOME_BRAND.navy, font:'700 22px "Inter"', fontSize:22});
+  }
+
+  // El eslogan puede ocupar 1, 2 o hasta 3 líneas según qué tan largo lo
+  // escriban — con un punto de inicio fijo, un eslogan largo empujaba la
+  // última línea hacia abajo hasta encimarse con la descripción/pie (bug
+  // real, visto al probar con un eslogan de más de 2 líneas). Se ancla
+  // desde ABAJO: la ÚLTIMA línea del título siempre termina en el mismo
+  // lugar (H-220) sin importar cuántas sean, y el eyebrow se coloca
+  // siempre a una distancia fija arriba de la PRIMERA línea del título.
+  const lines = fehWrapTitleTokens(ctx, v.titulo||"", W-112, '700 64px "Playfair Display"', 'italic 700 64px "Playfair Display"');
+  const tituloLineH = 64;
+  const tituloStartY = (H-220) - (lines.length-1)*tituloLineH;
+
+  ctx.font = '600 22px "Inter"'; ctx.fillStyle = HOME_BRAND.terracota;
+  ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
+  fehFillTextTracked(ctx, (v.eyebrow||"").toUpperCase(), 56, tituloStartY-64, 3);
+
+  const titleBottom = fehDrawTitleLines(ctx, lines, 56, tituloStartY, tituloLineH, "#FFFFFF", HOME_BRAND.terracota, '700 64px "Playfair Display"', 'italic 700 64px "Playfair Display"');
+
+  ctx.font = '400 26px "Inter"'; ctx.fillStyle = "#E0DED8";
+  ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
+  const descY = titleBottom + 38;
+  ctx.fillText(v.descripcion||"", 56, descY);
+
+  // El pie con WhatsApp es opcional (campo vacío = sin pie). La franja de
+  // aviso de pago a meses, si está activa, siempre se ancla debajo de lo
+  // último que sí se dibujó (con o sin pie) y nunca se sale del lienzo —
+  // mismo mecanismo (fehAvisoBandY) que ya usan Feed A/B y las historias.
+  let cyMinAviso = descY + 30;
+  if(v.tel){
+    ctx.strokeStyle = "rgba(255,255,255,.28)"; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(56, H-100); ctx.lineTo(W-56, H-100); ctx.stroke();
+    ctx.font = '400 24px "Inter"'; ctx.fillStyle = "#FFFFFF"; ctx.textBaseline = "middle";
+    ctx.textAlign = "left"; ctx.fillText("WhatsApp "+v.tel, 56, H-78);
+    cyMinAviso = H-78+30;
+  }
+
+  if(st.showAviso){
+    fehDrawAvisoMeses(ctx, W, fehAvisoBandY(H, cyMinAviso), HOME_BRAND.terracota, HOME_BRAND.navy);
+  }
 }
 
 // ── STORY A · foto a sangre + avance de obra ────────────────────
