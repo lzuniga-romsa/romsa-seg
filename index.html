@@ -1050,6 +1050,7 @@ body.in-contactos #app, body.in-contactosdb #app{
   --ds-mod-contactos:#818CF8;
   --ds-mod-contactosdb:#94A3B8;
   --ds-mod-ia:#C084FC;
+  --ds-mod-admin:#F87171;
   --ds-mod-dashboardgeneral:var(--ds-mustard); /* excepción intencional: ficha principal */
 
   /* Familias de los 3 roles tipográficos + mono para folios/códigos */
@@ -1242,6 +1243,7 @@ body.in-contactos #app, body.in-contactosdb #app{
 .mod-icon.mi-cn{--mod-accent:var(--ds-mod-contactos);}
 .mod-icon.mi-bd{--mod-accent:var(--ds-mod-contactosdb);}
 .mod-icon.mi-ia{--mod-accent:var(--ds-mod-ia);}
+.mod-icon.mi-ad{--mod-accent:var(--ds-mod-admin);}
 .mod-info{flex:1;min-width:0;}
 .mod-name{font-family:var(--ds-font-title);font-size:12.5px;font-weight:700;color:#fff;margin-bottom:2px;line-height:1.25;letter-spacing:-.1px;}
 .mod-desc{font-family:var(--ds-font-body);font-size:9.5px;font-weight:400;color:rgba(255,255,255,.38);line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
@@ -1563,6 +1565,19 @@ body.in-contactos #app, body.in-contactosdb #app{
           <div class="mod-desc">Medición de áreas, reparaciones y reporte técnico</div>
         </div>
         <div class="mod-meta"><span class="mod-code">LV-01</span></div>
+      </div>
+
+      <!-- 1b. Admin — Solo visible para admin. Único acceso a esta pantalla:
+           el botón "Admin" que vivía en el subnav viejo quedó inalcanzable
+           cuando el rediseño de Seguimiento de Obras ocultó esa barra por
+           completo en todas las pantallas (ver body.in-seguimiento). -->
+      <div id="mod-card-admin" class="mod-card ds-card" onclick="selectModule('admin')" style="display:none;">
+        <div class="mod-icon mi-ad"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg></div>
+        <div class="mod-info">
+          <div class="mod-name">Admin</div>
+          <div class="mod-desc">Usuarios del sistema, accesos y roles</div>
+        </div>
+        <div class="mod-meta"><span class="mod-code">AD-00</span></div>
       </div>
 
       <!-- 2. Auditoría Técnica — Solo visible para admin -->
@@ -7212,6 +7227,9 @@ function selectModule(mod){
   } else if(mod === 'fotoeditor'){
     goScreen('fotoeditor');
     if(typeof bceInit === "function") bceInit();
+  } else if(mod === 'admin'){
+    if(!isAdmin){ showToast("🔒 Sin acceso a este módulo"); volverSelector(); return; }
+    goScreen('admin');
   }
 }
 
@@ -16846,9 +16864,13 @@ auth.onAuthStateChanged(async user => {
     const badge = document.getElementById("tb-user-badge");
     if(badge){ badge.textContent = nombre.split(" ")[0]; badge.style.display = "none"; }
 
-    // Mostrar tab Admin solo para admin
+    // Mostrar tab Admin solo para admin (el subnav donde vive quedó oculto
+    // en todas las pantallas tras el rediseño de Seguimiento de Obras, así
+    // que la ficha del menú principal de abajo es hoy el acceso real).
     const adminTab = document.getElementById("snav-admin");
     if(adminTab) adminTab.style.display = isAdmin ? "" : "none";
+    const modCardAdmin = document.getElementById("mod-card-admin");
+    if(modCardAdmin) modCardAdmin.style.display = isAdmin ? "" : "none";
 
     // Mostrar tab Costeo para: admin, lista blanca por email, o rol=admin en perfil
     const costeoTab = document.getElementById("snav-costeo");
