@@ -1,0 +1,120 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Helpers de rol ──────────────────────────────────────────────
+    // Mismo criterio de "admin" que ya usa el cliente (index.html):
+    // UID/correo en una lista fija, O rol:"admin" en su perfil de
+    // Firestore. Se replica aquí porque las reglas no pueden confiar en
+    // nada que decida el navegador — tienen que verificarlo ellas mismas.
+    function esAdminPorListaFija() {
+      return request.auth != null && (
+        request.auth.uid == "OVsuuX8DsSdhLqXmK01gW2K8Rrh1" ||
+        ("email" in request.auth.token &&
+         request.auth.token.email.lower() in
+           ["lzuniga@romsaindustrial.com", "sroman@romsaindustrial.com"])
+      );
+    }
+
+    function perfil() {
+      return get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data;
+    }
+
+    function tienePerfil() {
+      return request.auth != null &&
+        exists(/databases/$(database)/documents/usuarios/$(request.auth.uid));
+    }
+
+    function esAdmin() {
+      return esAdminPorListaFija() || (tienePerfil() && perfil().rol == "admin");
+    }
+
+    // "editor_fotos": acceso exclusivo a Editor de Fotos (ver index.html,
+    // window._esSoloFotos). Nunca es también admin por lista fija — si lo
+    // fuera, esAdmin() ya le da paso libre y esta función no debe negarlo.
+    function esSoloFotos() {
+      return !esAdminPorListaFija() && tienePerfil() && perfil().rol == "editor_fotos";
+    }
+
+    // ── Perfiles de usuario (usuarios/{uid}) ─────────────────────────
+    match /usuarios/{uid} {
+      // Cualquier cuenta autenticada puede leer SU PROPIO perfil — es lo
+      // primero que carga la app al iniciar sesión (nombre, rol, activo).
+      allow get: if request.auth != null && request.auth.uid == uid;
+
+      // Un admin administra cualquier perfil: crear usuarios, cambiar
+      // roles, activar/desactivar, listar a todos en la pantalla Admin.
+      allow read, write: if esAdmin();
+
+      // Caso especial: la primera vez que entra una cuenta de la lista
+      // fija de admins y todavía no tiene documento, puede crear SU
+      // PROPIO perfil (no el de nadie más) — sin esto no podría ni
+      // arrancar sesión la primera vez.
+      allow create: if request.auth != null && request.auth.uid == uid &&
+        esAdminPorListaFija();
+    }
+
+    // ── Check-ins de login (checkins_login) ──────────────────────────
+    match /checkins_login/{checkinId} {
+      // Cualquier cuenta autenticada registra su propio check-in al
+      // entrar, y lo actualiza segundos después con su ubicación GPS.
+      allow create: if request.auth != null &&
+        request.resource.data.uid == request.auth.uid;
+      allow update: if request.auth != null &&
+        resource.data.uid == request.auth.uid;
+      // Ver/borrar el historial completo es solo para admin (pantalla
+      // Admin → Accesos recientes).
+      allow read, delete: if esAdmin();
+    }
+
+    // ── Calendario de contenido de Editor de Fotos (crm_config) ──────
+    // Hoy solo se usa para crm_config/bce_calendario (el calendario de
+    // publicaciones compartido por ROMSA/RACKLINE/HOME dentro de Editor
+    // de Fotos) — abierto a cualquier cuenta autenticada, "editor_fotos"
+    // incluido, porque es justo lo que ese rol necesita usar.
+    match /crm_config/{docId} {
+      allow read, write: if request.auth != null;
+    }
+
+    // ── EXCEPCIÓN: Vista pública de obras (link para clientes) ───────
+    // La lectura pública (sin login) NO SE TOCA — sigue funcionando
+    // exactamente igual. La escritura ya requería sesión iniciada; se le
+    // agrega la misma condición que al resto de la base de datos: una
+    // cuenta con acceso restringido a Editor de Fotos no debe poder
+    // escribir aquí tampoco (antes sí podía, por el hueco general).
+    match /obras_seguimiento_v2/{obraId} {
+      allow read: if true;
+      allow write: if request.auth != null && !esSoloFotos();
+
+      match /baPairs/{pairId} {
+        allow read: if true;
+        allow write: if request.auth != null && !esSoloFotos();
+      }
+      match /updates/{updateId} {
+        allow read: if true;
+        allow write: if request.auth != null && !esSoloFotos();
+      }
+    }
+
+    // ── TODO LO DEMÁS: igual que antes para admin/tecnico — una cuenta
+    // con rol "editor_fotos" queda explícitamente fuera (cotizaciones,
+    // costeos, contactos, proyectos, encuestas, firmas, catálogos, etc.)
+    //
+    // OJO: Firestore evalúa TODOS los bloques "match" que apliquen a una
+    // ruta y permite el acceso si CUALQUIERA de ellos lo permite (no es
+    // "el más específico gana", es una unión). Por eso este catch-all NO
+    // puede ser un {document=**} sin más: si lo fuera, seguiría aplicando
+    // también a usuarios/** y checkins_login/**, y su condición más
+    // permisiva (cualquier autenticado no-editor_fotos) anularía en la
+    // práctica los candados más estrictos que ya se definieron arriba
+    // para esas dos colecciones (se comprobó exactamente este hueco con
+    // el emulador antes de este ajuste). Por eso aquí se captura el
+    // nombre de la colección de nivel superior como variable y se
+    // excluyen esas dos por nombre.
+    match /{coleccion}/{document=**} {
+      allow read, write: if request.auth != null && !esSoloFotos()
+        && coleccion != "usuarios"
+        && coleccion != "checkins_login";
+    }
+  }
+}
