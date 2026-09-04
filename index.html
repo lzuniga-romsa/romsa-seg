@@ -4117,6 +4117,9 @@ body.in-contactos #app, body.in-contactosdb #app{
       <button id="btn-firmar-conformidad" onclick="abrirFirma()" style="display:none;width:100%;background:var(--navy);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:14px;font-family:var(--font);font-size:13px;font-weight:700;color:#fff;cursor:pointer;margin-top:8px;">
         ✍️ Firmar carta de conformidad
       </button>
+      <button id="btn-descargar-avance" onclick="showPdfPreview()" style="display:none;width:100%;background:var(--navy);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:14px;font-family:var(--font);font-size:13px;font-weight:700;color:#fff;cursor:pointer;margin-top:8px;">
+        ⬇ Descargar Reporte de Avance
+      </button>
     </div>
     <div class="vc-footer" id="vc-footer-btns" style="grid-template-columns:1fr;">
       <div class="vc-footer-btn primary" onclick="cerrarVC()">← Cerrar vista</div>
@@ -5610,6 +5613,8 @@ function mostrarVC(o){
   // Mostrar botones de acción
   const waBtn = document.getElementById("vc-whatsapp-btn");
   if(waBtn) waBtn.style.display = "block";
+  const descargaBtn = document.getElementById("btn-descargar-avance");
+  if(descargaBtn) descargaBtn.style.display = (pct > 0 && !allDone) ? "block" : "none";
   // Mostrar botón firma solo cuando obra completada y no firmada aún
   const firmaBtn = document.getElementById("btn-firmar-conformidad");
   if(firmaBtn && allDone){
@@ -5968,12 +5973,15 @@ async function showPdfPreview(){
   var _docStyles = SEG_REPORTE_CSS;
 
     // ── Abrir ventana de preview ────────────────────────────────────
-  var _previewWin = window.open('', '_blank');
+  // En vista pública (cliente vía WhatsApp/IG in-app browser) NO intentar ventana
+  // nueva — casi siempre se bloquea ahí, y aunque no se bloquee saca al cliente
+  // del chat. Ir directo a la ruta in-page que ya existe como fallback.
+  var _previewWin = window._esVistaPublica ? null : window.open('', '_blank');
   if(!_previewWin){
     document.getElementById("pdf-body").innerHTML = _hojasHtml;
     document.getElementById("pdf-preview").style.display = "block";
     document.getElementById("pdf-preview").scrollTo(0,0);
-    showToast("✅ Reporte listo — activa ventanas emergentes para preview completo");
+    showToast(window._esVistaPublica ? "✅ Reporte listo" : "✅ Reporte listo — activa ventanas emergentes para preview completo");
     return;
   }
   _previewWin.document.open();
@@ -16989,6 +16997,7 @@ auth.onAuthStateChanged(async user => {
     window.isAdmin = false;
     // ⚠️ Si es vista pública del cliente (?obra=...) NO mostrar login
     const _isPublicView = new URLSearchParams(window.location.search).get("obra");
+    window._esVistaPublica = !!_isPublicView;
     if(_isPublicView){
       // Vista cliente pública — mantener login oculto y cargar obra
       document.getElementById("login-screen").classList.add("hidden");
