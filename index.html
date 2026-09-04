@@ -3832,7 +3832,7 @@ body.in-contactos #app, body.in-contactosdb #app{
 
         <div class="feh-picker-section">
           <div class="feh-picker-section-title">Anuncios</div>
-          <div class="feh-picker-section-sub">Meta Ads · 1080 × 1350 px</div>
+          <div class="feh-picker-section-sub">Meta Ads · Feed e Historias/Reels</div>
         </div>
         <div class="feh-picker-grid" id="feh-picker-grid-ads"></div>
       </div>
@@ -21959,7 +21959,7 @@ const HOME_TEMPLATES = [
       {key:"tel", label:"WhatsApp (opcional — vacío = sin pie)", default:HOME_TEL_DEFAULT}
     ],
     draw: fehDrawFeedD },
-  { id:"ads-colados-hero", cat:"ads", w:1080, h:1350, label:"Colados · Hero", hasPill:true,
+  { id:"ads-colados-hero", cat:"ads", w:1080, h:1350, label:"Colados · Hero (Feed)", hasPill:true,
     photos:[{key:"foto",label:"Foto: colado terminado"}],
     fields:[
       {key:"eyebrow", label:"Etiqueta superior", default:"Colado de banquetas"},
@@ -21967,7 +21967,7 @@ const HOME_TEMPLATES = [
       {key:"descripcion", label:"Servicio / ubicación", default:"Cordones · Patios · Concreto residencial · Mexicali, B.C."},
       {key:"cta", label:"Texto del botón", default:"Cotiza por WhatsApp"}
     ], draw: fehDrawAdsHero },
-  { id:"ads-colados-antes-despues", cat:"ads", w:1080, h:1350, label:"Colados · Antes/Después", hasPill:true,
+  { id:"ads-colados-antes-despues", cat:"ads", w:1080, h:1350, label:"Colados · Antes/Después (Feed)", hasPill:true,
     photos:[{key:"antes",label:"Foto ANTES"},{key:"despues",label:"Foto DESPUÉS"}],
     fields:[
       {key:"eyebrow", label:"Etiqueta superior", default:"Colado de banquetas"},
@@ -21975,7 +21975,7 @@ const HOME_TEMPLATES = [
       {key:"descripcion", label:"Servicio / ubicación", default:"Cordones · Patios · Concreto residencial · Mexicali, B.C."},
       {key:"cta", label:"Texto del botón", default:"Cotiza por WhatsApp"}
     ], draw: fehDrawAdsAntesDespues },
-  { id:"ads-epoxico-hero", cat:"ads", w:1080, h:1350, label:"Epóxico · Hero", hasPill:true,
+  { id:"ads-epoxico-hero", cat:"ads", w:1080, h:1350, label:"Epóxico · Hero (Feed)", hasPill:true,
     photos:[{key:"foto",label:"Foto: piso epóxico terminado"}],
     fields:[
       {key:"eyebrow", label:"Etiqueta superior", default:"Piso epóxico"},
@@ -21983,7 +21983,7 @@ const HOME_TEMPLATES = [
       {key:"descripcion", label:"Servicio / ubicación", default:"Cocheras · Oficinas · Locales comerciales · Mexicali, B.C."},
       {key:"cta", label:"Texto del botón", default:"Cotiza por WhatsApp"}
     ], draw: fehDrawAdsHero },
-  { id:"ads-epoxico-antes-despues", cat:"ads", w:1080, h:1350, label:"Epóxico · Antes/Después", hasPill:true,
+  { id:"ads-epoxico-antes-despues", cat:"ads", w:1080, h:1350, label:"Epóxico · Antes/Después (Feed)", hasPill:true,
     photos:[{key:"antes",label:"Foto ANTES"},{key:"despues",label:"Foto DESPUÉS"}],
     fields:[
       {key:"eyebrow", label:"Etiqueta superior", default:"Piso epóxico"},
@@ -21991,7 +21991,7 @@ const HOME_TEMPLATES = [
       {key:"descripcion", label:"Servicio / ubicación", default:"Cocheras · Oficinas · Locales comerciales · Mexicali, B.C."},
       {key:"cta", label:"Texto del botón", default:"Cotiza por WhatsApp"}
     ], draw: fehDrawAdsAntesDespues },
-  { id:"ads-estampado-hero", cat:"ads", w:1080, h:1350, label:"Estampado · Hero", hasPill:true,
+  { id:"ads-estampado-hero", cat:"ads", w:1080, h:1350, label:"Estampado · Hero (Feed)", hasPill:true,
     photos:[{key:"foto",label:"Foto: piso estampado terminado"}],
     fields:[
       {key:"eyebrow", label:"Etiqueta superior", default:"Piso estampado"},
@@ -21999,7 +21999,7 @@ const HOME_TEMPLATES = [
       {key:"descripcion", label:"Servicio / ubicación", default:"Patios · Cocheras · Andadores · Mexicali, B.C."},
       {key:"cta", label:"Texto del botón", default:"Cotiza por WhatsApp"}
     ], draw: fehDrawAdsHero },
-  { id:"ads-estampado-antes-despues", cat:"ads", w:1080, h:1350, label:"Estampado · Antes/Después", hasPill:true,
+  { id:"ads-estampado-antes-despues", cat:"ads", w:1080, h:1350, label:"Estampado · Antes/Después (Feed)", hasPill:true,
     photos:[{key:"antes",label:"Foto ANTES"},{key:"despues",label:"Foto DESPUÉS"}],
     fields:[
       {key:"eyebrow", label:"Etiqueta superior", default:"Piso estampado"},
@@ -22007,7 +22007,7 @@ const HOME_TEMPLATES = [
       {key:"descripcion", label:"Servicio / ubicación", default:"Patios · Cocheras · Andadores · Mexicali, B.C."},
       {key:"cta", label:"Texto del botón", default:"Cotiza por WhatsApp"}
     ], draw: fehDrawAdsAntesDespues },
-  { id:"ads-loseta-hero", cat:"ads", w:1080, h:1350, label:"Loseta · Hero", hasPill:true,
+  { id:"ads-loseta-hero", cat:"ads", w:1080, h:1350, label:"Loseta · Hero (Feed)", hasPill:true,
     photos:[{key:"foto",label:"Foto: loseta instalada"}],
     fields:[
       {key:"eyebrow", label:"Etiqueta superior", default:"Instalación de loseta"},
@@ -22015,7 +22015,71 @@ const HOME_TEMPLATES = [
       {key:"descripcion", label:"Servicio / ubicación", default:"Cocinas · Baños · Exteriores · Mexicali, B.C."},
       {key:"cta", label:"Texto del botón", default:"Cotiza por WhatsApp"}
     ], draw: fehDrawAdsHero },
-  { id:"ads-loseta-antes-despues", cat:"ads", w:1080, h:1350, label:"Loseta · Antes/Después", hasPill:true,
+  { id:"ads-loseta-antes-despues", cat:"ads", w:1080, h:1350, label:"Loseta · Antes/Después (Feed)", hasPill:true,
+    photos:[{key:"antes",label:"Foto ANTES"},{key:"despues",label:"Foto DESPUÉS"}],
+    fields:[
+      {key:"eyebrow", label:"Etiqueta superior", default:"Instalación de loseta"},
+      {key:"titulo", label:"Frase / eslogan", default:"De piso viejo a loseta nueva"},
+      {key:"descripcion", label:"Servicio / ubicación", default:"Cocinas · Baños · Exteriores · Mexicali, B.C."},
+      {key:"cta", label:"Texto del botón", default:"Cotiza por WhatsApp"}
+    ], draw: fehDrawAdsAntesDespues },
+  { id:"ads-colados-hero-story", cat:"ads", w:1080, h:1920, label:"Colados · Hero (Historia)", hasPill:true,
+    photos:[{key:"foto",label:"Foto: colado terminado"}],
+    fields:[
+      {key:"eyebrow", label:"Etiqueta superior", default:"Colado de banquetas"},
+      {key:"titulo", label:"Frase / eslogan", default:"Tu banqueta nueva, en días"},
+      {key:"descripcion", label:"Servicio / ubicación", default:"Cordones · Patios · Concreto residencial · Mexicali, B.C."},
+      {key:"cta", label:"Texto del botón", default:"Cotiza por WhatsApp"}
+    ], draw: fehDrawAdsHero },
+  { id:"ads-colados-antes-despues-story", cat:"ads", w:1080, h:1920, label:"Colados · Antes/Después (Historia)", hasPill:true,
+    photos:[{key:"antes",label:"Foto ANTES"},{key:"despues",label:"Foto DESPUÉS"}],
+    fields:[
+      {key:"eyebrow", label:"Etiqueta superior", default:"Colado de banquetas"},
+      {key:"titulo", label:"Frase / eslogan", default:"De grietas a banqueta nueva"},
+      {key:"descripcion", label:"Servicio / ubicación", default:"Cordones · Patios · Concreto residencial · Mexicali, B.C."},
+      {key:"cta", label:"Texto del botón", default:"Cotiza por WhatsApp"}
+    ], draw: fehDrawAdsAntesDespues },
+  { id:"ads-epoxico-hero-story", cat:"ads", w:1080, h:1920, label:"Epóxico · Hero (Historia)", hasPill:true,
+    photos:[{key:"foto",label:"Foto: piso epóxico terminado"}],
+    fields:[
+      {key:"eyebrow", label:"Etiqueta superior", default:"Piso epóxico"},
+      {key:"titulo", label:"Frase / eslogan", default:"Un piso que brilla como nuevo"},
+      {key:"descripcion", label:"Servicio / ubicación", default:"Cocheras · Oficinas · Locales comerciales · Mexicali, B.C."},
+      {key:"cta", label:"Texto del botón", default:"Cotiza por WhatsApp"}
+    ], draw: fehDrawAdsHero },
+  { id:"ads-epoxico-antes-despues-story", cat:"ads", w:1080, h:1920, label:"Epóxico · Antes/Después (Historia)", hasPill:true,
+    photos:[{key:"antes",label:"Foto ANTES"},{key:"despues",label:"Foto DESPUÉS"}],
+    fields:[
+      {key:"eyebrow", label:"Etiqueta superior", default:"Piso epóxico"},
+      {key:"titulo", label:"Frase / eslogan", default:"De piso opaco a piso brillante"},
+      {key:"descripcion", label:"Servicio / ubicación", default:"Cocheras · Oficinas · Locales comerciales · Mexicali, B.C."},
+      {key:"cta", label:"Texto del botón", default:"Cotiza por WhatsApp"}
+    ], draw: fehDrawAdsAntesDespues },
+  { id:"ads-estampado-hero-story", cat:"ads", w:1080, h:1920, label:"Estampado · Hero (Historia)", hasPill:true,
+    photos:[{key:"foto",label:"Foto: piso estampado terminado"}],
+    fields:[
+      {key:"eyebrow", label:"Etiqueta superior", default:"Piso estampado"},
+      {key:"titulo", label:"Frase / eslogan", default:"El patio que siempre quisiste"},
+      {key:"descripcion", label:"Servicio / ubicación", default:"Patios · Cocheras · Andadores · Mexicali, B.C."},
+      {key:"cta", label:"Texto del botón", default:"Cotiza por WhatsApp"}
+    ], draw: fehDrawAdsHero },
+  { id:"ads-estampado-antes-despues-story", cat:"ads", w:1080, h:1920, label:"Estampado · Antes/Después (Historia)", hasPill:true,
+    photos:[{key:"antes",label:"Foto ANTES"},{key:"despues",label:"Foto DESPUÉS"}],
+    fields:[
+      {key:"eyebrow", label:"Etiqueta superior", default:"Piso estampado"},
+      {key:"titulo", label:"Frase / eslogan", default:"De concreto plano a patio con estilo"},
+      {key:"descripcion", label:"Servicio / ubicación", default:"Patios · Cocheras · Andadores · Mexicali, B.C."},
+      {key:"cta", label:"Texto del botón", default:"Cotiza por WhatsApp"}
+    ], draw: fehDrawAdsAntesDespues },
+  { id:"ads-loseta-hero-story", cat:"ads", w:1080, h:1920, label:"Loseta · Hero (Historia)", hasPill:true,
+    photos:[{key:"foto",label:"Foto: loseta instalada"}],
+    fields:[
+      {key:"eyebrow", label:"Etiqueta superior", default:"Instalación de loseta"},
+      {key:"titulo", label:"Frase / eslogan", default:"Loseta nueva, lista para vivirse"},
+      {key:"descripcion", label:"Servicio / ubicación", default:"Cocinas · Baños · Exteriores · Mexicali, B.C."},
+      {key:"cta", label:"Texto del botón", default:"Cotiza por WhatsApp"}
+    ], draw: fehDrawAdsHero },
+  { id:"ads-loseta-antes-despues-story", cat:"ads", w:1080, h:1920, label:"Loseta · Antes/Después (Historia)", hasPill:true,
     photos:[{key:"antes",label:"Foto ANTES"},{key:"despues",label:"Foto DESPUÉS"}],
     fields:[
       {key:"eyebrow", label:"Etiqueta superior", default:"Instalación de loseta"},
@@ -22837,12 +22901,17 @@ function fehDrawFeedD(ctx, W, H, st){
 }
 
 // ── ADS HERO · foto a sangre + eslogan + botón CTA (Meta Ads) ──────
+// isStory (H > 1600): mismo concepto, un segundo set de constantes de
+// posición/tamaño afinado para el lienzo 9:16 de Historias/Reels — no
+// se duplica la función por formato, ambos usan esta misma.
 function fehDrawAdsHero(ctx, W, H, st){
   const v = st.values, ph = st.photos, po = st.photoOffsets || {};
+  const isStory = H > 1600;
+
   ctx.fillStyle = HOME_BRAND.navy; ctx.fillRect(0,0,W,H);
   fehDrawPhoto(ctx, ph.foto, 0, 0, W, H, "foto principal · vertical", po.foto);
 
-  const gradH = 760;
+  const gradH = isStory ? 900 : 760;
   const grad = ctx.createLinearGradient(0, H-gradH, 0, H);
   grad.addColorStop(0, "rgba(11,31,58,0)");
   grad.addColorStop(0.4, "rgba(11,31,58,.4)");
@@ -22850,29 +22919,44 @@ function fehDrawAdsHero(ctx, W, H, st){
   grad.addColorStop(1, HOME_BRAND.navy);
   ctx.fillStyle = grad; ctx.fillRect(0, H-gradH, W, gradH);
 
-  ctx.fillStyle = "rgba(11,31,58,.92)"; ctx.fillRect(56, 40, 200, 46);
-  fehDrawLogoLockup(ctx, 66, 44, 38, false);
+  const logoY = isStory ? 60 : 40;
+  ctx.fillStyle = "rgba(11,31,58,.92)"; ctx.fillRect(56, logoY, 200, 46);
+  fehDrawLogoLockup(ctx, 66, logoY+4, 38, false);
   if(st.showBadge !== false){
-    fehDrawPill(ctx, "Cotización sin costo", W-56, 40, {align:"right", bg:HOME_BRAND.terracota, color:HOME_BRAND.navy, font:'700 22px "Inter"', fontSize:22});
+    fehDrawPill(ctx, "Cotización sin costo", W-56, logoY, {align:"right", bg:HOME_BRAND.terracota, color:HOME_BRAND.navy, font:'700 22px "Inter"', fontSize:22});
   }
 
-  ctx.font = '600 22px "Inter"'; ctx.fillStyle = HOME_BRAND.terracota;
+  const kickerFont = isStory ? 26 : 22;
+  const kickerY = isStory ? H-500 : H-350;
+  ctx.font = `600 ${kickerFont}px "Inter"`; ctx.fillStyle = HOME_BRAND.terracota;
   ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
-  fehFillTextTracked(ctx, (v.eyebrow||"").toUpperCase(), 56, H-350, 3);
+  fehFillTextTracked(ctx, (v.eyebrow||"").toUpperCase(), 56, kickerY, 3);
 
-  const lines = fehWrapTitleTokens(ctx, v.titulo||"", W-112, '700 60px "Playfair Display"', 'italic 700 60px "Playfair Display"');
-  const titleBottom = fehDrawTitleLines(ctx, lines, 56, H-220, 60, "#FFFFFF", HOME_BRAND.terracota, '700 60px "Playfair Display"', 'italic 700 60px "Playfair Display"');
+  const titleFont = isStory ? 68 : 60;
+  const titleY = isStory ? H-380 : H-220;
+  const lines = fehWrapTitleTokens(ctx, v.titulo||"", W-112, `700 ${titleFont}px "Playfair Display"`, `italic 700 ${titleFont}px "Playfair Display"`);
+  const titleBottom = fehDrawTitleLines(ctx, lines, 56, titleY, titleFont, "#FFFFFF", HOME_BRAND.terracota, `700 ${titleFont}px "Playfair Display"`, `italic 700 ${titleFont}px "Playfair Display"`);
 
-  ctx.font = '400 25px "Inter"'; ctx.fillStyle = "#E0DED8";
+  const descFont = isStory ? 30 : 25;
+  const descGap = isStory ? 50 : 36;
+  ctx.font = `400 ${descFont}px "Inter"`; ctx.fillStyle = "#E0DED8";
   ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
-  ctx.fillText(v.descripcion||"", 56, titleBottom+36);
+  ctx.fillText(v.descripcion||"", 56, titleBottom+descGap);
 
-  fehDrawCTAButton(ctx, 56, H-56, v.cta || "Cotiza por WhatsApp");
+  const ctaBottom = isStory ? H-70 : H-56;
+  fehDrawCTAButton(ctx, 56, ctaBottom, v.cta || "Cotiza por WhatsApp");
 }
 
 // ── ADS ANTES/DESPUÉS · comparación + botón CTA (Meta Ads) ─────────
+// isStory (H > 1600): mismo concepto que fehDrawAdsHero — un segundo
+// set de constantes para el lienzo 9:16, misma función para ambos
+// formatos. La banda superior clara y la itálica de 2 palabras del
+// eslogan (ver comentario abajo) son un fix validado contra mockups
+// reales de Feed en la ronda anterior — Historias extiende el mismo
+// criterio con constantes escaladas, no lo revierte.
 function fehDrawAdsAntesDespues(ctx, W, H, st){
   const v = st.values, ph = st.photos, po = st.photoOffsets || {};
+  const isStory = H > 1600;
 
   // Mockup aprobado: el encabezado (logo, sello, etiqueta, título) va
   // sobre una banda superior CLARA, no navy — el mismo gris que usa
@@ -22883,41 +22967,49 @@ function fehDrawAdsAntesDespues(ctx, W, H, st){
   // ANTES de pintar los fondos — se envuelve el texto primero (misma
   // fórmula exacta que ya usa fehDrawTitleLines para su valor de
   // retorno: y + (líneas-1)*lineHeight) y ya con eso se calcula gridY.
-  const tituloLineH = 56, tituloStartY = 210;
-  const lines = fehWrapTitleTokens(ctx, v.titulo||"", W-112, '700 52px "Playfair Display"', 'italic 700 52px "Playfair Display"', 2);
+  const tituloLineH = isStory ? 60 : 56;
+  const tituloStartY = isStory ? 320 : 210;
+  const kickerY = isStory ? 260 : 150;
+  const titleFont = isStory ? 60 : 52;
+  const lines = fehWrapTitleTokens(ctx, v.titulo||"", W-112, `700 ${titleFont}px "Playfair Display"`, `italic 700 ${titleFont}px "Playfair Display"`, 2);
   const titleBottom = tituloStartY + (lines.length-1)*tituloLineH;
-  const gridY = titleBottom + 40;
+  const gridY = titleBottom + (isStory ? 50 : 40);
 
   ctx.fillStyle = "#D8DDE8"; ctx.fillRect(0, 0, W, gridY);
   ctx.fillStyle = HOME_BRAND.navy; ctx.fillRect(0, gridY, W, H-gridY);
 
-  ctx.fillStyle = "rgba(11,31,58,.92)"; ctx.fillRect(56, 40, 200, 46);
-  fehDrawLogoLockup(ctx, 66, 44, 38, false);
+  const logoY = isStory ? 60 : 40;
+  ctx.fillStyle = "rgba(11,31,58,.92)"; ctx.fillRect(56, logoY, 200, 46);
+  fehDrawLogoLockup(ctx, 66, logoY+4, 38, false);
   if(st.showBadge !== false){
-    fehDrawPill(ctx, "Cotización sin costo", W-56, 40, {align:"right", bg:HOME_BRAND.terracota, color:HOME_BRAND.navy, font:'700 22px "Inter"', fontSize:22});
+    fehDrawPill(ctx, "Cotización sin costo", W-56, logoY, {align:"right", bg:HOME_BRAND.terracota, color:HOME_BRAND.navy, font:'700 22px "Inter"', fontSize:22});
   }
 
-  ctx.font = '600 22px "Inter"'; ctx.fillStyle = HOME_BRAND.terracota;
+  const kickerFont = isStory ? 26 : 22;
+  ctx.font = `600 ${kickerFont}px "Inter"`; ctx.fillStyle = HOME_BRAND.terracota;
   ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
-  fehFillTextTracked(ctx, (v.eyebrow||"").toUpperCase(), 56, 150, 3);
+  fehFillTextTracked(ctx, (v.eyebrow||"").toUpperCase(), 56, kickerY, 3);
 
-  // Título en navy (no blanco): ahora se dibuja sobre la banda clara.
-  fehDrawTitleLines(ctx, lines, 56, tituloStartY, tituloLineH, HOME_BRAND.navy, HOME_BRAND.terracota, '700 52px "Playfair Display"', 'italic 700 52px "Playfair Display"');
+  // Título en navy (no blanco): se dibuja sobre la banda clara.
+  fehDrawTitleLines(ctx, lines, 56, tituloStartY, tituloLineH, HOME_BRAND.navy, HOME_BRAND.terracota, `700 ${titleFont}px "Playfair Display"`, `italic 700 ${titleFont}px "Playfair Display"`);
 
-  const ctaH = 92, ctaMarginTop = 30, descH = 34;
-  const bottomReserved = 56 + ctaH + ctaMarginTop + descH + 16;
+  const ctaBottom = isStory ? H-70 : H-56;
+  const ctaH = 92, ctaMarginTop = isStory ? 40 : 30, descH = isStory ? 40 : 34;
+  const bottomReserved = (H-ctaBottom) + ctaH + ctaMarginTop + descH + 16;
   const gridH = H - bottomReserved - gridY;
-  const gap = 8, colW = (W-112-gap)/2;
+  const gap = isStory ? 10 : 8;
+  const colW = (W-112-gap)/2;
   fehDrawPhoto(ctx, ph.antes, 56, gridY, colW, gridH, "foto ANTES", po.antes);
   fehDrawPhoto(ctx, ph.despues, 56+colW+gap, gridY, colW, gridH, "foto DESPUÉS", po.despues);
   fehTag(ctx, "ANTES", 56, gridY, HOME_BRAND.grafito, "#FFFFFF");
   fehTag(ctx, "DESPUÉS", 56+colW+gap, gridY, HOME_BRAND.terracota, HOME_BRAND.navy);
 
-  ctx.font = '400 24px "Inter"'; ctx.fillStyle = "rgba(247,243,238,.85)";
+  const descFont = isStory ? 28 : 24;
+  ctx.font = `400 ${descFont}px "Inter"`; ctx.fillStyle = "rgba(247,243,238,.85)";
   ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
-  ctx.fillText(v.descripcion||"", 56, gridY+gridH+40);
+  ctx.fillText(v.descripcion||"", 56, gridY+gridH+(isStory?30:40));
 
-  fehDrawCTAButton(ctx, 56, H-56, v.cta || "Cotiza por WhatsApp");
+  fehDrawCTAButton(ctx, 56, ctaBottom, v.cta || "Cotiza por WhatsApp");
 }
 
 // ── STORY A · foto a sangre + avance de obra ────────────────────
