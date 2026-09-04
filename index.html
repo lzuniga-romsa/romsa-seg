@@ -3829,6 +3829,12 @@ body.in-contactos #app, body.in-contactosdb #app{
           <div class="feh-picker-section-sub">Story · 1080 × 1920 px</div>
         </div>
         <div class="feh-picker-grid" id="feh-picker-grid-story"></div>
+
+        <div class="feh-picker-section">
+          <div class="feh-picker-section-title">Anuncios</div>
+          <div class="feh-picker-section-sub">Meta Ads · 1080 × 1350 px</div>
+        </div>
+        <div class="feh-picker-grid" id="feh-picker-grid-ads"></div>
       </div>
 
       <!-- Paso 2: editor de la plantilla elegida -->
@@ -21944,6 +21950,42 @@ const HOME_TEMPLATES = [
       {key:"tel", label:"WhatsApp (opcional — vacío = sin pie)", default:HOME_TEL_DEFAULT}
     ],
     draw: fehDrawFeedD },
+  { id:"ads-colados", cat:"ads", w:1080, h:1350, label:"Anuncio · Colados", hasPill:true,
+    photos:[{key:"foto",label:"Foto: colado terminado"}],
+    fields:[
+      {key:"eyebrow", label:"Etiqueta superior", default:"Colado de banquetas"},
+      {key:"titulo", label:"Frase / eslogan", default:"Tu banqueta nueva, en días"},
+      {key:"descripcion", label:"Servicio / ubicación", default:"Cordones · Patios · Concreto residencial · Mexicali, B.C."},
+      {key:"tel", label:"WhatsApp", default:HOME_TEL_DEFAULT}
+    ],
+    draw: fehDrawFeedD },
+  { id:"ads-epoxico", cat:"ads", w:1080, h:1350, label:"Anuncio · Epóxico", hasPill:true,
+    photos:[{key:"foto",label:"Foto: piso epóxico terminado"}],
+    fields:[
+      {key:"eyebrow", label:"Etiqueta superior", default:"Piso epóxico"},
+      {key:"titulo", label:"Frase / eslogan", default:"Un piso que brilla como nuevo"},
+      {key:"descripcion", label:"Servicio / ubicación", default:"Cocheras · Oficinas · Locales comerciales · Mexicali, B.C."},
+      {key:"tel", label:"WhatsApp", default:HOME_TEL_DEFAULT}
+    ],
+    draw: fehDrawFeedD },
+  { id:"ads-estampado", cat:"ads", w:1080, h:1350, label:"Anuncio · Estampado", hasPill:true,
+    photos:[{key:"foto",label:"Foto: piso estampado terminado"}],
+    fields:[
+      {key:"eyebrow", label:"Etiqueta superior", default:"Piso estampado"},
+      {key:"titulo", label:"Frase / eslogan", default:"El patio que siempre quisiste"},
+      {key:"descripcion", label:"Servicio / ubicación", default:"Patios · Cocheras · Andadores · Mexicali, B.C."},
+      {key:"tel", label:"WhatsApp", default:HOME_TEL_DEFAULT}
+    ],
+    draw: fehDrawFeedD },
+  { id:"ads-loseta", cat:"ads", w:1080, h:1350, label:"Anuncio · Loseta", hasPill:true,
+    photos:[{key:"foto",label:"Foto: loseta instalada"}],
+    fields:[
+      {key:"eyebrow", label:"Etiqueta superior", default:"Instalación de loseta"},
+      {key:"titulo", label:"Frase / eslogan", default:"Loseta nueva, lista para vivirse"},
+      {key:"descripcion", label:"Servicio / ubicación", default:"Cocinas · Baños · Exteriores · Mexicali, B.C."},
+      {key:"tel", label:"WhatsApp", default:HOME_TEL_DEFAULT}
+    ],
+    draw: fehDrawFeedD },
   { id:"story-a", cat:"story", w:1080, h:1920, label:"Foto a sangre + avance",
     photos:[{key:"foto",label:"Foto o fotograma vertical"}],
     fields:[
@@ -22032,9 +22074,10 @@ function fehRenderPicker(){
       +'<div class="feh-picker-label"><div class="feh-picker-name">'+escapeHtml(t.label)+'</div><div class="feh-picker-dims">'+dims+'</div></div>'
     +'</button>';
   };
-  // Dos grupos separados y siempre visibles: Posts (feed) e Historias (story)
+  // Tres grupos separados y siempre visibles: Posts (feed), Historias (story) y Anuncios (ads)
   document.getElementById("feh-picker-grid-feed").innerHTML = HOME_TEMPLATES.filter(t=>t.cat==="feed").map(cardHtml).join("");
   document.getElementById("feh-picker-grid-story").innerHTML = HOME_TEMPLATES.filter(t=>t.cat==="story").map(cardHtml).join("");
+  document.getElementById("feh-picker-grid-ads").innerHTML = HOME_TEMPLATES.filter(t=>t.cat==="ads").map(cardHtml).join("");
   // Miniaturas: se dibujan a baja resolución con datos de ejemplo, una vez que las fuentes están listas
   (_fehFontsReady || Promise.resolve()).then(()=>{
     HOME_TEMPLATES.forEach(t=>{
