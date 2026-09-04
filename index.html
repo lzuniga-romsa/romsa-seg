@@ -21934,7 +21934,8 @@ const HOME_TEMPLATES = [
     fields:[
       {key:"franja", label:"Frase de la franja", default:"Mismo lugar · 3 días"},
       {key:"titulo", label:"Título del servicio", default:"Piso estampado para cochera"},
-      {key:"tel", label:"WhatsApp", default:HOME_TEL_DEFAULT}
+      {key:"descripcion", label:"Descripción (opcional)", default:""},
+      {key:"tel", label:"WhatsApp (opcional — vacío = no se muestra)", default:HOME_TEL_DEFAULT}
     ],
     draw: fehDrawFeedB },
   { id:"feed-c", cat:"feed", w:1080, h:1350, label:"Tip o testimonio", hasPill:true,
@@ -22772,14 +22773,31 @@ function fehDrawFeedB(ctx, W, H, st){
   const lines = fehWrapTitleTokens(ctx, v.titulo||"", W-112, '700 80px "Playfair Display"', 'italic 700 80px "Playfair Display"');
   const titleBottom = fehDrawTitleLines(ctx, lines, 56, H-260, 80, "#FFFFFF", HOME_BRAND.terracota, '700 80px "Playfair Display"', 'italic 700 80px "Playfair Display"');
 
-  ctx.strokeStyle = "rgba(255,255,255,.28)"; ctx.lineWidth = 2;
-  ctx.beginPath(); ctx.moveTo(56, titleBottom+42); ctx.lineTo(W-56, titleBottom+42); ctx.stroke();
+  const hasDesc = !!(v.descripcion && v.descripcion.trim());
+  const hasTel = !!(v.tel && v.tel.trim());
 
-  ctx.font = '500 27px "Inter"'; ctx.fillStyle = "#FFFFFF"; ctx.textAlign = "left"; ctx.textBaseline = "middle";
-  ctx.fillText("WhatsApp "+(v.tel||""), 56, titleBottom+80);
+  // El divisor solo se dibuja si hay algo debajo — si ambos campos quedan
+  // vacíos, no tiene sentido una línea suelta sin nada abajo.
+  if(hasDesc || hasTel){
+    ctx.strokeStyle = "rgba(255,255,255,.28)"; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(56, titleBottom+42); ctx.lineTo(W-56, titleBottom+42); ctx.stroke();
+  }
+
+  let lineY = titleBottom+80;
+  if(hasDesc){
+    ctx.font = '400 26px "Inter"'; ctx.fillStyle = "rgba(255,255,255,.85)";
+    ctx.textAlign = "left"; ctx.textBaseline = "middle";
+    ctx.fillText(v.descripcion, 56, lineY);
+    lineY += 40;
+  }
+  if(hasTel){
+    ctx.font = '500 27px "Inter"'; ctx.fillStyle = "#FFFFFF";
+    ctx.textAlign = "left"; ctx.textBaseline = "middle";
+    ctx.fillText("WhatsApp "+v.tel, 56, lineY);
+  }
 
   if(st.showAviso){
-    fehDrawAvisoMeses(ctx, W, fehAvisoBandY(H, titleBottom+80+36), HOME_BRAND.terracota, HOME_BRAND.navy);
+    fehDrawAvisoMeses(ctx, W, fehAvisoBandY(H, lineY+36), HOME_BRAND.terracota, HOME_BRAND.navy);
   }
 }
 
