@@ -22472,10 +22472,16 @@ function fehTrackedWidth(ctx, text, spacing){
 // en italic") — se calcula dinámicamente sobre lo que el usuario haya
 // escrito, no sobre una palabra fija del texto de ejemplo original, para
 // que el formato no se pierda al editar el campo.
-function fehWrapTitleTokens(ctx, text, maxWidth, fontNormal, fontItalic){
+// italicWords (opcional, default 1): cuántas palabras finales van en
+// itálica. Todas las plantillas orgánicas (feed-a/b/c/d, story-a/b/c)
+// y el preset "Hero" de Ads no lo pasan y siguen igual que siempre
+// (solo la última palabra) — únicamente el preset "Antes/Después" de
+// Ads pasa 2, para igualar su mockup aprobado ("banqueta nueva").
+function fehWrapTitleTokens(ctx, text, maxWidth, fontNormal, fontItalic, italicWords){
   const words = String(text).split(/\s+/).filter(Boolean);
+  const n = italicWords || 1;
   const isItalicAt = new Array(words.length).fill(false);
-  if(words.length) isItalicAt[words.length - 1] = true;
+  for(let i=0; i<n && i<words.length; i++){ isItalicAt[words.length - 1 - i] = true; }
   ctx.font = fontNormal;
   const spaceW = ctx.measureText(" ").width;
   const lines = []; let cur = []; let curWidth = 0;
@@ -22858,7 +22864,23 @@ function fehDrawAdsHero(ctx, W, H, st){
 // ── ADS ANTES/DESPUÉS · comparación + botón CTA (Meta Ads) ─────────
 function fehDrawAdsAntesDespues(ctx, W, H, st){
   const v = st.values, ph = st.photos, po = st.photoOffsets || {};
-  ctx.fillStyle = HOME_BRAND.navy; ctx.fillRect(0,0,W,H);
+
+  // Mockup aprobado: el encabezado (logo, sello, etiqueta, título) va
+  // sobre una banda superior CLARA, no navy — el mismo gris que usa
+  // fehDrawPhoto para su placeholder sin foto (#D8DDE8), para que
+  // encabezado y recuadros "sin foto" se vean como una sola superficie
+  // clara. Solo a partir de la cuadrícula antes/después (y hacia abajo)
+  // el fondo es navy. Por eso hay que saber dónde termina el título
+  // ANTES de pintar los fondos — se envuelve el texto primero (misma
+  // fórmula exacta que ya usa fehDrawTitleLines para su valor de
+  // retorno: y + (líneas-1)*lineHeight) y ya con eso se calcula gridY.
+  const tituloLineH = 56, tituloStartY = 210;
+  const lines = fehWrapTitleTokens(ctx, v.titulo||"", W-112, '700 52px "Playfair Display"', 'italic 700 52px "Playfair Display"', 2);
+  const titleBottom = tituloStartY + (lines.length-1)*tituloLineH;
+  const gridY = titleBottom + 40;
+
+  ctx.fillStyle = "#D8DDE8"; ctx.fillRect(0, 0, W, gridY);
+  ctx.fillStyle = HOME_BRAND.navy; ctx.fillRect(0, gridY, W, H-gridY);
 
   ctx.fillStyle = "rgba(11,31,58,.92)"; ctx.fillRect(56, 40, 200, 46);
   fehDrawLogoLockup(ctx, 66, 44, 38, false);
@@ -22870,12 +22892,11 @@ function fehDrawAdsAntesDespues(ctx, W, H, st){
   ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
   fehFillTextTracked(ctx, (v.eyebrow||"").toUpperCase(), 56, 150, 3);
 
-  const lines = fehWrapTitleTokens(ctx, v.titulo||"", W-112, '700 52px "Playfair Display"', 'italic 700 52px "Playfair Display"');
-  const titleBottom = fehDrawTitleLines(ctx, lines, 56, 210, 56, "#FFFFFF", HOME_BRAND.terracota, '700 52px "Playfair Display"', 'italic 700 52px "Playfair Display"');
+  // Título en navy (no blanco): ahora se dibuja sobre la banda clara.
+  fehDrawTitleLines(ctx, lines, 56, tituloStartY, tituloLineH, HOME_BRAND.navy, HOME_BRAND.terracota, '700 52px "Playfair Display"', 'italic 700 52px "Playfair Display"');
 
   const ctaH = 92, ctaMarginTop = 30, descH = 34;
   const bottomReserved = 56 + ctaH + ctaMarginTop + descH + 16;
-  const gridY = titleBottom + 40;
   const gridH = H - bottomReserved - gridY;
   const gap = 8, colW = (W-112-gap)/2;
   fehDrawPhoto(ctx, ph.antes, 56, gridY, colW, gridH, "foto ANTES", po.antes);
