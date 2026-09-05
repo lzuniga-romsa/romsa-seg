@@ -12524,6 +12524,74 @@ function generarPdfCotEnVentana(cot, winRef){
   var inclCondiciones  = document.getElementById('cot-incl-condiciones')?.checked !== false;
   var pageBreakEn      = document.getElementById('cot-page-break')?.value || 'condiciones';
 
+  // Tasas de Mercado Pago para la sección "Opciones de Pago" de HOME (ver
+  // _cotOpcionesPagoHtml más abajo). Fuente: tarifas de Mercado Pago
+  // consultadas por el usuario el 28-ago-2026. Verificar vigencia en
+  // mercadopago.com.mx antes de confiar en estos números — Mercado Pago
+  // puede actualizarlas. El efectivo NO lleva IVA (política del negocio,
+  // no de Mercado Pago) y no tiene comisión — se calcula distinto, ver
+  // función abajo.
+  var HOME_TASAS_MP = {
+    ivaGeneral: 0.08,            // IVA general de la cotización (Región Fronteriza)
+    ivaComision: 0.08,           // IVA específico sobre la comisión de Mercado Pago (Región Fronteriza) — mismo valor que ivaGeneral hoy, pero es un concepto distinto
+    tarjetaContado: 0.035,       // contado con tarjeta débito/crédito, 1 pago
+    meses: {                     // clave = número de meses, valor = tasa SIN IVA
+      3: 0.0469,
+      6: 0.0769,
+      9: 0.1119,
+      12: 0.1289
+    }
+  };
+
+  // Arma el HTML de la sección "Opciones de Pago" (solo HOME) — se inserta
+  // como una cláusula más dentro de condsRaw (ver más abajo), reutilizando
+  // el mismo sistema de auto-paginación que ya usan las demás cláusulas.
+  // OJO regla de marca HOME: nunca usar la frase "sin intereses" — siempre
+  // "Pago a X meses".
+  function _cotOpcionesPagoHtml(total){
+    var efectivo = total / (1 + HOME_TASAS_MP.ivaGeneral); // el total YA incluye IVA; efectivo lo resta
+    var transferencia = total;                    // con IVA, sin comisión de terminal
+    var tarjetaContado = total * (1 + HOME_TASAS_MP.tarjetaContado * (1 + HOME_TASAS_MP.ivaComision));
+
+    function fmt(n){ return fmtPeso(n); }
+
+    function cardContado(titulo, monto, nota, destacado){
+      return '<div style="flex:1;border-radius:8px;padding:12px 10px;text-align:center;'
+        + (destacado ? 'background:#F7F9FC;border:1.5px solid #1E6FD9;' : 'background:#fff;border:1px solid #E2E8F2;')
+        + '">'
+        + '<div style="font-size:9px;font-weight:800;color:#0B1F3A;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">'+titulo+'</div>'
+        + '<div style="font-size:15px;font-weight:900;color:'+(destacado?'#1E6FD9':'#0B1F3A')+';font-variant-numeric:tabular-nums;">$'+fmt(monto)+'</div>'
+        + '<div style="font-size:7.5px;color:#8A9AB8;margin-top:2px;">MXN</div>'
+        + '<div style="font-size:7.5px;color:#8A9AB8;margin-top:5px;">'+nota+'</div>'
+        + '</div>';
+    }
+
+    function cardMeses(meses, monto){
+      return '<div style="flex:1;border-radius:8px;padding:12px 10px;text-align:center;background:#fff;border:1px solid #E2E8F2;">'
+        + '<div style="font-size:9px;font-weight:800;color:#0B1F3A;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">Pago a '+meses+' meses</div>'
+        + '<div style="font-size:15px;font-weight:900;color:#0B1F3A;font-variant-numeric:tabular-nums;">$'+fmt(monto)+'</div>'
+        + '<div style="font-size:7.5px;color:#8A9AB8;margin-top:2px;">MXN / mes</div>'
+        + '</div>';
+    }
+
+    var mesesCards = Object.keys(HOME_TASAS_MP.meses).map(function(m){
+      var tasa = HOME_TASAS_MP.meses[m];
+      var montoTotal = total * (1 + tasa * (1 + HOME_TASAS_MP.ivaComision));
+      return cardMeses(m, montoTotal / m);
+    }).join('');
+
+    return ''
+      + '<div style="display:flex;gap:8px;margin-bottom:8px;">'
+        + cardContado('Efectivo', efectivo, 'Sin IVA · sin comisión', true)
+        + cardContado('Transferencia', transferencia, 'Con IVA · sin comisión', false)
+        + cardContado('Tarjeta (1 pago)', tarjetaContado, 'Con IVA + comisión 3.5%', false)
+      + '</div>'
+      + '<div style="display:flex;gap:8px;">'
+        + mesesCards
+      + '</div>'
+      + '<div style="font-size:8px;color:#8A9AB8;margin-top:8px;">Los pagos a meses se realizan con tarjeta de crédito en terminal Mercado Pago y están sujetos a aprobación del banco. El monto mensual ya incluye la comisión correspondiente + IVA.</div>';
+  }
+
   // Datos contacto ROMSA (en modalidad HOME, usar tel/email específicos)
   var _telDefault = _esRack ? (window._racklineTel || '686 351 3988') : (_esHome ? (window._homeTel || '686 175 4812') : '686 138 3117');
   var rTel   = document.getElementById('cot-romsa-tel')?.value  || cot.romsaTel  || _telDefault;
@@ -12606,6 +12674,18 @@ function generarPdfCotEnVentana(cot, winRef){
     c.saltoAntes = saltos.has(c.id);
     return c;
   });
+
+  // "Opciones de Pago" — solo HOME. Se inserta como una cláusula más para
+  // aprovechar el mismo sistema de auto-paginación que ya mide altura y
+  // distribuye en hojas A4 (ver condsHtml más abajo).
+  if(_esHome){
+    condsRaw.push({
+      id: 'cot-home-opciones-pago',
+      t: 'Opciones de Pago',
+      v: _cotOpcionesPagoHtml(total),
+      saltoAntes: false
+    });
+  }
 
   // Agregar cláusulas personalizadas al final
   var clausulasCustom = Array.isArray(cot.clausulasCustom) ? cot.clausulasCustom : [];
@@ -12898,6 +12978,20 @@ function generarPdfCotEnVentana(cot, winRef){
             +'</div>'
           +'</div>'
         +'</div>'
+        +(_esHome ? (
+          '<div style="display:flex;gap:10px;margin-top:10px;">'
+            + '<div style="flex:1;display:flex;align-items:center;gap:8px;background:#F7F9FC;border-radius:6px;padding:8px 12px;">'
+              + '<div style="font-size:16px;">📋</div>'
+              + '<div><div style="font-size:8px;font-weight:800;color:#0B1F3A;text-transform:uppercase;letter-spacing:.5px;">Reporte de Avance de Obra</div>'
+              + '<div style="font-size:8px;color:#8A9AB8;">Sigue tu proyecto en tiempo real, con fotos y % de avance</div></div>'
+            + '</div>'
+            + '<div style="flex:1;display:flex;align-items:center;gap:8px;background:#F7F9FC;border-radius:6px;padding:8px 12px;">'
+              + '<div style="font-size:16px;">🔒</div>'
+              + '<div><div style="font-size:8px;font-weight:800;color:#0B1F3A;text-transform:uppercase;letter-spacing:.5px;">Precio Cerrado</div>'
+              + '<div style="font-size:8px;color:#8A9AB8;">Lo que se cotiza es lo que se paga, sin sorpresas</div></div>'
+            + '</div>'
+          +'</div>'
+        ) : '')
       +'</div>'// /cuerpo p1
     +'</div>'// /page1
 
