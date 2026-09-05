@@ -1760,6 +1760,7 @@ body.in-contactos #app, body.in-contactosdb #app{
       <div style="background:#0B1F3A;padding:14px 18px 16px;--mod-accent:var(--ds-mod-obras);">
         <div class="mod-header-top">
           <button class="mod-header-back" onclick="volverSelector()">← Menú</button>
+          <button id="obra-logout-btn-1" onclick="doLogout()" style="background:rgba(255,255,255,.12);border:none;color:#fff;font-size:11px;font-weight:600;padding:6px 10px;border-radius:8px;cursor:pointer;font-family:var(--font);margin-left:6px;">Salir</button>
         </div>
         <div class="mod-header-crumb">
           <span class="mod-header-eyebrow">ROMSA Industrial · Seguimiento de Obras</span>
@@ -1792,6 +1793,7 @@ body.in-contactos #app, body.in-contactosdb #app{
       <div style="background:#0B1F3A;padding:14px 18px 16px;--mod-accent:var(--ds-mod-obras);">
         <div class="mod-header-top">
           <button class="mod-header-back" onclick="volverSelector()">← Menú</button>
+          <button id="obra-logout-btn-2" onclick="doLogout()" style="background:rgba(255,255,255,.12);border:none;color:#fff;font-size:11px;font-weight:600;padding:6px 10px;border-radius:8px;cursor:pointer;font-family:var(--font);margin-left:6px;">Salir</button>
         </div>
         <div class="mod-header-crumb">
           <span class="mod-header-eyebrow">ROMSA Industrial · Seguimiento de Obras</span>
@@ -3298,7 +3300,7 @@ body.in-contactos #app, body.in-contactosdb #app{
       <div class="ds-eyebrow" style="font-size:9.5px;color:var(--tx2);margin-bottom:10px;">KPIs principales — este mes</div>
       <div id="dg-kpis" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));gap:12px;margin-bottom:28px;"></div>
 
-      <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(340px, 1fr));gap:24px;align-items:start;">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(min(340px, 100%), 1fr));gap:24px;align-items:start;">
 
         <!-- 2. Accesos rápidos -->
         <div>
@@ -3617,6 +3619,7 @@ body.in-contactos #app, body.in-contactosdb #app{
   <div id="screen-fotoeditor" class="screen fe-screen">
     <div class="fe-topbar">
       <button class="fe-back" onclick="volverSelector()">← Menú</button>
+      <button id="fe-logout-btn" onclick="doLogout()" style="display:none;background:rgba(255,255,255,.12);border:none;color:#fff;font-size:11px;font-weight:600;padding:6px 10px;border-radius:8px;cursor:pointer;font-family:var(--font);margin-left:6px;">Salir</button>
       <div class="fe-title" id="fe-title">Motor de Marca ROMSA</div>
       <button class="fe-home-btn" onclick="fehAbrir()" title="HOME by ROMSA — Plantillas sociales">🏠 HOME</button>
       <button class="fe-cal-btn" onclick="bceAbrirCalendario()" title="Calendario de publicaciones">📅</button>
@@ -17032,6 +17035,10 @@ auth.onAuthStateChanged(async user => {
     // showModuleSelector para el filtrado de fichas del menú).
     const _esSoloFotos = (currentUserProfile && currentUserProfile.rol === "editor_fotos") && !isAdmin;
     window._esSoloFotos = _esSoloFotos;
+    if(_esSoloFotos){
+      const _feLogoutBtn = document.getElementById('fe-logout-btn');
+      if(_feLogoutBtn) _feLogoutBtn.style.display = 'inline-flex';
+    }
 
     // Registrar check-in automático al ingresar
     await autoCheckinLogin(currentUserProfile);
