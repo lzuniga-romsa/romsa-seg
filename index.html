@@ -12545,69 +12545,12 @@ function generarPdfCotEnVentana(cot, winRef){
 
   // Arma el HTML de la sección "Opciones de Pago" (solo HOME) — se dibuja
   // en la página 1 (altura fija), en el mismo lugar donde va "Próximos
-  // pasos" para las otras modalidades. OJO regla de marca HOME: nunca usar
-  // la frase "sin intereses" — siempre "Pago a X meses".
+  // pasos" para las otras modalidades. Formato de lista en texto corrido
+  // (no tarjetas): más compacto, se ve más limpio y evita el riesgo de
+  // desbordar la página 1 con cotizaciones de varias partidas. OJO regla
+  // de marca HOME: nunca usar la frase "sin intereses" — siempre "Pago a
+  // X meses".
   function _cotOpcionesPagoHtml(total){
-    var efectivo = total / (1 + HOME_TASAS_MP.ivaGeneral); // el total YA incluye IVA; efectivo lo resta
-    var transferencia = total;                    // con IVA, sin comisión de terminal
-    var tarjetaContado = total * (1 + HOME_TASAS_MP.tarjetaContado * (1 + HOME_TASAS_MP.ivaComision));
-
-    function fmt(n){ return fmtPeso(n); }
-
-    function cardContado(titulo, monto, nota, destacado){
-      return '<div style="flex:1;border-radius:8px;padding:12px 10px;text-align:center;'
-        + (destacado ? 'background:#F7F9FC;border:1.5px solid #1E6FD9;' : 'background:#fff;border:1px solid #E2E8F2;')
-        + '">'
-        + '<div style="font-size:9px;font-weight:800;color:#0B1F3A;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">'+titulo+'</div>'
-        + '<div style="font-size:15px;font-weight:900;color:'+(destacado?'#1E6FD9':'#0B1F3A')+';font-variant-numeric:tabular-nums;">$'+fmt(monto)+'</div>'
-        + '<div style="font-size:7.5px;color:#8A9AB8;margin-top:2px;">MXN</div>'
-        + '<div style="font-size:7.5px;color:#8A9AB8;margin-top:5px;">'+nota+'</div>'
-        + '</div>';
-    }
-
-    function cardMeses(meses, monto){
-      return '<div style="flex:1;border-radius:8px;padding:12px 10px;text-align:center;background:#fff;border:1px solid #E2E8F2;">'
-        + '<div style="font-size:9px;font-weight:800;color:#0B1F3A;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">Pago a '+meses+' meses</div>'
-        + '<div style="font-size:15px;font-weight:900;color:#0B1F3A;font-variant-numeric:tabular-nums;">$'+fmt(monto)+'</div>'
-        + '<div style="font-size:7.5px;color:#8A9AB8;margin-top:2px;">MXN / mes</div>'
-        + '</div>';
-    }
-
-    var mesesCards = Object.keys(HOME_TASAS_MP.meses).map(function(m){
-      var tasa = HOME_TASAS_MP.meses[m];
-      var montoTotal = total * (1 + tasa * (1 + HOME_TASAS_MP.ivaComision));
-      return cardMeses(m, montoTotal / m);
-    }).join('');
-
-    // Título propio: al vivir ahora en la página 1 (y no como cláusula con
-    // su título numerado automático "N. Opciones de Pago"), esta sección
-    // necesita su propio encabezado — mismo estilo que ya usan Resumen del
-    // proyecto / Próximos pasos en esa misma página.
-    return ''
-      + '<div style="font-size:8.5px;font-weight:700;letter-spacing:2px;color:#1E6FD9;text-transform:uppercase;margin-bottom:8px;">Opciones de Pago</div>'
-      + '<div style="display:flex;gap:8px;margin-bottom:8px;">'
-        + cardContado('Efectivo', efectivo, 'Sin IVA · sin comisión', true)
-        + cardContado('Transferencia', transferencia, 'Con IVA · sin comisión', false)
-        + cardContado('Tarjeta (1 pago)', tarjetaContado, 'Con IVA + comisión 3.5%', false)
-      + '</div>'
-      + '<div style="display:flex;gap:8px;">'
-        + mesesCards
-      + '</div>'
-      + '<div style="font-size:8px;color:#8A9AB8;margin-top:8px;">Los pagos a meses se realizan con tarjeta de crédito en terminal Mercado Pago y están sujetos a aprobación del banco. El monto mensual ya incluye la comisión correspondiente + IVA.</div>';
-  }
-
-  // A partir de este número de conceptos, la página 1 (altura fija, sin
-  // auto-paginación) corre riesgo de desbordarse con las tarjetas de
-  // Opciones de Pago encima — se usa la versión compacta en texto corrido
-  // en su lugar. Ajustar aquí si en la práctica se necesita otro punto de
-  // corte.
-  var UMBRAL_OPCIONES_PAGO_COMPACTO = 4;
-
-  // Versión compacta de "Opciones de Pago": los mismos 7 montos (3 de
-  // contado + 4 a meses) en una sola fila de texto corrido, sin tarjetas,
-  // para cotizaciones con muchas partidas donde la página 1 ya va justa
-  // de espacio.
-  function _cotOpcionesPagoHtmlCompacto(total){
     var efectivo = total / (1 + HOME_TASAS_MP.ivaGeneral);
     var transferencia = total;
     var tarjetaContado = total * (1 + HOME_TASAS_MP.tarjetaContado * (1 + HOME_TASAS_MP.ivaComision));
@@ -12830,7 +12773,7 @@ function generarPdfCotEnVentana(cot, winRef){
             ? '<div style="font-size:9.5px;font-weight:700;color:#0C2340;">RACKLINE</div>'
               +'<div style="font-size:8.5px;color:#8A9AB8;margin-top:1px;">Almacenamiento inteligente para la industria</div>'
             : _esHome
-            ? '<div style="font-size:9.5px;font-weight:700;color:#C36F4A;">HOME by ROMSA</div>'
+            ? '<div style="font-size:9.5px;font-weight:700;color:#1E5BA8;">HOME by ROMSA</div>'
               +'<div style="font-size:8.5px;color:#8A9AB8;margin-top:1px;">Todo para pisos</div>'
             : '<div style="font-size:9.5px;font-weight:700;color:#1E6FD9;">ROMSA Industrial</div>'
               +'<div style="font-size:8.5px;color:#8A9AB8;margin-top:1px;">Especialistas en mantenimiento y recubrimientos industriales</div>')
@@ -13028,7 +12971,7 @@ function generarPdfCotEnVentana(cot, winRef){
           +'</div>'
         ) : (
           '<div style="margin-top:14px;">'
-            + (numConceptos > UMBRAL_OPCIONES_PAGO_COMPACTO ? _cotOpcionesPagoHtmlCompacto(total) : _cotOpcionesPagoHtml(total))
+            + _cotOpcionesPagoHtml(total)
             + '<div style="margin-top:8px;font-size:8px;color:#8A9AB8;">'
               + '📋 Reporte de Avance de Obra en tiempo real &nbsp;·&nbsp; 🔒 Precio Cerrado — sin sorpresas'
             + '</div>'
