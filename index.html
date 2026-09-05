@@ -4101,6 +4101,14 @@ body.in-contactos #app, body.in-contactosdb #app{
       Actualizaciones en tiempo real
       <button onclick="forceRefreshVC()" style="background:rgba(30,111,217,.2);border:1px solid rgba(30,111,217,.3);color:var(--sky);font-size:9px;font-weight:700;padding:3px 10px;border-radius:20px;cursor:pointer;font-family:var(--font);letter-spacing:.8px;flex-shrink:0;">↻ Actualizar</button>
     </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin:0 0 12px;padding:0 2px;">
+      <select id="vc-filtro-etapa" onchange="aplicarFiltrosVC()" style="flex:1;min-width:120px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);color:#fff;font-size:11px;padding:7px 10px;border-radius:8px;font-family:var(--font);">
+        <option value="">Todas las etapas</option>
+      </select>
+      <input type="date" id="vc-filtro-desde" onchange="aplicarFiltrosVC()" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);color:#fff;font-size:11px;padding:7px 10px;border-radius:8px;font-family:var(--font);" placeholder="Desde">
+      <input type="date" id="vc-filtro-hasta" onchange="aplicarFiltrosVC()" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);color:#fff;font-size:11px;padding:7px 10px;border-radius:8px;font-family:var(--font);" placeholder="Hasta">
+      <button onclick="limpiarFiltrosVC()" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.6);font-size:11px;padding:7px 12px;border-radius:8px;cursor:pointer;font-family:var(--font);">Limpiar</button>
+    </div>
     <div id="vc-updates-feed"></div>
 
     <!-- ANTES/DESPUÉS -->
@@ -5543,7 +5551,13 @@ function mostrarVC(o){
   async function renderVCUpdates(updates){
       const vcFeed=document.getElementById("vc-updates-feed");
     if(!updates.length){
-    vcFeed.innerHTML='<div style="text-align:center;padding:28px;color:rgba(255,255,255,.25);font-size:13px;">El equipo aún no ha publicado actualizaciones.</div>';
+    // Si YA hay actualizaciones en total pero el filtro no encontró
+    // ninguna, el mensaje debe aclarar que es cosa del filtro — no que la
+    // obra no tiene actualizaciones publicadas.
+    const hayFiltroSinResultados = (window._vcAllUpdates||[]).length > 0;
+    vcFeed.innerHTML = hayFiltroSinResultados
+      ? '<div style="text-align:center;padding:28px;color:rgba(255,255,255,.25);font-size:13px;">No hay actualizaciones con ese filtro.</div>'
+      : '<div style="text-align:center;padding:28px;color:rgba(255,255,255,.25);font-size:13px;">El equipo aún no ha publicado actualizaciones.</div>';
   } else {
     vcFeed.innerHTML=updates.map(u=>`
       <div class="vc-upd-card">
@@ -5577,12 +5591,59 @@ function mostrarVC(o){
       </div>`).join("");
     }
   }
+
+  // Filtros por etapa y rango de fecha sobre las actualizaciones ya
+  // cargadas — 100% cliente, no hace lecturas nuevas a Firestore. u.ts es
+  // el timestamp real (el mismo que ya se usa para ordenar); u.fecha es
+  // solo texto ya formateado para mostrar, no sirve para comparar rangos.
+  // Anidadas aquí (no globales) porque necesitan cerrar sobre la
+  // renderVCUpdates de ESTA llamada a mostrarVC — se exponen en window
+  // para que los onchange/onclick del HTML las encuentren.
+  function _vcPoblarFiltroEtapas(updates){
+    const sel = document.getElementById("vc-filtro-etapa");
+    if(!sel) return;
+    const etapas = [...new Set((updates||[]).map(u=>u.etapaNombre).filter(Boolean))];
+    sel.innerHTML = '<option value="">Todas las etapas</option>'
+      + etapas.map(e=>`<option value="${e}">${e}</option>`).join("");
+  }
+
+  function aplicarFiltrosVC(){
+    const etapa = document.getElementById("vc-filtro-etapa")?.value || "";
+    const desde = document.getElementById("vc-filtro-desde")?.value || "";
+    const hasta = document.getElementById("vc-filtro-hasta")?.value || "";
+    const desdeTs = desde ? new Date(desde+"T00:00:00").getTime() : null;
+    const hastaTs = hasta ? new Date(hasta+"T23:59:59").getTime() : null;
+
+    const filtradas = (window._vcAllUpdates||[]).filter(u=>{
+      if(etapa && u.etapaNombre !== etapa) return false;
+      if(desdeTs && u.ts < desdeTs) return false;
+      if(hastaTs && u.ts > hastaTs) return false;
+      return true;
+    });
+    renderVCUpdates(filtradas);
+  }
+  window.aplicarFiltrosVC = aplicarFiltrosVC;
+
+  function limpiarFiltrosVC(){
+    document.getElementById("vc-filtro-etapa").value = "";
+    document.getElementById("vc-filtro-desde").value = "";
+    document.getElementById("vc-filtro-hasta").value = "";
+    renderVCUpdates(window._vcAllUpdates||[]);
+  }
+  window.limpiarFiltrosVC = limpiarFiltrosVC;
+
   if(isPublic && o.id){
     getUpdatesRef(o.id).orderBy("ts","desc").get()
-      .then(snap=>renderVCUpdates(snap.docs.map(d=>d.data())))
+      .then(snap=>{
+        window._vcAllUpdates = snap.docs.map(d=>d.data());
+        _vcPoblarFiltroEtapas(window._vcAllUpdates);
+        renderVCUpdates(window._vcAllUpdates);
+      })
       .catch(()=>renderVCUpdates(o.updates||[]));
   } else {
-    renderVCUpdates((o.updates||[]).sort((a,b)=>b.ts-a.ts));
+    window._vcAllUpdates = (o.updates||[]).sort((a,b)=>b.ts-a.ts);
+    _vcPoblarFiltroEtapas(window._vcAllUpdates);
+    renderVCUpdates(window._vcAllUpdates);
   }
 
   // Antes/Después — cargar desde subcolección Firestore para vista cliente
