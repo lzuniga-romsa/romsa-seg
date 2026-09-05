@@ -12532,7 +12532,8 @@ function generarPdfCotEnVentana(cot, winRef){
   // no de Mercado Pago) y no tiene comisión — se calcula distinto, ver
   // función abajo.
   var HOME_TASAS_MP = {
-    ivaComision: 0.08,           // IVA sobre la comisión de Mercado Pago (Región Fronteriza)
+    ivaGeneral: 0.08,            // IVA general de la cotización (Región Fronteriza)
+    ivaComision: 0.08,           // IVA específico sobre la comisión de Mercado Pago (Región Fronteriza) — mismo valor que ivaGeneral hoy, pero es un concepto distinto
     tarjetaContado: 0.035,       // contado con tarjeta débito/crédito, 1 pago
     meses: {                     // clave = número de meses, valor = tasa SIN IVA
       3: 0.0469,
@@ -12547,8 +12548,8 @@ function generarPdfCotEnVentana(cot, winRef){
   // el mismo sistema de auto-paginación que ya usan las demás cláusulas.
   // OJO regla de marca HOME: nunca usar la frase "sin intereses" — siempre
   // "Pago a X meses".
-  function _cotOpcionesPagoHtml(total, ivaRate){
-    var efectivo = total / (1 + ivaRate);       // el total YA incluye IVA; efectivo lo resta
+  function _cotOpcionesPagoHtml(total){
+    var efectivo = total / (1 + HOME_TASAS_MP.ivaGeneral); // el total YA incluye IVA; efectivo lo resta
     var transferencia = total;                    // con IVA, sin comisión de terminal
     var tarjetaContado = total * (1 + HOME_TASAS_MP.tarjetaContado * (1 + HOME_TASAS_MP.ivaComision));
 
@@ -12681,7 +12682,7 @@ function generarPdfCotEnVentana(cot, winRef){
     condsRaw.push({
       id: 'cot-home-opciones-pago',
       t: 'Opciones de Pago',
-      v: _cotOpcionesPagoHtml(total, HOME_TASAS_MP.ivaComision),
+      v: _cotOpcionesPagoHtml(total),
       saltoAntes: false
     });
   }
