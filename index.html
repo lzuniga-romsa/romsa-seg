@@ -12543,11 +12543,10 @@ function generarPdfCotEnVentana(cot, winRef){
     }
   };
 
-  // Arma el HTML de la sección "Opciones de Pago" (solo HOME) — se inserta
-  // como una cláusula más dentro de condsRaw (ver más abajo), reutilizando
-  // el mismo sistema de auto-paginación que ya usan las demás cláusulas.
-  // OJO regla de marca HOME: nunca usar la frase "sin intereses" — siempre
-  // "Pago a X meses".
+  // Arma el HTML de la sección "Opciones de Pago" (solo HOME) — se dibuja
+  // en la página 1 (altura fija), en el mismo lugar donde va "Próximos
+  // pasos" para las otras modalidades. OJO regla de marca HOME: nunca usar
+  // la frase "sin intereses" — siempre "Pago a X meses".
   function _cotOpcionesPagoHtml(total){
     var efectivo = total / (1 + HOME_TASAS_MP.ivaGeneral); // el total YA incluye IVA; efectivo lo resta
     var transferencia = total;                    // con IVA, sin comisión de terminal
@@ -12580,7 +12579,12 @@ function generarPdfCotEnVentana(cot, winRef){
       return cardMeses(m, montoTotal / m);
     }).join('');
 
+    // Título propio: al vivir ahora en la página 1 (y no como cláusula con
+    // su título numerado automático "N. Opciones de Pago"), esta sección
+    // necesita su propio encabezado — mismo estilo que ya usan Resumen del
+    // proyecto / Próximos pasos en esa misma página.
     return ''
+      + '<div style="font-size:8.5px;font-weight:700;letter-spacing:2px;color:#1E6FD9;text-transform:uppercase;margin-bottom:8px;">Opciones de Pago</div>'
       + '<div style="display:flex;gap:8px;margin-bottom:8px;">'
         + cardContado('Efectivo', efectivo, 'Sin IVA · sin comisión', true)
         + cardContado('Transferencia', transferencia, 'Con IVA · sin comisión', false)
@@ -12590,6 +12594,46 @@ function generarPdfCotEnVentana(cot, winRef){
         + mesesCards
       + '</div>'
       + '<div style="font-size:8px;color:#8A9AB8;margin-top:8px;">Los pagos a meses se realizan con tarjeta de crédito en terminal Mercado Pago y están sujetos a aprobación del banco. El monto mensual ya incluye la comisión correspondiente + IVA.</div>';
+  }
+
+  // A partir de este número de conceptos, la página 1 (altura fija, sin
+  // auto-paginación) corre riesgo de desbordarse con las tarjetas de
+  // Opciones de Pago encima — se usa la versión compacta en texto corrido
+  // en su lugar. Ajustar aquí si en la práctica se necesita otro punto de
+  // corte.
+  var UMBRAL_OPCIONES_PAGO_COMPACTO = 4;
+
+  // Versión compacta de "Opciones de Pago": los mismos 7 montos (3 de
+  // contado + 4 a meses) en una sola fila de texto corrido, sin tarjetas,
+  // para cotizaciones con muchas partidas donde la página 1 ya va justa
+  // de espacio.
+  function _cotOpcionesPagoHtmlCompacto(total){
+    var efectivo = total / (1 + HOME_TASAS_MP.ivaGeneral);
+    var transferencia = total;
+    var tarjetaContado = total * (1 + HOME_TASAS_MP.tarjetaContado * (1 + HOME_TASAS_MP.ivaComision));
+
+    function fmt(n){ return '$'+fmtPeso(n); }
+
+    var partesContado = [
+      '<strong style="color:#0B1F3A;">Efectivo</strong> '+fmt(efectivo),
+      '<strong style="color:#0B1F3A;">Transferencia</strong> '+fmt(transferencia),
+      '<strong style="color:#0B1F3A;">Tarjeta (1 pago)</strong> '+fmt(tarjetaContado)
+    ];
+
+    var partesMeses = Object.keys(HOME_TASAS_MP.meses).map(function(m){
+      var tasa = HOME_TASAS_MP.meses[m];
+      var montoTotal = total * (1 + tasa * (1 + HOME_TASAS_MP.ivaComision));
+      return '<strong style="color:#0B1F3A;">Pago a '+m+' meses</strong> '+fmt(montoTotal/m)+'/mes';
+    });
+
+    return '<div style="background:#F7F9FC;border:1px solid #E2E8F2;border-radius:6px;padding:10px 12px;">'
+      + '<div style="font-size:8.5px;font-weight:700;letter-spacing:2px;color:#1E6FD9;text-transform:uppercase;margin-bottom:6px;">Opciones de Pago</div>'
+      + '<div style="font-size:9px;color:#4A5E7A;line-height:1.8;">'
+        + partesContado.join(' &nbsp;·&nbsp; ')
+        + '<br>' + partesMeses.join(' &nbsp;·&nbsp; ')
+      + '</div>'
+      + '<div style="font-size:7.5px;color:#8A9AB8;margin-top:6px;">Pagos a meses con tarjeta en terminal Mercado Pago, sujetos a aprobación del banco. Montos con comisión + IVA incluidos.</div>'
+    + '</div>';
   }
 
   // Datos contacto ROMSA (en modalidad HOME, usar tel/email específicos)
@@ -12674,18 +12718,6 @@ function generarPdfCotEnVentana(cot, winRef){
     c.saltoAntes = saltos.has(c.id);
     return c;
   });
-
-  // "Opciones de Pago" — solo HOME. Se inserta como una cláusula más para
-  // aprovechar el mismo sistema de auto-paginación que ya mide altura y
-  // distribuye en hojas A4 (ver condsHtml más abajo).
-  if(_esHome){
-    condsRaw.push({
-      id: 'cot-home-opciones-pago',
-      t: 'Opciones de Pago',
-      v: _cotOpcionesPagoHtml(total),
-      saltoAntes: false
-    });
-  }
 
   // Agregar cláusulas personalizadas al final
   var clausulasCustom = Array.isArray(cot.clausulasCustom) ? cot.clausulasCustom : [];
@@ -12784,16 +12816,22 @@ function generarPdfCotEnVentana(cot, winRef){
   // Construir el HTML del footer (se replicará por hoja)
   var footerHojaHtml =
     '<div class="hoja-cond-footer" style="padding:14px 48px 0;">'
-      +'<div style="height:2px;background:linear-gradient(90deg,#0B1F3A,#1E6FD9,#1B3F72);margin-bottom:12px;"></div>'
+      // El divisor hereda el padding lateral del contenedor (14px 48px 0) y
+      // no llegaba a los bordes de la página — se compensa con márgenes
+      // negativos exactamente iguales a ese padding lateral.
+      +'<div style="height:2px;background:linear-gradient(90deg,#0B1F3A,'+(_esHome?'#C36F4A':'#1E6FD9')+',#1B3F72);margin:0 -48px 12px;"></div>'
       +'<div style="display:flex;align-items:center;justify-content:space-between;">'
         +'<div>'
-          +(logo?'<img src="'+logo+'" style="height:'+(_esRack?'40':(_esHome?'48':'20'))+'px;width:auto;margin-bottom:5px;display:block;" alt="ROMSA">':'')
+          // En HOME, solo el isotipo (sin wordmark) — el texto de abajo ya
+          // aclara la marca, y a la misma altura que el logo completo el
+          // isotipo solo se veía desproporcionado.
+          +(logo?'<img src="'+(_esHome ? window._homeLogoColorIcono : logo)+'" style="height:'+(_esRack?'40':(_esHome?'32':'20'))+'px;width:auto;margin-bottom:5px;display:block;" alt="ROMSA">':'')
           +(_esRack
             ? '<div style="font-size:9.5px;font-weight:700;color:#0C2340;">RACKLINE</div>'
               +'<div style="font-size:8.5px;color:#8A9AB8;margin-top:1px;">Almacenamiento inteligente para la industria</div>'
             : _esHome
-            ? '<div style="font-size:9.5px;font-weight:700;color:#1E5BA8;">HOME by ROMSA</div>'
-              +'<div style="font-size:8.5px;color:#8A9AB8;margin-top:1px;">Pisos Epóxicos</div>'
+            ? '<div style="font-size:9.5px;font-weight:700;color:#C36F4A;">HOME by ROMSA</div>'
+              +'<div style="font-size:8.5px;color:#8A9AB8;margin-top:1px;">Todo para pisos</div>'
             : '<div style="font-size:9.5px;font-weight:700;color:#1E6FD9;">ROMSA Industrial</div>'
               +'<div style="font-size:8.5px;color:#8A9AB8;margin-top:1px;">Especialistas en mantenimiento y recubrimientos industriales</div>')
         +'</div>'
@@ -12875,8 +12913,10 @@ function generarPdfCotEnVentana(cot, winRef){
     // ══ PÁGINA 1 ══
     +'<div class="page1">'
 
-      // Hero
-      +'<div style="background:linear-gradient(160deg,#0B1F3A 0%,#0F2A5A 100%);min-height:200px;padding:48px;display:flex;flex-direction:column;justify-content:center;position:relative;overflow:hidden;flex-shrink:0;">'
+      // Hero — en HOME, ~25% más bajo/compacto que ROMSA Industrial/RACKLINE:
+      // libera espacio vertical en la página 1 (altura fija) para que quepan
+      // las tarjetas de Opciones de Pago sin desbordar la hoja.
+      +'<div style="background:linear-gradient(160deg,#0B1F3A 0%,#0F2A5A 100%);min-height:'+(_esHome?'150':'200')+'px;padding:'+(_esHome?'36':'48')+'px;display:flex;flex-direction:column;justify-content:center;position:relative;overflow:hidden;flex-shrink:0;">'
         +((_esRack && _wmHeader)
           ? '<img src="'+_wmHeader+'" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 45%;opacity:.50;mix-blend-mode:luminosity;" alt="">'
             +'<div style="position:absolute;inset:0;background:linear-gradient(160deg,rgba(11,31,58,.36) 0%,rgba(15,42,90,.36) 100%);"></div>'
@@ -12886,7 +12926,7 @@ function generarPdfCotEnVentana(cot, winRef){
         +'<div style="position:absolute;right:60px;bottom:-80px;width:200px;height:200px;border-radius:50%;background:rgba(30,111,217,.06);"></div>'
         +'<div style="position:absolute;left:-40px;bottom:-60px;width:240px;height:240px;border-radius:50%;background:rgba(30,111,217,.05);"></div>'
         +'<div style="position:relative;z-index:2;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;">'
-          +(logoB?'<img src="'+logoB+'" style="height:'+(_esRack?'150':(_esHome?'120':'48'))+'px;width:auto;'+(_esRack?'filter:drop-shadow(0 3px 12px rgba(0,0,0,.6));':'')+'" alt="ROMSA">':'<div style="font-size:38px;font-weight:900;color:#fff;letter-spacing:-1.5px;">ROMSA</div>')
+          +(logoB?'<img src="'+logoB+'" style="height:'+(_esRack?'150':(_esHome?'90':'48'))+'px;width:auto;'+(_esRack?'filter:drop-shadow(0 3px 12px rgba(0,0,0,.6));':'')+'" alt="ROMSA">':'<div style="font-size:38px;font-weight:900;color:#fff;letter-spacing:-1.5px;">ROMSA</div>')
           +'<div style="display:flex;align-items:center;gap:12px;">'
             +'<div style="width:30px;height:1px;background:rgba(255,255,255,.2);"></div>'
             +'<div style="font-size:8.5px;font-weight:600;letter-spacing:3.5px;text-transform:uppercase;color:rgba(255,255,255,.45);">COTIZACIÓN TÉCNICA</div>'
@@ -12895,8 +12935,8 @@ function generarPdfCotEnVentana(cot, winRef){
         +'</div>'
       +'</div>'
 
-      // Línea degradada
-      +'<div style="height:3px;background:linear-gradient(90deg,#0B1F3A,#1E6FD9,#1B3F72);flex-shrink:0;"></div>'
+      // Línea degradada — terracota en HOME (destello de marca), azul en el resto
+      +'<div style="height:3px;background:linear-gradient(90deg,#0B1F3A,'+(_esHome?'#C36F4A':'#1E6FD9')+',#1B3F72);flex-shrink:0;"></div>'
 
       // Folio strip
       +'<div style="padding:14px 48px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #EDF1F8;flex-shrink:0;">'
@@ -12947,51 +12987,53 @@ function generarPdfCotEnVentana(cot, winRef){
           +'</div>'
         +'</div>'
         +secVigenciaLegacy
-        // Próximos pasos con vigencia integrada en el header (Opción A)
-        +'<div style="margin-top:14px;margin-bottom:auto;background:#F7F9FC;border:1px solid #E2E8F2;border-left:3px solid #1E6FD9;border-radius:6px;overflow:hidden;page-break-inside:avoid;break-inside:avoid;">'
-          // Header con título a la izq + vigencia a la der
-          +'<div style="padding:8px 14px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #E8EDF5;">'
-            +'<div style="font-size:8.5px;font-weight:700;letter-spacing:2px;color:#1E6FD9;text-transform:uppercase;">Próximos pasos</div>'
-            +(inclVigencia?'<div style="display:flex;align-items:center;gap:8px;">'
-              +'<span style="font-size:7.5px;font-weight:700;letter-spacing:1.5px;color:#8A9AB8;text-transform:uppercase;">Vigencia</span>'
-              +'<span style="width:1px;height:10px;background:#D5DDE8;"></span>'
-              +'<span style="font-size:9.5px;color:#4A5E7A;"><strong style="color:#0B1F3A;font-weight:700;">'+vigencia+' días naturales</strong> desde emisión</span>'
-            +'</div>':'')
+        // Próximos pasos con vigencia integrada en el header (Opción A) — solo
+        // para ROMSA Industrial/RACKLINE. En HOME, este mismo lugar en la
+        // página 1 (altura fija, no auto-paginada) lo ocupa "Opciones de
+        // Pago" — antes vivía como cláusula en Condiciones Generales, ahora
+        // se movió aquí para que el cliente la vea de entrada, no hasta la
+        // página 2+. Los "puntos fuertes" (antes 2 cajas con ícono) se
+        // redujeron a una sola línea de texto sutil para no competir en
+        // espacio con las tarjetas de pago.
+        +(!_esHome ? (
+          '<div style="margin-top:14px;margin-bottom:auto;background:#F7F9FC;border:1px solid #E2E8F2;border-left:3px solid #1E6FD9;border-radius:6px;overflow:hidden;page-break-inside:avoid;break-inside:avoid;">'
+            // Header con título a la izq + vigencia a la der
+            +'<div style="padding:8px 14px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #E8EDF5;">'
+              +'<div style="font-size:8.5px;font-weight:700;letter-spacing:2px;color:#1E6FD9;text-transform:uppercase;">Próximos pasos</div>'
+              +(inclVigencia?'<div style="display:flex;align-items:center;gap:8px;">'
+                +'<span style="font-size:7.5px;font-weight:700;letter-spacing:1.5px;color:#8A9AB8;text-transform:uppercase;">Vigencia</span>'
+                +'<span style="width:1px;height:10px;background:#D5DDE8;"></span>'
+                +'<span style="font-size:9.5px;color:#4A5E7A;"><strong style="color:#0B1F3A;font-weight:700;">'+vigencia+' días naturales</strong> desde emisión</span>'
+              +'</div>':'')
+            +'</div>'
+            // Body con los 4 pasos
+            +'<div style="display:flex;align-items:center;gap:14px;padding:10px 14px;">'
+              +'<div style="display:flex;align-items:center;gap:6px;flex:1;">'
+                +'<div style="min-width:18px;height:18px;border-radius:50%;background:#1E6FD9;color:#fff;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;flex-shrink:0;">1</div>'
+                +'<div style="font-size:9px;color:#4A5E7A;line-height:1.25;"><strong style="color:#0B1F3A;font-size:9.5px;">Aceptación</strong><br>Firma propuesta</div>'
+              +'</div>'
+              +'<div style="display:flex;align-items:center;gap:6px;flex:1;">'
+                +'<div style="min-width:18px;height:18px;border-radius:50%;background:#1E6FD9;color:#fff;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;flex-shrink:0;">2</div>'
+                +'<div style="font-size:9px;color:#4A5E7A;line-height:1.25;"><strong style="color:#0B1F3A;font-size:9.5px;">Orden compra</strong><br>Emisión a ROMSA</div>'
+              +'</div>'
+              +'<div style="display:flex;align-items:center;gap:6px;flex:1;">'
+                +'<div style="min-width:18px;height:18px;border-radius:50%;background:#1E6FD9;color:#fff;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;flex-shrink:0;">3</div>'
+                +'<div style="font-size:9px;color:#4A5E7A;line-height:1.25;"><strong style="color:#0B1F3A;font-size:9.5px;">Anticipo 60%</strong><br>Transferencia</div>'
+              +'</div>'
+              +'<div style="display:flex;align-items:center;gap:6px;flex:1;">'
+                +'<div style="min-width:18px;height:18px;border-radius:50%;background:#10B981;color:#fff;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;flex-shrink:0;">4</div>'
+                +'<div style="font-size:9px;color:#4A5E7A;line-height:1.25;"><strong style="color:#0B1F3A;font-size:9.5px;">Inicio obra</strong><br>Programación</div>'
+              +'</div>'
+            +'</div>'
           +'</div>'
-          // Body con los 4 pasos
-          +'<div style="display:flex;align-items:center;gap:14px;padding:10px 14px;">'
-            +'<div style="display:flex;align-items:center;gap:6px;flex:1;">'
-              +'<div style="min-width:18px;height:18px;border-radius:50%;background:#1E6FD9;color:#fff;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;flex-shrink:0;">1</div>'
-              +'<div style="font-size:9px;color:#4A5E7A;line-height:1.25;"><strong style="color:#0B1F3A;font-size:9.5px;">Aceptación</strong><br>Firma propuesta</div>'
-            +'</div>'
-            +'<div style="display:flex;align-items:center;gap:6px;flex:1;">'
-              +'<div style="min-width:18px;height:18px;border-radius:50%;background:#1E6FD9;color:#fff;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;flex-shrink:0;">2</div>'
-              +'<div style="font-size:9px;color:#4A5E7A;line-height:1.25;"><strong style="color:#0B1F3A;font-size:9.5px;">Orden compra</strong><br>Emisión a ROMSA</div>'
-            +'</div>'
-            +'<div style="display:flex;align-items:center;gap:6px;flex:1;">'
-              +'<div style="min-width:18px;height:18px;border-radius:50%;background:#1E6FD9;color:#fff;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;flex-shrink:0;">3</div>'
-              +'<div style="font-size:9px;color:#4A5E7A;line-height:1.25;"><strong style="color:#0B1F3A;font-size:9.5px;">Anticipo 60%</strong><br>Transferencia</div>'
-            +'</div>'
-            +'<div style="display:flex;align-items:center;gap:6px;flex:1;">'
-              +'<div style="min-width:18px;height:18px;border-radius:50%;background:#10B981;color:#fff;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;flex-shrink:0;">4</div>'
-              +'<div style="font-size:9px;color:#4A5E7A;line-height:1.25;"><strong style="color:#0B1F3A;font-size:9.5px;">Inicio obra</strong><br>Programación</div>'
-            +'</div>'
-          +'</div>'
-        +'</div>'
-        +(_esHome ? (
-          '<div style="display:flex;gap:10px;margin-top:10px;">'
-            + '<div style="flex:1;display:flex;align-items:center;gap:8px;background:#F7F9FC;border-radius:6px;padding:8px 12px;">'
-              + '<div style="font-size:16px;">📋</div>'
-              + '<div><div style="font-size:8px;font-weight:800;color:#0B1F3A;text-transform:uppercase;letter-spacing:.5px;">Reporte de Avance de Obra</div>'
-              + '<div style="font-size:8px;color:#8A9AB8;">Sigue tu proyecto en tiempo real, con fotos y % de avance</div></div>'
+        ) : (
+          '<div style="margin-top:14px;">'
+            + (numConceptos > UMBRAL_OPCIONES_PAGO_COMPACTO ? _cotOpcionesPagoHtmlCompacto(total) : _cotOpcionesPagoHtml(total))
+            + '<div style="margin-top:8px;font-size:8px;color:#8A9AB8;">'
+              + '📋 Reporte de Avance de Obra en tiempo real &nbsp;·&nbsp; 🔒 Precio Cerrado — sin sorpresas'
             + '</div>'
-            + '<div style="flex:1;display:flex;align-items:center;gap:8px;background:#F7F9FC;border-radius:6px;padding:8px 12px;">'
-              + '<div style="font-size:16px;">🔒</div>'
-              + '<div><div style="font-size:8px;font-weight:800;color:#0B1F3A;text-transform:uppercase;letter-spacing:.5px;">Precio Cerrado</div>'
-              + '<div style="font-size:8px;color:#8A9AB8;">Lo que se cotiza es lo que se paga, sin sorpresas</div></div>'
-            + '</div>'
           +'</div>'
-        ) : '')
+        ))
       +'</div>'// /cuerpo p1
     +'</div>'// /page1
 
