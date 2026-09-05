@@ -1374,6 +1374,7 @@ body.in-contactos #app, body.in-contactosdb #app{
 .user-avatar.admin{background:rgba(30,111,217,.15);color:var(--blue);}
 .user-avatar.tecnico{background:rgba(16,185,129,.12);color:#0B7A5A;}
 .user-avatar.editor-fotos{background:var(--amber-dim);color:#92600A;}
+.user-avatar.seguimiento-obra{background:rgba(249,115,22,.12);color:#9A3E0C;}
 .user-info{flex:1;min-width:0;}
 .user-name{font-size:13px;font-weight:600;color:var(--tx);}
 .user-email{font-size:11px;color:var(--tx2);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
@@ -1381,6 +1382,7 @@ body.in-contactos #app, body.in-contactosdb #app{
 .role-admin{background:rgba(30,111,217,.1);color:var(--blue);}
 .role-tecnico{background:rgba(16,185,129,.1);color:#0B7A5A;}
 .role-editor-fotos{background:var(--amber-dim);color:#92600A;}
+.role-seguimiento-obra{background:rgba(249,115,22,.12);color:#9A3E0C;}
 
 /* ── PWA INSTALL BANNER ── */
 #pwa-banner{
@@ -1619,7 +1621,7 @@ body.in-contactos #app, body.in-contactosdb #app{
       </div>
 
       <!-- 5. Seguimiento de Obras -->
-      <div class="mod-card ds-card" onclick="selectModule('obras')">
+      <div id="mod-card-obras" class="mod-card ds-card" onclick="selectModule('obras')">
         <div class="mod-icon mi-ob"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 22V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v18"/><path d="M14 9h4a1 1 0 0 1 1 1v12"/><path d="M2 22h20"/><line x1="9" y1="6" x2="9" y2="6.01"/><line x1="9" y1="10" x2="9" y2="10.01"/><line x1="9" y1="14" x2="9" y2="14.01"/><line x1="9" y1="18" x2="9" y2="18.01"/></svg></div>
         <div class="mod-info">
           <div class="mod-name">Seguimiento de Obras</div>
@@ -2193,6 +2195,7 @@ body.in-contactos #app, body.in-contactosdb #app{
               <select class="fselect" id="new-user-rol">
                 <option value="tecnico">Técnico — acceso normal</option>
                 <option value="editor_fotos">Editor de Fotos — solo ese módulo</option>
+                <option value="seguimiento_obra">Seguimiento de Obra — solo ese módulo</option>
               </select>
             </div>
             <button class="btn btn-primary btn-block" id="btn-crear-usuario" onclick="crearTecnico()">Crear usuario →</button>
@@ -4388,6 +4391,11 @@ function goScreen(n){
   if(window._esSoloFotos && n !== "fotoeditor"){
     showToast("🔒 Tu cuenta solo tiene acceso a Editor de Fotos");
     goScreen("fotoeditor");
+    return;
+  }
+  if(window._esSoloObras && n !== "obras" && n !== "dashboard"){
+    showToast("🔒 Tu cuenta solo tiene acceso a Seguimiento de Obra");
+    goScreen("obras");
     return;
   }
   document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
@@ -7225,6 +7233,7 @@ function showModuleSelector(){
     if(loginLogo && loginLogo.src) ll.src = loginLogo.src;
   }
   _aplicarRestriccionSoloFotos();
+  _aplicarRestriccionSoloObras();
   if(typeof _actualizarBadgesMenu === "function") _actualizarBadgesMenu();
   if(typeof _actualizarHeroSelector === "function") _actualizarHeroSelector();
 }
@@ -7240,6 +7249,18 @@ function _aplicarRestriccionSoloFotos(){
   if(hero) hero.style.display = "none";
   document.querySelectorAll(".mod-card").forEach(c=>{
     if(c.id !== "mod-card-fotoeditor") c.style.display = "none";
+  });
+}
+
+// Mismo criterio que _aplicarRestriccionSoloFotos, para el rol
+// "seguimiento_obra": el menú principal solo debe mostrar la ficha de
+// Seguimiento de Obras.
+function _aplicarRestriccionSoloObras(){
+  if(!window._esSoloObras) return;
+  const hero = document.querySelector(".sel-hero");
+  if(hero) hero.style.display = "none";
+  document.querySelectorAll(".mod-card").forEach(c=>{
+    if(c.id !== "mod-card-obras") c.style.display = "none";
   });
 }
 
@@ -16892,6 +16913,8 @@ auth.onAuthStateChanged(async user => {
     // showModuleSelector para el filtrado de fichas del menú).
     const _esSoloFotos = (currentUserProfile && currentUserProfile.rol === "editor_fotos") && !isAdmin;
     window._esSoloFotos = _esSoloFotos;
+    const _esSoloObras = (currentUserProfile && currentUserProfile.rol === "seguimiento_obra") && !isAdmin;
+    window._esSoloObras = _esSoloObras;
 
     // Registrar check-in automático al ingresar
     await autoCheckinLogin(currentUserProfile);
@@ -16905,6 +16928,11 @@ auth.onAuthStateChanged(async user => {
       // Sin selección posible: entra directo a su único módulo, sin
       // importar qué había guardado antes en localStorage.
       selectModule("fotoeditor");
+    } else if(_esSoloObras){
+      // Mismo criterio que _esSoloFotos: entra directo, sin importar el
+      // _savedMod guardado — si no, un módulo distinto guardado antes de
+      // que le cambiaran el rol podría saltarse el candado.
+      selectModule("obras");
     } else if(!_savedMod){
       showModuleSelector();
     } else if(_savedMod === "levantamientos"){
@@ -16916,7 +16944,7 @@ auth.onAuthStateChanged(async user => {
     const nombre = currentUserProfile?.nombre || user.email;
     document.getElementById("tb-tecnico-name").textContent = nombre;
     const roleEl = document.getElementById("tb-user-role");
-    if(roleEl) roleEl.textContent = isAdmin ? "ADMINISTRADOR" : (_esSoloFotos ? "EDITOR DE FOTOS" : "TÉCNICO");
+    if(roleEl) roleEl.textContent = isAdmin ? "ADMINISTRADOR" : (_esSoloFotos ? "EDITOR DE FOTOS" : (_esSoloObras ? "SEGUIMIENTO DE OBRA" : "TÉCNICO"));
     const avatarEl = document.getElementById("tb-user-avatar");
     if(avatarEl) avatarEl.textContent = nombre.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase();
     const badge = document.getElementById("tb-user-badge");
@@ -16968,22 +16996,26 @@ auth.onAuthStateChanged(async user => {
     // siquiera se piden: además de no verlos en pantalla, no llegan al
     // navegador.
     if(!_esSoloFotos){
-      subscribeObras();
-      subscribeCotizaciones();
-      if(_tieneCosteo) subscribeCosteo();
-      // Pre-cargar catálogo de conceptos en background (para que CAT_SERVICIOS esté actualizado al crear cotización)
-      if(typeof cargarCatalogoConceptos === "function"){
-        cargarCatalogoConceptos().catch(function(e){ console.warn("[ROMSA] Catálogo no se pudo precargar:", e); });
-      }
-      // Pre-cargar clientes y plantillas en background (Sesión 6+7)
+      subscribeObras(); // seguimiento_obra SÍ necesita esto, se queda fuera del if de abajo
+      // Pre-cargar clientes y cuadrillas en background — seguimiento_obra
+      // también los necesita (mostrar/asignar cliente y cuadrilla en obra).
       if(typeof cargarClientes === "function"){
         cargarClientes().catch(function(e){ console.warn("[ROMSA] Clientes no se pudieron precargar:", e); });
       }
-      if(typeof cargarPlantillasCondiciones === "function"){
-        cargarPlantillasCondiciones().catch(function(e){ console.warn("[ROMSA] Plantillas no se pudieron precargar:", e); });
-      }
       if(typeof cargarCuadrillas === "function"){
         cargarCuadrillas().catch(function(e){ console.warn("[ROMSA] Cuadrillas no se pudieron precargar:", e); });
+      }
+      if(!_esSoloObras){
+        subscribeCotizaciones();
+        if(_tieneCosteo) subscribeCosteo();
+        // Pre-cargar catálogo de conceptos en background (para que CAT_SERVICIOS esté actualizado al crear cotización)
+        if(typeof cargarCatalogoConceptos === "function"){
+          cargarCatalogoConceptos().catch(function(e){ console.warn("[ROMSA] Catálogo no se pudo precargar:", e); });
+        }
+        // Pre-cargar plantillas en background (Sesión 6+7)
+        if(typeof cargarPlantillasCondiciones === "function"){
+          cargarPlantillasCondiciones().catch(function(e){ console.warn("[ROMSA] Plantillas no se pudieron precargar:", e); });
+        }
       }
     }
     checkUrlParams();
@@ -17105,15 +17137,16 @@ async function loadAdminUsers(){
       const u = doc.data();
       const ini = (u.nombre||"?").split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase();
       const isMe = u.uid === currentUser?.uid;
-      const rolClase = u.rol==='admin' ? 'admin' : (u.rol==='editor_fotos' ? 'editor-fotos' : 'tecnico');
-      const rolLabel = u.rol==='admin' ? 'Admin' : (u.rol==='editor_fotos' ? 'Editor de Fotos' : 'Técnico');
+      const rolClase = u.rol==='admin' ? 'admin' : (u.rol==='editor_fotos' ? 'editor-fotos' : (u.rol==='seguimiento_obra' ? 'seguimiento-obra' : 'tecnico'));
+      const rolLabel = u.rol==='admin' ? 'Admin' : (u.rol==='editor_fotos' ? 'Editor de Fotos' : (u.rol==='seguimiento_obra' ? 'Seguimiento de Obra' : 'Técnico'));
       // El rol de admin no se cambia desde aquí (se otorga por la lista
       // fija del código o directamente en Firestore) — solo se puede
-      // alternar entre Técnico y Editor de Fotos.
+      // alternar entre Técnico, Editor de Fotos y Seguimiento de Obra.
       const rolSelector = u.rol!=='admin'
         ? `<select onchange="cambiarRolUsuario('${u.uid}',this.value)" style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:8px;border:1px solid var(--g1);background:#fff;color:var(--tx2);cursor:pointer;">
-            <option value="tecnico"${u.rol!=='editor_fotos'?' selected':''}>Técnico</option>
+            <option value="tecnico"${(u.rol!=='editor_fotos'&&u.rol!=='seguimiento_obra')?' selected':''}>Técnico</option>
             <option value="editor_fotos"${u.rol==='editor_fotos'?' selected':''}>Editor de Fotos</option>
+            <option value="seguimiento_obra"${u.rol==='seguimiento_obra'?' selected':''}>Seguimiento de Obra</option>
           </select>`
         : "";
       return `<div class="user-row" style="flex-wrap:wrap;gap:8px;">
@@ -17156,7 +17189,7 @@ async function crearTecnico(){
     // No es necesario — Firebase Web no cambia la sesión al crear usuarios con compat SDK
     ["new-user-nombre","new-user-email","new-user-pass","new-user-tel"].forEach(id=>document.getElementById(id).value="");
     document.getElementById("new-user-rol").value = "tecnico";
-    showToast("✅ "+nombre+" creado ("+(rol==="editor_fotos"?"Editor de Fotos":"Técnico")+")");
+    showToast("✅ "+nombre+" creado ("+(rol==="editor_fotos"?"Editor de Fotos":(rol==="seguimiento_obra"?"Seguimiento de Obra":"Técnico"))+")");
     loadAdminUsers();
   }catch(e){
     const msgs = {"auth/email-already-in-use":"Este correo ya está registrado","auth/invalid-email":"Correo inválido"};
@@ -17220,9 +17253,9 @@ async function toggleUserActivo(uid, activo){
 // de admin por accidente desde un control tan directo.
 async function cambiarRolUsuario(uid, nuevoRol){
   if(!isAdmin) return;
-  if(nuevoRol !== "tecnico" && nuevoRol !== "editor_fotos") return;
+  if(nuevoRol !== "tecnico" && nuevoRol !== "editor_fotos" && nuevoRol !== "seguimiento_obra") return;
   await usersRef.doc(uid).update({rol: nuevoRol});
-  showToast("✅ Rol actualizado a "+(nuevoRol==="editor_fotos"?"Editor de Fotos":"Técnico"));
+  showToast("✅ Rol actualizado a "+(nuevoRol==="editor_fotos"?"Editor de Fotos":nuevoRol==="seguimiento_obra"?"Seguimiento de Obra":"Técnico"));
   loadAdminUsers();
 }
 

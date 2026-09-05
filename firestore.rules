@@ -36,6 +36,12 @@ service cloud.firestore {
       return !esAdminPorListaFija() && tienePerfil() && perfil().rol == "editor_fotos";
     }
 
+    // "seguimiento_obra": acceso exclusivo a Seguimiento de Obras (ver
+    // index.html, window._esSoloObras). Mismo criterio que esSoloFotos().
+    function esSoloObras() {
+      return !esAdminPorListaFija() && tienePerfil() && perfil().rol == "seguimiento_obra";
+    }
+
     // ── Perfiles de usuario (usuarios/{uid}) ─────────────────────────
     match /usuarios/{uid} {
       // Cualquier cuenta autenticada puede leer SU PROPIO perfil — es lo
@@ -82,6 +88,8 @@ service cloud.firestore {
     // agrega la misma condición que al resto de la base de datos: una
     // cuenta con acceso restringido a Editor de Fotos no debe poder
     // escribir aquí tampoco (antes sí podía, por el hueco general).
+    // "seguimiento_obra" SÍ conserva escritura aquí a propósito — es
+    // justo la colección que ese rol existe para administrar.
     match /obras_seguimiento_v2/{obraId} {
       allow read: if true;
       allow write: if request.auth != null && !esSoloFotos();
@@ -96,9 +104,28 @@ service cloud.firestore {
       }
     }
 
+    // ── Clientes y cuadrillas: catálogos de referencia que el rol
+    // "seguimiento_obra" también necesita para mostrar/asignar cliente y
+    // cuadrilla dentro de una obra (ver index.html, cargarClientes() /
+    // cargarCuadrillas()). Se declaran aparte del catch-all de abajo
+    // porque ese rol queda excluido de él (no debe tener acceso general
+    // a cotizaciones/costeo, y estos catálogos también se usan ahí) —
+    // solo lectura, ya que asignar cliente/cuadrilla a una obra guarda el
+    // id/nombre dentro del documento de la obra misma, no escribe aquí.
+    match /clientes/{clienteId} {
+      allow read: if request.auth != null && !esSoloFotos();
+      allow write: if request.auth != null && !esSoloFotos() && !esSoloObras();
+    }
+    match /cotizacion_cuadrillas/{cuadrillaId} {
+      allow read: if request.auth != null && !esSoloFotos();
+      allow write: if request.auth != null && !esSoloFotos() && !esSoloObras();
+    }
+
     // ── TODO LO DEMÁS: igual que antes para admin/tecnico — una cuenta
-    // con rol "editor_fotos" queda explícitamente fuera (cotizaciones,
-    // costeos, contactos, proyectos, encuestas, firmas, catálogos, etc.)
+    // con rol "editor_fotos" o "seguimiento_obra" queda explícitamente
+    // fuera (cotizaciones, costeos, contactos, proyectos, encuestas,
+    // firmas, catálogos, etc. — seguimiento_obra ya tiene lo suyo propio
+    // en obras_seguimiento_v2 y los dos catálogos de arriba).
     //
     // OJO: Firestore evalúa TODOS los bloques "match" que apliquen a una
     // ruta y permite el acceso si CUALQUIERA de ellos lo permite (no es
@@ -112,7 +139,7 @@ service cloud.firestore {
     // nombre de la colección de nivel superior como variable y se
     // excluyen esas dos por nombre.
     match /{coleccion}/{document=**} {
-      allow read, write: if request.auth != null && !esSoloFotos()
+      allow read, write: if request.auth != null && !esSoloFotos() && !esSoloObras()
         && coleccion != "usuarios"
         && coleccion != "checkins_login";
     }
