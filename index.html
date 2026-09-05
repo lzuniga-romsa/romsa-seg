@@ -1760,6 +1760,7 @@ body.in-contactos #app, body.in-contactosdb #app{
       <div style="background:#0B1F3A;padding:14px 18px 16px;--mod-accent:var(--ds-mod-obras);">
         <div class="mod-header-top">
           <button class="mod-header-back" onclick="volverSelector()">← Menú</button>
+          <button id="obra-logout-btn-1" onclick="doLogout()" style="background:rgba(255,255,255,.12);border:none;color:#fff;font-size:11px;font-weight:600;padding:6px 10px;border-radius:8px;cursor:pointer;font-family:var(--font);margin-left:6px;">Salir</button>
         </div>
         <div class="mod-header-crumb">
           <span class="mod-header-eyebrow">ROMSA Industrial · Seguimiento de Obras</span>
@@ -1792,6 +1793,7 @@ body.in-contactos #app, body.in-contactosdb #app{
       <div style="background:#0B1F3A;padding:14px 18px 16px;--mod-accent:var(--ds-mod-obras);">
         <div class="mod-header-top">
           <button class="mod-header-back" onclick="volverSelector()">← Menú</button>
+          <button id="obra-logout-btn-2" onclick="doLogout()" style="background:rgba(255,255,255,.12);border:none;color:#fff;font-size:11px;font-weight:600;padding:6px 10px;border-radius:8px;cursor:pointer;font-family:var(--font);margin-left:6px;">Salir</button>
         </div>
         <div class="mod-header-crumb">
           <span class="mod-header-eyebrow">ROMSA Industrial · Seguimiento de Obras</span>
@@ -3298,7 +3300,7 @@ body.in-contactos #app, body.in-contactosdb #app{
       <div class="ds-eyebrow" style="font-size:9.5px;color:var(--tx2);margin-bottom:10px;">KPIs principales — este mes</div>
       <div id="dg-kpis" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));gap:12px;margin-bottom:28px;"></div>
 
-      <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(340px, 1fr));gap:24px;align-items:start;">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(min(340px, 100%), 1fr));gap:24px;align-items:start;">
 
         <!-- 2. Accesos rápidos -->
         <div>
@@ -3617,6 +3619,7 @@ body.in-contactos #app, body.in-contactosdb #app{
   <div id="screen-fotoeditor" class="screen fe-screen">
     <div class="fe-topbar">
       <button class="fe-back" onclick="volverSelector()">← Menú</button>
+      <button id="fe-logout-btn" onclick="doLogout()" style="display:none;background:rgba(255,255,255,.12);border:none;color:#fff;font-size:11px;font-weight:600;padding:6px 10px;border-radius:8px;cursor:pointer;font-family:var(--font);margin-left:6px;">Salir</button>
       <div class="fe-title" id="fe-title">Motor de Marca ROMSA</div>
       <button class="fe-home-btn" onclick="fehAbrir()" title="HOME by ROMSA — Plantillas sociales">🏠 HOME</button>
       <button class="fe-cal-btn" onclick="bceAbrirCalendario()" title="Calendario de publicaciones">📅</button>
@@ -4100,6 +4103,14 @@ body.in-contactos #app, body.in-contactosdb #app{
     <div class="vc-sec-ttl" style="justify-content:space-between;">
       Actualizaciones en tiempo real
       <button onclick="forceRefreshVC()" style="background:rgba(30,111,217,.2);border:1px solid rgba(30,111,217,.3);color:var(--sky);font-size:9px;font-weight:700;padding:3px 10px;border-radius:20px;cursor:pointer;font-family:var(--font);letter-spacing:.8px;flex-shrink:0;">↻ Actualizar</button>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin:0 0 12px;padding:0 2px;">
+      <select id="vc-filtro-etapa" onchange="aplicarFiltrosVC()" style="flex:1;min-width:120px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);color:#fff;font-size:11px;padding:7px 10px;border-radius:8px;font-family:var(--font);">
+        <option value="">Todas las etapas</option>
+      </select>
+      <input type="date" id="vc-filtro-desde" onchange="aplicarFiltrosVC()" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);color:#fff;font-size:11px;padding:7px 10px;border-radius:8px;font-family:var(--font);" placeholder="Desde">
+      <input type="date" id="vc-filtro-hasta" onchange="aplicarFiltrosVC()" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);color:#fff;font-size:11px;padding:7px 10px;border-radius:8px;font-family:var(--font);" placeholder="Hasta">
+      <button onclick="limpiarFiltrosVC()" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.6);font-size:11px;padding:7px 12px;border-radius:8px;cursor:pointer;font-family:var(--font);">Limpiar</button>
     </div>
     <div id="vc-updates-feed"></div>
 
@@ -5543,7 +5554,13 @@ function mostrarVC(o){
   async function renderVCUpdates(updates){
       const vcFeed=document.getElementById("vc-updates-feed");
     if(!updates.length){
-    vcFeed.innerHTML='<div style="text-align:center;padding:28px;color:rgba(255,255,255,.25);font-size:13px;">El equipo aún no ha publicado actualizaciones.</div>';
+    // Si YA hay actualizaciones en total pero el filtro no encontró
+    // ninguna, el mensaje debe aclarar que es cosa del filtro — no que la
+    // obra no tiene actualizaciones publicadas.
+    const hayFiltroSinResultados = (window._vcAllUpdates||[]).length > 0;
+    vcFeed.innerHTML = hayFiltroSinResultados
+      ? '<div style="text-align:center;padding:28px;color:rgba(255,255,255,.25);font-size:13px;">No hay actualizaciones con ese filtro.</div>'
+      : '<div style="text-align:center;padding:28px;color:rgba(255,255,255,.25);font-size:13px;">El equipo aún no ha publicado actualizaciones.</div>';
   } else {
     vcFeed.innerHTML=updates.map(u=>`
       <div class="vc-upd-card">
@@ -5577,12 +5594,59 @@ function mostrarVC(o){
       </div>`).join("");
     }
   }
+
+  // Filtros por etapa y rango de fecha sobre las actualizaciones ya
+  // cargadas — 100% cliente, no hace lecturas nuevas a Firestore. u.ts es
+  // el timestamp real (el mismo que ya se usa para ordenar); u.fecha es
+  // solo texto ya formateado para mostrar, no sirve para comparar rangos.
+  // Anidadas aquí (no globales) porque necesitan cerrar sobre la
+  // renderVCUpdates de ESTA llamada a mostrarVC — se exponen en window
+  // para que los onchange/onclick del HTML las encuentren.
+  function _vcPoblarFiltroEtapas(updates){
+    const sel = document.getElementById("vc-filtro-etapa");
+    if(!sel) return;
+    const etapas = [...new Set((updates||[]).map(u=>u.etapaNombre).filter(Boolean))];
+    sel.innerHTML = '<option value="">Todas las etapas</option>'
+      + etapas.map(e=>`<option value="${e}">${e}</option>`).join("");
+  }
+
+  function aplicarFiltrosVC(){
+    const etapa = document.getElementById("vc-filtro-etapa")?.value || "";
+    const desde = document.getElementById("vc-filtro-desde")?.value || "";
+    const hasta = document.getElementById("vc-filtro-hasta")?.value || "";
+    const desdeTs = desde ? new Date(desde+"T00:00:00").getTime() : null;
+    const hastaTs = hasta ? new Date(hasta+"T23:59:59").getTime() : null;
+
+    const filtradas = (window._vcAllUpdates||[]).filter(u=>{
+      if(etapa && u.etapaNombre !== etapa) return false;
+      if(desdeTs && u.ts < desdeTs) return false;
+      if(hastaTs && u.ts > hastaTs) return false;
+      return true;
+    });
+    renderVCUpdates(filtradas);
+  }
+  window.aplicarFiltrosVC = aplicarFiltrosVC;
+
+  function limpiarFiltrosVC(){
+    document.getElementById("vc-filtro-etapa").value = "";
+    document.getElementById("vc-filtro-desde").value = "";
+    document.getElementById("vc-filtro-hasta").value = "";
+    renderVCUpdates(window._vcAllUpdates||[]);
+  }
+  window.limpiarFiltrosVC = limpiarFiltrosVC;
+
   if(isPublic && o.id){
     getUpdatesRef(o.id).orderBy("ts","desc").get()
-      .then(snap=>renderVCUpdates(snap.docs.map(d=>d.data())))
+      .then(snap=>{
+        window._vcAllUpdates = snap.docs.map(d=>d.data());
+        _vcPoblarFiltroEtapas(window._vcAllUpdates);
+        renderVCUpdates(window._vcAllUpdates);
+      })
       .catch(()=>renderVCUpdates(o.updates||[]));
   } else {
-    renderVCUpdates((o.updates||[]).sort((a,b)=>b.ts-a.ts));
+    window._vcAllUpdates = (o.updates||[]).sort((a,b)=>b.ts-a.ts);
+    _vcPoblarFiltroEtapas(window._vcAllUpdates);
+    renderVCUpdates(window._vcAllUpdates);
   }
 
   // Antes/Después — cargar desde subcolección Firestore para vista cliente
@@ -16971,6 +17035,10 @@ auth.onAuthStateChanged(async user => {
     // showModuleSelector para el filtrado de fichas del menú).
     const _esSoloFotos = (currentUserProfile && currentUserProfile.rol === "editor_fotos") && !isAdmin;
     window._esSoloFotos = _esSoloFotos;
+    if(_esSoloFotos){
+      const _feLogoutBtn = document.getElementById('fe-logout-btn');
+      if(_feLogoutBtn) _feLogoutBtn.style.display = 'inline-flex';
+    }
 
     // Registrar check-in automático al ingresar
     await autoCheckinLogin(currentUserProfile);
