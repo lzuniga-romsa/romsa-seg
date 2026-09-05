@@ -23025,7 +23025,7 @@ function fehDrawAdsAntesDespues(ctx, W, H, st){
   const descFont = isStory ? 28 : 24;
   ctx.font = `400 ${descFont}px "Inter"`; ctx.fillStyle = "rgba(247,243,238,.85)";
   ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
-  ctx.fillText(v.descripcion||"", 56, gridY+gridH+(isStory?30:40));
+  ctx.fillText(v.descripcion||"", 56, gridY+gridH+(isStory?50:60));
 
   fehDrawCTAButton(ctx, 56, ctaBottom, v.cta || "Cotiza por WhatsApp");
 }
