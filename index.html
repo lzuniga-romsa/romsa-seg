@@ -333,6 +333,7 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
 .vc-e-done{background:var(--green);color:#fff;}
 .vc-e-active{background:var(--blue);color:#fff;}
 .vc-e-pending{background:rgba(255,255,255,.07);color:rgba(255,255,255,.2);}
+#vc-filtro-etapa option{background:#0B1F3A;color:#fff;}
 .vc-etapa-txt{font-size:13px;font-weight:500;}
 .vc-etapa-txt.done{color:rgba(255,255,255,.35);text-decoration:line-through;}
 .vc-etapa-txt.active{color:#fff;font-weight:700;}
@@ -3276,6 +3277,7 @@ body.in-contactos #app, body.in-contactosdb #app{
             <span class="ds-body-md" id="dg-datos-vivo" style="font-size:11px;color:var(--tx2);">Datos en vivo · —</span>
           </div>
           <div id="dg-fecha" style="font-size:11px;color:var(--tx2);font-variant-numeric:tabular-nums;" class="ds-body-md">—</div>
+          <button onclick="doLogout()" style="background:rgba(11,31,58,.06);border:1px solid rgba(11,31,58,.1);color:var(--navy);font-size:11px;font-weight:600;padding:6px 10px;border-radius:8px;cursor:pointer;font-family:var(--font);">Salir</button>
         </div>
       </div>
       <div class="mod-header-crumb">
