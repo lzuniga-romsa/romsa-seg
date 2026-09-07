@@ -4118,7 +4118,7 @@ body.in-plantrabajo #app{
     <div class="fg"><label class="flabel">RFC del cliente</label><input class="finput" id="pt-cliente-rfc" placeholder="Ej: PIM950101AB2"></div>
 
     <div class="fdivider">Etapas</div>
-    <div style="font-size:12px;color:var(--tx2);margin-bottom:11px;line-height:1.5;">Captura cada etapa una sola vez — el sistema expande automáticamente a días (saltando domingos, horario reducido los sábados) para el Plan de Ejecución.</div>
+    <div style="font-size:12px;color:var(--tx2);margin-bottom:11px;line-height:1.5;">Captura cada etapa una sola vez — el sistema expande automáticamente a días (según los días de trabajo que elijas) para el Plan de Ejecución.</div>
     <div class="fg" style="background:var(--off2);border:1px solid var(--g1);border-radius:10px;padding:10px;">
       <label class="flabel">Plantilla de etapas por tipo de trabajo (opcional)</label>
       <div style="display:flex;gap:8px;">
@@ -4856,40 +4856,40 @@ const PT_COLORES_GANTT = ["#0B1F3A","#1E6FD9","#5FA5F0","#C36F4A","#0B7A5A","#8A
 // después de aplicar la plantilla.
 const PT_PLANTILLAS_ETAPAS = {
   epoxico: { label:"Piso Epóxico", etapas: [
-    { nombre:"Preparación de superficie", actividad:"Diamantado y limpieza de la losa, reparación de grietas y juntas", horarioNormal:"07:00 - 17:00", horarioSabado:"07:00 - 13:00", herramientas:"Pulidora industrial, aspiradora industrial", producto:"—", epp:"Casco, lentes, mascarilla, guantes" },
-    { nombre:"Imprimación (primer)", actividad:"Aplicación de primer epóxico para sellar y anclar el sistema", horarioNormal:"07:00 - 17:00", horarioSabado:"07:00 - 13:00", herramientas:"Rodillo, llana dentada", producto:"Primer epóxico", epp:"Casco, guantes químicos, respirador" },
-    { nombre:"Aplicación de sistema epóxico", actividad:"Aplicación de capa(s) de autonivelante epóxico color", horarioNormal:"07:00 - 17:00", horarioSabado:"07:00 - 13:00", herramientas:"Llana, rodillo de púas para desairear", producto:"Epóxico autonivelante", epp:"Casco, guantes químicos, respirador, botas antiderrapantes" },
-    { nombre:"Acabado y sellado final", actividad:"Aplicación de capa de sellador y verificación de acabado", horarioNormal:"07:00 - 17:00", horarioSabado:"07:00 - 13:00", herramientas:"Rodillo de felpa", producto:"Sellador poliuretano/UV", epp:"Casco, guantes, respirador" }
+    { nombre:"Preparación de superficie", actividad:"Diamantado y limpieza de la losa, reparación de grietas y juntas", horario:"07:00 - 17:00", herramientas:"Pulidora industrial, aspiradora industrial", producto:"—", epp:"Casco, lentes, mascarilla, guantes" },
+    { nombre:"Imprimación (primer)", actividad:"Aplicación de primer epóxico para sellar y anclar el sistema", horario:"07:00 - 17:00", herramientas:"Rodillo, llana dentada", producto:"Primer epóxico", epp:"Casco, guantes químicos, respirador" },
+    { nombre:"Aplicación de sistema epóxico", actividad:"Aplicación de capa(s) de autonivelante epóxico color", horario:"07:00 - 17:00", herramientas:"Llana, rodillo de púas para desairear", producto:"Epóxico autonivelante", epp:"Casco, guantes químicos, respirador, botas antiderrapantes" },
+    { nombre:"Acabado y sellado final", actividad:"Aplicación de capa de sellador y verificación de acabado", horario:"07:00 - 17:00", herramientas:"Rodillo de felpa", producto:"Sellador poliuretano/UV", epp:"Casco, guantes, respirador" }
   ]},
   impermeabilizacion: { label:"Impermeabilización de techo/cubierta", etapas: [
-    { nombre:"Preparación de superficie", actividad:"Limpieza y preparación mecánica de la cubierta", horarioNormal:"07:00 - 17:00", horarioSabado:"07:00 - 13:00", herramientas:"Hidrolavadora, escobas, espátula", producto:"—", epp:"Casco, arnés de cuerpo completo, guantes, lentes de seguridad" },
-    { nombre:"Tratamiento de puntos críticos", actividad:"Sellado de traslapes, tornillería, penetraciones y remates perimetrales", horarioNormal:"07:00 - 17:00", horarioSabado:"07:00 - 13:00", herramientas:"Pistola de calafateo, rodillo, brocha", producto:"Sellador PU monocomponente", epp:"Casco, arnés, respirador de cartucho, overol" },
-    { nombre:"Impermeabilización general", actividad:"Aplicación del sistema de impermeabilización en 2-3 capas con acabado UV", horarioNormal:"06:30 - 16:00", horarioSabado:"07:00 - 13:00", herramientas:"Airless, rodillo de felpa, medidor de espesor", producto:"Poliuretano elastomérico", epp:"Casco, arnés, respirador de cartucho, overol" },
-    { nombre:"Prueba de inundación y entrega", actividad:"Prueba de inundación en zonas críticas, bitácora fotográfica y entrega", horarioNormal:"07:00 - 14:00", horarioSabado:"07:00 - 13:00", herramientas:"Manguera y formatos", producto:"—", epp:"Casco, arnés, guantes, lentes de seguridad" }
+    { nombre:"Preparación de superficie", actividad:"Limpieza y preparación mecánica de la cubierta", horario:"07:00 - 17:00", herramientas:"Hidrolavadora, escobas, espátula", producto:"—", epp:"Casco, arnés de cuerpo completo, guantes, lentes de seguridad" },
+    { nombre:"Tratamiento de puntos críticos", actividad:"Sellado de traslapes, tornillería, penetraciones y remates perimetrales", horario:"07:00 - 17:00", herramientas:"Pistola de calafateo, rodillo, brocha", producto:"Sellador PU monocomponente", epp:"Casco, arnés, respirador de cartucho, overol" },
+    { nombre:"Impermeabilización general", actividad:"Aplicación del sistema de impermeabilización en 2-3 capas con acabado UV", horario:"06:30 - 16:00", herramientas:"Airless, rodillo de felpa, medidor de espesor", producto:"Poliuretano elastomérico", epp:"Casco, arnés, respirador de cartucho, overol" },
+    { nombre:"Prueba de inundación y entrega", actividad:"Prueba de inundación en zonas críticas, bitácora fotográfica y entrega", horario:"07:00 - 14:00", herramientas:"Manguera y formatos", producto:"—", epp:"Casco, arnés, guantes, lentes de seguridad" }
   ]},
   pulido: { label:"Pulido de Concreto", etapas: [
-    { nombre:"Diagnóstico y preparación", actividad:"Diagnóstico de superficie y retiro de recubrimientos previos", horarioNormal:"07:00 - 17:00", horarioSabado:"07:00 - 13:00", herramientas:"Pulidora de grano grueso, aspiradora industrial", producto:"—", epp:"Casco, lentes, mascarilla, guantes" },
-    { nombre:"Pulido progresivo", actividad:"Pulido con diamante en granos progresivos hasta el acabado deseado", horarioNormal:"07:00 - 17:00", horarioSabado:"07:00 - 13:00", herramientas:"Pulidora industrial, discos diamantados", producto:"Endurecedor químico (densificador)", epp:"Casco, lentes, mascarilla, guantes" },
-    { nombre:"Sellado y pulido final", actividad:"Aplicación de sellador y pulido de brillo final", horarioNormal:"07:00 - 17:00", horarioSabado:"07:00 - 13:00", herramientas:"Pulidora con boinas, rodillo", producto:"Sellador/cera densificadora", epp:"Casco, lentes, mascarilla, guantes" }
+    { nombre:"Diagnóstico y preparación", actividad:"Diagnóstico de superficie y retiro de recubrimientos previos", horario:"07:00 - 17:00", herramientas:"Pulidora de grano grueso, aspiradora industrial", producto:"—", epp:"Casco, lentes, mascarilla, guantes" },
+    { nombre:"Pulido progresivo", actividad:"Pulido con diamante en granos progresivos hasta el acabado deseado", horario:"07:00 - 17:00", herramientas:"Pulidora industrial, discos diamantados", producto:"Endurecedor químico (densificador)", epp:"Casco, lentes, mascarilla, guantes" },
+    { nombre:"Sellado y pulido final", actividad:"Aplicación de sellador y pulido de brillo final", horario:"07:00 - 17:00", herramientas:"Pulidora con boinas, rodillo", producto:"Sellador/cera densificadora", epp:"Casco, lentes, mascarilla, guantes" }
   ]},
   reparaciones: { label:"Reparaciones de Concreto", etapas: [
-    { nombre:"Diagnóstico y demolición selectiva", actividad:"Localización de daños y demolición de concreto suelto o dañado", horarioNormal:"07:00 - 17:00", horarioSabado:"07:00 - 13:00", herramientas:"Rotomartillo, cincel", producto:"—", epp:"Casco, lentes, guantes, botas con casquillo" },
-    { nombre:"Preparación de acero y superficie", actividad:"Limpieza de acero de refuerzo expuesto y aplicación de inhibidor de corrosión", horarioNormal:"07:00 - 17:00", horarioSabado:"07:00 - 13:00", herramientas:"Cepillo de acero, hidrolavadora", producto:"Inhibidor de corrosión", epp:"Casco, lentes, guantes" },
-    { nombre:"Resane y nivelación", actividad:"Aplicación de mortero de reparación y nivelación de superficie", horarioNormal:"07:00 - 17:00", horarioSabado:"07:00 - 13:00", herramientas:"Llana, mezcladora", producto:"Mortero de reparación estructural", epp:"Casco, lentes, guantes" },
-    { nombre:"Curado y acabado final", actividad:"Curado del mortero y acabado final de superficie", horarioNormal:"07:00 - 17:00", horarioSabado:"07:00 - 13:00", herramientas:"Llana fina, aspersor de curado", producto:"Membrana de curado", epp:"Casco, lentes, guantes" }
+    { nombre:"Diagnóstico y demolición selectiva", actividad:"Localización de daños y demolición de concreto suelto o dañado", horario:"07:00 - 17:00", herramientas:"Rotomartillo, cincel", producto:"—", epp:"Casco, lentes, guantes, botas con casquillo" },
+    { nombre:"Preparación de acero y superficie", actividad:"Limpieza de acero de refuerzo expuesto y aplicación de inhibidor de corrosión", horario:"07:00 - 17:00", herramientas:"Cepillo de acero, hidrolavadora", producto:"Inhibidor de corrosión", epp:"Casco, lentes, guantes" },
+    { nombre:"Resane y nivelación", actividad:"Aplicación de mortero de reparación y nivelación de superficie", horario:"07:00 - 17:00", herramientas:"Llana, mezcladora", producto:"Mortero de reparación estructural", epp:"Casco, lentes, guantes" },
+    { nombre:"Curado y acabado final", actividad:"Curado del mortero y acabado final de superficie", horario:"07:00 - 17:00", herramientas:"Llana fina, aspersor de curado", producto:"Membrana de curado", epp:"Casco, lentes, guantes" }
   ]},
   juntas: { label:"Sello de Juntas y Grietas", etapas: [
-    { nombre:"Preparación de juntas", actividad:"Limpieza, corte y preparación de juntas y grietas", horarioNormal:"07:00 - 17:00", horarioSabado:"07:00 - 13:00", herramientas:"Cortadora de juntas, sopladora", producto:"—", epp:"Casco, lentes, guantes, mascarilla" },
-    { nombre:"Sellado", actividad:"Aplicación de sellador semirrígido o elastomérico en juntas y grietas", horarioNormal:"07:00 - 17:00", horarioSabado:"07:00 - 13:00", herramientas:"Pistola de calafateo, espátula", producto:"Sellador de juntas (poliurea/epóxico)", epp:"Casco, guantes químicos, lentes" }
+    { nombre:"Preparación de juntas", actividad:"Limpieza, corte y preparación de juntas y grietas", horario:"07:00 - 17:00", herramientas:"Cortadora de juntas, sopladora", producto:"—", epp:"Casco, lentes, guantes, mascarilla" },
+    { nombre:"Sellado", actividad:"Aplicación de sellador semirrígido o elastomérico en juntas y grietas", horario:"07:00 - 17:00", herramientas:"Pistola de calafateo, espátula", producto:"Sellador de juntas (poliurea/epóxico)", epp:"Casco, guantes químicos, lentes" }
   ]},
   pintura: { label:"Pintura de Muros", etapas: [
-    { nombre:"Preparación de superficie", actividad:"Limpieza, resane de imperfecciones y protección de áreas colindantes", horarioNormal:"07:00 - 17:00", horarioSabado:"07:00 - 13:00", herramientas:"Espátula, lija, plástico protector", producto:"Resane / sellador", epp:"Casco, lentes, guantes" },
-    { nombre:"Aplicación de pintura", actividad:"Aplicación de sistema de pintura en 2 capas", horarioNormal:"07:00 - 17:00", horarioSabado:"07:00 - 13:00", herramientas:"Rodillo, brocha, pistola airless", producto:"Pintura industrial/esmalte", epp:"Casco, mascarilla, guantes" }
+    { nombre:"Preparación de superficie", actividad:"Limpieza, resane de imperfecciones y protección de áreas colindantes", horario:"07:00 - 17:00", herramientas:"Espátula, lija, plástico protector", producto:"Resane / sellador", epp:"Casco, lentes, guantes" },
+    { nombre:"Aplicación de pintura", actividad:"Aplicación de sistema de pintura en 2 capas", horario:"07:00 - 17:00", herramientas:"Rodillo, brocha, pistola airless", producto:"Pintura industrial/esmalte", epp:"Casco, mascarilla, guantes" }
   ]},
   uretano: { label:"Uretano Cementicio", etapas: [
-    { nombre:"Preparación de superficie", actividad:"Diamantado y limpieza profunda de la losa", horarioNormal:"07:00 - 17:00", horarioSabado:"07:00 - 13:00", herramientas:"Pulidora industrial, aspiradora industrial", producto:"—", epp:"Casco, lentes, mascarilla, guantes" },
-    { nombre:"Aplicación de uretano cementicio", actividad:"Aplicación del sistema de uretano cementicio, resistente a impacto térmico", horarioNormal:"06:00 - 15:00", horarioSabado:"07:00 - 13:00", herramientas:"Llana, mezcladora industrial", producto:"Uretano cementicio", epp:"Casco, guantes químicos, respirador, botas antiderrapantes" },
-    { nombre:"Curado y acabado", actividad:"Curado del sistema y verificación de acabado final", horarioNormal:"07:00 - 17:00", horarioSabado:"07:00 - 13:00", herramientas:"—", producto:"—", epp:"Casco, guantes" }
+    { nombre:"Preparación de superficie", actividad:"Diamantado y limpieza profunda de la losa", horario:"07:00 - 17:00", herramientas:"Pulidora industrial, aspiradora industrial", producto:"—", epp:"Casco, lentes, mascarilla, guantes" },
+    { nombre:"Aplicación de uretano cementicio", actividad:"Aplicación del sistema de uretano cementicio, resistente a impacto térmico", horario:"06:00 - 15:00", herramientas:"Llana, mezcladora industrial", producto:"Uretano cementicio", epp:"Casco, guantes químicos, respirador, botas antiderrapantes" },
+    { nombre:"Curado y acabado", actividad:"Curado del sistema y verificación de acabado final", horario:"07:00 - 17:00", herramientas:"—", producto:"—", epp:"Casco, guantes" }
   ]}
 };
 
@@ -4907,6 +4907,7 @@ function aplicarPlantillaEtapas(){
     return Object.assign({
       id: _ptEtapaIdSeq++,
       fechaInicio: "", fechaFin: "", area: "",
+      diasTrabajo: PT_DIAS_TRABAJO_DEFECTO.slice(),
       colorGantt: PT_COLORES_GANTT[i % PT_COLORES_GANTT.length]
     }, preset);
   });
@@ -4920,7 +4921,7 @@ function agregarEtapaPlanTrabajo(){
   _ptEtapas.push({
     id: _ptEtapaIdSeq++,
     nombre: "", fechaInicio: "", fechaFin: "", area: "", actividad: "",
-    horarioNormal: "07:00 - 17:00", horarioSabado: "07:00 - 13:00",
+    horario: "07:00 - 17:00", diasTrabajo: PT_DIAS_TRABAJO_DEFECTO.slice(),
     herramientas: "", producto: "", epp: "Lentes, guantes y chaleco de seguridad",
     colorGantt: PT_COLORES_GANTT[n % PT_COLORES_GANTT.length]
   });
@@ -4938,6 +4939,19 @@ function onEtapaPlanTrabajoField(id, field, value){
   const e = _ptEtapas.find(function(x){ return x.id === id; });
   if(!e) return;
   e[field] = value;
+  _ptGuardarBorradorDebounced();
+}
+
+// Los días de trabajo se guardan siempre en el mismo orden L,M,X,J,V,S,D
+// (no en el orden en que el usuario los marcó) para que la comparación y
+// las pruebas sean deterministas.
+function onEtapaDiaTrabajoToggle(id, code){
+  const e = _ptEtapas.find(function(x){ return x.id === id; });
+  if(!e) return;
+  const set = new Set(e.diasTrabajo || []);
+  if(set.has(code)) set.delete(code); else set.add(code);
+  e.diasTrabajo = PT_DIAS_SEMANA_UI.map(function(d){ return d.code; }).filter(function(c){ return set.has(c); });
+  renderEtapasPlanTrabajo();
   _ptGuardarBorradorDebounced();
 }
 
@@ -4963,10 +4977,18 @@ function renderEtapasPlanTrabajo(){
         + '<textarea class="ftextarea" rows="2" placeholder="Descripción de la actividad de esta etapa..." oninput="onEtapaPlanTrabajoField('+e.id+',&apos;actividad&apos;,this.value)">'+(e.actividad||"").replace(/</g,"&lt;")+'</textarea></div>'
       + '<div class="frow" style="margin-bottom:8px;">'
         + '<div class="fg" style="margin:0;"><label class="flabel">Área / m²</label><input class="finput" value="'+(e.area||"").toString().replace(/"/g,"&quot;")+'" placeholder="Ej: 10,786 m²" oninput="onEtapaPlanTrabajoField('+e.id+',&apos;area&apos;,this.value)"></div>'
-        + '<div class="fg" style="margin:0;"><label class="flabel">Horario normal (L-V)</label><input class="finput" value="'+(e.horarioNormal||"").replace(/"/g,"&quot;")+'" placeholder="07:00 - 17:00" oninput="onEtapaPlanTrabajoField('+e.id+',&apos;horarioNormal&apos;,this.value)"></div>'
+        + '<div class="fg" style="margin:0;"><label class="flabel">Horario</label><input class="finput" value="'+(e.horario||"").replace(/"/g,"&quot;")+'" placeholder="07:00 - 17:00" oninput="onEtapaPlanTrabajoField('+e.id+',&apos;horario&apos;,this.value)"></div>'
       + '</div>'
-      + '<div class="fg" style="margin-bottom:8px;"><label class="flabel">Horario sábado</label>'
-        + '<input class="finput" value="'+(e.horarioSabado||"").replace(/"/g,"&quot;")+'" placeholder="07:00 - 13:00" oninput="onEtapaPlanTrabajoField('+e.id+',&apos;horarioSabado&apos;,this.value)"></div>'
+      + '<div class="fg" style="margin-bottom:8px;"><label class="flabel">Días de trabajo</label>'
+        + '<div style="display:flex;gap:4px;">'
+          + PT_DIAS_SEMANA_UI.map(function(d){
+              const activo = (e.diasTrabajo||[]).indexOf(d.code) !== -1;
+              return '<div onclick="onEtapaDiaTrabajoToggle('+e.id+',&apos;'+d.code+'&apos;)" style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:7px;cursor:pointer;font-size:11px;font-weight:700;user-select:none;'
+                + (activo ? 'background:var(--navy);color:#fff;' : 'background:#fff;color:var(--tx3);border:1px solid var(--g1);')
+                + '">'+d.label+'</div>';
+            }).join("")
+        + '</div>'
+      + '</div>'
       + '<div class="fg" style="margin-bottom:8px;"><label class="flabel">Herramientas</label>'
         + '<input class="finput" value="'+(e.herramientas||"").replace(/"/g,"&quot;")+'" placeholder="Ej: Hidrolavadora, escobas" oninput="onEtapaPlanTrabajoField('+e.id+',&apos;herramientas&apos;,this.value)"></div>'
       + '<div class="frow">'
@@ -5028,25 +5050,29 @@ async function guardarPlanTrabajo(){
 // Se captura por ETAPA (una sola vez); esta función expande automáticamente
 // a filas diarias para la Hoja 2 del PDF y para cualquier vista previa en
 // pantalla — nunca se captura un día individual a mano.
-// Nota: a diferencia del esqueleto original, en el descanso de domingo SÍ se
+// Nota: a diferencia del esqueleto original, en un día de descanso SÍ se
 // conserva la fecha real (fecha: new Date(cur)) en vez de null — se necesita
 // para mostrar "Domingo 21 de junio — Descanso" en la Hoja 2; con null no
 // habría forma de mostrar esa fecha.
+// Cada etapa define sus propios días de trabajo (etapa.diasTrabajo, códigos
+// L/M/X/J/V/S/D) en vez de asumir domingo=descanso y sábado=horario
+// reducido — cualquier día fuera de esa lista se expande como "Descanso".
 function expandirEtapaADias(etapa){
   const dias = [];
   if(!etapa.fechaInicio || !etapa.fechaFin) return dias;
+  const diasTrabajo = etapa.diasTrabajo || PT_DIAS_TRABAJO_DEFECTO;
   let cur = new Date(etapa.fechaInicio + "T00:00:00");
   const fin = new Date(etapa.fechaFin + "T00:00:00");
   while(cur <= fin){
-    const diaSemana = cur.getDay(); // 0=domingo, 6=sábado
-    if(diaSemana === 0){
+    const codigoDia = PT_DIA_CODIGO_POR_GETDAY[cur.getDay()];
+    if(diasTrabajo.indexOf(codigoDia) === -1){
       dias.push({ fecha: new Date(cur), descanso: true });
     } else {
       dias.push({
         fecha: new Date(cur),
         area: etapa.area,
         actividad: etapa.actividad,
-        horario: diaSemana === 6 ? etapa.horarioSabado : etapa.horarioNormal,
+        horario: etapa.horario,
         herramientas: etapa.herramientas,
         producto: etapa.producto,
         epp: etapa.epp
@@ -5072,6 +5098,16 @@ function expandirPlanADias(plan){
 const PT_MESES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
 const PT_MESES_CORTO = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
 const PT_DIAS_CORTO = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
+const PT_DIAS_NOMBRE = ["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
+// Código de un carácter por día de la semana, indexado por Date.getDay()
+// (0=domingo...6=sábado) — es el mismo código que usan los checkboxes de
+// "Días de trabajo" del formulario (L M X J V S D).
+const PT_DIA_CODIGO_POR_GETDAY = ["D","L","M","X","J","V","S"];
+const PT_DIAS_SEMANA_UI = [
+  {code:"L", label:"L"}, {code:"M", label:"M"}, {code:"X", label:"X"}, {code:"J", label:"J"},
+  {code:"V", label:"V"}, {code:"S", label:"S"}, {code:"D", label:"D"}
+];
+const PT_DIAS_TRABAJO_DEFECTO = ["L","M","X","J","V","S"];
 
 function _ptParseISO(iso){ return new Date(iso + "T00:00:00"); }
 
@@ -5126,6 +5162,14 @@ function _ptHojaHeaderPrincipal(plan, accent){
         + '<div style="display:flex;flex-direction:column;gap:2px;text-align:right;"><span style="font-size:8.5px;font-weight:600;letter-spacing:.13em;text-transform:uppercase;color:#5F6B7D;">Periodo</span><span style="color:#0B1F3A;font-size:11px;font-weight:600;">'+_ptPeriodoTextoCorto(plan)+'</span></div>'
       + '</div>'
     + '</div>'
+    // Leyenda de "Descanso" + aviso de horarios: vive aquí (solo en la
+    // primera hoja de Ejecución) en vez de repetirse en el pie de cada
+    // hoja física — un plan puede descansar cualquier día de la semana
+    // según diasTrabajo de cada etapa, no siempre domingo.
+    + '<div style="display:flex;align-items:center;gap:18px;padding:8px 0;">'
+      + '<span style="display:flex;align-items:center;gap:7px;color:#5A6880;font-size:9px;font-weight:500;"><span style="width:16px;height:8px;border-radius:2px;background:#EEF3FB;border:1px solid #B9CBE6;display:inline-block;"></span>Día no laborado — Descanso</span>'
+      + '<span style="color:#5A6880;font-size:9px;font-weight:500;">Horarios sujetos a condiciones climáticas y a permisos de acceso a planta.</span>'
+    + '</div>'
     + _ptColHeaderRowHtml()
   + '</div>';
 }
@@ -5140,15 +5184,16 @@ function _ptHojaHeaderContinuacion(plan){
   + '</div>';
 }
 
-function _ptHojaFooter(tagline){
+// Pie compartido por TODAS las hojas del documento: lado izquierdo SOLO el
+// tagline de marca (sin leyendas ni avisos adicionales — esos, si hacen
+// falta, van dentro del contenido de la hoja que los necesita, no repetidos
+// en este pie global). Lado derecho: contador real "Hoja X/Y" — hojaTotal
+// se calcula DESPUÉS de paginar el Plan de Ejecución (ver
+// generarPdfPlanTrabajoEnVentana), nunca queda fijo en un número asumido.
+function _ptHojaFooter(tagline, hojaActual, hojaTotal){
   return '<div style="padding:8px 0 16px;display:flex;align-items:center;justify-content:space-between;gap:24px;border-top:1px solid #E4E9F0;">'
-    + '<div style="display:flex;align-items:center;gap:14px;">'
-      + '<span style="color:#0B1F3A;font-size:9.5px;font-weight:700;white-space:nowrap;">'+escapeHtml(tagline||"")+'</span>'
-      + '<span style="width:1px;height:11px;background:#D8DFE9;display:inline-block;flex-shrink:0;"></span>'
-      + '<span style="display:flex;align-items:center;gap:7px;color:#5A6880;font-size:9px;font-weight:500;white-space:nowrap;"><span style="width:16px;height:8px;border-radius:2px;background:#EEF3FB;border:1px solid #B9CBE6;display:inline-block;"></span>Domingo · descanso</span>'
-      + '<span style="color:#5A6880;font-size:9px;font-weight:500;">Horarios sujetos a condiciones climáticas y a permisos de acceso a planta.</span>'
-    + '</div>'
-    + '<span style="font-family:\'JetBrains Mono\',monospace;font-size:9px;letter-spacing:.06em;color:#6B7788;white-space:nowrap;">Plan de Trabajo · Hoja 2/3</span>'
+    + '<span style="color:#0B1F3A;font-size:9.5px;font-weight:700;white-space:nowrap;">'+escapeHtml(tagline||"")+'</span>'
+    + '<span style="font-family:\'JetBrains Mono\',monospace;font-size:9px;letter-spacing:.06em;color:#6B7788;white-space:nowrap;">Plan de Trabajo · Hoja '+hojaActual+'/'+hojaTotal+'</span>'
   + '</div>';
 }
 
@@ -5165,7 +5210,7 @@ function _ptEtapaHeaderInner(numEtapa, etapa){
 }
 
 function _ptDescansoRowInner(fechaDate){
-  const txt = fechaDate ? ("Domingo "+fechaDate.getDate()+" de "+PT_MESES[fechaDate.getMonth()]) : "Domingo";
+  const txt = fechaDate ? (PT_DIAS_NOMBRE[fechaDate.getDay()]+" "+fechaDate.getDate()+" de "+PT_MESES[fechaDate.getMonth()]) : "Descanso";
   return '<div style="padding:4px 9px;background:#EEF3FB;">'
     + '<span style="font-size:9.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#3F6299;">'+txt+' — Descanso</span>'
   + '</div>';
@@ -5225,7 +5270,7 @@ function _ptConstruirBloquesHoja2(plan){
 // y midiendo la altura real del header/footer en lugar de asumirla fija
 // (el original la tenía hardcodeada porque su header/footer nunca cambia de
 // contenido; aquí sí varía según el cliente/periodo de cada plan).
-function _ptDistribuirHojasLandscape(bloquesFuente, headerHojaHtml, footerHojaHtml, headerContinuacionHtml){
+function _ptDistribuirHojasLandscape(bloquesFuente, headerHojaHtml, footerHojaHtml, headerContinuacionHtml, footerFn){
   const HOJA_ALTO = 794;   // A4 horizontal: 210mm de alto ≈ 794px a 96dpi
   const PADDING_VERT = 16;
   const medidor = document.createElement("div");
@@ -5262,7 +5307,8 @@ function _ptDistribuirHojasLandscape(bloquesFuente, headerHojaHtml, footerHojaHt
 
   return hojas.map(function(items, idx){
     const headerUsar = (idx===0 || !headerContinuacionHtml) ? headerHojaHtml : headerContinuacionHtml;
-    return '<div class="pt-hoja">'+headerUsar+'<div class="pt-hoja-cuerpo">'+items.join("")+'</div>'+footerHojaHtml+'</div>';
+    const footerUsar = footerFn ? footerFn(idx, hojas.length) : footerHojaHtml;
+    return '<div class="pt-hoja">'+headerUsar+'<div class="pt-hoja-cuerpo">'+items.join("")+'</div>'+footerUsar+'</div>';
   }).join("");
 }
 
@@ -5314,7 +5360,7 @@ function _ptFolio(plan){
   return "PT-"+slug+"-"+year;
 }
 
-function _ptHoja1Html(plan, accent, logo, marcaLabel, tagline){
+function _ptHoja1Html(plan, accent, logo, marcaLabel, tagline, hojaTotal){
   const r = _ptRangoGlobal(plan);
   const totalDias = (r.min && r.max) ? Math.round((_ptParseISO(r.max) - _ptParseISO(r.min))/86400000) + 1 : 0;
 
@@ -5369,7 +5415,7 @@ function _ptHoja1Html(plan, accent, logo, marcaLabel, tagline){
             : '<div style="flex:1"></div>')
         + '<div style="display:flex;align-items:flex-end;justify-content:space-between;gap:20px;padding-top:16px;border-top:1px solid #E4E9F0;">'
           + footerLegal
-          + '<span style="font-family:\'JetBrains Mono\',monospace;font-size:9px;letter-spacing:.06em;color:#6B7788;white-space:nowrap;">'+_ptFolio(plan)+'</span>'
+          + '<span style="font-family:\'JetBrains Mono\',monospace;font-size:9px;letter-spacing:.06em;color:#6B7788;white-space:nowrap;">'+_ptFolio(plan)+' · Hoja 1/'+hojaTotal+'</span>'
         + '</div>'
       + '</div>'
       + '<div style="background:#F5F7FA;border:1px solid #E4E9F0;border-radius:12px;padding:20px 22px;display:flex;flex-direction:column;gap:14px;min-height:0;">'
@@ -5414,6 +5460,13 @@ function _ptCalcularGantt(plan){
     const numDias = Math.round((fin-ini)/86400000) + 1;
     semanas.push({ n:"Sem "+(i+1), rango:_ptFmtRangoCorto(ini.toISOString().slice(0,10), fin.toISOString().slice(0,10)), numDias:numDias });
   }
+  // Un objeto Date por cada día del rango — para etiquetar cada sub-columna
+  // diaria del Gantt (formato "8 Sep", sin nombre de día de la semana).
+  const dias = [];
+  for(let i=0;i<totalDias;i++){
+    const d = new Date(iniG); d.setDate(d.getDate()+i);
+    dias.push(d);
+  }
   const barras = _ptEtapasOrdenadas(plan).map(function(etapa){
     const ini = _ptParseISO(etapa.fechaInicio), fin = _ptParseISO(etapa.fechaFin);
     const offsetDias = Math.round((ini-iniG)/86400000);
@@ -5426,10 +5479,10 @@ function _ptCalcularGantt(plan){
       duracionTxt: duracionDias+" día"+(duracionDias===1?"":"s")
     };
   });
-  return { totalDias:totalDias, numSemanas:numSemanas, semanas:semanas, barras:barras };
+  return { totalDias:totalDias, numSemanas:numSemanas, semanas:semanas, dias:dias, barras:barras };
 }
 
-function _ptHoja3GanttHtml(plan, accent, tagline){
+function _ptHoja3GanttHtml(plan, accent, tagline, hojaTotal){
   const g = _ptCalcularGantt(plan);
   if(!g || !g.barras.length){
     return '<div class="pt-hoja" style="padding-top:26px;padding-bottom:20px;"><div style="color:#5A6880;font-size:12px;">Sin fechas suficientes para construir el diagrama de Gantt.</div></div>';
@@ -5445,9 +5498,21 @@ function _ptHoja3GanttHtml(plan, accent, tagline){
     + '<span style="padding:11px 16px;color:#fff;font-size:8.5px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;">Etapa</span>'
     + '<span style="padding:11px 8px;color:#fff;font-size:8.5px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;text-align:center;">Avance</span>'
     + g.semanas.map(function(s){
-        return '<div style="grid-column:span '+s.numDias+';padding:8px 6px;border-left:1px solid rgba(255,255,255,.14);display:flex;flex-direction:column;gap:2px;align-items:center;">'
+        return '<div style="grid-column:span '+s.numDias+';padding:8px 6px;border-left:1px solid rgba(255,255,255,.14);text-align:center;">'
           + '<span style="color:#fff;font-size:9px;font-weight:600;">'+s.n+'</span>'
-          + '<span style="color:#8FB6EC;font-family:\'JetBrains Mono\',monospace;font-size:7.5px;">'+s.rango+'</span>'
+        + '</div>';
+      }).join("")
+  + '</div>';
+
+  // Cada semana se subdivide en tantas sub-columnas diarias como días
+  // tenga dentro del rango del proyecto — etiquetadas "8 Sep" (día + mes
+  // abreviado, sin nombre de día de la semana) para que cada actividad del
+  // Gantt encaje visualmente con los días exactos que ocupa.
+  const diasHeaderRow = '<div style="display:grid;grid-template-columns:250px 62px '+dayCols+';background:#12294D;">'
+    + '<span></span><span></span>'
+    + g.dias.map(function(d){
+        return '<div style="padding:4px 2px;text-align:center;border-left:1px solid rgba(255,255,255,.08);">'
+          + '<span style="color:#B9CBE6;font-family:\'JetBrains Mono\',monospace;font-size:7px;">'+d.getDate()+' '+PT_MESES_CORTO[d.getMonth()]+'</span>'
         + '</div>';
       }).join("")
   + '</div>';
@@ -5491,19 +5556,15 @@ function _ptHoja3GanttHtml(plan, accent, tagline){
       + '</div>'
       + '<span style="padding-bottom:3px;color:#5A6880;font-size:9.5px;font-weight:500;">'+g.totalDias+' días naturales · '+g.semanas.length+' semana'+(g.semanas.length===1?'':'s')+' de calendario</span>'
     + '</div>'
-    + '<div style="margin-top:18px;border:1px solid #E4E9F0;border-radius:10px;overflow:hidden;flex-shrink:0;">'+headerRow+filasHtml+'</div>'
+    + '<div style="margin-top:18px;border:1px solid #E4E9F0;border-radius:10px;overflow:hidden;flex-shrink:0;">'+headerRow+diasHeaderRow+filasHtml+'</div>'
     + '<div style="margin-top:18px;border:1px solid #E4E9F0;border-radius:10px;padding:14px 16px;max-width:340px;flex-shrink:0;">'
       + '<span style="font-size:8.5px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#5F6B7D;">Leyenda de etapas</span>'
       + '<div style="margin-top:10px;display:flex;flex-direction:column;gap:8px;">'+leyendaHtml+'</div>'
     + '</div>'
     + '<div style="flex:1"></div>'
     + '<div style="display:flex;align-items:center;justify-content:space-between;gap:24px;padding-top:10px;border-top:1px solid #E4E9F0;flex-shrink:0;">'
-      + '<div style="display:flex;align-items:center;gap:14px;">'
-        + '<span style="color:#0B1F3A;font-size:9.5px;font-weight:700;white-space:nowrap;">'+escapeHtml(tagline||"")+'</span>'
-        + '<span style="width:1px;height:11px;background:#D8DFE9;display:inline-block;flex-shrink:0;"></span>'
-        + '<span style="color:#5A6880;font-size:9px;font-weight:500;">Programa emitido previo al inicio de obra · avance 0% en todas las etapas.</span>'
-      + '</div>'
-      + '<span style="font-family:\'JetBrains Mono\',monospace;font-size:9px;letter-spacing:.06em;color:#6B7788;white-space:nowrap;">'+_ptFolio(plan)+' · Hoja 3/3</span>'
+      + '<span style="color:#0B1F3A;font-size:9.5px;font-weight:700;white-space:nowrap;">'+escapeHtml(tagline||"")+'</span>'
+      + '<span style="font-family:\'JetBrains Mono\',monospace;font-size:9px;letter-spacing:.06em;color:#6B7788;white-space:nowrap;">'+_ptFolio(plan)+' · Hoja '+hojaTotal+'/'+hojaTotal+'</span>'
     + '</div>'
   + '</div>';
 }
@@ -5513,20 +5574,34 @@ function generarPdfPlanTrabajoEnVentana(plan, winRef, soloPreview){
   const _modPlan = _modalidadDePlan(plan);
   const _esHome = _modPlan === "home";
   const accent = _esHome ? "#C36F4A" : "#1E6FD9";
-  // El logo de la Portada siempre usa el navy de ROMSA que manejamos en el
-  // resto del CRM (independiente del color de marca de la cotización), a
-  // mayor tamaño que el resto de los documentos.
-  const logo = window._romsaLogoAzul || _logoColorDe(_modPlan) || "";
+  // Mismo criterio de resolución de logo que ya usa el generador de la
+  // cotización (_logoColorDe según la marca, con el navy de ROMSA solo como
+  // último fallback) — así HOME muestra su propio isotipo + wordmark, no el
+  // logo genérico de ROMSA Industrial.
+  const logo = _logoColorDe(_modPlan) || window._romsaLogoAzul || "";
   const marcaLabel = _nombreMarcaPlan(plan.marca);
   const tagline = _ptTaglineDe(_modPlan);
 
-  const hoja1Html = _ptHoja1Html(plan, accent, logo, marcaLabel, tagline);
   const headerP1 = _ptHojaHeaderPrincipal(plan, accent);
   const headerCont = _ptHojaHeaderContinuacion(plan);
-  const footer = _ptHojaFooter(tagline);
   const bloques = _ptConstruirBloquesHoja2(plan);
-  const hoja2Html = _ptDistribuirHojasLandscape(bloques, headerP1, footer, headerCont);
-  const hoja3Html = _ptHoja3GanttHtml(plan, accent, tagline);
+
+  // El total real de hojas (Portada + N hojas de Ejecución + Gantt) solo se
+  // conoce DESPUÉS de paginar el Plan de Ejecución — mismo principio que el
+  // conteo de páginas de Condiciones Generales de la cotización. Se pagina
+  // una sola vez: el pie de cada hoja se genera con un callback que ya
+  // conoce cuántas hojas de Ejecución resultaron (el texto del contador no
+  // cambia la altura real del pie, así que no hace falta medir dos veces).
+  let numHojasEjecucion = 1;
+  const hoja2Html = _ptDistribuirHojasLandscape(bloques, headerP1, _ptHojaFooter(tagline, 1, 1), headerCont, function(idxEnEjecucion, totalEjecucion){
+    numHojasEjecucion = totalEjecucion;
+    const totalHojasDoc = 1 + totalEjecucion + 1;
+    return _ptHojaFooter(tagline, 2 + idxEnEjecucion, totalHojasDoc);
+  });
+  const totalHojasDoc = 1 + numHojasEjecucion + 1;
+
+  const hoja1Html = _ptHoja1Html(plan, accent, logo, marcaLabel, tagline, totalHojasDoc);
+  const hoja3Html = _ptHoja3GanttHtml(plan, accent, tagline, totalHojasDoc);
   const _hojasHtml = hoja1Html + hoja2Html + hoja3Html;
 
   const _titulo = "ROMSA – Plan de Trabajo – " + (plan.cliente||"");
