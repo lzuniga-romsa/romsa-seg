@@ -4482,8 +4482,14 @@ function renderListaPlanesTrabajo(){
         + '<span style="font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3);background:var(--off);padding:3px 8px;border-radius:10px;">'+_nombreMarcaPlan(p.marca)+'</span>'
       + '</div>'
       + '<div style="font-size:11.5px;color:var(--tx2);margin-bottom:4px;">'+(p.proyecto||p.ubicacion||"")+'</div>'
-      + '<div style="display:flex;align-items:center;gap:10px;font-size:10.5px;color:var(--tx3);">'
-        + '<span>'+numEtapas+' etapa'+(numEtapas===1?'':'s')+'</span><span>·</span><span>'+rango+'</span>'
+      + '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">'
+        + '<div style="display:flex;align-items:center;gap:10px;font-size:10.5px;color:var(--tx3);">'
+          + '<span>'+numEtapas+' etapa'+(numEtapas===1?'':'s')+'</span><span>·</span><span>'+rango+'</span>'
+        + '</div>'
+        + '<div style="display:flex;gap:6px;flex-shrink:0;" onclick="event.stopPropagation()">'
+          + '<button onclick="vistaPreviaPlanTrabajo(&apos;'+p.id+'&apos;)" title="Ver cómo quedará el PDF antes de descargar" style="background:#0EA5E9;border:none;color:#fff;font-size:9.5px;font-weight:700;padding:5px 9px;border-radius:7px;cursor:pointer;font-family:var(--font);">👁 Vista previa</button>'
+          + '<button onclick="descargarPdfPlanTrabajo(&apos;'+p.id+'&apos;)" title="Generar PDF" style="background:#1E6FD9;border:none;color:#fff;font-size:9.5px;font-weight:700;padding:5px 9px;border-radius:7px;cursor:pointer;font-family:var(--font);">⬇ PDF</button>'
+        + '</div>'
       + '</div>'
     + '</div>';
   }).join("");
@@ -4630,6 +4636,327 @@ async function guardarPlanTrabajo(){
     cargarPlanesTrabajo();
   }catch(e){ showToast("❌ Error: "+e.message); }
   finally{ btn.textContent = "Guardar plan →"; btn.disabled = false; }
+}
+
+// ─── PLAN DE TRABAJO · EXPANSIÓN A DÍAS ───────────
+// Se captura por ETAPA (una sola vez); esta función expande automáticamente
+// a filas diarias para la Hoja 2 del PDF y para cualquier vista previa en
+// pantalla — nunca se captura un día individual a mano.
+// Nota: a diferencia del esqueleto original, en el descanso de domingo SÍ se
+// conserva la fecha real (fecha: new Date(cur)) en vez de null — se necesita
+// para mostrar "Domingo 21 de junio — Descanso" en la Hoja 2; con null no
+// habría forma de mostrar esa fecha.
+function expandirEtapaADias(etapa){
+  const dias = [];
+  if(!etapa.fechaInicio || !etapa.fechaFin) return dias;
+  let cur = new Date(etapa.fechaInicio + "T00:00:00");
+  const fin = new Date(etapa.fechaFin + "T00:00:00");
+  while(cur <= fin){
+    const diaSemana = cur.getDay(); // 0=domingo, 6=sábado
+    if(diaSemana === 0){
+      dias.push({ fecha: new Date(cur), descanso: true });
+    } else {
+      dias.push({
+        fecha: new Date(cur),
+        area: etapa.area,
+        actividad: etapa.actividad,
+        horario: diaSemana === 6 ? etapa.horarioSabado : etapa.horarioNormal,
+        herramientas: etapa.herramientas,
+        producto: etapa.producto,
+        epp: etapa.epp
+      });
+    }
+    cur = new Date(cur);
+    cur.setDate(cur.getDate() + 1);
+  }
+  return dias;
+}
+
+function expandirPlanADias(plan){
+  return (plan.etapas||[]).map(function(etapa, i){
+    return { numeroEtapa: i+1, nombre: etapa.nombre, dias: expandirEtapaADias(etapa) };
+  });
+}
+
+// ─── PLAN DE TRABAJO · PDF (Hoja 2: Plan de Ejecución) ────
+// NOTA: Hoja 1 (Portada) y Hoja 3 (Gantt) se agregan en el siguiente sub-PR.
+// Por ahora el documento generado contiene únicamente esta Hoja 2 —
+// autocontenida, con su propio header/footer, lista para probarse por
+// separado antes de ensamblar las 3 hojas juntas.
+const PT_MESES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+const PT_MESES_CORTO = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+const PT_DIAS_CORTO = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
+
+function _ptParseISO(iso){ return new Date(iso + "T00:00:00"); }
+
+function _ptFmtCorta(date){
+  if(!date) return "";
+  return PT_DIAS_CORTO[date.getDay()] + " " + date.getDate() + " " + PT_MESES_CORTO[date.getMonth()];
+}
+
+function _ptFmtRangoCorto(iniISO, finISO){
+  if(!iniISO || !finISO) return "";
+  const ini = _ptParseISO(iniISO), fin = _ptParseISO(finISO);
+  if(ini.getMonth() === fin.getMonth() && ini.getFullYear() === fin.getFullYear()){
+    return (ini.getDate() === fin.getDate() ? String(ini.getDate()) : ini.getDate()+" – "+fin.getDate()) + " " + PT_MESES_CORTO[ini.getMonth()];
+  }
+  return ini.getDate()+" "+PT_MESES_CORTO[ini.getMonth()]+" – "+fin.getDate()+" "+PT_MESES_CORTO[fin.getMonth()];
+}
+
+// Periodo de ejecución del plan completo — SIEMPRE calculado a partir de las
+// etapas (fecha mínima – fecha máxima), nunca capturado a mano.
+function _ptRangoGlobal(plan){
+  return (plan.etapas||[]).reduce(function(acc, e){
+    if(e.fechaInicio && (!acc.min || e.fechaInicio < acc.min)) acc.min = e.fechaInicio;
+    if(e.fechaFin && (!acc.max || e.fechaFin > acc.max)) acc.max = e.fechaFin;
+    return acc;
+  }, {min:null, max:null});
+}
+
+function _ptPeriodoTextoCorto(plan){
+  const r = _ptRangoGlobal(plan);
+  if(!r.min || !r.max) return "Sin fechas";
+  return _ptFmtRangoCorto(r.min, r.max) + " " + _ptParseISO(r.max).getFullYear();
+}
+
+const PT_COLS = ["Fecha","Área / m²","Actividad","Horario","Herramientas","Producto","EPP"];
+const PT_GRID_COLS = "10.5% 8.5% 27% 10% 17.5% 17.5% 9%";
+
+function _ptColHeaderRowHtml(){
+  return '<div style="display:grid;grid-template-columns:'+PT_GRID_COLS+';background:#0B1F3A;margin-top:10px;">'
+    + PT_COLS.map(function(c){ return '<div style="padding:7px 8px;color:#fff;font-size:9px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;">'+c+'</div>'; }).join("")
+  + '</div>';
+}
+
+function _ptHojaHeaderPrincipal(plan, accent){
+  return '<div style="padding:18px 0 0;">'
+    + '<div style="display:flex;align-items:flex-end;justify-content:space-between;gap:24px;padding-bottom:12px;border-bottom:2px solid #0B1F3A;">'
+      + '<div style="display:flex;flex-direction:column;gap:4px;">'
+        + '<span style="font-size:9.5px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:'+accent+';">Hoja 2 de 3</span>'
+        + '<h2 style="margin:0;color:#0B1F3A;font-size:19px;font-weight:700;letter-spacing:-.02em;">Plan de Ejecución</h2>'
+      + '</div>'
+      + '<div style="display:flex;align-items:center;gap:22px;padding-bottom:2px;">'
+        + '<div style="display:flex;flex-direction:column;gap:2px;text-align:right;"><span style="font-size:8.5px;font-weight:600;letter-spacing:.13em;text-transform:uppercase;color:#5F6B7D;">Cliente</span><span style="color:#0B1F3A;font-size:11px;font-weight:600;">'+escapeHtml(plan.cliente||"")+'</span></div>'
+        + '<div style="display:flex;flex-direction:column;gap:2px;text-align:right;"><span style="font-size:8.5px;font-weight:600;letter-spacing:.13em;text-transform:uppercase;color:#5F6B7D;">Periodo</span><span style="color:#0B1F3A;font-size:11px;font-weight:600;">'+_ptPeriodoTextoCorto(plan)+'</span></div>'
+      + '</div>'
+    + '</div>'
+    + _ptColHeaderRowHtml()
+  + '</div>';
+}
+
+function _ptHojaHeaderContinuacion(plan){
+  return '<div style="padding:10px 0 0;">'
+    + '<div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:8px;border-bottom:1px solid #E4E9F0;">'
+      + '<span style="font-size:9px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#5F6B7D;">Plan de Ejecución (continuación)</span>'
+      + '<span style="font-size:9px;font-weight:600;color:#5F6B7D;">'+escapeHtml(plan.cliente||"")+'</span>'
+    + '</div>'
+    + _ptColHeaderRowHtml()
+  + '</div>';
+}
+
+function _ptHojaFooter(){
+  return '<div style="padding:8px 0 16px;display:flex;align-items:center;justify-content:space-between;gap:24px;border-top:1px solid #E4E9F0;">'
+    + '<div style="display:flex;align-items:center;gap:18px;">'
+      + '<span style="display:flex;align-items:center;gap:7px;color:#5A6880;font-size:9px;font-weight:500;"><span style="width:16px;height:8px;border-radius:2px;background:#EEF3FB;border:1px solid #B9CBE6;display:inline-block;"></span>Domingo · descanso</span>'
+      + '<span style="color:#5A6880;font-size:9px;font-weight:500;">Horarios sujetos a condiciones climáticas y a permisos de acceso a planta.</span>'
+    + '</div>'
+    + '<span style="font-family:\'JetBrains Mono\',monospace;font-size:9px;letter-spacing:.06em;color:#6B7788;">Plan de Trabajo · Hoja 2/3</span>'
+  + '</div>';
+}
+
+// Nota de empaquetado: el encabezado de cada etapa NO fuerza un salto de
+// página (sería un enorme desperdicio de papel en un plan de varias semanas
+// expandido día por día). En vez de eso, el encabezado se fusiona en el
+// MISMO bloque medible que su primer renglón (día u "Descanso"), así
+// page-break-inside:avoid evita que quede huérfano solo al pie de una hoja
+// — el resto de los días de la etapa sí empacan de forma densa entre hojas.
+function _ptEtapaHeaderInner(numEtapa, etapa){
+  const rango = _ptFmtRangoCorto(etapa.fechaInicio, etapa.fechaFin);
+  return '<div style="padding:7px 0 7px 9px;border-bottom:1px solid #E9EDF3;border-left:3px solid '+(etapa.colorGantt||"#0B1F3A")+';background:#fff;">'
+    + '<span style="font-size:10.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:#0B1F3A;">Etapa '+numEtapa+' — '+escapeHtml(etapa.nombre||"")+' · '+rango+'</span>'
+  + '</div>';
+}
+
+function _ptDescansoRowInner(fechaDate){
+  const txt = fechaDate ? ("Domingo "+fechaDate.getDate()+" de "+PT_MESES[fechaDate.getMonth()]) : "Domingo";
+  return '<div style="padding:4px 9px;background:#EEF3FB;">'
+    + '<span style="font-size:9.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#3F6299;">'+txt+' — Descanso</span>'
+  + '</div>';
+}
+
+function _ptDiaRowInner(dia, zebra){
+  const bg = zebra ? "#FBFCFD" : "#fff";
+  function celda(html){ return '<div style="padding:6px 8px;font-size:10px;color:#33415A;line-height:1.3;">'+html+'</div>'; }
+  return '<div style="display:grid;grid-template-columns:'+PT_GRID_COLS+';background:'+bg+';border-bottom:1px solid #E9EDF3;">'
+    + celda('<span style="font-family:\'JetBrains Mono\',monospace;">'+_ptFmtCorta(dia.fecha)+'</span>')
+    + celda(escapeHtml(dia.area||""))
+    + celda(escapeHtml(dia.actividad||""))
+    + celda('<span style="font-family:\'JetBrains Mono\',monospace;white-space:nowrap;">'+escapeHtml(dia.horario||"")+'</span>')
+    + celda(escapeHtml(dia.herramientas||""))
+    + celda(escapeHtml(dia.producto||"—"))
+    + celda('<strong style="color:#0B1F3A;">'+escapeHtml(dia.epp||"")+'</strong>')
+  + '</div>';
+}
+
+function _ptFilaInner(dia, zebra){
+  return dia.descanso ? _ptDescansoRowInner(dia.fecha) : _ptDiaRowInner(dia, zebra);
+}
+
+function _ptConstruirBloquesHoja2(plan){
+  const bloques = [];
+  (plan.etapas||[]).forEach(function(etapa, i){
+    const zebra = (i % 2 === 1);
+    const dias = expandirEtapaADias(etapa);
+    const headerHtml = _ptEtapaHeaderInner(i+1, etapa);
+    if(!dias.length){
+      bloques.push('<div class="pt-blk">'+headerHtml+'</div>');
+      return;
+    }
+    bloques.push('<div class="pt-blk">'+headerHtml+_ptFilaInner(dias[0], zebra)+'</div>');
+    dias.slice(1).forEach(function(dia){
+      bloques.push('<div class="pt-blk">'+_ptFilaInner(dia, zebra)+'</div>');
+    });
+  });
+  return bloques;
+}
+
+// Distribuidor de páginas landscape — mismo algoritmo que _segDistribuirHojas
+// (usado en Condiciones Generales de la cotización y en el Reporte de
+// Proceso de Obra), pero con dimensiones de A4 HORIZONTAL en vez de vertical,
+// y midiendo la altura real del header/footer en lugar de asumirla fija
+// (el original la tenía hardcodeada porque su header/footer nunca cambia de
+// contenido; aquí sí varía según el cliente/periodo de cada plan).
+function _ptDistribuirHojasLandscape(bloquesFuente, headerHojaHtml, footerHojaHtml, headerContinuacionHtml){
+  const HOJA_ALTO = 794;   // A4 horizontal: 210mm de alto ≈ 794px a 96dpi
+  const PADDING_VERT = 16;
+  const medidor = document.createElement("div");
+  medidor.style.cssText = "position:absolute;left:-99999px;top:0;width:1055px;visibility:hidden;font-family:Inter,-apple-system,system-ui,sans-serif;";
+  document.body.appendChild(medidor);
+
+  medidor.innerHTML = headerHojaHtml;
+  const headerAltoP1 = medidor.getBoundingClientRect().height;
+  medidor.innerHTML = headerContinuacionHtml || headerHojaHtml;
+  const headerAltoCont = medidor.getBoundingClientRect().height;
+  medidor.innerHTML = footerHojaHtml;
+  const footerAlto = medidor.getBoundingClientRect().height;
+
+  const AREA_UTIL_P1 = HOJA_ALTO - headerAltoP1 - footerAlto - PADDING_VERT;
+  const AREA_UTIL_CONT = HOJA_ALTO - headerAltoCont - footerAlto - PADDING_VERT;
+
+  medidor.innerHTML = bloquesFuente.join("");
+  const bloques = medidor.querySelectorAll(".pt-blk");
+  const alturas = [];
+  bloques.forEach(function(b){ alturas.push({html:b.outerHTML, alto:b.getBoundingClientRect().height, forceBreak:b.hasAttribute("data-break")}); });
+  medidor.remove();
+
+  const hojas = [];
+  let actual = [], altoActual = 0;
+  alturas.forEach(function(item){
+    const areaUtilActual = hojas.length===0 ? AREA_UTIL_P1 : AREA_UTIL_CONT;
+    const debeForzar = item.forceBreak && actual.length > 0;
+    if((debeForzar || (altoActual + item.alto > areaUtilActual)) && actual.length > 0){ hojas.push(actual); actual = []; altoActual = 0; }
+    actual.push(item.html);
+    altoActual += item.alto;
+  });
+  if(actual.length) hojas.push(actual);
+  if(!hojas.length) hojas.push([]);
+
+  return hojas.map(function(items, idx){
+    const headerUsar = (idx===0 || !headerContinuacionHtml) ? headerHojaHtml : headerContinuacionHtml;
+    return '<div class="pt-hoja">'+headerUsar+'<div class="pt-hoja-cuerpo">'+items.join("")+'</div>'+footerHojaHtml+'</div>';
+  }).join("");
+}
+
+const PT_REPORTE_CSS = '<style>'
+  + '*{margin:0;padding:0;box-sizing:border-box;}'
+  + 'html,body{background:#ECEFF4;font-family:Inter,-apple-system,system-ui,sans-serif;-webkit-font-smoothing:antialiased;}'
+  + '#preview-bar{position:fixed;top:0;left:0;right:0;z-index:9999;background:#0B1F3A;display:flex;align-items:center;justify-content:space-between;padding:10px 20px;box-shadow:0 2px 12px rgba(0,0,0,.3);}'
+  + '#preview-bar .bar-title{color:rgba(255,255,255,.7);font-size:12px;font-weight:600;}'
+  + '#preview-bar .bar-actions{display:flex;gap:8px;}'
+  + '#preview-bar button{border:none;cursor:pointer;font-family:inherit;font-size:12px;font-weight:700;padding:8px 16px;border-radius:8px;}'
+  + '.btn-dl{background:#1E6FD9;color:#fff;}'
+  + '.btn-close{background:rgba(255,255,255,.1);color:rgba(255,255,255,.7);}'
+  + '#doc-wrap{margin-top:52px;padding:20px 0;min-height:100vh;}'
+  + '.pt-hoja{width:297mm;min-height:210mm;background:#fff;margin:16px auto;box-shadow:0 8px 32px rgba(11,31,58,.15);display:flex;flex-direction:column;page-break-after:always;box-sizing:border-box;padding:0 34px;}'
+  + '.pt-hoja:last-child{page-break-after:auto;}'
+  + '.pt-hoja-cuerpo{padding:6px 0;flex:1;}'
+  + '.pt-blk{page-break-inside:avoid;break-inside:avoid;}'
+  + '@media print{'
+    + '#preview-bar{display:none!important;}'
+    + '#doc-wrap{margin:0!important;padding:0!important;}'
+    + '.pt-hoja{margin:0!important;box-shadow:none!important;}'
+    + 'html,body{background:#fff!important;}'
+    + '@page{size:A4 landscape;margin:0;}'
+    + 'html,body{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}'
+  + '}'
+  + '</style>';
+
+function generarPdfPlanTrabajoEnVentana(plan, winRef, soloPreview){
+  if(!plan) return;
+  const _modPlan = _modalidadDePlan(plan);
+  const _esHome = _modPlan === "home";
+  const accent = _esHome ? "#C36F4A" : "#1E6FD9";
+
+  const headerP1 = _ptHojaHeaderPrincipal(plan, accent);
+  const headerCont = _ptHojaHeaderContinuacion(plan);
+  const footer = _ptHojaFooter();
+  const bloques = _ptConstruirBloquesHoja2(plan);
+  // Hoja 1 (Portada) y Hoja 3 (Gantt) se agregan aquí mismo en el sub-PR
+  // siguiente, antes y después de _hojasHtml respectivamente.
+  const _hojasHtml = _ptDistribuirHojasLandscape(bloques, headerP1, footer, headerCont);
+
+  const _titulo = "ROMSA – Plan de Trabajo – " + (plan.cliente||"");
+  const _previewBar = '<div id="preview-bar">'
+    + '<div class="bar-title">Vista previa — '+escapeHtml(_titulo)+'</div>'
+    + '<div class="bar-actions">'
+      + '<button class="btn-dl" onclick="window.print()">⬇ Descargar PDF</button>'
+      + '<button class="btn-close" onclick="window.close()">✕ Cerrar</button>'
+    + '</div></div>';
+
+  const htmlStr = '<!DOCTYPE html><html lang="es"><head>'
+    + '<meta charset="UTF-8">'
+    + '<meta name="viewport" content="width=device-width,initial-scale=1">'
+    + '<title>' + escapeHtml(_titulo) + '</title>'
+    + '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">'
+    + PT_REPORTE_CSS
+    + '</head><body>'
+    + _previewBar
+    + '<div id="doc-wrap">'
+    + _hojasHtml
+    + '</div></body></html>';
+
+  // "Vista previa" abre el mismo documento en una pestaña real (el CSS de
+  // pantalla de .pt-hoja ya simula las hojas separadas) SIN disparar
+  // print() automáticamente — el simulador de vista previa compartido con
+  // cotización (_mostrarPreviewPdf) asume A4 VERTICAL (794px de ancho
+  // hardcodeado) y deformaría un documento horizontal, así que aquí no se
+  // reutiliza esa pieza puntual; sí se reutiliza el mecanismo real de
+  // impresión (_inyectarPdf) para "Descargar PDF", que no depende de la
+  // orientación.
+  if(soloPreview){
+    const win = winRef || window.open("", "_blank");
+    if(!win){ showToast("⚠️ Permite ventanas emergentes"); return; }
+    win.document.open();
+    win.document.write(htmlStr);
+    win.document.close();
+    showToast("✅ Vista previa abierta");
+  } else {
+    _inyectarPdf(htmlStr, _titulo, winRef);
+  }
+}
+
+function vistaPreviaPlanTrabajo(id){
+  const plan = planesTrabajo.find(function(x){ return x.id === id; });
+  if(!plan){ showToast("⚠️ Plan no encontrado"); return; }
+  const winRef = window.open("", "_blank");
+  generarPdfPlanTrabajoEnVentana(plan, winRef, true);
+}
+
+function descargarPdfPlanTrabajo(id){
+  const plan = planesTrabajo.find(function(x){ return x.id === id; });
+  if(!plan){ showToast("⚠️ Plan no encontrado"); return; }
+  const winRef = window.open("", "_blank");
+  generarPdfPlanTrabajoEnVentana(plan, winRef, false);
 }
 
 function subscribeObras(){
