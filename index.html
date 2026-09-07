@@ -4110,6 +4110,23 @@ body.in-plantrabajo #app{
 
     <div class="fdivider">Etapas</div>
     <div style="font-size:12px;color:var(--tx2);margin-bottom:11px;line-height:1.5;">Captura cada etapa una sola vez — el sistema expande automáticamente a días (saltando domingos, horario reducido los sábados) para el Plan de Ejecución.</div>
+    <div class="fg" style="background:var(--off2);border:1px solid var(--g1);border-radius:10px;padding:10px;">
+      <label class="flabel">Plantilla de etapas por tipo de trabajo (opcional)</label>
+      <div style="display:flex;gap:8px;">
+        <select class="fselect" id="pt-plantilla-select" style="flex:1;">
+          <option value="">Elegir tipo de trabajo...</option>
+          <option value="epoxico">Piso Epóxico</option>
+          <option value="impermeabilizacion">Impermeabilización de techo/cubierta</option>
+          <option value="pulido">Pulido de Concreto</option>
+          <option value="reparaciones">Reparaciones de Concreto</option>
+          <option value="juntas">Sello de Juntas y Grietas</option>
+          <option value="pintura">Pintura de Muros</option>
+          <option value="uretano">Uretano Cementicio</option>
+        </select>
+        <button type="button" onclick="aplicarPlantillaEtapas()" style="background:#1E6FD9;border:none;color:#fff;font-size:11px;font-weight:700;padding:0 14px;border-radius:8px;cursor:pointer;font-family:var(--font);white-space:nowrap;">Aplicar</button>
+      </div>
+      <div style="font-size:10px;color:var(--tx3);margin-top:6px;">Precarga nombre, actividad, horarios, herramientas, producto y EPP típicos de ese trabajo — ajusta lo que necesites después. Las fechas y el área siempre se capturan por proyecto, nunca se precargan.</div>
+    </div>
     <div id="pt-etapas-list" style="display:flex;flex-direction:column;gap:10px;margin-bottom:10px;"></div>
     <button type="button" class="btn btn-ghost btn-block btn-sm" style="margin-bottom:16px;" onclick="agregarEtapaPlanTrabajo()">+ Agregar etapa</button>
 
@@ -4606,7 +4623,7 @@ function abrirNuevoPlanTrabajo(){
   _ptEtapaIdSeq = 1;
   _ptCotizacionVinculada = null;
   document.getElementById("pt-modal-ttl").textContent = "Nuevo Plan de Trabajo";
-  ["pt-cliente","pt-ubicacion","pt-proyecto","pt-alcance","pt-area-total","pt-departamento","pt-sistema","pt-contratista-razon","pt-contratista-rfc","pt-contratista-direccion","pt-cliente-razon","pt-cliente-rfc"].forEach(function(id){
+  ["pt-cliente","pt-ubicacion","pt-proyecto","pt-alcance","pt-area-total","pt-departamento","pt-sistema","pt-contratista-razon","pt-contratista-rfc","pt-contratista-direccion","pt-cliente-razon","pt-cliente-rfc","pt-plantilla-select"].forEach(function(id){
     const el = document.getElementById(id); if(el) el.value = "";
   });
   document.getElementById("pt-marca").value = "industrial";
@@ -4622,6 +4639,7 @@ function abrirEditarPlanTrabajo(id){
   _ptEtapas = (p.etapas||[]).map(function(e){ return Object.assign({}, e); });
   _ptEtapaIdSeq = _ptEtapas.reduce(function(m,e){ return Math.max(m, e.id||0); }, 0) + 1;
   document.getElementById("pt-modal-ttl").textContent = "Editar Plan de Trabajo";
+  const plantillaSel = document.getElementById("pt-plantilla-select"); if(plantillaSel) plantillaSel.value = "";
   document.getElementById("pt-marca").value = p.marca || "industrial";
   document.getElementById("pt-cliente").value = p.cliente || "";
   document.getElementById("pt-ubicacion").value = p.ubicacion || "";
@@ -4648,6 +4666,71 @@ function abrirEditarPlanTrabajo(id){
 }
 
 const PT_COLORES_GANTT = ["#0B1F3A","#1E6FD9","#5FA5F0","#C36F4A","#0B7A5A","#8A5FC9"];
+
+// Plantillas de etapas por tipo de trabajo — punto de partida semi-
+// automático para no capturar todo a mano cada vez. NUNCA incluyen fecha
+// ni área: esos datos son siempre específicos del proyecto y se capturan
+// por obra, no se precargan. El usuario puede ajustar cualquier campo
+// después de aplicar la plantilla.
+const PT_PLANTILLAS_ETAPAS = {
+  epoxico: { label:"Piso Epóxico", etapas: [
+    { nombre:"Preparación de superficie", actividad:"Diamantado y limpieza de la losa, reparación de grietas y juntas", horarioNormal:"07:00 - 17:00", horarioSabado:"07:00 - 13:00", herramientas:"Pulidora industrial, aspiradora industrial", producto:"—", epp:"Casco, lentes, mascarilla, guantes" },
+    { nombre:"Imprimación (primer)", actividad:"Aplicación de primer epóxico para sellar y anclar el sistema", horarioNormal:"07:00 - 17:00", horarioSabado:"07:00 - 13:00", herramientas:"Rodillo, llana dentada", producto:"Primer epóxico", epp:"Casco, guantes químicos, respirador" },
+    { nombre:"Aplicación de sistema epóxico", actividad:"Aplicación de capa(s) de autonivelante epóxico color", horarioNormal:"07:00 - 17:00", horarioSabado:"07:00 - 13:00", herramientas:"Llana, rodillo de púas para desairear", producto:"Epóxico autonivelante", epp:"Casco, guantes químicos, respirador, botas antiderrapantes" },
+    { nombre:"Acabado y sellado final", actividad:"Aplicación de capa de sellador y verificación de acabado", horarioNormal:"07:00 - 17:00", horarioSabado:"07:00 - 13:00", herramientas:"Rodillo de felpa", producto:"Sellador poliuretano/UV", epp:"Casco, guantes, respirador" }
+  ]},
+  impermeabilizacion: { label:"Impermeabilización de techo/cubierta", etapas: [
+    { nombre:"Preparación de superficie", actividad:"Limpieza y preparación mecánica de la cubierta", horarioNormal:"07:00 - 17:00", horarioSabado:"07:00 - 13:00", herramientas:"Hidrolavadora, escobas, espátula", producto:"—", epp:"Casco, arnés de cuerpo completo, guantes, lentes de seguridad" },
+    { nombre:"Tratamiento de puntos críticos", actividad:"Sellado de traslapes, tornillería, penetraciones y remates perimetrales", horarioNormal:"07:00 - 17:00", horarioSabado:"07:00 - 13:00", herramientas:"Pistola de calafateo, rodillo, brocha", producto:"Sellador PU monocomponente", epp:"Casco, arnés, respirador de cartucho, overol" },
+    { nombre:"Impermeabilización general", actividad:"Aplicación del sistema de impermeabilización en 2-3 capas con acabado UV", horarioNormal:"06:30 - 16:00", horarioSabado:"07:00 - 13:00", herramientas:"Airless, rodillo de felpa, medidor de espesor", producto:"Poliuretano elastomérico", epp:"Casco, arnés, respirador de cartucho, overol" },
+    { nombre:"Prueba de inundación y entrega", actividad:"Prueba de inundación en zonas críticas, bitácora fotográfica y entrega", horarioNormal:"07:00 - 14:00", horarioSabado:"07:00 - 13:00", herramientas:"Manguera y formatos", producto:"—", epp:"Casco, arnés, guantes, lentes de seguridad" }
+  ]},
+  pulido: { label:"Pulido de Concreto", etapas: [
+    { nombre:"Diagnóstico y preparación", actividad:"Diagnóstico de superficie y retiro de recubrimientos previos", horarioNormal:"07:00 - 17:00", horarioSabado:"07:00 - 13:00", herramientas:"Pulidora de grano grueso, aspiradora industrial", producto:"—", epp:"Casco, lentes, mascarilla, guantes" },
+    { nombre:"Pulido progresivo", actividad:"Pulido con diamante en granos progresivos hasta el acabado deseado", horarioNormal:"07:00 - 17:00", horarioSabado:"07:00 - 13:00", herramientas:"Pulidora industrial, discos diamantados", producto:"Endurecedor químico (densificador)", epp:"Casco, lentes, mascarilla, guantes" },
+    { nombre:"Sellado y pulido final", actividad:"Aplicación de sellador y pulido de brillo final", horarioNormal:"07:00 - 17:00", horarioSabado:"07:00 - 13:00", herramientas:"Pulidora con boinas, rodillo", producto:"Sellador/cera densificadora", epp:"Casco, lentes, mascarilla, guantes" }
+  ]},
+  reparaciones: { label:"Reparaciones de Concreto", etapas: [
+    { nombre:"Diagnóstico y demolición selectiva", actividad:"Localización de daños y demolición de concreto suelto o dañado", horarioNormal:"07:00 - 17:00", horarioSabado:"07:00 - 13:00", herramientas:"Rotomartillo, cincel", producto:"—", epp:"Casco, lentes, guantes, botas con casquillo" },
+    { nombre:"Preparación de acero y superficie", actividad:"Limpieza de acero de refuerzo expuesto y aplicación de inhibidor de corrosión", horarioNormal:"07:00 - 17:00", horarioSabado:"07:00 - 13:00", herramientas:"Cepillo de acero, hidrolavadora", producto:"Inhibidor de corrosión", epp:"Casco, lentes, guantes" },
+    { nombre:"Resane y nivelación", actividad:"Aplicación de mortero de reparación y nivelación de superficie", horarioNormal:"07:00 - 17:00", horarioSabado:"07:00 - 13:00", herramientas:"Llana, mezcladora", producto:"Mortero de reparación estructural", epp:"Casco, lentes, guantes" },
+    { nombre:"Curado y acabado final", actividad:"Curado del mortero y acabado final de superficie", horarioNormal:"07:00 - 17:00", horarioSabado:"07:00 - 13:00", herramientas:"Llana fina, aspersor de curado", producto:"Membrana de curado", epp:"Casco, lentes, guantes" }
+  ]},
+  juntas: { label:"Sello de Juntas y Grietas", etapas: [
+    { nombre:"Preparación de juntas", actividad:"Limpieza, corte y preparación de juntas y grietas", horarioNormal:"07:00 - 17:00", horarioSabado:"07:00 - 13:00", herramientas:"Cortadora de juntas, sopladora", producto:"—", epp:"Casco, lentes, guantes, mascarilla" },
+    { nombre:"Sellado", actividad:"Aplicación de sellador semirrígido o elastomérico en juntas y grietas", horarioNormal:"07:00 - 17:00", horarioSabado:"07:00 - 13:00", herramientas:"Pistola de calafateo, espátula", producto:"Sellador de juntas (poliurea/epóxico)", epp:"Casco, guantes químicos, lentes" }
+  ]},
+  pintura: { label:"Pintura de Muros", etapas: [
+    { nombre:"Preparación de superficie", actividad:"Limpieza, resane de imperfecciones y protección de áreas colindantes", horarioNormal:"07:00 - 17:00", horarioSabado:"07:00 - 13:00", herramientas:"Espátula, lija, plástico protector", producto:"Resane / sellador", epp:"Casco, lentes, guantes" },
+    { nombre:"Aplicación de pintura", actividad:"Aplicación de sistema de pintura en 2 capas", horarioNormal:"07:00 - 17:00", horarioSabado:"07:00 - 13:00", herramientas:"Rodillo, brocha, pistola airless", producto:"Pintura industrial/esmalte", epp:"Casco, mascarilla, guantes" }
+  ]},
+  uretano: { label:"Uretano Cementicio", etapas: [
+    { nombre:"Preparación de superficie", actividad:"Diamantado y limpieza profunda de la losa", horarioNormal:"07:00 - 17:00", horarioSabado:"07:00 - 13:00", herramientas:"Pulidora industrial, aspiradora industrial", producto:"—", epp:"Casco, lentes, mascarilla, guantes" },
+    { nombre:"Aplicación de uretano cementicio", actividad:"Aplicación del sistema de uretano cementicio, resistente a impacto térmico", horarioNormal:"06:00 - 15:00", horarioSabado:"07:00 - 13:00", herramientas:"Llana, mezcladora industrial", producto:"Uretano cementicio", epp:"Casco, guantes químicos, respirador, botas antiderrapantes" },
+    { nombre:"Curado y acabado", actividad:"Curado del sistema y verificación de acabado final", horarioNormal:"07:00 - 17:00", horarioSabado:"07:00 - 13:00", herramientas:"—", producto:"—", epp:"Casco, guantes" }
+  ]}
+};
+
+function aplicarPlantillaEtapas(){
+  const sel = document.getElementById("pt-plantilla-select");
+  const key = sel ? sel.value : "";
+  if(!key){ showToast("⚠️ Elige un tipo de trabajo primero"); return; }
+  const plantilla = PT_PLANTILLAS_ETAPAS[key];
+  if(!plantilla) return;
+  const hayDatosCapturados = _ptEtapas.some(function(e){ return (e.nombre||"").trim() || (e.fechaInicio||"") || (e.actividad||"").trim(); });
+  if(hayDatosCapturados && !confirm('¿Reemplazar las etapas actuales con la plantilla "'+plantilla.label+'"? Se perderá lo que hayas capturado en etapas.')){
+    return;
+  }
+  _ptEtapas = plantilla.etapas.map(function(preset, i){
+    return Object.assign({
+      id: _ptEtapaIdSeq++,
+      fechaInicio: "", fechaFin: "", area: "",
+      colorGantt: PT_COLORES_GANTT[i % PT_COLORES_GANTT.length]
+    }, preset);
+  });
+  renderEtapasPlanTrabajo();
+  showToast("✅ Plantilla aplicada — completa las fechas de cada etapa");
+}
 
 function agregarEtapaPlanTrabajo(){
   const n = _ptEtapas.length;
@@ -4917,9 +5000,21 @@ function _ptFilaInner(dia, zebra){
   return dia.descanso ? _ptDescansoRowInner(dia.fecha) : _ptDiaRowInner(dia, zebra);
 }
 
+// Las etapas se capturan en el formulario en cualquier orden (se pueden
+// agregar/quitar libremente), pero el PDF SIEMPRE debe correr en orden
+// cronológico — de lo contrario la Hoja 2 y el Gantt saltan hacia atrás en
+// el tiempo cada vez que una etapa capturada después empieza antes que la
+// anterior. Se ordena una COPIA por fechaInicio; nunca se reordena
+// plan.etapas en sí (el formulario conserva el orden de captura).
+function _ptEtapasOrdenadas(plan){
+  return (plan.etapas||[]).slice().sort(function(a, b){
+    return (a.fechaInicio||"").localeCompare(b.fechaInicio||"");
+  });
+}
+
 function _ptConstruirBloquesHoja2(plan){
   const bloques = [];
-  (plan.etapas||[]).forEach(function(etapa, i){
+  _ptEtapasOrdenadas(plan).forEach(function(etapa, i){
     const zebra = (i % 2 === 1);
     const dias = expandirEtapaADias(etapa);
     const headerHtml = _ptEtapaHeaderInner(i+1, etapa);
@@ -5124,7 +5219,7 @@ function _ptCalcularGantt(plan){
     if(fin > finG) fin = new Date(finG);
     semanas.push({ n:"Sem "+(i+1), rango:_ptFmtRangoCorto(ini.toISOString().slice(0,10), fin.toISOString().slice(0,10)) });
   }
-  const barras = (plan.etapas||[]).map(function(etapa){
+  const barras = _ptEtapasOrdenadas(plan).map(function(etapa){
     const ini = _ptParseISO(etapa.fechaInicio), fin = _ptParseISO(etapa.fechaFin);
     const offsetDias = Math.round((ini-iniG)/86400000);
     const duracionDias = Math.round((fin-ini)/86400000) + 1;
