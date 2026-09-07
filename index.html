@@ -4093,6 +4093,15 @@ body.in-plantrabajo #app{
     <div class="fg"><label class="flabel">Ubicación / Proyecto <span class="req">*</span></label><input class="finput" id="pt-ubicacion" placeholder="Ej: Nave 90000, PIMSA IV"></div>
     <div class="fg"><label class="flabel">Proyecto (título corto)</label><input class="finput" id="pt-proyecto" placeholder="Ej: Mantenimiento a cubierta de insulpanel"></div>
     <div class="fg"><label class="flabel">Alcance del proyecto</label><textarea class="ftextarea" id="pt-alcance" rows="4" placeholder="Descripción detallada de los trabajos a realizar..."></textarea></div>
+    <div class="fg">
+      <label class="flabel">Imagen para la Portada (opcional)</label>
+      <input type="file" accept="image/*" class="finput" id="pt-imagen-portada-input" onchange="onImagenPortadaSeleccionada(event)">
+      <div id="pt-imagen-portada-preview-wrap" style="display:none;margin-top:8px;position:relative;max-width:220px;">
+        <img id="pt-imagen-portada-preview" style="max-width:100%;border-radius:8px;border:1px solid var(--g1);display:block;">
+        <button type="button" onclick="quitarImagenPortada()" style="position:absolute;top:6px;right:6px;background:rgba(11,31,58,.85);border:none;color:#fff;font-size:10px;font-weight:700;padding:4px 8px;border-radius:6px;cursor:pointer;font-family:var(--font);">Quitar</button>
+      </div>
+      <div style="font-size:10px;color:var(--tx3);margin-top:5px;">Se coloca debajo del alcance del proyecto en la Portada del PDF.</div>
+    </div>
     <div class="frow">
       <div class="fg"><label class="flabel">Área total (m²)</label><input class="finput" id="pt-area-total" type="number" min="0" step="any" placeholder="0"></div>
       <div class="fg"><label class="flabel">Departamento</label><input class="finput" id="pt-departamento" placeholder="Ej: Impermeabilización y Mantenimiento Industrial"></div>
@@ -4131,7 +4140,7 @@ body.in-plantrabajo #app{
     <button type="button" class="btn btn-ghost btn-block btn-sm" style="margin-bottom:16px;" onclick="agregarEtapaPlanTrabajo()">+ Agregar etapa</button>
 
     <div style="display:flex;gap:10px;">
-      <button class="btn btn-secondary" style="flex:1;" onclick="closeModal('modal-plan-trabajo')">Cancelar</button>
+      <button class="btn btn-secondary" style="flex:1;" onclick="cancelarModalPlanTrabajo()">Cancelar</button>
       <button class="btn btn-primary" style="flex:1;" id="btn-guardar-plan-trabajo" onclick="guardarPlanTrabajo()">Guardar plan →</button>
     </div>
   </div>
@@ -4476,6 +4485,38 @@ let _ptCotizacionVinculada = null; // null = sin vínculo; string = id de la cot
 
 function _modalidadDePlan(p){ return (p && (p.marca === "home" || p.marca === "rackline")) ? p.marca : "industrial"; }
 function _nombreMarcaPlan(marca){ return marca === "home" ? "HOME by ROMSA" : marca === "rackline" ? "RACKLINE" : "ROMSA Industrial"; }
+// Tagline de pie de página del Plan de Trabajo — para HOME se usa el texto
+// de marca corto pedido para este documento ("Todo para pisos"); para las
+// demás marcas se reutiliza el tagline ya establecido en las cotizaciones.
+function _ptTaglineDe(modPlan){ return modPlan === "home" ? "HOME by ROMSA - Todo para pisos" : _taglineDe(modPlan); }
+let _ptImagenPortada = null; // base64 de la imagen opcional para la Portada — nunca se precarga, es siempre por proyecto
+
+function onImagenPortadaSeleccionada(ev){
+  const file = ev.target.files && ev.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(){
+    _ptImagenPortada = reader.result;
+    _ptMostrarPreviewImagenPortada();
+    _ptGuardarBorradorDebounced();
+  };
+  reader.readAsDataURL(file);
+}
+
+function quitarImagenPortada(){
+  _ptImagenPortada = null;
+  const input = document.getElementById("pt-imagen-portada-input"); if(input) input.value = "";
+  _ptMostrarPreviewImagenPortada();
+  _ptGuardarBorradorDebounced();
+}
+
+function _ptMostrarPreviewImagenPortada(){
+  const wrap = document.getElementById("pt-imagen-portada-preview-wrap");
+  const img = document.getElementById("pt-imagen-portada-preview");
+  if(!wrap || !img) return;
+  if(_ptImagenPortada){ img.src = _ptImagenPortada; wrap.style.display = "block"; }
+  else { wrap.style.display = "none"; }
+}
 
 // ─── PLAN DE TRABAJO · VÍNCULO OPCIONAL CON COTIZACIÓN ────
 // Buscador sobre el array `cotizaciones` ya cargado en memoria (mismo
@@ -4553,11 +4594,13 @@ function seleccionarCotizacionVinculada(id){
   _ptMostrarVinculoBanner(cot);
   closeModal("modal-vincular-cotizacion");
   showToast("✅ Cotización vinculada");
+  _ptGuardarBorradorDebounced();
 }
 
 function quitarVinculoCotizacion(){
   _ptCotizacionVinculada = null;
   _ptOcultarVinculoBanner();
+  _ptGuardarBorradorDebounced();
 }
 
 async function cargarPlanesTrabajo(){
@@ -4617,7 +4660,131 @@ function renderListaPlanesTrabajo(){
   }).join("");
 }
 
+// ─── PLAN DE TRABAJO · AUTOGUARDADO DE BORRADOR ───────────
+// Reportado por el usuario: tocar fuera del modal o dar "atrás" sin
+// querer borraba todo lo capturado. En vez de bloquear esas acciones (el
+// modal comparte el mismo listener de cierre-al-tocar-fuera que el resto
+// del CRM), se guarda un borrador en localStorage en cada cambio y se
+// recupera automáticamente la próxima vez que se abre el mismo plan (o
+// "Nuevo Plan" si el borrador abandonado era de uno nuevo) — así cerrar
+// por accidente deja de perder el trabajo. Guardar con éxito o cancelar
+// explícitamente sí borran el borrador (son decisiones intencionales,
+// no accidentes).
+const PT_DRAFT_KEY = "romsa_pt_draft_v1";
+let _ptAutosaveTimer = null;
+
+function _ptRecolectarBorrador(){
+  function val(id){ const el = document.getElementById(id); return el ? el.value : ""; }
+  return {
+    _ptEditandoId: _ptEditandoId,
+    _ptCotizacionVinculada: _ptCotizacionVinculada,
+    marca: val("pt-marca"),
+    cliente: val("pt-cliente"),
+    ubicacion: val("pt-ubicacion"),
+    proyecto: val("pt-proyecto"),
+    alcance: val("pt-alcance"),
+    imagenPortada: _ptImagenPortada || null,
+    areaTotal: val("pt-area-total"),
+    departamento: val("pt-departamento"),
+    sistema: val("pt-sistema"),
+    contratistaRazon: val("pt-contratista-razon"),
+    contratistaRfc: val("pt-contratista-rfc"),
+    contratistaDireccion: val("pt-contratista-direccion"),
+    clienteRazon: val("pt-cliente-razon"),
+    clienteRfc: val("pt-cliente-rfc"),
+    etapas: _ptEtapas.map(function(e){ return Object.assign({}, e); }),
+    guardadoEn: Date.now()
+  };
+}
+
+function _ptGuardarBorrador(){
+  try{ localStorage.setItem(PT_DRAFT_KEY, JSON.stringify(_ptRecolectarBorrador())); }catch(e){}
+}
+
+function _ptGuardarBorradorDebounced(){
+  clearTimeout(_ptAutosaveTimer);
+  _ptAutosaveTimer = setTimeout(_ptGuardarBorrador, 500);
+}
+
+function _ptBorrarBorrador(){
+  clearTimeout(_ptAutosaveTimer);
+  try{ localStorage.removeItem(PT_DRAFT_KEY); }catch(e){}
+}
+
+function _ptLeerBorrador(){
+  try{
+    const raw = localStorage.getItem(PT_DRAFT_KEY);
+    return raw ? JSON.parse(raw) : null;
+  }catch(e){ return null; }
+}
+
+// Un borrador "vacío" (solo la etapa por defecto recién abierta, sin nada
+// capturado) no debe ofrecerse para recuperar — sería indistinguible de
+// abrir el formulario en blanco.
+function _ptBorradorTieneDatos(b){
+  if(!b) return false;
+  if((b.cliente||"").trim() || (b.ubicacion||"").trim() || (b.proyecto||"").trim() || (b.alcance||"").trim() || b.imagenPortada) return true;
+  return (b.etapas||[]).some(function(e){ return (e.nombre||"").trim() || e.fechaInicio || (e.actividad||"").trim(); });
+}
+
+function _ptAplicarBorradorAlFormulario(b){
+  function set(id, v){ const el = document.getElementById(id); if(el) el.value = v||""; }
+  set("pt-marca", b.marca || "industrial");
+  set("pt-cliente", b.cliente);
+  set("pt-ubicacion", b.ubicacion);
+  set("pt-proyecto", b.proyecto);
+  set("pt-alcance", b.alcance);
+  _ptImagenPortada = b.imagenPortada || null;
+  const inputImg = document.getElementById("pt-imagen-portada-input"); if(inputImg) inputImg.value = "";
+  _ptMostrarPreviewImagenPortada();
+  set("pt-area-total", b.areaTotal);
+  set("pt-departamento", b.departamento);
+  set("pt-sistema", b.sistema);
+  set("pt-contratista-razon", b.contratistaRazon);
+  set("pt-contratista-rfc", b.contratistaRfc);
+  set("pt-contratista-direccion", b.contratistaDireccion);
+  set("pt-cliente-razon", b.clienteRazon);
+  set("pt-cliente-rfc", b.clienteRfc);
+  const plantillaSel = document.getElementById("pt-plantilla-select"); if(plantillaSel) plantillaSel.value = "";
+  _ptEtapas = (b.etapas||[]).map(function(e){ return Object.assign({}, e); });
+  _ptEtapaIdSeq = _ptEtapas.reduce(function(m,e){ return Math.max(m, e.id||0); }, 0) + 1;
+  _ptCotizacionVinculada = b._ptCotizacionVinculada || null;
+  if(_ptCotizacionVinculada){
+    const lista = (typeof cotizaciones !== "undefined" && Array.isArray(cotizaciones)) ? cotizaciones : [];
+    const cotVinculada = lista.find(function(c){ return c.id === _ptCotizacionVinculada; });
+    _ptMostrarVinculoBanner(cotVinculada);
+  } else {
+    _ptOcultarVinculoBanner();
+  }
+  if(!_ptEtapas.length) agregarEtapaPlanTrabajo(); else renderEtapasPlanTrabajo();
+}
+
+// Delegado: cualquier input/change dentro del formulario dispara el
+// autoguardado (debounced) — cubre los campos generales sin tener que
+// tocar el onchange de cada uno individualmente.
+(function(){
+  const modalEl = document.getElementById("modal-plan-trabajo");
+  if(modalEl){
+    modalEl.addEventListener("input", _ptGuardarBorradorDebounced);
+    modalEl.addEventListener("change", _ptGuardarBorradorDebounced);
+  }
+})();
+
+function cancelarModalPlanTrabajo(){
+  _ptBorrarBorrador();
+  closeModal("modal-plan-trabajo");
+}
+
 function abrirNuevoPlanTrabajo(){
+  const _borradorPendiente = _ptLeerBorrador();
+  if(_borradorPendiente && !_borradorPendiente._ptEditandoId && _ptBorradorTieneDatos(_borradorPendiente)){
+    _ptEditandoId = null;
+    document.getElementById("pt-modal-ttl").textContent = "Nuevo Plan de Trabajo";
+    _ptAplicarBorradorAlFormulario(_borradorPendiente);
+    document.getElementById("modal-plan-trabajo").classList.add("open");
+    showToast("📝 Se recuperaron cambios sin guardar de tu último plan");
+    return;
+  }
   _ptEditandoId = null;
   _ptEtapas = [];
   _ptEtapaIdSeq = 1;
@@ -4627,6 +4794,9 @@ function abrirNuevoPlanTrabajo(){
     const el = document.getElementById(id); if(el) el.value = "";
   });
   document.getElementById("pt-marca").value = "industrial";
+  _ptImagenPortada = null;
+  const inputImgNuevo = document.getElementById("pt-imagen-portada-input"); if(inputImgNuevo) inputImgNuevo.value = "";
+  _ptMostrarPreviewImagenPortada();
   _ptOcultarVinculoBanner();
   agregarEtapaPlanTrabajo();
   document.getElementById("modal-plan-trabajo").classList.add("open");
@@ -4635,6 +4805,15 @@ function abrirNuevoPlanTrabajo(){
 function abrirEditarPlanTrabajo(id){
   const p = planesTrabajo.find(function(x){ return x.id === id; });
   if(!p) return;
+  const _borradorPendiente = _ptLeerBorrador();
+  if(_borradorPendiente && _borradorPendiente._ptEditandoId === id && _ptBorradorTieneDatos(_borradorPendiente)){
+    _ptEditandoId = id;
+    document.getElementById("pt-modal-ttl").textContent = "Editar Plan de Trabajo";
+    _ptAplicarBorradorAlFormulario(_borradorPendiente);
+    document.getElementById("modal-plan-trabajo").classList.add("open");
+    showToast("📝 Se recuperaron cambios sin guardar de este plan");
+    return;
+  }
   _ptEditandoId = id;
   _ptEtapas = (p.etapas||[]).map(function(e){ return Object.assign({}, e); });
   _ptEtapaIdSeq = _ptEtapas.reduce(function(m,e){ return Math.max(m, e.id||0); }, 0) + 1;
@@ -4645,6 +4824,9 @@ function abrirEditarPlanTrabajo(id){
   document.getElementById("pt-ubicacion").value = p.ubicacion || "";
   document.getElementById("pt-proyecto").value = p.proyecto || "";
   document.getElementById("pt-alcance").value = p.alcance || "";
+  _ptImagenPortada = p.imagenPortada || null;
+  const inputImgEditar = document.getElementById("pt-imagen-portada-input"); if(inputImgEditar) inputImgEditar.value = "";
+  _ptMostrarPreviewImagenPortada();
   document.getElementById("pt-area-total").value = p.areaTotal || "";
   document.getElementById("pt-departamento").value = p.departamento || "";
   document.getElementById("pt-sistema").value = p.sistema || "";
@@ -4730,6 +4912,7 @@ function aplicarPlantillaEtapas(){
   });
   renderEtapasPlanTrabajo();
   showToast("✅ Plantilla aplicada — completa las fechas de cada etapa");
+  _ptGuardarBorradorDebounced();
 }
 
 function agregarEtapaPlanTrabajo(){
@@ -4738,21 +4921,24 @@ function agregarEtapaPlanTrabajo(){
     id: _ptEtapaIdSeq++,
     nombre: "", fechaInicio: "", fechaFin: "", area: "", actividad: "",
     horarioNormal: "07:00 - 17:00", horarioSabado: "07:00 - 13:00",
-    herramientas: "", producto: "", epp: "",
+    herramientas: "", producto: "", epp: "Lentes, guantes y chaleco de seguridad",
     colorGantt: PT_COLORES_GANTT[n % PT_COLORES_GANTT.length]
   });
   renderEtapasPlanTrabajo();
+  _ptGuardarBorradorDebounced();
 }
 
 function removeEtapaPlanTrabajo(id){
   _ptEtapas = _ptEtapas.filter(function(e){ return e.id !== id; });
   renderEtapasPlanTrabajo();
+  _ptGuardarBorradorDebounced();
 }
 
 function onEtapaPlanTrabajoField(id, field, value){
   const e = _ptEtapas.find(function(x){ return x.id === id; });
   if(!e) return;
   e[field] = value;
+  _ptGuardarBorradorDebounced();
 }
 
 function renderEtapasPlanTrabajo(){
@@ -4812,6 +4998,7 @@ async function guardarPlanTrabajo(){
     ubicacion,
     proyecto: document.getElementById("pt-proyecto").value.trim(),
     alcance: document.getElementById("pt-alcance").value.trim(),
+    imagenPortada: _ptImagenPortada || null,
     areaTotal: parseFloat(document.getElementById("pt-area-total").value) || 0,
     departamento: document.getElementById("pt-departamento").value.trim(),
     sistema: document.getElementById("pt-sistema").value.trim(),
@@ -4830,6 +5017,7 @@ async function guardarPlanTrabajo(){
   try{
     await planesTrabajoRef.doc(id).set(p);
     closeModal("modal-plan-trabajo");
+    _ptBorrarBorrador();
     showToast("✅ Plan de Trabajo guardado");
     cargarPlanesTrabajo();
   }catch(e){ showToast("❌ Error: "+e.message); }
@@ -4952,13 +5140,15 @@ function _ptHojaHeaderContinuacion(plan){
   + '</div>';
 }
 
-function _ptHojaFooter(){
+function _ptHojaFooter(tagline){
   return '<div style="padding:8px 0 16px;display:flex;align-items:center;justify-content:space-between;gap:24px;border-top:1px solid #E4E9F0;">'
-    + '<div style="display:flex;align-items:center;gap:18px;">'
-      + '<span style="display:flex;align-items:center;gap:7px;color:#5A6880;font-size:9px;font-weight:500;"><span style="width:16px;height:8px;border-radius:2px;background:#EEF3FB;border:1px solid #B9CBE6;display:inline-block;"></span>Domingo · descanso</span>'
+    + '<div style="display:flex;align-items:center;gap:14px;">'
+      + '<span style="color:#0B1F3A;font-size:9.5px;font-weight:700;white-space:nowrap;">'+escapeHtml(tagline||"")+'</span>'
+      + '<span style="width:1px;height:11px;background:#D8DFE9;display:inline-block;flex-shrink:0;"></span>'
+      + '<span style="display:flex;align-items:center;gap:7px;color:#5A6880;font-size:9px;font-weight:500;white-space:nowrap;"><span style="width:16px;height:8px;border-radius:2px;background:#EEF3FB;border:1px solid #B9CBE6;display:inline-block;"></span>Domingo · descanso</span>'
       + '<span style="color:#5A6880;font-size:9px;font-weight:500;">Horarios sujetos a condiciones climáticas y a permisos de acceso a planta.</span>'
     + '</div>'
-    + '<span style="font-family:\'JetBrains Mono\',monospace;font-size:9px;letter-spacing:.06em;color:#6B7788;">Plan de Trabajo · Hoja 2/3</span>'
+    + '<span style="font-family:\'JetBrains Mono\',monospace;font-size:9px;letter-spacing:.06em;color:#6B7788;white-space:nowrap;">Plan de Trabajo · Hoja 2/3</span>'
   + '</div>';
 }
 
@@ -4969,9 +5159,8 @@ function _ptHojaFooter(){
 // page-break-inside:avoid evita que quede huérfano solo al pie de una hoja
 // — el resto de los días de la etapa sí empacan de forma densa entre hojas.
 function _ptEtapaHeaderInner(numEtapa, etapa){
-  const rango = _ptFmtRangoCorto(etapa.fechaInicio, etapa.fechaFin);
   return '<div style="padding:7px 0 7px 9px;border-bottom:1px solid #E9EDF3;border-left:3px solid '+(etapa.colorGantt||"#0B1F3A")+';background:#fff;">'
-    + '<span style="font-size:10.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:#0B1F3A;">Etapa '+numEtapa+' — '+escapeHtml(etapa.nombre||"")+' · '+rango+'</span>'
+    + '<span style="font-size:10.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:#0B1F3A;">Etapa '+numEtapa+' — '+escapeHtml(etapa.nombre||"")+'</span>'
   + '</div>';
 }
 
@@ -5125,7 +5314,7 @@ function _ptFolio(plan){
   return "PT-"+slug+"-"+year;
 }
 
-function _ptHoja1Html(plan, accent, logo, marcaLabel){
+function _ptHoja1Html(plan, accent, logo, marcaLabel, tagline){
   const r = _ptRangoGlobal(plan);
   const totalDias = (r.min && r.max) ? Math.round((_ptParseISO(r.max) - _ptParseISO(r.min))/86400000) + 1 : 0;
 
@@ -5150,16 +5339,17 @@ function _ptHoja1Html(plan, accent, logo, marcaLabel){
   // formulario (contratistaRazon/Rfc/Direccion) — si el usuario no los
   // llenó, esta franja simplemente no aparece; nunca se inventan.
   const tieneFiscales = plan.contratistaRazon || plan.contratistaRfc || plan.contratistaDireccion;
-  const footerLegal = tieneFiscales
-    ? '<div style="display:flex;flex-direction:column;gap:3px;max-width:430px;">'
-        + (plan.contratistaRazon ? '<span style="color:#0B1F3A;font-size:10px;font-weight:600;">'+escapeHtml(plan.contratistaRazon)+'</span>' : '')
-        + ((plan.contratistaRfc || plan.contratistaDireccion) ? '<span style="color:#5A6880;font-size:9px;line-height:1.5;">'+[plan.contratistaRfc?("RFC: "+plan.contratistaRfc):"", plan.contratistaDireccion||""].filter(Boolean).map(escapeHtml).join(" · ")+'</span>' : '')
-      + '</div>'
-    : '<div></div>';
+  const footerLegal = '<div style="display:flex;flex-direction:column;gap:3px;max-width:430px;">'
+      + '<span style="color:#0B1F3A;font-size:10.5px;font-weight:700;">'+escapeHtml(tagline||"")+'</span>'
+      + (tieneFiscales ? (
+          (plan.contratistaRazon ? '<span style="color:#33415A;font-size:10px;font-weight:600;">'+escapeHtml(plan.contratistaRazon)+'</span>' : '')
+          + ((plan.contratistaRfc || plan.contratistaDireccion) ? '<span style="color:#5A6880;font-size:9px;line-height:1.5;">'+[plan.contratistaRfc?("RFC: "+plan.contratistaRfc):"", plan.contratistaDireccion||""].filter(Boolean).map(escapeHtml).join(" · ")+'</span>' : '')
+        ) : '')
+    + '</div>';
 
   return '<div class="pt-hoja" style="padding-top:26px;padding-bottom:20px;">'
     + '<div style="display:flex;align-items:center;gap:12px;flex-shrink:0;">'
-      + (logo ? '<img src="'+logo+'" style="height:26px;width:auto;max-width:220px;object-fit:contain;" alt="'+escapeHtml(marcaLabel)+'">' : '<div style="font-size:16px;font-weight:800;color:#0B1F3A;">'+escapeHtml(marcaLabel)+'</div>')
+      + (logo ? '<img src="'+logo+'" style="height:64px;width:auto;max-width:420px;object-fit:contain;" alt="'+escapeHtml(marcaLabel)+'">' : '<div style="font-size:16px;font-weight:800;color:#0B1F3A;">'+escapeHtml(marcaLabel)+'</div>')
     + '</div>'
     + '<div style="flex:1;display:grid;grid-template-columns:1.15fr .85fr;gap:28px;margin-top:22px;min-height:0;">'
       + '<div style="display:flex;flex-direction:column;min-height:0;">'
@@ -5169,10 +5359,14 @@ function _ptHoja1Html(plan, accent, logo, marcaLabel){
         + (plan.alcance ? (
             '<div style="margin-top:26px;padding-top:18px;border-top:1px solid #E4E9F0;">'
               + '<span style="font-size:9px;font-weight:600;letter-spacing:.13em;text-transform:uppercase;color:#5A6880;">Alcance del proyecto</span>'
-              + '<p style="margin:10px 0 0;max-width:490px;color:#33415A;font-size:11.5px;line-height:1.6;">'+escapeHtml(plan.alcance)+'</p>'
+              + '<p style="margin:10px 0 0;max-width:490px;color:#33415A;font-size:11.5px;line-height:1.6;white-space:pre-wrap;">'+escapeHtml(plan.alcance)+'</p>'
             + '</div>'
           ) : '')
-        + '<div style="flex:1"></div>'
+        + (plan.imagenPortada
+            ? '<div style="flex:1;min-height:0;display:flex;align-items:flex-start;padding-top:16px;">'
+                + '<img src="'+plan.imagenPortada+'" style="max-width:100%;max-height:100%;object-fit:contain;border-radius:10px;border:1px solid #E4E9F0;">'
+              + '</div>'
+            : '<div style="flex:1"></div>')
         + '<div style="display:flex;align-items:flex-end;justify-content:space-between;gap:20px;padding-top:16px;border-top:1px solid #E4E9F0;">'
           + footerLegal
           + '<span style="font-family:\'JetBrains Mono\',monospace;font-size:9px;letter-spacing:.06em;color:#6B7788;white-space:nowrap;">'+_ptFolio(plan)+'</span>'
@@ -5217,7 +5411,8 @@ function _ptCalcularGantt(plan){
     const ini = new Date(iniG); ini.setDate(ini.getDate()+i*7);
     let fin = new Date(ini); fin.setDate(fin.getDate()+6);
     if(fin > finG) fin = new Date(finG);
-    semanas.push({ n:"Sem "+(i+1), rango:_ptFmtRangoCorto(ini.toISOString().slice(0,10), fin.toISOString().slice(0,10)) });
+    const numDias = Math.round((fin-ini)/86400000) + 1;
+    semanas.push({ n:"Sem "+(i+1), rango:_ptFmtRangoCorto(ini.toISOString().slice(0,10), fin.toISOString().slice(0,10)), numDias:numDias });
   }
   const barras = _ptEtapasOrdenadas(plan).map(function(etapa){
     const ini = _ptParseISO(etapa.fechaInicio), fin = _ptParseISO(etapa.fechaFin);
@@ -5234,17 +5429,23 @@ function _ptCalcularGantt(plan){
   return { totalDias:totalDias, numSemanas:numSemanas, semanas:semanas, barras:barras };
 }
 
-function _ptHoja3GanttHtml(plan, accent){
+function _ptHoja3GanttHtml(plan, accent, tagline){
   const g = _ptCalcularGantt(plan);
   if(!g || !g.barras.length){
     return '<div class="pt-hoja" style="padding-top:26px;padding-bottom:20px;"><div style="color:#5A6880;font-size:12px;">Sin fechas suficientes para construir el diagrama de Gantt.</div></div>';
   }
-  const weekCols = "repeat("+g.semanas.length+", 1fr)";
-  const headerRow = '<div style="display:grid;grid-template-columns:250px 62px '+weekCols+';background:#0B1F3A;">'
+  // Las columnas se dibujan una por DÍA calendario (no una por semana con
+  // ancho parejo) para que el ancho visual de cada semana sea proporcional
+  // a sus días reales — así la barra de cada etapa (posicionada con left/
+  // width en % sobre el total de días) siempre encaja exactamente con los
+  // días que ocupa, incluso cuando la última semana del plan es incompleta.
+  const dayCols = "repeat("+g.totalDias+", 1fr)";
+  const diaPct = 100/g.totalDias;
+  const headerRow = '<div style="display:grid;grid-template-columns:250px 62px '+dayCols+';background:#0B1F3A;">'
     + '<span style="padding:11px 16px;color:#fff;font-size:8.5px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;">Etapa</span>'
     + '<span style="padding:11px 8px;color:#fff;font-size:8.5px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;text-align:center;">Avance</span>'
     + g.semanas.map(function(s){
-        return '<div style="padding:8px 6px;border-left:1px solid rgba(255,255,255,.14);display:flex;flex-direction:column;gap:2px;align-items:center;">'
+        return '<div style="grid-column:span '+s.numDias+';padding:8px 6px;border-left:1px solid rgba(255,255,255,.14);display:flex;flex-direction:column;gap:2px;align-items:center;">'
           + '<span style="color:#fff;font-size:9px;font-weight:600;">'+s.n+'</span>'
           + '<span style="color:#8FB6EC;font-family:\'JetBrains Mono\',monospace;font-size:7.5px;">'+s.rango+'</span>'
         + '</div>';
@@ -5253,7 +5454,7 @@ function _ptHoja3GanttHtml(plan, accent){
 
   const filasHtml = g.barras.map(function(b, i){
     const ink = _ptContrastInk(b.color);
-    return '<div style="display:grid;grid-template-columns:250px 62px '+weekCols+';background:'+(i%2===0?"#fff":"#FBFCFD")+';border-top:1px solid #E9EDF3;">'
+    return '<div style="display:grid;grid-template-columns:250px 62px '+dayCols+';background:'+(i%2===0?"#fff":"#FBFCFD")+';border-top:1px solid #E9EDF3;">'
       + '<div style="padding:12px 16px;display:flex;gap:10px;align-items:flex-start;">'
         + '<span style="width:3px;align-self:stretch;border-radius:2px;background:'+b.color+';flex-shrink:0;"></span>'
         + '<div style="display:flex;flex-direction:column;gap:2px;min-width:0;">'
@@ -5265,8 +5466,8 @@ function _ptHoja3GanttHtml(plan, accent){
       + '<div style="display:flex;align-items:center;justify-content:center;border-left:1px solid #E9EDF3;border-right:1px solid #E9EDF3;">'
         + '<span style="font-family:\'JetBrains Mono\',monospace;color:#5F6B7D;font-size:10px;font-weight:500;">0%</span>'
       + '</div>'
-      + '<div style="grid-column:span '+g.semanas.length+';position:relative;padding:12px 0;">'
-        + '<div style="position:relative;height:22px;">'
+      + '<div style="grid-column:span '+g.totalDias+';position:relative;padding:12px 0;">'
+        + '<div style="position:relative;height:22px;background-image:repeating-linear-gradient(to right, transparent, transparent calc('+diaPct+'% - 1px), #EEF1F5 calc('+diaPct+'% - 1px), #EEF1F5 '+diaPct+'%);">'
           + '<div style="position:absolute;top:0;bottom:0;left:'+b.left+';width:'+b.width+';min-width:8px;background:'+b.color+';border-radius:5px;display:flex;align-items:center;padding:0 9px;">'
             + '<span style="color:'+ink+';font-size:8.5px;font-weight:700;white-space:nowrap;">'+b.duracionTxt+'</span>'
           + '</div>'
@@ -5297,8 +5498,12 @@ function _ptHoja3GanttHtml(plan, accent){
     + '</div>'
     + '<div style="flex:1"></div>'
     + '<div style="display:flex;align-items:center;justify-content:space-between;gap:24px;padding-top:10px;border-top:1px solid #E4E9F0;flex-shrink:0;">'
-      + '<span style="color:#5A6880;font-size:9px;font-weight:500;">Programa emitido previo al inicio de obra · avance 0% en todas las etapas.</span>'
-      + '<span style="font-family:\'JetBrains Mono\',monospace;font-size:9px;letter-spacing:.06em;color:#6B7788;">'+_ptFolio(plan)+' · Hoja 3/3</span>'
+      + '<div style="display:flex;align-items:center;gap:14px;">'
+        + '<span style="color:#0B1F3A;font-size:9.5px;font-weight:700;white-space:nowrap;">'+escapeHtml(tagline||"")+'</span>'
+        + '<span style="width:1px;height:11px;background:#D8DFE9;display:inline-block;flex-shrink:0;"></span>'
+        + '<span style="color:#5A6880;font-size:9px;font-weight:500;">Programa emitido previo al inicio de obra · avance 0% en todas las etapas.</span>'
+      + '</div>'
+      + '<span style="font-family:\'JetBrains Mono\',monospace;font-size:9px;letter-spacing:.06em;color:#6B7788;white-space:nowrap;">'+_ptFolio(plan)+' · Hoja 3/3</span>'
     + '</div>'
   + '</div>';
 }
@@ -5308,16 +5513,20 @@ function generarPdfPlanTrabajoEnVentana(plan, winRef, soloPreview){
   const _modPlan = _modalidadDePlan(plan);
   const _esHome = _modPlan === "home";
   const accent = _esHome ? "#C36F4A" : "#1E6FD9";
-  const logo = _logoColorDe(_modPlan) || window._romsaLogoAzul || "";
+  // El logo de la Portada siempre usa el navy de ROMSA que manejamos en el
+  // resto del CRM (independiente del color de marca de la cotización), a
+  // mayor tamaño que el resto de los documentos.
+  const logo = window._romsaLogoAzul || _logoColorDe(_modPlan) || "";
   const marcaLabel = _nombreMarcaPlan(plan.marca);
+  const tagline = _ptTaglineDe(_modPlan);
 
-  const hoja1Html = _ptHoja1Html(plan, accent, logo, marcaLabel);
+  const hoja1Html = _ptHoja1Html(plan, accent, logo, marcaLabel, tagline);
   const headerP1 = _ptHojaHeaderPrincipal(plan, accent);
   const headerCont = _ptHojaHeaderContinuacion(plan);
-  const footer = _ptHojaFooter();
+  const footer = _ptHojaFooter(tagline);
   const bloques = _ptConstruirBloquesHoja2(plan);
   const hoja2Html = _ptDistribuirHojasLandscape(bloques, headerP1, footer, headerCont);
-  const hoja3Html = _ptHoja3GanttHtml(plan, accent);
+  const hoja3Html = _ptHoja3GanttHtml(plan, accent, tagline);
   const _hojasHtml = hoja1Html + hoja2Html + hoja3Html;
 
   const _titulo = "ROMSA – Plan de Trabajo – " + (plan.cliente||"");
