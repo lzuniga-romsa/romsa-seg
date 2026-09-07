@@ -4891,19 +4891,224 @@ const PT_REPORTE_CSS = '<style>'
   + '}'
   + '</style>';
 
+// ─── PLAN DE TRABAJO · PDF (Hoja 1: Portada) ──────
+// Periodo de ejecución en formato largo ("15 de junio al 20 de julio de
+// 2026") — al igual que _ptPeriodoTextoCorto, SIEMPRE calculado a partir de
+// las etapas, nunca capturado a mano.
+function _ptPeriodoTextoLargo(plan){
+  const r = _ptRangoGlobal(plan);
+  if(!r.min || !r.max) return "Por definir";
+  const ini = _ptParseISO(r.min), fin = _ptParseISO(r.max);
+  const mismoAnio = ini.getFullYear() === fin.getFullYear();
+  const iniTxt = ini.getDate()+" de "+PT_MESES[ini.getMonth()]+(mismoAnio ? "" : " de "+ini.getFullYear());
+  const finTxt = fin.getDate()+" de "+PT_MESES[fin.getMonth()]+" de "+fin.getFullYear();
+  return iniTxt+" al "+finTxt;
+}
+
+// Folio de despliegue derivado de datos reales del plan (cliente + año de
+// creación) — NO es un número de control documental oficial (ROMSA no
+// captura ese dato en este módulo); es solo una etiqueta legible para pie
+// de página, análoga a un folio, hasta que exista una numeración real.
+function _ptFolio(plan){
+  const year = new Date(plan.createdAt || Date.now()).getFullYear();
+  const slug = (plan.cliente || "PLAN").split(/[\s,–—-]+/)[0].toUpperCase().replace(/[^A-Z0-9]/g, "") || "PLAN";
+  return "PT-"+slug+"-"+year;
+}
+
+function _ptHoja1Html(plan, accent, logo, marcaLabel){
+  const r = _ptRangoGlobal(plan);
+  const totalDias = (r.min && r.max) ? Math.round((_ptParseISO(r.max) - _ptParseISO(r.min))/86400000) + 1 : 0;
+
+  const metaRows = [];
+  metaRows.push({k:"Cliente", v: plan.cliente || "—"});
+  const ubicProy = [plan.ubicacion, plan.proyecto].filter(Boolean).join(" — ");
+  if(ubicProy) metaRows.push({k:"Ubicación / Proyecto", v: ubicProy});
+  metaRows.push({k:"Contratista", v: marcaLabel});
+  if(plan.sistema) metaRows.push({k:"Sistema", v: plan.sistema});
+  metaRows.push({k:"Área de intervención", v: (plan.areaTotal ? Number(plan.areaTotal).toLocaleString("es-MX") : "—") + " m²"});
+  metaRows.push({k:"Periodo de ejecución", v: _ptPeriodoTextoLargo(plan)});
+  if(plan.departamento) metaRows.push({k:"Departamento", v: plan.departamento});
+
+  const metaHtml = metaRows.map(function(m){
+    return '<div style="background:#fff;border:1px solid #E4E9F0;border-radius:10px;padding:11px 13px;display:flex;flex-direction:column;gap:4px;">'
+      + '<span style="font-size:8px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#5F6B7D;">'+escapeHtml(m.k)+'</span>'
+      + '<span style="color:#0B1F3A;font-size:11.5px;font-weight:600;line-height:1.4;">'+escapeHtml(m.v)+'</span>'
+    + '</div>';
+  }).join("");
+
+  // Pie legal: SOLO con los datos fiscales reales capturados a mano en el
+  // formulario (contratistaRazon/Rfc/Direccion) — si el usuario no los
+  // llenó, esta franja simplemente no aparece; nunca se inventan.
+  const tieneFiscales = plan.contratistaRazon || plan.contratistaRfc || plan.contratistaDireccion;
+  const footerLegal = tieneFiscales
+    ? '<div style="display:flex;flex-direction:column;gap:3px;max-width:430px;">'
+        + (plan.contratistaRazon ? '<span style="color:#0B1F3A;font-size:10px;font-weight:600;">'+escapeHtml(plan.contratistaRazon)+'</span>' : '')
+        + ((plan.contratistaRfc || plan.contratistaDireccion) ? '<span style="color:#5A6880;font-size:9px;line-height:1.5;">'+[plan.contratistaRfc?("RFC: "+plan.contratistaRfc):"", plan.contratistaDireccion||""].filter(Boolean).map(escapeHtml).join(" · ")+'</span>' : '')
+      + '</div>'
+    : '<div></div>';
+
+  return '<div class="pt-hoja" style="padding-top:26px;padding-bottom:20px;">'
+    + '<div style="display:flex;align-items:center;gap:12px;flex-shrink:0;">'
+      + (logo ? '<img src="'+logo+'" style="height:26px;width:auto;max-width:220px;object-fit:contain;" alt="'+escapeHtml(marcaLabel)+'">' : '<div style="font-size:16px;font-weight:800;color:#0B1F3A;">'+escapeHtml(marcaLabel)+'</div>')
+    + '</div>'
+    + '<div style="flex:1;display:grid;grid-template-columns:1.15fr .85fr;gap:28px;margin-top:22px;min-height:0;">'
+      + '<div style="display:flex;flex-direction:column;min-height:0;">'
+        + '<span style="font-size:9.5px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:'+accent+';">Documento técnico</span>'
+        + '<h1 style="margin:12px 0 0;color:#0B1F3A;font-size:38px;font-weight:700;letter-spacing:-.03em;line-height:1;">Plan de Trabajo</h1>'
+        + (plan.sistema ? '<p style="margin:12px 0 0;max-width:460px;color:#44536B;font-size:13px;line-height:1.5;">'+escapeHtml(plan.sistema)+'</p>' : '')
+        + (plan.alcance ? (
+            '<div style="margin-top:26px;padding-top:18px;border-top:1px solid #E4E9F0;">'
+              + '<span style="font-size:9px;font-weight:600;letter-spacing:.13em;text-transform:uppercase;color:#5A6880;">Alcance del proyecto</span>'
+              + '<p style="margin:10px 0 0;max-width:490px;color:#33415A;font-size:11.5px;line-height:1.6;">'+escapeHtml(plan.alcance)+'</p>'
+            + '</div>'
+          ) : '')
+        + '<div style="flex:1"></div>'
+        + '<div style="display:flex;align-items:flex-end;justify-content:space-between;gap:20px;padding-top:16px;border-top:1px solid #E4E9F0;">'
+          + footerLegal
+          + '<span style="font-family:\'JetBrains Mono\',monospace;font-size:9px;letter-spacing:.06em;color:#6B7788;white-space:nowrap;">'+_ptFolio(plan)+'</span>'
+        + '</div>'
+      + '</div>'
+      + '<div style="background:#F5F7FA;border:1px solid #E4E9F0;border-radius:12px;padding:20px 22px;display:flex;flex-direction:column;gap:14px;min-height:0;">'
+        + '<span style="font-size:9px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#5A6880;">Datos del proyecto</span>'
+        + '<div style="display:flex;flex-direction:column;gap:8px;">'+metaHtml+'</div>'
+        + '<div style="flex:1"></div>'
+        + '<div style="background:#0B1F3A;border-radius:10px;padding:14px 16px;display:flex;gap:20px;">'
+          + '<div style="display:flex;flex-direction:column;gap:2px;"><span style="color:#fff;font-size:22px;font-weight:700;line-height:1;">'+(plan.etapas||[]).length+'</span><span style="color:#A9BAD2;font-size:8.5px;font-weight:500;">Etapa'+((plan.etapas||[]).length===1?'':'s')+'</span></div>'
+          + '<div style="display:flex;flex-direction:column;gap:2px;"><span style="color:#fff;font-size:22px;font-weight:700;line-height:1;">'+totalDias+'</span><span style="color:#A9BAD2;font-size:8.5px;font-weight:500;">Días naturales</span></div>'
+        + '</div>'
+      + '</div>'
+    + '</div>'
+  + '</div>';
+}
+
+// ─── PLAN DE TRABAJO · PDF (Hoja 3: Diagrama de Gantt) ────
+// Construcción 100% HTML/CSS: barras posicionadas con left/width en % sobre
+// el total de días del plan, igual principio que una hoja de cálculo con
+// celdas coloreadas pero con divs posicionados absolutamente. Igual que en
+// el documento de referencia, las columnas semanales se dibujan con ancho
+// visual IGUAL entre sí aunque la última semana cubra menos días reales —
+// mismo criterio de simplificación que ya usa el propio mockup de Design.
+function _ptContrastInk(hex){
+  const c = (hex||"#0B1F3A").replace("#","");
+  const cc = c.length===3 ? c.split("").map(function(ch){return ch+ch;}).join("") : c;
+  const r = parseInt(cc.substr(0,2),16)||0, g = parseInt(cc.substr(2,2),16)||0, b = parseInt(cc.substr(4,2),16)||0;
+  const lum = (0.299*r + 0.587*g + 0.114*b) / 255;
+  return lum > 0.6 ? "#0B1F3A" : "#FFFFFF";
+}
+
+function _ptCalcularGantt(plan){
+  const r = _ptRangoGlobal(plan);
+  if(!r.min || !r.max) return null;
+  const iniG = _ptParseISO(r.min), finG = _ptParseISO(r.max);
+  const totalDias = Math.round((finG - iniG)/86400000) + 1;
+  const numSemanas = Math.ceil(totalDias/7);
+  const semanas = [];
+  for(let i=0;i<numSemanas;i++){
+    const ini = new Date(iniG); ini.setDate(ini.getDate()+i*7);
+    let fin = new Date(ini); fin.setDate(fin.getDate()+6);
+    if(fin > finG) fin = new Date(finG);
+    semanas.push({ n:"Sem "+(i+1), rango:_ptFmtRangoCorto(ini.toISOString().slice(0,10), fin.toISOString().slice(0,10)) });
+  }
+  const barras = (plan.etapas||[]).map(function(etapa){
+    const ini = _ptParseISO(etapa.fechaInicio), fin = _ptParseISO(etapa.fechaFin);
+    const offsetDias = Math.round((ini-iniG)/86400000);
+    const duracionDias = Math.round((fin-ini)/86400000) + 1;
+    return {
+      nombre: etapa.nombre, color: etapa.colorGantt || "#0B1F3A",
+      dates: _ptFmtRangoCorto(etapa.fechaInicio, etapa.fechaFin),
+      left: (offsetDias/totalDias*100)+"%",
+      width: (duracionDias/totalDias*100)+"%",
+      duracionTxt: duracionDias+" día"+(duracionDias===1?"":"s")
+    };
+  });
+  return { totalDias:totalDias, numSemanas:numSemanas, semanas:semanas, barras:barras };
+}
+
+function _ptHoja3GanttHtml(plan, accent){
+  const g = _ptCalcularGantt(plan);
+  if(!g || !g.barras.length){
+    return '<div class="pt-hoja" style="padding-top:26px;padding-bottom:20px;"><div style="color:#5A6880;font-size:12px;">Sin fechas suficientes para construir el diagrama de Gantt.</div></div>';
+  }
+  const weekCols = "repeat("+g.semanas.length+", 1fr)";
+  const headerRow = '<div style="display:grid;grid-template-columns:250px 62px '+weekCols+';background:#0B1F3A;">'
+    + '<span style="padding:11px 16px;color:#fff;font-size:8.5px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;">Etapa</span>'
+    + '<span style="padding:11px 8px;color:#fff;font-size:8.5px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;text-align:center;">Avance</span>'
+    + g.semanas.map(function(s){
+        return '<div style="padding:8px 6px;border-left:1px solid rgba(255,255,255,.14);display:flex;flex-direction:column;gap:2px;align-items:center;">'
+          + '<span style="color:#fff;font-size:9px;font-weight:600;">'+s.n+'</span>'
+          + '<span style="color:#8FB6EC;font-family:\'JetBrains Mono\',monospace;font-size:7.5px;">'+s.rango+'</span>'
+        + '</div>';
+      }).join("")
+  + '</div>';
+
+  const filasHtml = g.barras.map(function(b, i){
+    const ink = _ptContrastInk(b.color);
+    return '<div style="display:grid;grid-template-columns:250px 62px '+weekCols+';background:'+(i%2===0?"#fff":"#FBFCFD")+';border-top:1px solid #E9EDF3;">'
+      + '<div style="padding:12px 16px;display:flex;gap:10px;align-items:flex-start;">'
+        + '<span style="width:3px;align-self:stretch;border-radius:2px;background:'+b.color+';flex-shrink:0;"></span>'
+        + '<div style="display:flex;flex-direction:column;gap:2px;min-width:0;">'
+          + '<span style="font-size:7.5px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#5F6B7D;">Etapa '+(i+1)+'</span>'
+          + '<span style="color:#0B1F3A;font-size:11px;font-weight:600;line-height:1.3;">'+escapeHtml(b.nombre||"")+'</span>'
+          + '<span style="font-family:\'JetBrains Mono\',monospace;color:#5A6880;font-size:8px;">'+b.dates+'</span>'
+        + '</div>'
+      + '</div>'
+      + '<div style="display:flex;align-items:center;justify-content:center;border-left:1px solid #E9EDF3;border-right:1px solid #E9EDF3;">'
+        + '<span style="font-family:\'JetBrains Mono\',monospace;color:#5F6B7D;font-size:10px;font-weight:500;">0%</span>'
+      + '</div>'
+      + '<div style="grid-column:span '+g.semanas.length+';position:relative;padding:12px 0;">'
+        + '<div style="position:relative;height:22px;">'
+          + '<div style="position:absolute;top:0;bottom:0;left:'+b.left+';width:'+b.width+';min-width:8px;background:'+b.color+';border-radius:5px;display:flex;align-items:center;padding:0 9px;">'
+            + '<span style="color:'+ink+';font-size:8.5px;font-weight:700;white-space:nowrap;">'+b.duracionTxt+'</span>'
+          + '</div>'
+        + '</div>'
+      + '</div>'
+    + '</div>';
+  }).join("");
+
+  const leyendaHtml = g.barras.map(function(b){
+    return '<div style="display:flex;align-items:center;gap:9px;">'
+      + '<span style="width:20px;height:8px;border-radius:3px;background:'+b.color+';flex-shrink:0;"></span>'
+      + '<span style="color:#33415A;font-size:10px;font-weight:500;">'+escapeHtml(b.nombre||"")+'</span>'
+    + '</div>';
+  }).join("");
+
+  return '<div class="pt-hoja" style="padding-top:26px;padding-bottom:20px;">'
+    + '<div style="display:flex;align-items:flex-end;justify-content:space-between;gap:24px;padding-bottom:12px;border-bottom:2px solid #0B1F3A;flex-shrink:0;">'
+      + '<div style="display:flex;flex-direction:column;gap:4px;">'
+        + '<span style="font-size:9.5px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:'+accent+';">Hoja 3 de 3</span>'
+        + '<h2 style="margin:0;color:#0B1F3A;font-size:20px;font-weight:700;letter-spacing:-.02em;">Programa de Obra — Diagrama de Gantt</h2>'
+      + '</div>'
+      + '<span style="padding-bottom:3px;color:#5A6880;font-size:9.5px;font-weight:500;">'+g.totalDias+' días naturales · '+g.semanas.length+' semana'+(g.semanas.length===1?'':'s')+' de calendario</span>'
+    + '</div>'
+    + '<div style="margin-top:18px;border:1px solid #E4E9F0;border-radius:10px;overflow:hidden;flex-shrink:0;">'+headerRow+filasHtml+'</div>'
+    + '<div style="margin-top:18px;border:1px solid #E4E9F0;border-radius:10px;padding:14px 16px;max-width:340px;flex-shrink:0;">'
+      + '<span style="font-size:8.5px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#5F6B7D;">Leyenda de etapas</span>'
+      + '<div style="margin-top:10px;display:flex;flex-direction:column;gap:8px;">'+leyendaHtml+'</div>'
+    + '</div>'
+    + '<div style="flex:1"></div>'
+    + '<div style="display:flex;align-items:center;justify-content:space-between;gap:24px;padding-top:10px;border-top:1px solid #E4E9F0;flex-shrink:0;">'
+      + '<span style="color:#5A6880;font-size:9px;font-weight:500;">Programa emitido previo al inicio de obra · avance 0% en todas las etapas.</span>'
+      + '<span style="font-family:\'JetBrains Mono\',monospace;font-size:9px;letter-spacing:.06em;color:#6B7788;">'+_ptFolio(plan)+' · Hoja 3/3</span>'
+    + '</div>'
+  + '</div>';
+}
+
 function generarPdfPlanTrabajoEnVentana(plan, winRef, soloPreview){
   if(!plan) return;
   const _modPlan = _modalidadDePlan(plan);
   const _esHome = _modPlan === "home";
   const accent = _esHome ? "#C36F4A" : "#1E6FD9";
+  const logo = _logoColorDe(_modPlan) || window._romsaLogoAzul || "";
+  const marcaLabel = _nombreMarcaPlan(plan.marca);
 
+  const hoja1Html = _ptHoja1Html(plan, accent, logo, marcaLabel);
   const headerP1 = _ptHojaHeaderPrincipal(plan, accent);
   const headerCont = _ptHojaHeaderContinuacion(plan);
   const footer = _ptHojaFooter();
   const bloques = _ptConstruirBloquesHoja2(plan);
-  // Hoja 1 (Portada) y Hoja 3 (Gantt) se agregan aquí mismo en el sub-PR
-  // siguiente, antes y después de _hojasHtml respectivamente.
-  const _hojasHtml = _ptDistribuirHojasLandscape(bloques, headerP1, footer, headerCont);
+  const hoja2Html = _ptDistribuirHojasLandscape(bloques, headerP1, footer, headerCont);
+  const hoja3Html = _ptHoja3GanttHtml(plan, accent);
+  const _hojasHtml = hoja1Html + hoja2Html + hoja3Html;
 
   const _titulo = "ROMSA – Plan de Trabajo – " + (plan.cliente||"");
   const _previewBar = '<div id="preview-bar">'
