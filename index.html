@@ -727,7 +727,8 @@ body.in-reportes #topbar, body.in-reportes #subnav, body.in-reportes #navbar, bo
 body.in-auditoria #topbar, body.in-auditoria #subnav, body.in-auditoria #navbar, body.in-auditoria .fab, body.in-auditoria #fab,
 body.in-dashboardgeneral #topbar, body.in-dashboardgeneral #subnav, body.in-dashboardgeneral #navbar, body.in-dashboardgeneral .fab, body.in-dashboardgeneral #fab,
 body.in-contactos #topbar, body.in-contactos #subnav, body.in-contactos #navbar, body.in-contactos .fab, body.in-contactos #fab,
-body.in-contactosdb #topbar, body.in-contactosdb #subnav, body.in-contactosdb #navbar, body.in-contactosdb .fab, body.in-contactosdb #fab{
+body.in-contactosdb #topbar, body.in-contactosdb #subnav, body.in-contactosdb #navbar, body.in-contactosdb .fab, body.in-contactosdb #fab,
+body.in-plantrabajo #topbar, body.in-plantrabajo #subnav, body.in-plantrabajo #navbar, body.in-plantrabajo .fab, body.in-plantrabajo #fab{
   display:none !important;
 }
 /* Seguimiento de Obras: oculta el topbar (avatar/logo/salir) Y el
@@ -740,7 +741,8 @@ body.in-seguimiento #topbar, body.in-seguimiento #subnav{
 /* Cuando se oculta el navbar, ajustar padding del screen activo para que ocupe todo */
 body.in-cotizaciones #app, body.in-costeo #app, body.in-fotoeditor #app,
 body.in-reportes #app, body.in-auditoria #app, body.in-dashboardgeneral #app,
-body.in-contactos #app, body.in-contactosdb #app{
+body.in-contactos #app, body.in-contactosdb #app,
+body.in-plantrabajo #app{
   padding-bottom:0 !important;
 }
 .cos-tab{padding:12px 14px;font-size:11px;font-weight:700;color:var(--tx2);letter-spacing:.3px;cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;}
@@ -1052,6 +1054,7 @@ body.in-contactos #app, body.in-contactosdb #app{
   --ds-mod-contactosdb:#94A3B8;
   --ds-mod-ia:#C084FC;
   --ds-mod-admin:#F87171;
+  --ds-mod-plantrabajo:#FBBF24;
   --ds-mod-dashboardgeneral:var(--ds-mustard); /* excepción intencional: ficha principal */
 
   /* Familias de los 3 roles tipográficos + mono para folios/códigos */
@@ -1245,6 +1248,7 @@ body.in-contactos #app, body.in-contactosdb #app{
 .mod-icon.mi-bd{--mod-accent:var(--ds-mod-contactosdb);}
 .mod-icon.mi-ia{--mod-accent:var(--ds-mod-ia);}
 .mod-icon.mi-ad{--mod-accent:var(--ds-mod-admin);}
+.mod-icon.mi-pt{--mod-accent:var(--ds-mod-plantrabajo);}
 .mod-info{flex:1;min-width:0;}
 .mod-name{font-family:var(--ds-font-title);font-size:12.5px;font-weight:700;color:#fff;margin-bottom:2px;line-height:1.25;letter-spacing:-.1px;}
 .mod-desc{font-family:var(--ds-font-body);font-size:9.5px;font-weight:400;color:rgba(255,255,255,.38);line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
@@ -1632,6 +1636,16 @@ body.in-contactos #app, body.in-contactosdb #app{
         </div>
       </div>
 
+      <!-- 5b. Plan de Trabajo -->
+      <div id="mod-card-plantrabajo" class="mod-card ds-card" onclick="selectModule('plantrabajo')">
+        <div class="mod-icon mi-pt"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="7" y1="14" x2="10" y2="14"/><line x1="7" y1="18" x2="13" y2="18"/></svg></div>
+        <div class="mod-info">
+          <div class="mod-name">Plan de Trabajo</div>
+          <div class="mod-desc">Cronograma de ejecución por etapas, PDF de 3 hojas</div>
+        </div>
+        <div class="mod-meta"><span class="mod-code">PT-11</span></div>
+      </div>
+
       <!-- 6. Reportes de Obra -->
       <div class="mod-card ds-card" onclick="selectModule('reportes')">
         <div class="mod-icon mi-rp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>
@@ -1867,6 +1881,34 @@ body.in-contactos #app, body.in-contactosdb #app{
           <div id="dash-recientes"></div>
         </div>
 
+      </div>
+    </div>
+
+    <!-- PLAN DE TRABAJO -->
+    <div id="screen-plantrabajo" class="screen">
+      <div style="background:#0B1F3A;padding:14px 18px 16px;">
+        <div class="mod-header-top" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+          <button class="mod-header-back" onclick="volverSelector()">← Menú</button>
+          <button onclick="doLogout()" style="background:rgba(255,255,255,.12);border:none;color:#fff;font-size:11px;font-weight:600;padding:6px 10px;border-radius:8px;cursor:pointer;font-family:var(--font);">Salir</button>
+        </div>
+        <div class="mod-header-crumb">
+          <span class="mod-header-eyebrow">ROMSA Industrial · Plan de Trabajo</span>
+          <span class="mod-header-code">PT-11</span>
+        </div>
+        <div class="mod-header-title">
+          <span class="mod-header-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>
+          Plan de Trabajo
+        </div>
+      </div>
+      <div class="section">
+        <div class="sec-row">
+          <span class="sec-lbl">Planes de trabajo</span>
+          <span style="font-size:11px;font-weight:600;color:var(--blue);cursor:pointer;" onclick="abrirNuevoPlanTrabajo()">+ Nuevo Plan</span>
+        </div>
+        <div class="card"><div id="lista-planes-trabajo">
+          <div class="empty"><div class="empty-ico">🗓️</div><div class="empty-ttl">Sin planes de trabajo</div><div class="empty-sub">Crea el primer plan para generar el PDF de 3 hojas para el cliente</div></div>
+        </div></div>
+        <div style="padding-bottom:20px;"></div>
       </div>
     </div>
 
@@ -4024,6 +4066,41 @@ body.in-contactos #app, body.in-contactosdb #app{
   </div>
 </div>
 
+<!-- MODAL NUEVO / EDITAR PLAN DE TRABAJO -->
+<div class="moverlay" id="modal-plan-trabajo">
+  <div class="modal" style="max-width:640px;">
+    <div class="modal-handle"></div>
+    <div class="modal-ttl" id="pt-modal-ttl">Nuevo Plan de Trabajo</div>
+
+    <div class="fdivider">Datos generales</div>
+    <div class="fg"><label class="flabel">Marca <span class="req">*</span></label>
+      <select class="fselect" id="pt-marca">
+        <option value="industrial">ROMSA Industrial</option>
+        <option value="rackline">RACKLINE</option>
+        <option value="home">HOME by ROMSA</option>
+      </select>
+    </div>
+    <div class="fg"><label class="flabel">Cliente <span class="req">*</span></label><input class="finput" id="pt-cliente" placeholder="Ej: PIMSA — Parque Industrial Mexicali"></div>
+    <div class="fg"><label class="flabel">Ubicación / Proyecto <span class="req">*</span></label><input class="finput" id="pt-ubicacion" placeholder="Ej: Nave 90000, PIMSA IV"></div>
+    <div class="fg"><label class="flabel">Proyecto (título corto)</label><input class="finput" id="pt-proyecto" placeholder="Ej: Mantenimiento a cubierta de insulpanel"></div>
+    <div class="fg"><label class="flabel">Alcance del proyecto</label><textarea class="ftextarea" id="pt-alcance" rows="4" placeholder="Descripción detallada de los trabajos a realizar..."></textarea></div>
+    <div class="frow">
+      <div class="fg"><label class="flabel">Área total (m²)</label><input class="finput" id="pt-area-total" type="number" min="0" step="any" placeholder="0"></div>
+      <div class="fg"><label class="flabel">Departamento</label><input class="finput" id="pt-departamento" placeholder="Ej: Impermeabilización y Mantenimiento Industrial"></div>
+    </div>
+    <div class="fg"><label class="flabel">Sistema</label><input class="finput" id="pt-sistema" placeholder="Ej: Poliuretano elastomérico — garantía 5 años"></div>
+
+    <div class="fdivider">Etapas</div>
+    <div style="font-size:12px;color:var(--tx2);margin-bottom:11px;line-height:1.5;">Captura cada etapa una sola vez — el sistema expande automáticamente a días (saltando domingos, horario reducido los sábados) para el Plan de Ejecución.</div>
+    <div id="pt-etapas-list" style="display:flex;flex-direction:column;gap:10px;margin-bottom:10px;"></div>
+    <button type="button" class="btn btn-ghost btn-block btn-sm" style="margin-bottom:16px;" onclick="agregarEtapaPlanTrabajo()">+ Agregar etapa</button>
+
+    <div style="display:flex;gap:10px;">
+      <button class="btn btn-secondary" style="flex:1;" onclick="closeModal('modal-plan-trabajo')">Cancelar</button>
+      <button class="btn btn-primary" style="flex:1;" id="btn-guardar-plan-trabajo" onclick="guardarPlanTrabajo()">Guardar plan →</button>
+    </div>
+  </div>
+</div>
 
 <!-- MODAL EDITAR ETAPA -->
 <div class="moverlay" id="modal-edit-etapa">
@@ -4342,6 +4419,200 @@ async function saveUpdate(obraId, upd){
   await getUpdatesRef(obraId).doc(String(upd.id)).set(data);
 }
 
+// ─── PLAN DE TRABAJO ──────────────────────────────
+const planesTrabajoRef = db ? db.collection("planes_trabajo") : null;
+let planesTrabajo = [];
+let _ptEtapas = [];
+let _ptEtapaIdSeq = 1;
+let _ptEditandoId = null; // null = creando uno nuevo; string = editando ese id
+
+function _modalidadDePlan(p){ return (p && (p.marca === "home" || p.marca === "rackline")) ? p.marca : "industrial"; }
+function _nombreMarcaPlan(marca){ return marca === "home" ? "HOME by ROMSA" : marca === "rackline" ? "RACKLINE" : "ROMSA Industrial"; }
+
+async function cargarPlanesTrabajo(){
+  const lista = document.getElementById("lista-planes-trabajo");
+  if(!planesTrabajoRef){
+    if(lista) lista.innerHTML = "<div class='empty'><div class='empty-ico'>⚠️</div><div class='empty-ttl'>Sin conexión a Firebase</div><div class='empty-sub'>Verifica tu conexión a internet</div></div>";
+    return;
+  }
+  try{
+    const snap = await planesTrabajoRef.orderBy("createdAt","desc").get();
+    planesTrabajo = snap.docs.map(d => Object.assign({id:d.id}, d.data()));
+  }catch(e1){
+    try{
+      const snap = await planesTrabajoRef.get();
+      planesTrabajo = snap.docs.map(d => Object.assign({id:d.id}, d.data()));
+      planesTrabajo.sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+    }catch(e2){
+      console.error("[ROMSA] Error cargando planes de trabajo:", e2);
+      if(lista) lista.innerHTML = "<div class='empty'><div class='empty-ico'>⚠️</div><div class='empty-ttl'>Error al cargar</div><div class='empty-sub'>"+e2.message+"</div></div>";
+      return;
+    }
+  }
+  renderListaPlanesTrabajo();
+}
+
+function renderListaPlanesTrabajo(){
+  const lista = document.getElementById("lista-planes-trabajo");
+  if(!lista) return;
+  if(!planesTrabajo.length){
+    lista.innerHTML = "<div class='empty'><div class='empty-ico'>🗓️</div><div class='empty-ttl'>Sin planes de trabajo</div><div class='empty-sub'>Crea el primer plan para generar el PDF de 3 hojas para el cliente</div></div>";
+    return;
+  }
+  lista.innerHTML = planesTrabajo.map(function(p){
+    const numEtapas = (p.etapas||[]).length;
+    const fechas = (p.etapas||[]).reduce(function(acc,e){
+      if(e.fechaInicio && (!acc.min || e.fechaInicio < acc.min)) acc.min = e.fechaInicio;
+      if(e.fechaFin && (!acc.max || e.fechaFin > acc.max)) acc.max = e.fechaFin;
+      return acc;
+    }, {min:null, max:null});
+    const rango = (fechas.min && fechas.max) ? (fechas.min+" — "+fechas.max) : "Sin fechas";
+    return '<div style="padding:14px 16px;border-bottom:1px solid var(--g1);cursor:pointer;" onclick="abrirEditarPlanTrabajo(&apos;'+p.id+'&apos;)">'
+      + '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:4px;">'
+        + '<div style="font-size:13px;font-weight:700;color:var(--navy);">'+(p.cliente||"Sin cliente")+'</div>'
+        + '<span style="font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3);background:var(--off);padding:3px 8px;border-radius:10px;">'+_nombreMarcaPlan(p.marca)+'</span>'
+      + '</div>'
+      + '<div style="font-size:11.5px;color:var(--tx2);margin-bottom:4px;">'+(p.proyecto||p.ubicacion||"")+'</div>'
+      + '<div style="display:flex;align-items:center;gap:10px;font-size:10.5px;color:var(--tx3);">'
+        + '<span>'+numEtapas+' etapa'+(numEtapas===1?'':'s')+'</span><span>·</span><span>'+rango+'</span>'
+      + '</div>'
+    + '</div>';
+  }).join("");
+}
+
+function abrirNuevoPlanTrabajo(){
+  _ptEditandoId = null;
+  _ptEtapas = [];
+  _ptEtapaIdSeq = 1;
+  document.getElementById("pt-modal-ttl").textContent = "Nuevo Plan de Trabajo";
+  ["pt-cliente","pt-ubicacion","pt-proyecto","pt-alcance","pt-area-total","pt-departamento","pt-sistema"].forEach(function(id){
+    const el = document.getElementById(id); if(el) el.value = "";
+  });
+  document.getElementById("pt-marca").value = "industrial";
+  agregarEtapaPlanTrabajo();
+  document.getElementById("modal-plan-trabajo").classList.add("open");
+}
+
+function abrirEditarPlanTrabajo(id){
+  const p = planesTrabajo.find(function(x){ return x.id === id; });
+  if(!p) return;
+  _ptEditandoId = id;
+  _ptEtapas = (p.etapas||[]).map(function(e){ return Object.assign({}, e); });
+  _ptEtapaIdSeq = _ptEtapas.reduce(function(m,e){ return Math.max(m, e.id||0); }, 0) + 1;
+  document.getElementById("pt-modal-ttl").textContent = "Editar Plan de Trabajo";
+  document.getElementById("pt-marca").value = p.marca || "industrial";
+  document.getElementById("pt-cliente").value = p.cliente || "";
+  document.getElementById("pt-ubicacion").value = p.ubicacion || "";
+  document.getElementById("pt-proyecto").value = p.proyecto || "";
+  document.getElementById("pt-alcance").value = p.alcance || "";
+  document.getElementById("pt-area-total").value = p.areaTotal || "";
+  document.getElementById("pt-departamento").value = p.departamento || "";
+  document.getElementById("pt-sistema").value = p.sistema || "";
+  renderEtapasPlanTrabajo();
+  document.getElementById("modal-plan-trabajo").classList.add("open");
+}
+
+const PT_COLORES_GANTT = ["#0B1F3A","#1E6FD9","#5FA5F0","#C36F4A","#0B7A5A","#8A5FC9"];
+
+function agregarEtapaPlanTrabajo(){
+  const n = _ptEtapas.length;
+  _ptEtapas.push({
+    id: _ptEtapaIdSeq++,
+    nombre: "", fechaInicio: "", fechaFin: "", area: "", actividad: "",
+    horarioNormal: "07:00 - 17:00", horarioSabado: "07:00 - 13:00",
+    herramientas: "", producto: "", epp: "",
+    colorGantt: PT_COLORES_GANTT[n % PT_COLORES_GANTT.length]
+  });
+  renderEtapasPlanTrabajo();
+}
+
+function removeEtapaPlanTrabajo(id){
+  _ptEtapas = _ptEtapas.filter(function(e){ return e.id !== id; });
+  renderEtapasPlanTrabajo();
+}
+
+function onEtapaPlanTrabajoField(id, field, value){
+  const e = _ptEtapas.find(function(x){ return x.id === id; });
+  if(!e) return;
+  e[field] = value;
+}
+
+function renderEtapasPlanTrabajo(){
+  const wrap = document.getElementById("pt-etapas-list");
+  if(!wrap) return;
+  wrap.innerHTML = _ptEtapas.map(function(e, i){
+    return '<div style="background:var(--off2);border:1px solid var(--g1);border-radius:12px;padding:12px;">'
+      + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">'
+        + '<div style="font-size:11px;font-weight:700;color:var(--navy);">Etapa '+(i+1)+'</div>'
+        + '<div style="display:flex;align-items:center;gap:8px;">'
+          + '<input type="color" value="'+e.colorGantt+'" oninput="onEtapaPlanTrabajoField('+e.id+',&apos;colorGantt&apos;,this.value)" title="Color en el Gantt" style="width:24px;height:24px;border:none;border-radius:6px;cursor:pointer;padding:0;background:none;">'
+          + '<button onclick="removeEtapaPlanTrabajo('+e.id+')" style="background:var(--red-dim);border:none;color:var(--red);font-size:10px;font-weight:600;padding:4px 8px;border-radius:6px;cursor:pointer;font-family:var(--font);">✕</button>'
+        + '</div>'
+      + '</div>'
+      + '<div class="fg" style="margin-bottom:8px;"><label class="flabel">Nombre de la etapa</label>'
+        + '<input class="finput" value="'+(e.nombre||"").replace(/"/g,"&quot;")+'" placeholder="Ej: Preparación de superficie" oninput="onEtapaPlanTrabajoField('+e.id+',&apos;nombre&apos;,this.value)"></div>'
+      + '<div class="frow" style="margin-bottom:8px;">'
+        + '<div class="fg" style="margin:0;"><label class="flabel">Fecha inicio</label><input class="finput" type="date" value="'+(e.fechaInicio||"")+'" onchange="onEtapaPlanTrabajoField('+e.id+',&apos;fechaInicio&apos;,this.value)"></div>'
+        + '<div class="fg" style="margin:0;"><label class="flabel">Fecha fin</label><input class="finput" type="date" value="'+(e.fechaFin||"")+'" onchange="onEtapaPlanTrabajoField('+e.id+',&apos;fechaFin&apos;,this.value)"></div>'
+      + '</div>'
+      + '<div class="fg" style="margin-bottom:8px;"><label class="flabel">Actividad</label>'
+        + '<textarea class="ftextarea" rows="2" placeholder="Descripción de la actividad de esta etapa..." oninput="onEtapaPlanTrabajoField('+e.id+',&apos;actividad&apos;,this.value)">'+(e.actividad||"").replace(/</g,"&lt;")+'</textarea></div>'
+      + '<div class="frow" style="margin-bottom:8px;">'
+        + '<div class="fg" style="margin:0;"><label class="flabel">Área / m²</label><input class="finput" value="'+(e.area||"").toString().replace(/"/g,"&quot;")+'" placeholder="Ej: 10,786 m²" oninput="onEtapaPlanTrabajoField('+e.id+',&apos;area&apos;,this.value)"></div>'
+        + '<div class="fg" style="margin:0;"><label class="flabel">Horario normal (L-V)</label><input class="finput" value="'+(e.horarioNormal||"").replace(/"/g,"&quot;")+'" placeholder="07:00 - 17:00" oninput="onEtapaPlanTrabajoField('+e.id+',&apos;horarioNormal&apos;,this.value)"></div>'
+      + '</div>'
+      + '<div class="fg" style="margin-bottom:8px;"><label class="flabel">Horario sábado</label>'
+        + '<input class="finput" value="'+(e.horarioSabado||"").replace(/"/g,"&quot;")+'" placeholder="07:00 - 13:00" oninput="onEtapaPlanTrabajoField('+e.id+',&apos;horarioSabado&apos;,this.value)"></div>'
+      + '<div class="fg" style="margin-bottom:8px;"><label class="flabel">Herramientas</label>'
+        + '<input class="finput" value="'+(e.herramientas||"").replace(/"/g,"&quot;")+'" placeholder="Ej: Hidrolavadora, escobas" oninput="onEtapaPlanTrabajoField('+e.id+',&apos;herramientas&apos;,this.value)"></div>'
+      + '<div class="frow">'
+        + '<div class="fg" style="margin:0;"><label class="flabel">Producto</label><input class="finput" value="'+(e.producto||"").replace(/"/g,"&quot;")+'" placeholder="Ej: Sellador PU" oninput="onEtapaPlanTrabajoField('+e.id+',&apos;producto&apos;,this.value)"></div>'
+        + '<div class="fg" style="margin:0;"><label class="flabel">EPP</label><input class="finput" value="'+(e.epp||"").replace(/"/g,"&quot;")+'" placeholder="Ej: Kit A" oninput="onEtapaPlanTrabajoField('+e.id+',&apos;epp&apos;,this.value)"></div>'
+      + '</div>'
+    + '</div>';
+  }).join("");
+}
+
+async function guardarPlanTrabajo(){
+  const cliente = document.getElementById("pt-cliente").value.trim();
+  const ubicacion = document.getElementById("pt-ubicacion").value.trim();
+  if(!cliente){ showToast("⚠️ Ingresa el cliente"); return; }
+  if(!ubicacion){ showToast("⚠️ Ingresa la ubicación / proyecto"); return; }
+  if(!_ptEtapas.length){ showToast("⚠️ Agrega al menos una etapa"); return; }
+  for(const e of _ptEtapas){
+    if(!e.nombre || !e.nombre.trim()){ showToast("⚠️ Todas las etapas necesitan un nombre"); return; }
+    if(!e.fechaInicio || !e.fechaFin){ showToast("⚠️ Todas las etapas necesitan fecha de inicio y fin"); return; }
+    if(e.fechaFin < e.fechaInicio){ showToast("⚠️ La fecha fin de \""+e.nombre+"\" es anterior a la de inicio"); return; }
+  }
+  const now = Date.now();
+  const id = _ptEditandoId || ("plan"+now);
+  const existente = _ptEditandoId ? planesTrabajo.find(function(x){ return x.id === _ptEditandoId; }) : null;
+  const p = {
+    id,
+    marca: document.getElementById("pt-marca").value,
+    cliente,
+    ubicacion,
+    proyecto: document.getElementById("pt-proyecto").value.trim(),
+    alcance: document.getElementById("pt-alcance").value.trim(),
+    areaTotal: parseFloat(document.getElementById("pt-area-total").value) || 0,
+    departamento: document.getElementById("pt-departamento").value.trim(),
+    sistema: document.getElementById("pt-sistema").value.trim(),
+    cotizacionId: existente ? (existente.cotizacionId || null) : null,
+    etapas: _ptEtapas.map(function(e){ return Object.assign({}, e); }),
+    createdAt: existente ? (existente.createdAt || now) : now,
+    updatedAt: now
+  };
+  const btn = document.getElementById("btn-guardar-plan-trabajo");
+  btn.textContent = "Guardando..."; btn.disabled = true;
+  try{
+    await planesTrabajoRef.doc(id).set(p);
+    closeModal("modal-plan-trabajo");
+    showToast("✅ Plan de Trabajo guardado");
+    cargarPlanesTrabajo();
+  }catch(e){ showToast("❌ Error: "+e.message); }
+  finally{ btn.textContent = "Guardar plan →"; btn.disabled = false; }
+}
+
 function subscribeObras(){
   if(!obrasRef){
     document.getElementById("lista-obras").innerHTML="<div class='empty'><div class='empty-ico'>⚠️</div><div class='empty-ttl'>Sin conexión a Firebase</div><div class='empty-sub'>Verifica tu conexión a internet</div></div>";
@@ -4420,7 +4691,7 @@ function goScreen(n){
   // Modo fullscreen — ocultar el shell general (topbar/subnav/navbar) para
   // que cada módulo dependa únicamente de su propio header, sin duplicar
   // el botón de menú principal.
-  document.body.classList.remove("in-cotizaciones","in-costeo","in-fotoeditor","in-reportes","in-auditoria","in-dashboardgeneral","in-seguimiento","in-contactos","in-contactosdb");
+  document.body.classList.remove("in-cotizaciones","in-costeo","in-fotoeditor","in-reportes","in-auditoria","in-dashboardgeneral","in-seguimiento","in-contactos","in-contactosdb","in-plantrabajo");
   if(n === "cotizaciones") document.body.classList.add("in-cotizaciones");
   if(n === "costeo" || n === "costeo-editor") document.body.classList.add("in-costeo");
   if(n === "fotoeditor") document.body.classList.add("in-fotoeditor");
@@ -4429,6 +4700,7 @@ function goScreen(n){
   if(n === "dashboardgeneral") document.body.classList.add("in-dashboardgeneral");
   if(n === "contactos") document.body.classList.add("in-contactos");
   if(n === "contactosdb") document.body.classList.add("in-contactosdb");
+  if(n === "plantrabajo") document.body.classList.add("in-plantrabajo");
   // Seguimiento de Obras: oculta el topbar y el subnav global viejo —
   // su navegación interna real (Inicio/Obras/+Nueva) sigue funcionando
   // vía las mismas onclick, ahora como .mod-tabs dentro de la pantalla.
@@ -7344,6 +7616,9 @@ function selectModule(mod){
   } else if(mod === 'admin'){
     if(!isAdmin){ showToast("🔒 Sin acceso a este módulo"); volverSelector(); return; }
     goScreen('admin');
+  } else if(mod === 'plantrabajo'){
+    goScreen('plantrabajo');
+    if(typeof cargarPlanesTrabajo === "function") cargarPlanesTrabajo();
   }
 }
 
