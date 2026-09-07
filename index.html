@@ -4090,6 +4090,15 @@ body.in-plantrabajo #app{
     </div>
     <div class="fg"><label class="flabel">Sistema</label><input class="finput" id="pt-sistema" placeholder="Ej: Poliuretano elastomérico — garantía 5 años"></div>
 
+    <div class="fdivider">Datos fiscales (opcional, para el pie de la Portada)</div>
+    <div class="fg"><label class="flabel">Razón social del contratista</label><input class="finput" id="pt-contratista-razon" placeholder="Ej: ROMSA Industrial S.A. de C.V."></div>
+    <div class="frow">
+      <div class="fg"><label class="flabel">RFC del contratista</label><input class="finput" id="pt-contratista-rfc" placeholder="Ej: RIN180412QK3"></div>
+      <div class="fg"><label class="flabel">Dirección fiscal del contratista</label><input class="finput" id="pt-contratista-direccion" placeholder="Ej: Blvd. Lázaro Cárdenas 2140, Mexicali, B.C."></div>
+    </div>
+    <div class="fg"><label class="flabel">Razón social del cliente</label><input class="finput" id="pt-cliente-razon" placeholder="Ej: PIMSA Parque Industrial S.A. de C.V."></div>
+    <div class="fg"><label class="flabel">RFC del cliente</label><input class="finput" id="pt-cliente-rfc" placeholder="Ej: PIM950101AB2"></div>
+
     <div class="fdivider">Etapas</div>
     <div style="font-size:12px;color:var(--tx2);margin-bottom:11px;line-height:1.5;">Captura cada etapa una sola vez — el sistema expande automáticamente a días (saltando domingos, horario reducido los sábados) para el Plan de Ejecución.</div>
     <div id="pt-etapas-list" style="display:flex;flex-direction:column;gap:10px;margin-bottom:10px;"></div>
@@ -4485,7 +4494,7 @@ function abrirNuevoPlanTrabajo(){
   _ptEtapas = [];
   _ptEtapaIdSeq = 1;
   document.getElementById("pt-modal-ttl").textContent = "Nuevo Plan de Trabajo";
-  ["pt-cliente","pt-ubicacion","pt-proyecto","pt-alcance","pt-area-total","pt-departamento","pt-sistema"].forEach(function(id){
+  ["pt-cliente","pt-ubicacion","pt-proyecto","pt-alcance","pt-area-total","pt-departamento","pt-sistema","pt-contratista-razon","pt-contratista-rfc","pt-contratista-direccion","pt-cliente-razon","pt-cliente-rfc"].forEach(function(id){
     const el = document.getElementById(id); if(el) el.value = "";
   });
   document.getElementById("pt-marca").value = "industrial";
@@ -4508,6 +4517,11 @@ function abrirEditarPlanTrabajo(id){
   document.getElementById("pt-area-total").value = p.areaTotal || "";
   document.getElementById("pt-departamento").value = p.departamento || "";
   document.getElementById("pt-sistema").value = p.sistema || "";
+  document.getElementById("pt-contratista-razon").value = p.contratistaRazon || "";
+  document.getElementById("pt-contratista-rfc").value = p.contratistaRfc || "";
+  document.getElementById("pt-contratista-direccion").value = p.contratistaDireccion || "";
+  document.getElementById("pt-cliente-razon").value = p.clienteRazon || "";
+  document.getElementById("pt-cliente-rfc").value = p.clienteRfc || "";
   renderEtapasPlanTrabajo();
   document.getElementById("modal-plan-trabajo").classList.add("open");
 }
@@ -4597,6 +4611,11 @@ async function guardarPlanTrabajo(){
     areaTotal: parseFloat(document.getElementById("pt-area-total").value) || 0,
     departamento: document.getElementById("pt-departamento").value.trim(),
     sistema: document.getElementById("pt-sistema").value.trim(),
+    contratistaRazon: document.getElementById("pt-contratista-razon").value.trim(),
+    contratistaRfc: document.getElementById("pt-contratista-rfc").value.trim(),
+    contratistaDireccion: document.getElementById("pt-contratista-direccion").value.trim(),
+    clienteRazon: document.getElementById("pt-cliente-razon").value.trim(),
+    clienteRfc: document.getElementById("pt-cliente-rfc").value.trim(),
     cotizacionId: existente ? (existente.cotizacionId || null) : null,
     etapas: _ptEtapas.map(function(e){ return Object.assign({}, e); }),
     createdAt: existente ? (existente.createdAt || now) : now,
