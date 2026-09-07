@@ -4073,12 +4073,21 @@ body.in-plantrabajo #app{
     <div class="modal-ttl" id="pt-modal-ttl">Nuevo Plan de Trabajo</div>
 
     <div class="fdivider">Datos generales</div>
+    <div class="fg" id="pt-cotizacion-vinculo-row">
+      <button type="button" onclick="abrirVincularCotizacion()" style="background:rgba(30,111,217,.08);border:1px solid rgba(30,111,217,.25);color:#1E6FD9;font-size:11px;font-weight:700;padding:8px 12px;border-radius:8px;cursor:pointer;font-family:var(--font);">🔗 Vincular cotización</button>
+      <div id="pt-cotizacion-vinculada-banner" style="display:none;margin-top:8px;background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.25);border-radius:8px;padding:8px 10px;align-items:center;justify-content:space-between;gap:8px;">
+        <span id="pt-cotizacion-vinculada-txt" style="font-size:11px;color:var(--navy);font-weight:600;"></span>
+        <button type="button" onclick="quitarVinculoCotizacion()" style="background:none;border:none;color:var(--tx3);font-size:10px;font-weight:600;cursor:pointer;font-family:var(--font);text-decoration:underline;padding:0;">Quitar</button>
+      </div>
+      <div style="font-size:10px;color:var(--tx3);margin-top:5px;">Opcional — precarga cliente, ubicación, proyecto, área y marca desde una cotización existente. Las etapas siempre se capturan a mano.</div>
+    </div>
     <div class="fg"><label class="flabel">Marca <span class="req">*</span></label>
       <select class="fselect" id="pt-marca">
         <option value="industrial">ROMSA Industrial</option>
         <option value="rackline">RACKLINE</option>
         <option value="home">HOME by ROMSA</option>
       </select>
+      <div id="pt-marca-inferida-nota" style="display:none;font-size:10px;color:var(--tx3);margin-top:4px;">Inferida de la cotización vinculada.</div>
     </div>
     <div class="fg"><label class="flabel">Cliente <span class="req">*</span></label><input class="finput" id="pt-cliente" placeholder="Ej: PIMSA — Parque Industrial Mexicali"></div>
     <div class="fg"><label class="flabel">Ubicación / Proyecto <span class="req">*</span></label><input class="finput" id="pt-ubicacion" placeholder="Ej: Nave 90000, PIMSA IV"></div>
@@ -4108,6 +4117,18 @@ body.in-plantrabajo #app{
       <button class="btn btn-secondary" style="flex:1;" onclick="closeModal('modal-plan-trabajo')">Cancelar</button>
       <button class="btn btn-primary" style="flex:1;" id="btn-guardar-plan-trabajo" onclick="guardarPlanTrabajo()">Guardar plan →</button>
     </div>
+  </div>
+</div>
+
+<!-- MODAL VINCULAR COTIZACIÓN (buscador sobre el array `cotizaciones` ya
+     cargado en memoria — no hace ninguna lectura nueva a Firestore) -->
+<div class="moverlay" id="modal-vincular-cotizacion">
+  <div class="modal" style="max-width:520px;">
+    <div class="modal-handle"></div>
+    <div class="modal-ttl">Vincular cotización</div>
+    <input class="finput" id="pt-vincular-buscar" placeholder="Buscar por folio, empresa o proyecto..." oninput="renderListaVincularCotizacion()" style="margin-bottom:12px;">
+    <div id="pt-vincular-lista" style="display:flex;flex-direction:column;gap:8px;max-height:50vh;overflow-y:auto;"></div>
+    <button class="btn btn-secondary btn-block" style="margin-top:14px;" onclick="closeModal('modal-vincular-cotizacion')">Cancelar</button>
   </div>
 </div>
 
@@ -4434,9 +4455,93 @@ let planesTrabajo = [];
 let _ptEtapas = [];
 let _ptEtapaIdSeq = 1;
 let _ptEditandoId = null; // null = creando uno nuevo; string = editando ese id
+let _ptCotizacionVinculada = null; // null = sin vínculo; string = id de la cotización vinculada
 
 function _modalidadDePlan(p){ return (p && (p.marca === "home" || p.marca === "rackline")) ? p.marca : "industrial"; }
 function _nombreMarcaPlan(marca){ return marca === "home" ? "HOME by ROMSA" : marca === "rackline" ? "RACKLINE" : "ROMSA Industrial"; }
+
+// ─── PLAN DE TRABAJO · VÍNCULO OPCIONAL CON COTIZACIÓN ────
+// Buscador sobre el array `cotizaciones` ya cargado en memoria (mismo
+// array que usa el resto del CRM) — no hace ninguna lectura nueva a
+// Firestore. Las etapas NUNCA se prellenan desde la cotización (esta no
+// tiene ese nivel de detalle); solo cliente/ubicación/proyecto/área/marca.
+function abrirVincularCotizacion(){
+  const buscar = document.getElementById("pt-vincular-buscar");
+  if(buscar) buscar.value = "";
+  renderListaVincularCotizacion();
+  document.getElementById("modal-vincular-cotizacion").classList.add("open");
+}
+
+function renderListaVincularCotizacion(){
+  const wrap = document.getElementById("pt-vincular-lista");
+  if(!wrap) return;
+  const q = (document.getElementById("pt-vincular-buscar")?.value || "").toLowerCase().trim();
+  const lista = (typeof cotizaciones !== "undefined" && Array.isArray(cotizaciones)) ? cotizaciones : [];
+  const filtradas = lista.filter(function(c){
+    if(!q) return true;
+    return (c.folio||"").toLowerCase().includes(q) || (c.empresa||"").toLowerCase().includes(q) || (c.proyecto||"").toLowerCase().includes(q);
+  }).slice(0, 50);
+  if(!filtradas.length){
+    wrap.innerHTML = "<div style='padding:16px;text-align:center;color:var(--tx3);font-size:12px;'>Sin cotizaciones que coincidan.</div>";
+    return;
+  }
+  wrap.innerHTML = filtradas.map(function(c){
+    return '<div onclick="seleccionarCotizacionVinculada(&apos;'+c.id+'&apos;)" style="padding:10px 12px;border:1px solid var(--g1);border-radius:8px;cursor:pointer;">'
+      + '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">'
+        + '<span style="font-size:11px;font-weight:700;color:var(--navy);">'+(c.folio||"Sin folio")+'</span>'
+        + '<span style="font-size:9px;color:var(--tx3);">'+(c.fecha||"")+'</span>'
+      + '</div>'
+      + '<div style="font-size:11.5px;color:var(--tx2);margin-top:2px;">'+(c.empresa||"")+'</div>'
+      + '<div style="font-size:10.5px;color:var(--tx3);">'+(c.proyecto||"")+'</div>'
+    + '</div>';
+  }).join("");
+}
+
+function _ptMostrarVinculoBanner(cot){
+  const banner = document.getElementById("pt-cotizacion-vinculada-banner");
+  const txt = document.getElementById("pt-cotizacion-vinculada-txt");
+  const nota = document.getElementById("pt-marca-inferida-nota");
+  const marcaSel = document.getElementById("pt-marca");
+  if(txt) txt.textContent = cot ? ("🔗 "+(cot.folio||"Cotización")+" — "+(cot.empresa||"")) : "🔗 Cotización vinculada";
+  if(banner) banner.style.display = "flex";
+  if(marcaSel) marcaSel.disabled = true;
+  if(nota) nota.style.display = "block";
+}
+
+function _ptOcultarVinculoBanner(){
+  const banner = document.getElementById("pt-cotizacion-vinculada-banner");
+  const nota = document.getElementById("pt-marca-inferida-nota");
+  const marcaSel = document.getElementById("pt-marca");
+  if(banner) banner.style.display = "none";
+  if(marcaSel) marcaSel.disabled = false;
+  if(nota) nota.style.display = "none";
+}
+
+function seleccionarCotizacionVinculada(id){
+  const lista = (typeof cotizaciones !== "undefined" && Array.isArray(cotizaciones)) ? cotizaciones : [];
+  const cot = lista.find(function(c){ return c.id === id; });
+  if(!cot){ showToast("⚠️ Cotización no encontrada"); return; }
+  document.getElementById("pt-cliente").value = cot.empresa || "";
+  document.getElementById("pt-ubicacion").value = cot.ciudad || "";
+  document.getElementById("pt-proyecto").value = cot.proyecto || "";
+  // Mismo cálculo de m² totales que ya usa el resto del CRM (sumar qty de
+  // partidas cuya unidad contiene "m" — m², m.l., etc.)
+  const totalM2 = (cot.partidas||[]).reduce(function(s,p){
+    return s + ((p.unit||"").toLowerCase().includes("m") ? (parseFloat(p.qty)||0) : 0);
+  }, 0);
+  if(totalM2 > 0) document.getElementById("pt-area-total").value = totalM2;
+  const marca = (typeof _modalidadDe === "function") ? _modalidadDe(cot) : ((cot.modalidad === "home" || cot.modalidad === "rackline") ? cot.modalidad : "industrial");
+  document.getElementById("pt-marca").value = marca;
+  _ptCotizacionVinculada = cot.id;
+  _ptMostrarVinculoBanner(cot);
+  closeModal("modal-vincular-cotizacion");
+  showToast("✅ Cotización vinculada");
+}
+
+function quitarVinculoCotizacion(){
+  _ptCotizacionVinculada = null;
+  _ptOcultarVinculoBanner();
+}
 
 async function cargarPlanesTrabajo(){
   const lista = document.getElementById("lista-planes-trabajo");
@@ -4499,11 +4604,13 @@ function abrirNuevoPlanTrabajo(){
   _ptEditandoId = null;
   _ptEtapas = [];
   _ptEtapaIdSeq = 1;
+  _ptCotizacionVinculada = null;
   document.getElementById("pt-modal-ttl").textContent = "Nuevo Plan de Trabajo";
   ["pt-cliente","pt-ubicacion","pt-proyecto","pt-alcance","pt-area-total","pt-departamento","pt-sistema","pt-contratista-razon","pt-contratista-rfc","pt-contratista-direccion","pt-cliente-razon","pt-cliente-rfc"].forEach(function(id){
     const el = document.getElementById(id); if(el) el.value = "";
   });
   document.getElementById("pt-marca").value = "industrial";
+  _ptOcultarVinculoBanner();
   agregarEtapaPlanTrabajo();
   document.getElementById("modal-plan-trabajo").classList.add("open");
 }
@@ -4528,6 +4635,14 @@ function abrirEditarPlanTrabajo(id){
   document.getElementById("pt-contratista-direccion").value = p.contratistaDireccion || "";
   document.getElementById("pt-cliente-razon").value = p.clienteRazon || "";
   document.getElementById("pt-cliente-rfc").value = p.clienteRfc || "";
+  _ptCotizacionVinculada = p.cotizacionId || null;
+  if(_ptCotizacionVinculada){
+    const lista = (typeof cotizaciones !== "undefined" && Array.isArray(cotizaciones)) ? cotizaciones : [];
+    const cotVinculada = lista.find(function(c){ return c.id === _ptCotizacionVinculada; });
+    _ptMostrarVinculoBanner(cotVinculada); // cotVinculada puede no encontrarse (ej. borrada) — banner genérico
+  } else {
+    _ptOcultarVinculoBanner();
+  }
   renderEtapasPlanTrabajo();
   document.getElementById("modal-plan-trabajo").classList.add("open");
 }
@@ -4622,7 +4737,7 @@ async function guardarPlanTrabajo(){
     contratistaDireccion: document.getElementById("pt-contratista-direccion").value.trim(),
     clienteRazon: document.getElementById("pt-cliente-razon").value.trim(),
     clienteRfc: document.getElementById("pt-cliente-rfc").value.trim(),
-    cotizacionId: existente ? (existente.cotizacionId || null) : null,
+    cotizacionId: _ptCotizacionVinculada || null,
     etapas: _ptEtapas.map(function(e){ return Object.assign({}, e); }),
     createdAt: existente ? (existente.createdAt || now) : now,
     updatedAt: now
