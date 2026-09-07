@@ -4131,7 +4131,7 @@ body.in-plantrabajo #app{
     <button type="button" class="btn btn-ghost btn-block btn-sm" style="margin-bottom:16px;" onclick="agregarEtapaPlanTrabajo()">+ Agregar etapa</button>
 
     <div style="display:flex;gap:10px;">
-      <button class="btn btn-secondary" style="flex:1;" onclick="closeModal('modal-plan-trabajo')">Cancelar</button>
+      <button class="btn btn-secondary" style="flex:1;" onclick="cancelarModalPlanTrabajo()">Cancelar</button>
       <button class="btn btn-primary" style="flex:1;" id="btn-guardar-plan-trabajo" onclick="guardarPlanTrabajo()">Guardar plan →</button>
     </div>
   </div>
@@ -4553,11 +4553,13 @@ function seleccionarCotizacionVinculada(id){
   _ptMostrarVinculoBanner(cot);
   closeModal("modal-vincular-cotizacion");
   showToast("✅ Cotización vinculada");
+  _ptGuardarBorradorDebounced();
 }
 
 function quitarVinculoCotizacion(){
   _ptCotizacionVinculada = null;
   _ptOcultarVinculoBanner();
+  _ptGuardarBorradorDebounced();
 }
 
 async function cargarPlanesTrabajo(){
@@ -4617,7 +4619,127 @@ function renderListaPlanesTrabajo(){
   }).join("");
 }
 
+// ─── PLAN DE TRABAJO · AUTOGUARDADO DE BORRADOR ───────────
+// Reportado por el usuario: tocar fuera del modal o dar "atrás" sin
+// querer borraba todo lo capturado. En vez de bloquear esas acciones (el
+// modal comparte el mismo listener de cierre-al-tocar-fuera que el resto
+// del CRM), se guarda un borrador en localStorage en cada cambio y se
+// recupera automáticamente la próxima vez que se abre el mismo plan (o
+// "Nuevo Plan" si el borrador abandonado era de uno nuevo) — así cerrar
+// por accidente deja de perder el trabajo. Guardar con éxito o cancelar
+// explícitamente sí borran el borrador (son decisiones intencionales,
+// no accidentes).
+const PT_DRAFT_KEY = "romsa_pt_draft_v1";
+let _ptAutosaveTimer = null;
+
+function _ptRecolectarBorrador(){
+  function val(id){ const el = document.getElementById(id); return el ? el.value : ""; }
+  return {
+    _ptEditandoId: _ptEditandoId,
+    _ptCotizacionVinculada: _ptCotizacionVinculada,
+    marca: val("pt-marca"),
+    cliente: val("pt-cliente"),
+    ubicacion: val("pt-ubicacion"),
+    proyecto: val("pt-proyecto"),
+    alcance: val("pt-alcance"),
+    areaTotal: val("pt-area-total"),
+    departamento: val("pt-departamento"),
+    sistema: val("pt-sistema"),
+    contratistaRazon: val("pt-contratista-razon"),
+    contratistaRfc: val("pt-contratista-rfc"),
+    contratistaDireccion: val("pt-contratista-direccion"),
+    clienteRazon: val("pt-cliente-razon"),
+    clienteRfc: val("pt-cliente-rfc"),
+    etapas: _ptEtapas.map(function(e){ return Object.assign({}, e); }),
+    guardadoEn: Date.now()
+  };
+}
+
+function _ptGuardarBorrador(){
+  try{ localStorage.setItem(PT_DRAFT_KEY, JSON.stringify(_ptRecolectarBorrador())); }catch(e){}
+}
+
+function _ptGuardarBorradorDebounced(){
+  clearTimeout(_ptAutosaveTimer);
+  _ptAutosaveTimer = setTimeout(_ptGuardarBorrador, 500);
+}
+
+function _ptBorrarBorrador(){
+  clearTimeout(_ptAutosaveTimer);
+  try{ localStorage.removeItem(PT_DRAFT_KEY); }catch(e){}
+}
+
+function _ptLeerBorrador(){
+  try{
+    const raw = localStorage.getItem(PT_DRAFT_KEY);
+    return raw ? JSON.parse(raw) : null;
+  }catch(e){ return null; }
+}
+
+// Un borrador "vacío" (solo la etapa por defecto recién abierta, sin nada
+// capturado) no debe ofrecerse para recuperar — sería indistinguible de
+// abrir el formulario en blanco.
+function _ptBorradorTieneDatos(b){
+  if(!b) return false;
+  if((b.cliente||"").trim() || (b.ubicacion||"").trim() || (b.proyecto||"").trim() || (b.alcance||"").trim()) return true;
+  return (b.etapas||[]).some(function(e){ return (e.nombre||"").trim() || e.fechaInicio || (e.actividad||"").trim(); });
+}
+
+function _ptAplicarBorradorAlFormulario(b){
+  function set(id, v){ const el = document.getElementById(id); if(el) el.value = v||""; }
+  set("pt-marca", b.marca || "industrial");
+  set("pt-cliente", b.cliente);
+  set("pt-ubicacion", b.ubicacion);
+  set("pt-proyecto", b.proyecto);
+  set("pt-alcance", b.alcance);
+  set("pt-area-total", b.areaTotal);
+  set("pt-departamento", b.departamento);
+  set("pt-sistema", b.sistema);
+  set("pt-contratista-razon", b.contratistaRazon);
+  set("pt-contratista-rfc", b.contratistaRfc);
+  set("pt-contratista-direccion", b.contratistaDireccion);
+  set("pt-cliente-razon", b.clienteRazon);
+  set("pt-cliente-rfc", b.clienteRfc);
+  const plantillaSel = document.getElementById("pt-plantilla-select"); if(plantillaSel) plantillaSel.value = "";
+  _ptEtapas = (b.etapas||[]).map(function(e){ return Object.assign({}, e); });
+  _ptEtapaIdSeq = _ptEtapas.reduce(function(m,e){ return Math.max(m, e.id||0); }, 0) + 1;
+  _ptCotizacionVinculada = b._ptCotizacionVinculada || null;
+  if(_ptCotizacionVinculada){
+    const lista = (typeof cotizaciones !== "undefined" && Array.isArray(cotizaciones)) ? cotizaciones : [];
+    const cotVinculada = lista.find(function(c){ return c.id === _ptCotizacionVinculada; });
+    _ptMostrarVinculoBanner(cotVinculada);
+  } else {
+    _ptOcultarVinculoBanner();
+  }
+  if(!_ptEtapas.length) agregarEtapaPlanTrabajo(); else renderEtapasPlanTrabajo();
+}
+
+// Delegado: cualquier input/change dentro del formulario dispara el
+// autoguardado (debounced) — cubre los campos generales sin tener que
+// tocar el onchange de cada uno individualmente.
+(function(){
+  const modalEl = document.getElementById("modal-plan-trabajo");
+  if(modalEl){
+    modalEl.addEventListener("input", _ptGuardarBorradorDebounced);
+    modalEl.addEventListener("change", _ptGuardarBorradorDebounced);
+  }
+})();
+
+function cancelarModalPlanTrabajo(){
+  _ptBorrarBorrador();
+  closeModal("modal-plan-trabajo");
+}
+
 function abrirNuevoPlanTrabajo(){
+  const _borradorPendiente = _ptLeerBorrador();
+  if(_borradorPendiente && !_borradorPendiente._ptEditandoId && _ptBorradorTieneDatos(_borradorPendiente)){
+    _ptEditandoId = null;
+    document.getElementById("pt-modal-ttl").textContent = "Nuevo Plan de Trabajo";
+    _ptAplicarBorradorAlFormulario(_borradorPendiente);
+    document.getElementById("modal-plan-trabajo").classList.add("open");
+    showToast("📝 Se recuperaron cambios sin guardar de tu último plan");
+    return;
+  }
   _ptEditandoId = null;
   _ptEtapas = [];
   _ptEtapaIdSeq = 1;
@@ -4635,6 +4757,15 @@ function abrirNuevoPlanTrabajo(){
 function abrirEditarPlanTrabajo(id){
   const p = planesTrabajo.find(function(x){ return x.id === id; });
   if(!p) return;
+  const _borradorPendiente = _ptLeerBorrador();
+  if(_borradorPendiente && _borradorPendiente._ptEditandoId === id && _ptBorradorTieneDatos(_borradorPendiente)){
+    _ptEditandoId = id;
+    document.getElementById("pt-modal-ttl").textContent = "Editar Plan de Trabajo";
+    _ptAplicarBorradorAlFormulario(_borradorPendiente);
+    document.getElementById("modal-plan-trabajo").classList.add("open");
+    showToast("📝 Se recuperaron cambios sin guardar de este plan");
+    return;
+  }
   _ptEditandoId = id;
   _ptEtapas = (p.etapas||[]).map(function(e){ return Object.assign({}, e); });
   _ptEtapaIdSeq = _ptEtapas.reduce(function(m,e){ return Math.max(m, e.id||0); }, 0) + 1;
@@ -4730,6 +4861,7 @@ function aplicarPlantillaEtapas(){
   });
   renderEtapasPlanTrabajo();
   showToast("✅ Plantilla aplicada — completa las fechas de cada etapa");
+  _ptGuardarBorradorDebounced();
 }
 
 function agregarEtapaPlanTrabajo(){
@@ -4738,21 +4870,24 @@ function agregarEtapaPlanTrabajo(){
     id: _ptEtapaIdSeq++,
     nombre: "", fechaInicio: "", fechaFin: "", area: "", actividad: "",
     horarioNormal: "07:00 - 17:00", horarioSabado: "07:00 - 13:00",
-    herramientas: "", producto: "", epp: "",
+    herramientas: "", producto: "", epp: "Lentes, guantes y chaleco de seguridad",
     colorGantt: PT_COLORES_GANTT[n % PT_COLORES_GANTT.length]
   });
   renderEtapasPlanTrabajo();
+  _ptGuardarBorradorDebounced();
 }
 
 function removeEtapaPlanTrabajo(id){
   _ptEtapas = _ptEtapas.filter(function(e){ return e.id !== id; });
   renderEtapasPlanTrabajo();
+  _ptGuardarBorradorDebounced();
 }
 
 function onEtapaPlanTrabajoField(id, field, value){
   const e = _ptEtapas.find(function(x){ return x.id === id; });
   if(!e) return;
   e[field] = value;
+  _ptGuardarBorradorDebounced();
 }
 
 function renderEtapasPlanTrabajo(){
@@ -4830,6 +4965,7 @@ async function guardarPlanTrabajo(){
   try{
     await planesTrabajoRef.doc(id).set(p);
     closeModal("modal-plan-trabajo");
+    _ptBorrarBorrador();
     showToast("✅ Plan de Trabajo guardado");
     cargarPlanesTrabajo();
   }catch(e){ showToast("❌ Error: "+e.message); }
