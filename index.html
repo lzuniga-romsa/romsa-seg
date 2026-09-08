@@ -4935,6 +4935,21 @@ function removeEtapaPlanTrabajo(id){
   _ptGuardarBorradorDebounced();
 }
 
+// Reordenar etapas dentro del formulario (botones ↑ / ↓ en cada tarjeta) —
+// se eligió esto en vez de drag-and-drop por ser mucho más simple y
+// confiable entre navegadores/dispositivos. delta es -1 (subir) o +1
+// (bajar); en los extremos simplemente no hace nada (no da la vuelta).
+function moverEtapaPlanTrabajo(id, delta){
+  const i = _ptEtapas.findIndex(function(e){ return e.id === id; });
+  const j = i + delta;
+  if(i === -1 || j < 0 || j >= _ptEtapas.length) return;
+  const tmp = _ptEtapas[i];
+  _ptEtapas[i] = _ptEtapas[j];
+  _ptEtapas[j] = tmp;
+  renderEtapasPlanTrabajo();
+  _ptGuardarBorradorDebounced();
+}
+
 function onEtapaPlanTrabajoField(id, field, value){
   const e = _ptEtapas.find(function(x){ return x.id === id; });
   if(!e) return;
@@ -4963,6 +4978,10 @@ function renderEtapasPlanTrabajo(){
       + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">'
         + '<div style="font-size:11px;font-weight:700;color:var(--navy);">Etapa '+(i+1)+'</div>'
         + '<div style="display:flex;align-items:center;gap:8px;">'
+          + '<div style="display:flex;gap:2px;">'
+            + '<button type="button" onclick="moverEtapaPlanTrabajo('+e.id+',-1)" title="Subir" '+(i===0?'disabled':'')+' style="background:'+(i===0?'var(--off)':'#fff')+';border:1px solid var(--g1);color:'+(i===0?'var(--g1)':'var(--tx2)')+';font-size:10px;padding:4px 7px;border-radius:6px 0 0 6px;cursor:'+(i===0?'default':'pointer')+';font-family:var(--font);">↑</button>'
+            + '<button type="button" onclick="moverEtapaPlanTrabajo('+e.id+',1)" title="Bajar" '+(i===_ptEtapas.length-1?'disabled':'')+' style="background:'+(i===_ptEtapas.length-1?'var(--off)':'#fff')+';border:1px solid var(--g1);border-left:none;color:'+(i===_ptEtapas.length-1?'var(--g1)':'var(--tx2)')+';font-size:10px;padding:4px 7px;border-radius:0 6px 6px 0;cursor:'+(i===_ptEtapas.length-1?'default':'pointer')+';font-family:var(--font);">↓</button>'
+          + '</div>'
           + '<input type="color" value="'+e.colorGantt+'" oninput="onEtapaPlanTrabajoField('+e.id+',&apos;colorGantt&apos;,this.value)" title="Color en el Gantt" style="width:24px;height:24px;border:none;border-radius:6px;cursor:pointer;padding:0;background:none;">'
           + '<button onclick="removeEtapaPlanTrabajo('+e.id+')" style="background:var(--red-dim);border:none;color:var(--red);font-size:10px;font-weight:600;padding:4px 8px;border-radius:6px;cursor:pointer;font-family:var(--font);">✕</button>'
         + '</div>'
@@ -5009,6 +5028,11 @@ async function guardarPlanTrabajo(){
     if(!e.nombre || !e.nombre.trim()){ showToast("⚠️ Todas las etapas necesitan un nombre"); return; }
     if(!e.fechaInicio || !e.fechaFin){ showToast("⚠️ Todas las etapas necesitan fecha de inicio y fin"); return; }
     if(e.fechaFin < e.fechaInicio){ showToast("⚠️ La fecha fin de \""+e.nombre+"\" es anterior a la de inicio"); return; }
+    // Solo bloquea un arreglo EXPLÍCITAMENTE vacío (ej. el usuario destildó
+    // todos los días sin querer) — una etapa sin diasTrabajo (undefined,
+    // planes capturados antes de este campo) se deja pasar, ya que
+    // expandirEtapaADias ya sabe caer a los días por defecto en ese caso.
+    if(Array.isArray(e.diasTrabajo) && e.diasTrabajo.length === 0){ showToast("⚠️ \""+e.nombre+"\" necesita al menos un día de trabajo marcado"); return; }
   }
   const now = Date.now();
   const id = _ptEditandoId || ("plan"+now);
@@ -5060,7 +5084,11 @@ async function guardarPlanTrabajo(){
 function expandirEtapaADias(etapa){
   const dias = [];
   if(!etapa.fechaInicio || !etapa.fechaFin) return dias;
-  const diasTrabajo = etapa.diasTrabajo || PT_DIAS_TRABAJO_DEFECTO;
+  // OJO: un arreglo vacío ([]) es "truthy" en JS, así que "|| PT_DIAS_TRABAJO_DEFECTO"
+  // por sí solo NUNCA cae al valor por defecto cuando diasTrabajo quedó vacío (ej.
+  // el usuario destildó todos los días sin querer) — hay que revisar .length
+  // explícitamente, si no, esa etapa se expande con TODOS sus días como "Descanso".
+  const diasTrabajo = (etapa.diasTrabajo && etapa.diasTrabajo.length) ? etapa.diasTrabajo : PT_DIAS_TRABAJO_DEFECTO;
   let cur = new Date(etapa.fechaInicio + "T00:00:00");
   const fin = new Date(etapa.fechaFin + "T00:00:00");
   while(cur <= fin){
