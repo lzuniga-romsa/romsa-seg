@@ -5380,7 +5380,11 @@ function _ptPeriodoTextoCorto(plan){
 }
 
 const PT_COLS = ["Fecha","Área / m²","Actividad","Horario","Herramientas","Producto","EPP"];
-const PT_GRID_COLS = "10.5% 8.5% 27% 10% 17.5% 17.5% 9%";
+// EPP se ensanchó de 9% a 22% (a costa de Actividad/Herramientas/Producto,
+// que suelen ser textos cortos) para que los chips compactos del Cambio 4
+// realmente quepan varios por línea en vez de apilarse uno por línea por
+// falta de espacio horizontal.
+const PT_GRID_COLS = "10% 8% 21% 9% 15% 15% 22%";
 
 function _ptColHeaderRowHtml(){
   return '<div style="display:grid;grid-template-columns:'+PT_GRID_COLS+';background:#0B1F3A;margin-top:10px;">'
@@ -5446,6 +5450,21 @@ function _ptDescansoRowInner(fechaDate){
   + '</div>';
 }
 
+// EPP como chips compactos en vez de una lista apilada — el sufijo "de
+// seguridad" se quita SOLO para esta presentación (queda implícito), el
+// texto guardado en Firestore no cambia. "N/A" (etapa sin EPP) se queda
+// como texto simple, no como chip.
+function _ptRenderEppCelda(epp){
+  if(!epp) return '<strong style="color:#0B1F3A;">N/A</strong>';
+  const items = epp.split(",").map(function(s){ return s.trim(); }).filter(Boolean);
+  return '<div style="display:flex;flex-wrap:wrap;gap:6px;">'
+    + items.map(function(it){
+        const corto = it.replace(/\s*de seguridad\s*$/i, "");
+        return '<span style="display:inline-block;background:#EDF1F7;color:#0B1F3A;padding:4px 10px;border-radius:14px;font-size:9px;font-weight:700;white-space:nowrap;">'+escapeHtml(corto)+'</span>';
+      }).join("")
+  + '</div>';
+}
+
 function _ptDiaRowInner(dia, zebra){
   const bg = zebra ? "#FBFCFD" : "#fff";
   function celda(html){ return '<div style="padding:6px 8px;font-size:10px;color:#33415A;line-height:1.3;">'+html+'</div>'; }
@@ -5456,7 +5475,7 @@ function _ptDiaRowInner(dia, zebra){
     + celda('<span style="font-family:\'JetBrains Mono\',monospace;white-space:nowrap;">'+escapeHtml(dia.horario||"")+'</span>')
     + celda(escapeHtml(dia.herramientas||"N/A"))
     + celda(escapeHtml(dia.producto||"N/A"))
-    + celda('<strong style="color:#0B1F3A;">'+escapeHtml(dia.epp||"N/A")+'</strong>')
+    + celda(_ptRenderEppCelda(dia.epp))
   + '</div>';
 }
 
@@ -5556,6 +5575,24 @@ const PT_REPORTE_CSS = '<style>'
   + '.pt-hoja:last-child{page-break-after:auto;}'
   + '.pt-hoja-cuerpo{padding:6px 0;flex:1;}'
   + '.pt-blk{page-break-inside:avoid;break-inside:avoid;}'
+  // Header + título reutilizados TAL CUAL de la plantilla de Reporte
+  // General (mismas clases, mismos valores) — no es una versión paralela,
+  // solo se inyectan aquí porque la Portada del Plan de Trabajo se genera
+  // en su propio documento standalone (PT_REPORTE_CSS), igual que Reporte
+  // General inyecta su propio <style> en su propio popup.
+  + '.header{background:linear-gradient(135deg, #0A1930 0%, #12233F 55%, #1C3A63 100%);color:#fff;padding:36px 32px 28px;position:relative;overflow:hidden;}'
+  + '.header::before{content:"";position:absolute;top:-40px;right:-40px;width:200px;height:200px;border-radius:50%;background:radial-gradient(circle, rgba(30,111,217,.18) 0%, transparent 70%);}'
+  + '.header::after{content:"";position:absolute;bottom:0;left:0;right:0;height:4px;background:linear-gradient(90deg, #0B1F3A, #1E6FD9, #1B3F72);}'
+  + '.logo-center{display:flex;justify-content:center;align-items:center;margin-bottom:10px;position:relative;z-index:2;}'
+  + '.logo-img{height:42px;width:auto;opacity:.98;max-width:260px;object-fit:contain;}'
+  + '.header-tagline{text-align:center;margin-bottom:4px;position:relative;z-index:2;font-size:8.5px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.4);}'
+  + '.meta-row{display:flex;justify-content:space-between;align-items:flex-end;margin-top:16px;gap:20px;position:relative;z-index:2;}'
+  + '.meta-col-label{font-size:7px;font-weight:800;letter-spacing:2.5px;color:rgba(255,255,255,.4);text-transform:uppercase;}'
+  + '.meta-col-value{font-size:11px;font-weight:700;color:#fff;margin-top:4px;}'
+  + '.meta-col-value.mono{font-family:\'JetBrains Mono\',\'Courier New\',monospace;font-size:10.5px;letter-spacing:.5px;}'
+  + '.tipo-badge-line{width:30px;height:2px;border-radius:1px;margin-bottom:6px;}'
+  + '.tipo-badge{display:inline-block;font-size:9.5px;font-weight:700;letter-spacing:2.6px;text-transform:uppercase;color:rgba(255,255,255,.82);}'
+  + '.titulo-doc{font-family:\'Inter\',sans-serif;font-size:23px;font-weight:800;letter-spacing:-.4px;color:#0B1F3A;line-height:1.2;margin-bottom:4px;}'
   + '@media print{'
     + '#preview-bar{display:none!important;}'
     + '#doc-wrap{margin:0!important;padding:0!important;}'
@@ -5611,36 +5648,47 @@ function _ptHoja1Html(plan, accent, logo, marcaLabel, tagline, hojaTotal){
     + '</div>';
   }).join("");
 
-  // Pie legal: SOLO con los datos fiscales reales capturados a mano en el
-  // formulario (contratistaRazon/Rfc/Direccion) — si el usuario no los
-  // llenó, esta franja simplemente no aparece; nunca se inventan.
-  const tieneFiscales = plan.contratistaRazon || plan.contratistaRfc || plan.contratistaDireccion;
-  const footerLegal = '<div style="display:flex;flex-direction:column;gap:3px;max-width:430px;">'
-      + '<span style="color:#0B1F3A;font-size:10.5px;font-weight:700;">'+escapeHtml(tagline||"")+'</span>'
-      + (tieneFiscales ? (
-          (plan.contratistaRazon ? '<span style="color:#33415A;font-size:10px;font-weight:600;">'+escapeHtml(plan.contratistaRazon)+'</span>' : '')
-          + ((plan.contratistaRfc || plan.contratistaDireccion) ? '<span style="color:#5A6880;font-size:9px;line-height:1.5;">'+[plan.contratistaRfc?("RFC: "+plan.contratistaRfc):"", plan.contratistaDireccion||""].filter(Boolean).map(escapeHtml).join(" · ")+'</span>' : '')
-        ) : '')
-    + '</div>';
+  // Pie legal: SOLO la razón social real capturada a mano en el formulario
+  // (contratistaRazon) — sin el tagline (ya vive en el header) ni el RFC/
+  // dirección apilados debajo; si el usuario no la llenó, esta franja
+  // simplemente no aparece, nunca se inventa.
+  const footerLegal = plan.contratistaRazon
+    ? '<span style="color:#0B1F3A;font-size:10.5px;font-weight:700;">'+escapeHtml(plan.contratistaRazon)+'</span>'
+    : '<div></div>';
 
-  // Header tipo membrete: barra navy de ancho completo (bleed con margin
-  // negativo para cubrir el padding lateral de .pt-hoja) con el logo en su
-  // variante BLANCA + tagline corto, seguida de una franja de acento del
-  // color de marca — mismo patrón condicional que ya existe para el resto
-  // de textos de marca (industrial/rackline/home), solo cambia logo+tagline.
+  // Header reutilizado TAL CUAL de la plantilla de Reporte General (mismas
+  // clases: .header/.logo-center/.logo-img/.header-tagline/.meta-row/
+  // .meta-col-label/.meta-col-value/.tipo-badge-line/.tipo-badge) — solo
+  // cambian los datos (logo/tagline por marca, folio con prefijo "PT-",
+  // tipo "Plan de Trabajo"). Envuelto en bleed (margin negativo) porque
+  // .pt-hoja trae padding lateral que Reporte General no tiene en su
+  // propio contenedor de página.
   const _modPlanH1 = _modalidadDePlan(plan);
-  const headerMembrete = '<div style="margin:0 -34px;background:#0B1F3A;padding:38px 60px 24px;">'
-      + (logo ? '<img src="'+logo+'" style="height:65px;width:auto;max-width:420px;object-fit:contain;display:block;" alt="'+escapeHtml(marcaLabel)+'">' : '<div style="font-size:22px;font-weight:800;color:#fff;">'+escapeHtml(marcaLabel)+'</div>')
-      + '<div style="margin-top:14px;font-size:11px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:rgba(255,255,255,.7);">'+escapeHtml(_ptHeaderTaglineDe(_modPlanH1))+'</div>'
+  const headerReportGeneral = '<div style="margin:0 -34px;">'
+    + '<div class="header">'
+      + '<div class="logo-center">'
+        + (logo ? '<img src="'+logo+'" class="logo-img" alt="'+escapeHtml(marcaLabel)+'">' : '<div style="font-size:20px;font-weight:800;color:#fff;">'+escapeHtml(marcaLabel)+'</div>')
+      + '</div>'
+      + '<div class="header-tagline">'+escapeHtml(_ptHeaderTaglineDe(_modPlanH1))+'</div>'
+      + '<div class="meta-row">'
+        + '<div>'
+          + '<div class="meta-col-label">Folio</div>'
+          + '<div class="meta-col-value mono">'+escapeHtml(_ptFolio(plan))+'</div>'
+        + '</div>'
+        + '<div style="text-align:right;">'
+          + '<div class="tipo-badge-line" style="background:'+accent+';margin-left:auto;"></div>'
+          + '<div class="tipo-badge">Plan de Trabajo</div>'
+        + '</div>'
+      + '</div>'
     + '</div>'
-    + '<div style="margin:0 -34px;height:6px;background:'+accent+';"></div>';
+  + '</div>';
 
   return '<div class="pt-hoja" style="padding-top:0;padding-bottom:20px;">'
-    + headerMembrete
+    + headerReportGeneral
     + '<div style="flex:1;display:grid;grid-template-columns:1.15fr .85fr;gap:28px;margin-top:26px;min-height:0;">'
       + '<div style="display:flex;flex-direction:column;min-height:0;">'
         + '<span style="font-size:9.5px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:'+accent+';">Documento técnico</span>'
-        + '<h1 style="margin:12px 0 0;color:#0B1F3A;font-size:38px;font-weight:700;letter-spacing:-.03em;line-height:1;">Plan de Trabajo</h1>'
+        + '<h1 class="titulo-doc" style="margin:12px 0 0;">Plan de Trabajo</h1>'
         + (plan.sistema ? '<p style="margin:12px 0 0;max-width:460px;color:#44536B;font-size:13px;line-height:1.5;">'+escapeHtml(plan.sistema)+'</p>' : '')
         + (plan.alcance ? (
             '<div style="margin-top:26px;padding-top:18px;border-top:1px solid #E4E9F0;">'
