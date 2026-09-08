@@ -5491,7 +5491,11 @@ const PT_COLS = ["Fecha","Área / m²","Actividad","Horario","Herramientas","Pro
 // que suelen ser textos cortos) para que los chips compactos del Cambio 4
 // realmente quepan varios por línea en vez de apilarse uno por línea por
 // falta de espacio horizontal.
-const PT_GRID_COLS = "10% 8% 21% 9% 15% 15% 22%";
+// Horario se ensanchó de 9% a 14% (a costa de Actividad): con el horario
+// como 2 selects de hora preestablecida (Cambio 7) el string combinado es
+// más largo ("07:00 AM - 05:00 PM", 19 caracteres, vs "07:00 - 17:00" antes)
+// y con white-space:nowrap se desbordaba sobre la columna de Herramientas.
+const PT_GRID_COLS = "10% 8% 16% 14% 15% 15% 22%";
 
 function _ptColHeaderRowHtml(){
   return '<div style="display:grid;grid-template-columns:'+PT_GRID_COLS+';background:#0B1F3A;margin-top:10px;">'
