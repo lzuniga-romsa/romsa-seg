@@ -1905,6 +1905,15 @@ body.in-plantrabajo #app{
           <span class="sec-lbl">Planes de trabajo</span>
           <span style="font-size:11px;font-weight:600;color:var(--blue);cursor:pointer;" onclick="abrirNuevoPlanTrabajo()">+ Nuevo Plan</span>
         </div>
+        <div style="background:#fff;border:1px solid var(--g1);border-radius:12px;padding:12px;margin-bottom:14px;">
+          <div style="display:flex;gap:8px;align-items:center;">
+            <div style="flex:1;position:relative;">
+              <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:14px;opacity:.5;pointer-events:none;">🔍</span>
+              <input type="text" id="pt-buscador" placeholder="Buscar por cliente, proyecto o folio..." oninput="onBuscarPlanTrabajo(this.value)" style="width:100%;padding:9px 10px 9px 32px;border:1px solid var(--g1);border-radius:8px;font-family:var(--font);font-size:11.5px;background:var(--off);">
+            </div>
+            <button onclick="limpiarFiltrosPlanTrabajo()" title="Limpiar filtros" style="background:var(--off);border:1px solid var(--g1);color:var(--tx2);font-size:10px;font-weight:700;padding:8px 11px;border-radius:8px;cursor:pointer;font-family:var(--font);white-space:nowrap;">↺ Limpiar</button>
+          </div>
+        </div>
         <div class="card"><div id="lista-planes-trabajo">
           <div class="empty"><div class="empty-ico">🗓️</div><div class="empty-ttl">Sin planes de trabajo</div><div class="empty-sub">Crea el primer plan para generar el PDF de 3 hojas para el cliente</div></div>
         </div></div>
@@ -4089,6 +4098,10 @@ body.in-plantrabajo #app{
       </select>
       <div id="pt-marca-inferida-nota" style="display:none;font-size:10px;color:var(--tx3);margin-top:4px;">Inferida de la cotización vinculada.</div>
     </div>
+    <div class="fg"><label class="flabel">Folio</label>
+      <input class="finput" id="pt-folio" placeholder="Auto-generado" style="font-family:monospace;font-size:11.5px;">
+      <div style="font-size:10px;color:var(--tx3);margin-top:4px;">Se sugiere solo al capturar cliente, proyecto y fechas — siempre puedes editarlo.</div>
+    </div>
     <div class="fg"><label class="flabel">Cliente <span class="req">*</span></label><input class="finput" id="pt-cliente" placeholder="Ej: PIMSA — Parque Industrial Mexicali"></div>
     <div class="fg"><label class="flabel">Ubicación / Proyecto <span class="req">*</span></label><input class="finput" id="pt-ubicacion" placeholder="Ej: Nave 90000, PIMSA IV"></div>
     <div class="fg"><label class="flabel">Proyecto (título corto)</label><input class="finput" id="pt-proyecto" placeholder="Ej: Mantenimiento a cubierta de insulpanel"></div>
@@ -4491,6 +4504,7 @@ let planesTrabajo = [];
 let _ptEtapas = [];
 let _ptEtapaIdSeq = 1;
 let _ptEditandoId = null; // null = creando uno nuevo; string = editando ese id
+let _ptBusqueda = ""; // filtro de texto sobre la lista — mismo patrón que _cotBusqueda
 let _ptCotizacionVinculada = null; // null = sin vínculo; string = id de la cotización vinculada
 
 function _modalidadDePlan(p){ return (p && (p.marca === "home" || p.marca === "rackline")) ? p.marca : "industrial"; }
@@ -4649,6 +4663,18 @@ async function cargarPlanesTrabajo(){
   renderListaPlanesTrabajo();
 }
 
+function onBuscarPlanTrabajo(val){
+  _ptBusqueda = (val||"").toLowerCase().trim();
+  renderListaPlanesTrabajo();
+}
+
+function limpiarFiltrosPlanTrabajo(){
+  _ptBusqueda = "";
+  const inp = document.getElementById("pt-buscador");
+  if(inp) inp.value = "";
+  renderListaPlanesTrabajo();
+}
+
 function renderListaPlanesTrabajo(){
   const lista = document.getElementById("lista-planes-trabajo");
   if(!lista) return;
@@ -4656,7 +4682,17 @@ function renderListaPlanesTrabajo(){
     lista.innerHTML = "<div class='empty'><div class='empty-ico'>🗓️</div><div class='empty-ttl'>Sin planes de trabajo</div><div class='empty-sub'>Crea el primer plan para generar el PDF de 3 hojas para el cliente</div></div>";
     return;
   }
-  lista.innerHTML = planesTrabajo.map(function(p){
+  const planesFiltrados = planesTrabajo.filter(function(p){
+    if(!_ptBusqueda) return true;
+    return (p.cliente||"").toLowerCase().includes(_ptBusqueda)
+        || (p.proyecto||"").toLowerCase().includes(_ptBusqueda)
+        || (p.folio||"").toLowerCase().includes(_ptBusqueda);
+  });
+  if(!planesFiltrados.length){
+    lista.innerHTML = "<div class='empty'><div class='empty-ico'>🔍</div><div class='empty-ttl'>Sin resultados</div><div class='empty-sub'>Ningún plan coincide con \""+escapeHtml(_ptBusqueda)+"\"</div></div>";
+    return;
+  }
+  lista.innerHTML = planesFiltrados.map(function(p){
     const numEtapas = (p.etapas||[]).length;
     const fechas = (p.etapas||[]).reduce(function(acc,e){
       if(e.fechaInicio && (!acc.min || e.fechaInicio < acc.min)) acc.min = e.fechaInicio;
@@ -4677,10 +4713,45 @@ function renderListaPlanesTrabajo(){
         + '<div style="display:flex;gap:6px;flex-shrink:0;" onclick="event.stopPropagation()">'
           + '<button onclick="vistaPreviaPlanTrabajo(&apos;'+p.id+'&apos;)" title="Ver cómo quedará el PDF antes de descargar" style="background:#0EA5E9;border:none;color:#fff;font-size:9.5px;font-weight:700;padding:5px 9px;border-radius:7px;cursor:pointer;font-family:var(--font);">👁 Vista previa</button>'
           + '<button onclick="descargarPdfPlanTrabajo(&apos;'+p.id+'&apos;)" title="Generar PDF" style="background:#1E6FD9;border:none;color:#fff;font-size:9.5px;font-weight:700;padding:5px 9px;border-radius:7px;cursor:pointer;font-family:var(--font);">⬇ PDF</button>'
+          + '<button onclick="eliminarPlanTrabajo(&apos;'+p.id+'&apos;,&apos;'+escapeHtml(_ptFolio(p))+'&apos;)" title="Eliminar plan de trabajo" style="background:var(--red-dim);border:none;color:var(--red);font-size:9.5px;font-weight:700;padding:5px 9px;border-radius:7px;cursor:pointer;font-family:var(--font);">🗑</button>'
         + '</div>'
       + '</div>'
     + '</div>';
   }).join("");
+}
+
+// Eliminar plan de trabajo — mismo patrón de permisos y doble confirmación
+// que eliminarCotizacion: solo admin o el creador original pueden eliminar.
+// Un plan viejo sin creadoPor (guardado antes de que este campo existiera)
+// no tiene forma de saber quién lo creó, así que solo admin puede borrarlo
+// hasta que se resguarde con un guardado nuevo.
+async function eliminarPlanTrabajo(id, folio){
+  const p = planesTrabajo.find(function(x){ return x.id === id; });
+  if(!p){ showToast("⚠️ Plan de trabajo no encontrado"); return; }
+
+  const userEmail = ((currentUser && currentUser.email) || "").toLowerCase();
+  const puedeEliminar = window.isAdmin || (p.creadoPor && p.creadoPor.toLowerCase() === userEmail);
+  if(!puedeEliminar){
+    alert("🔒 Solo el administrador o el creador original pueden eliminar este plan de trabajo.");
+    return;
+  }
+
+  if(!confirm("¿Eliminar permanentemente el plan de trabajo "+folio+"?\n\nCliente: "+(p.cliente||"")+"\n\nEsta acción NO se puede deshacer.")) return;
+
+  const confirm2 = prompt('Para confirmar, escribe "ELIMINAR" (en mayúsculas):');
+  if(confirm2 !== "ELIMINAR"){
+    showToast("Eliminación cancelada");
+    return;
+  }
+
+  try{
+    await planesTrabajoRef.doc(id).delete();
+    planesTrabajo = planesTrabajo.filter(function(x){ return x.id !== id; });
+    renderListaPlanesTrabajo();
+    showToast("🗑️ Plan de trabajo eliminado");
+  } catch(err){
+    showToast("⚠️ Error al eliminar: "+err.message);
+  }
 }
 
 // ─── PLAN DE TRABAJO · AUTOGUARDADO DE BORRADOR ───────────
@@ -4702,6 +4773,7 @@ function _ptRecolectarBorrador(){
     _ptEditandoId: _ptEditandoId,
     _ptCotizacionVinculada: _ptCotizacionVinculada,
     marca: val("pt-marca"),
+    folio: val("pt-folio"),
     cliente: val("pt-cliente"),
     ubicacion: val("pt-ubicacion"),
     proyecto: val("pt-proyecto"),
@@ -4753,6 +4825,8 @@ function _ptBorradorTieneDatos(b){
 function _ptAplicarBorradorAlFormulario(b){
   function set(id, v){ const el = document.getElementById(id); if(el) el.value = v||""; }
   set("pt-marca", b.marca || "industrial");
+  set("pt-folio", b.folio);
+  _ptFolioUltimoSugerido = "";
   set("pt-cliente", b.cliente);
   set("pt-ubicacion", b.ubicacion);
   set("pt-proyecto", b.proyecto);
@@ -4783,14 +4857,37 @@ function _ptAplicarBorradorAlFormulario(b){
   if(!_ptEtapas.length) agregarEtapaPlanTrabajo(); else renderEtapasPlanTrabajo();
 }
 
+// Folio sugerido: se recalcula en cada cambio relevante del formulario
+// (cliente, proyecto/alcance, fecha de inicio de cualquier etapa) — mismo
+// principio que el folio de Reporte General (rp-folio/_generarFolioReporte):
+// solo sobrescribe el campo si está vacío o si el valor actual sigue siendo
+// la última sugerencia automática, nunca pisa un folio que el usuario ya
+// editó a mano.
+let _ptFolioUltimoSugerido = "";
+
+function _ptActualizarFolioSugerido(){
+  const folioEl = document.getElementById("pt-folio");
+  if(!folioEl) return;
+  const cliente = (document.getElementById("pt-cliente")||{}).value || "";
+  const proyecto = (document.getElementById("pt-proyecto")||{}).value || "";
+  const alcance = (document.getElementById("pt-alcance")||{}).value || "";
+  const fechaMin = _ptEtapas.reduce(function(min, e){
+    return (e.fechaInicio && (!min || e.fechaInicio < min)) ? e.fechaInicio : min;
+  }, null);
+  const sugerido = _ptFolioSugerido(cliente, fechaMin, proyecto, alcance);
+  if(!folioEl.value || folioEl.value === _ptFolioUltimoSugerido) folioEl.value = sugerido;
+  _ptFolioUltimoSugerido = sugerido;
+}
+
 // Delegado: cualquier input/change dentro del formulario dispara el
-// autoguardado (debounced) — cubre los campos generales sin tener que
-// tocar el onchange de cada uno individualmente.
+// autoguardado (debounced) y recalcula el folio sugerido — cubre los
+// campos generales (y las etapas, dinámicas) sin tener que tocar el
+// onchange de cada uno individualmente.
 (function(){
   const modalEl = document.getElementById("modal-plan-trabajo");
   if(modalEl){
-    modalEl.addEventListener("input", _ptGuardarBorradorDebounced);
-    modalEl.addEventListener("change", _ptGuardarBorradorDebounced);
+    modalEl.addEventListener("input", function(){ _ptGuardarBorradorDebounced(); _ptActualizarFolioSugerido(); });
+    modalEl.addEventListener("change", function(){ _ptGuardarBorradorDebounced(); _ptActualizarFolioSugerido(); });
   }
 })();
 
@@ -4814,7 +4911,8 @@ function abrirNuevoPlanTrabajo(){
   _ptEtapaIdSeq = 1;
   _ptCotizacionVinculada = null;
   document.getElementById("pt-modal-ttl").textContent = "Nuevo Plan de Trabajo";
-  ["pt-cliente","pt-ubicacion","pt-proyecto","pt-alcance","pt-area-total","pt-departamento","pt-sistema","pt-contratista-razon","pt-contratista-rfc","pt-contratista-direccion","pt-cliente-razon","pt-cliente-rfc","pt-plantilla-select"].forEach(function(id){
+  _ptFolioUltimoSugerido = "";
+  ["pt-folio","pt-cliente","pt-ubicacion","pt-proyecto","pt-alcance","pt-area-total","pt-departamento","pt-sistema","pt-contratista-razon","pt-contratista-rfc","pt-contratista-direccion","pt-cliente-razon","pt-cliente-rfc","pt-plantilla-select"].forEach(function(id){
     const el = document.getElementById(id); if(el) el.value = "";
   });
   document.getElementById("pt-marca").value = "industrial";
@@ -4844,6 +4942,11 @@ function abrirEditarPlanTrabajo(id){
   _ptEtapaIdSeq = _ptEtapas.reduce(function(m,e){ return Math.max(m, e.id||0); }, 0) + 1;
   document.getElementById("pt-modal-ttl").textContent = "Editar Plan de Trabajo";
   const plantillaSel = document.getElementById("pt-plantilla-select"); if(plantillaSel) plantillaSel.value = "";
+  // El folio real del plan ya guardado (o el derivado si es un plan viejo
+  // sin folio persistido) — se deja como valor "no sugerido" (distinto de
+  // _ptFolioUltimoSugerido) para que editar otro campo no lo pise.
+  document.getElementById("pt-folio").value = _ptFolio(p);
+  _ptFolioUltimoSugerido = "";
   document.getElementById("pt-marca").value = p.marca || "industrial";
   document.getElementById("pt-cliente").value = p.cliente || "";
   document.getElementById("pt-ubicacion").value = p.ubicacion || "";
@@ -4899,40 +5002,40 @@ const PT_EPP_OPCIONES = [
 // después de aplicar la plantilla.
 const PT_PLANTILLAS_ETAPAS = {
   epoxico: { label:"Piso Epóxico", etapas: [
-    { nombre:"Preparación de superficie", actividad:"Diamantado y limpieza de la losa, reparación de grietas y juntas", horario:"07:00 - 17:00", herramientas:"Pulidora industrial, aspiradora industrial", producto:"—", epp:"Casco, lentes, mascarilla, guantes" },
-    { nombre:"Imprimación (primer)", actividad:"Aplicación de primer epóxico para sellar y anclar el sistema", horario:"07:00 - 17:00", herramientas:"Rodillo, llana dentada", producto:"Primer epóxico", epp:"Casco, guantes químicos, respirador" },
-    { nombre:"Aplicación de sistema epóxico", actividad:"Aplicación de capa(s) de autonivelante epóxico color", horario:"07:00 - 17:00", herramientas:"Llana, rodillo de púas para desairear", producto:"Epóxico autonivelante", epp:"Casco, guantes químicos, respirador, botas antiderrapantes" },
-    { nombre:"Acabado y sellado final", actividad:"Aplicación de capa de sellador y verificación de acabado", horario:"07:00 - 17:00", herramientas:"Rodillo de felpa", producto:"Sellador poliuretano/UV", epp:"Casco, guantes, respirador" }
+    { nombre:"Preparación de superficie", actividad:"Diamantado y limpieza de la losa, reparación de grietas y juntas", horario:"07:00 AM - 05:00 PM", herramientas:"Pulidora industrial, aspiradora industrial", producto:"—", epp:"Casco, lentes, mascarilla, guantes" },
+    { nombre:"Imprimación (primer)", actividad:"Aplicación de primer epóxico para sellar y anclar el sistema", horario:"07:00 AM - 05:00 PM", herramientas:"Rodillo, llana dentada", producto:"Primer epóxico", epp:"Casco, guantes químicos, respirador" },
+    { nombre:"Aplicación de sistema epóxico", actividad:"Aplicación de capa(s) de autonivelante epóxico color", horario:"07:00 AM - 05:00 PM", herramientas:"Llana, rodillo de púas para desairear", producto:"Epóxico autonivelante", epp:"Casco, guantes químicos, respirador, botas antiderrapantes" },
+    { nombre:"Acabado y sellado final", actividad:"Aplicación de capa de sellador y verificación de acabado", horario:"07:00 AM - 05:00 PM", herramientas:"Rodillo de felpa", producto:"Sellador poliuretano/UV", epp:"Casco, guantes, respirador" }
   ]},
   impermeabilizacion: { label:"Impermeabilización de techo/cubierta", etapas: [
-    { nombre:"Preparación de superficie", actividad:"Limpieza y preparación mecánica de la cubierta", horario:"07:00 - 17:00", herramientas:"Hidrolavadora, escobas, espátula", producto:"—", epp:"Casco, arnés de cuerpo completo, guantes, lentes de seguridad" },
-    { nombre:"Tratamiento de puntos críticos", actividad:"Sellado de traslapes, tornillería, penetraciones y remates perimetrales", horario:"07:00 - 17:00", herramientas:"Pistola de calafateo, rodillo, brocha", producto:"Sellador PU monocomponente", epp:"Casco, arnés, respirador de cartucho, overol" },
-    { nombre:"Impermeabilización general", actividad:"Aplicación del sistema de impermeabilización en 2-3 capas con acabado UV", horario:"06:30 - 16:00", herramientas:"Airless, rodillo de felpa, medidor de espesor", producto:"Poliuretano elastomérico", epp:"Casco, arnés, respirador de cartucho, overol" },
-    { nombre:"Prueba de inundación y entrega", actividad:"Prueba de inundación en zonas críticas, bitácora fotográfica y entrega", horario:"07:00 - 14:00", herramientas:"Manguera y formatos", producto:"—", epp:"Casco, arnés, guantes, lentes de seguridad" }
+    { nombre:"Preparación de superficie", actividad:"Limpieza y preparación mecánica de la cubierta", horario:"07:00 AM - 05:00 PM", herramientas:"Hidrolavadora, escobas, espátula", producto:"—", epp:"Casco, arnés de cuerpo completo, guantes, lentes de seguridad" },
+    { nombre:"Tratamiento de puntos críticos", actividad:"Sellado de traslapes, tornillería, penetraciones y remates perimetrales", horario:"07:00 AM - 05:00 PM", herramientas:"Pistola de calafateo, rodillo, brocha", producto:"Sellador PU monocomponente", epp:"Casco, arnés, respirador de cartucho, overol" },
+    { nombre:"Impermeabilización general", actividad:"Aplicación del sistema de impermeabilización en 2-3 capas con acabado UV", horario:"06:30 AM - 04:00 PM", herramientas:"Airless, rodillo de felpa, medidor de espesor", producto:"Poliuretano elastomérico", epp:"Casco, arnés, respirador de cartucho, overol" },
+    { nombre:"Prueba de inundación y entrega", actividad:"Prueba de inundación en zonas críticas, bitácora fotográfica y entrega", horario:"07:00 AM - 02:00 PM", herramientas:"Manguera y formatos", producto:"—", epp:"Casco, arnés, guantes, lentes de seguridad" }
   ]},
   pulido: { label:"Pulido de Concreto", etapas: [
-    { nombre:"Diagnóstico y preparación", actividad:"Diagnóstico de superficie y retiro de recubrimientos previos", horario:"07:00 - 17:00", herramientas:"Pulidora de grano grueso, aspiradora industrial", producto:"—", epp:"Casco, lentes, mascarilla, guantes" },
-    { nombre:"Pulido progresivo", actividad:"Pulido con diamante en granos progresivos hasta el acabado deseado", horario:"07:00 - 17:00", herramientas:"Pulidora industrial, discos diamantados", producto:"Endurecedor químico (densificador)", epp:"Casco, lentes, mascarilla, guantes" },
-    { nombre:"Sellado y pulido final", actividad:"Aplicación de sellador y pulido de brillo final", horario:"07:00 - 17:00", herramientas:"Pulidora con boinas, rodillo", producto:"Sellador/cera densificadora", epp:"Casco, lentes, mascarilla, guantes" }
+    { nombre:"Diagnóstico y preparación", actividad:"Diagnóstico de superficie y retiro de recubrimientos previos", horario:"07:00 AM - 05:00 PM", herramientas:"Pulidora de grano grueso, aspiradora industrial", producto:"—", epp:"Casco, lentes, mascarilla, guantes" },
+    { nombre:"Pulido progresivo", actividad:"Pulido con diamante en granos progresivos hasta el acabado deseado", horario:"07:00 AM - 05:00 PM", herramientas:"Pulidora industrial, discos diamantados", producto:"Endurecedor químico (densificador)", epp:"Casco, lentes, mascarilla, guantes" },
+    { nombre:"Sellado y pulido final", actividad:"Aplicación de sellador y pulido de brillo final", horario:"07:00 AM - 05:00 PM", herramientas:"Pulidora con boinas, rodillo", producto:"Sellador/cera densificadora", epp:"Casco, lentes, mascarilla, guantes" }
   ]},
   reparaciones: { label:"Reparaciones de Concreto", etapas: [
-    { nombre:"Diagnóstico y demolición selectiva", actividad:"Localización de daños y demolición de concreto suelto o dañado", horario:"07:00 - 17:00", herramientas:"Rotomartillo, cincel", producto:"—", epp:"Casco, lentes, guantes, botas con casquillo" },
-    { nombre:"Preparación de acero y superficie", actividad:"Limpieza de acero de refuerzo expuesto y aplicación de inhibidor de corrosión", horario:"07:00 - 17:00", herramientas:"Cepillo de acero, hidrolavadora", producto:"Inhibidor de corrosión", epp:"Casco, lentes, guantes" },
-    { nombre:"Resane y nivelación", actividad:"Aplicación de mortero de reparación y nivelación de superficie", horario:"07:00 - 17:00", herramientas:"Llana, mezcladora", producto:"Mortero de reparación estructural", epp:"Casco, lentes, guantes" },
-    { nombre:"Curado y acabado final", actividad:"Curado del mortero y acabado final de superficie", horario:"07:00 - 17:00", herramientas:"Llana fina, aspersor de curado", producto:"Membrana de curado", epp:"Casco, lentes, guantes" }
+    { nombre:"Diagnóstico y demolición selectiva", actividad:"Localización de daños y demolición de concreto suelto o dañado", horario:"07:00 AM - 05:00 PM", herramientas:"Rotomartillo, cincel", producto:"—", epp:"Casco, lentes, guantes, botas con casquillo" },
+    { nombre:"Preparación de acero y superficie", actividad:"Limpieza de acero de refuerzo expuesto y aplicación de inhibidor de corrosión", horario:"07:00 AM - 05:00 PM", herramientas:"Cepillo de acero, hidrolavadora", producto:"Inhibidor de corrosión", epp:"Casco, lentes, guantes" },
+    { nombre:"Resane y nivelación", actividad:"Aplicación de mortero de reparación y nivelación de superficie", horario:"07:00 AM - 05:00 PM", herramientas:"Llana, mezcladora", producto:"Mortero de reparación estructural", epp:"Casco, lentes, guantes" },
+    { nombre:"Curado y acabado final", actividad:"Curado del mortero y acabado final de superficie", horario:"07:00 AM - 05:00 PM", herramientas:"Llana fina, aspersor de curado", producto:"Membrana de curado", epp:"Casco, lentes, guantes" }
   ]},
   juntas: { label:"Sello de Juntas y Grietas", etapas: [
-    { nombre:"Preparación de juntas", actividad:"Limpieza, corte y preparación de juntas y grietas", horario:"07:00 - 17:00", herramientas:"Cortadora de juntas, sopladora", producto:"—", epp:"Casco, lentes, guantes, mascarilla" },
-    { nombre:"Sellado", actividad:"Aplicación de sellador semirrígido o elastomérico en juntas y grietas", horario:"07:00 - 17:00", herramientas:"Pistola de calafateo, espátula", producto:"Sellador de juntas (poliurea/epóxico)", epp:"Casco, guantes químicos, lentes" }
+    { nombre:"Preparación de juntas", actividad:"Limpieza, corte y preparación de juntas y grietas", horario:"07:00 AM - 05:00 PM", herramientas:"Cortadora de juntas, sopladora", producto:"—", epp:"Casco, lentes, guantes, mascarilla" },
+    { nombre:"Sellado", actividad:"Aplicación de sellador semirrígido o elastomérico en juntas y grietas", horario:"07:00 AM - 05:00 PM", herramientas:"Pistola de calafateo, espátula", producto:"Sellador de juntas (poliurea/epóxico)", epp:"Casco, guantes químicos, lentes" }
   ]},
   pintura: { label:"Pintura de Muros", etapas: [
-    { nombre:"Preparación de superficie", actividad:"Limpieza, resane de imperfecciones y protección de áreas colindantes", horario:"07:00 - 17:00", herramientas:"Espátula, lija, plástico protector", producto:"Resane / sellador", epp:"Casco, lentes, guantes" },
-    { nombre:"Aplicación de pintura", actividad:"Aplicación de sistema de pintura en 2 capas", horario:"07:00 - 17:00", herramientas:"Rodillo, brocha, pistola airless", producto:"Pintura industrial/esmalte", epp:"Casco, mascarilla, guantes" }
+    { nombre:"Preparación de superficie", actividad:"Limpieza, resane de imperfecciones y protección de áreas colindantes", horario:"07:00 AM - 05:00 PM", herramientas:"Espátula, lija, plástico protector", producto:"Resane / sellador", epp:"Casco, lentes, guantes" },
+    { nombre:"Aplicación de pintura", actividad:"Aplicación de sistema de pintura en 2 capas", horario:"07:00 AM - 05:00 PM", herramientas:"Rodillo, brocha, pistola airless", producto:"Pintura industrial/esmalte", epp:"Casco, mascarilla, guantes" }
   ]},
   uretano: { label:"Uretano Cementicio", etapas: [
-    { nombre:"Preparación de superficie", actividad:"Diamantado y limpieza profunda de la losa", horario:"07:00 - 17:00", herramientas:"Pulidora industrial, aspiradora industrial", producto:"—", epp:"Casco, lentes, mascarilla, guantes" },
-    { nombre:"Aplicación de uretano cementicio", actividad:"Aplicación del sistema de uretano cementicio, resistente a impacto térmico", horario:"06:00 - 15:00", herramientas:"Llana, mezcladora industrial", producto:"Uretano cementicio", epp:"Casco, guantes químicos, respirador, botas antiderrapantes" },
-    { nombre:"Curado y acabado", actividad:"Curado del sistema y verificación de acabado final", horario:"07:00 - 17:00", herramientas:"—", producto:"—", epp:"Casco, guantes" }
+    { nombre:"Preparación de superficie", actividad:"Diamantado y limpieza profunda de la losa", horario:"07:00 AM - 05:00 PM", herramientas:"Pulidora industrial, aspiradora industrial", producto:"—", epp:"Casco, lentes, mascarilla, guantes" },
+    { nombre:"Aplicación de uretano cementicio", actividad:"Aplicación del sistema de uretano cementicio, resistente a impacto térmico", horario:"06:00 AM - 03:00 PM", herramientas:"Llana, mezcladora industrial", producto:"Uretano cementicio", epp:"Casco, guantes químicos, respirador, botas antiderrapantes" },
+    { nombre:"Curado y acabado", actividad:"Curado del sistema y verificación de acabado final", horario:"07:00 AM - 05:00 PM", herramientas:"—", producto:"—", epp:"Casco, guantes" }
   ]}
 };
 
@@ -4950,7 +5053,6 @@ function aplicarPlantillaEtapas(){
     return Object.assign({
       id: _ptEtapaIdSeq++,
       fechaInicio: "", fechaFin: "", area: { valor:"", unidad:"m2" },
-      diasTrabajo: PT_DIAS_TRABAJO_DEFECTO.slice(),
       colorGantt: PT_COLORES_GANTT[i % PT_COLORES_GANTT.length]
     }, preset);
   });
@@ -4964,7 +5066,7 @@ function agregarEtapaPlanTrabajo(){
   _ptEtapas.push({
     id: _ptEtapaIdSeq++,
     nombre: "", fechaInicio: "", fechaFin: "", area: { valor:"", unidad:"m2" }, actividad: "",
-    horario: "07:00 - 17:00", diasTrabajo: PT_DIAS_TRABAJO_DEFECTO.slice(),
+    horario: "07:00 AM - 05:00 PM",
     herramientas: "", producto: "", epp: "Lentes, guantes y chaleco de seguridad",
     colorGantt: PT_COLORES_GANTT[n % PT_COLORES_GANTT.length]
   });
@@ -5000,21 +5102,46 @@ function onEtapaPlanTrabajoField(id, field, value){
   _ptGuardarBorradorDebounced();
 }
 
-// Los días de trabajo se guardan siempre en el mismo orden L,M,X,J,V,S,D
-// (no en el orden en que el usuario los marcó) para que la comparación y
-// las pruebas sean deterministas.
-function onEtapaDiaTrabajoToggle(id, code){
+// Horario como selección de horas preestablecidas (cada 30 min, 05:00 AM a
+// 08:00 PM) en vez de texto libre — el VALOR guardado sigue siendo un solo
+// string combinado ("07:00 AM - 05:00 PM") para no romper cómo se imprime
+// hoy en el PDF (dia.horario se usa tal cual); solo cambia la forma de
+// CAPTURARLO. 31 opciones: (20:00-05:00)/0:30 + 1.
+const PT_HORAS_OPCIONES = (function(){
+  const out = [];
+  for(let mins = 5*60; mins <= 20*60; mins += 30){
+    const h24 = Math.floor(mins/60), m = mins%60;
+    const ampm = h24 < 12 ? "AM" : "PM";
+    let h12 = h24 % 12; if(h12 === 0) h12 = 12;
+    out.push(String(h12).padStart(2,"0")+":"+String(m).padStart(2,"0")+" "+ampm);
+  }
+  return out;
+})();
+
+// Deriva {inicio,fin} del string combinado para pre-seleccionar los <select>
+// al editar una etapa. Si el horario no coincide con el formato "H - H"
+// (ej. un plan viejo con texto libre en 24h), ambos quedan vacíos — el
+// <select> muestra su placeholder y el valor guardado NO se toca hasta que
+// el usuario elija explícitamente una hora.
+function _ptParseHorario(horario){
+  const partes = (horario||"").split(" - ");
+  return { inicio: partes[0]||"", fin: partes[1]||"" };
+}
+
+function onEtapaHoraField(id, which, value){
   const e = _ptEtapas.find(function(x){ return x.id === id; });
   if(!e) return;
-  const set = new Set(e.diasTrabajo || []);
-  if(set.has(code)) set.delete(code); else set.add(code);
-  e.diasTrabajo = PT_DIAS_SEMANA_UI.map(function(d){ return d.code; }).filter(function(c){ return set.has(c); });
-  renderEtapasPlanTrabajo();
+  const otroId = "pt-etapa-hora-"+(which==="inicio"?"fin":"inicio")+"-"+id;
+  const otroEl = document.getElementById(otroId);
+  const otroVal = otroEl ? otroEl.value : "";
+  const horaInicio = which === "inicio" ? value : otroVal;
+  const horaFin = which === "fin" ? value : otroVal;
+  e.horario = (horaInicio && horaFin) ? (horaInicio+" - "+horaFin) : (horaInicio || horaFin || "");
   _ptGuardarBorradorDebounced();
 }
 
-// Área con unidad configurable (m²/ml/lote) — misma idea que diasTrabajo:
-// fusiona el campo tocado (valor o unidad) sobre el objeto {valor,unidad}
+// Área con unidad configurable (m²/ml/lote) — fusiona el campo tocado
+// (valor o unidad) sobre el objeto {valor,unidad}
 // existente, migrando de forma transparente una etapa vieja cuyo `area`
 // todavía sea texto libre (se toma como el valor inicial, unidad m² por
 // defecto) en cuanto el usuario toca cualquiera de los dos campos.
@@ -5153,39 +5280,29 @@ function renderEtapasPlanTrabajo(){
       + '</div>'
       + '<div class="fg" style="margin-bottom:8px;"><label class="flabel">Nombre de la etapa</label>'
         + '<input class="finput" value="'+(e.nombre||"").replace(/"/g,"&quot;")+'" placeholder="Ej: Preparación de superficie" oninput="onEtapaPlanTrabajoField('+e.id+',&apos;nombre&apos;,this.value)"></div>'
+      + '<div class="fg" style="margin-bottom:8px;"><label class="flabel">Actividad</label>'
+        + '<textarea class="ftextarea" rows="2" placeholder="Descripción de la actividad de esta etapa..." oninput="onEtapaPlanTrabajoField('+e.id+',&apos;actividad&apos;,this.value)">'+(e.actividad||"").replace(/</g,"&lt;")+'</textarea></div>'
       + '<div class="frow" style="margin-bottom:8px;">'
         + '<div class="fg" style="margin:0;"><label class="flabel">Fecha inicio</label><input class="finput" type="date" value="'+(e.fechaInicio||"")+'" onchange="onEtapaPlanTrabajoField('+e.id+',&apos;fechaInicio&apos;,this.value)"></div>'
         + '<div class="fg" style="margin:0;"><label class="flabel">Fecha fin</label><input class="finput" type="date" value="'+(e.fechaFin||"")+'" onchange="onEtapaPlanTrabajoField('+e.id+',&apos;fechaFin&apos;,this.value)"></div>'
       + '</div>'
-      + '<div class="fg" style="margin-bottom:8px;"><label class="flabel">Actividad</label>'
-        + '<textarea class="ftextarea" rows="2" placeholder="Descripción de la actividad de esta etapa..." oninput="onEtapaPlanTrabajoField('+e.id+',&apos;actividad&apos;,this.value)">'+(e.actividad||"").replace(/</g,"&lt;")+'</textarea></div>'
-      + '<div class="frow" style="margin-bottom:8px;">'
-        + '<div class="fg" style="margin:0;"><label class="flabel">Área</label>'
-          + '<div style="display:flex;gap:6px;">'
-            + '<input class="finput" style="flex:1;" value="'+(_ptAreaValor(e.area)||"").toString().replace(/"/g,"&quot;")+'" placeholder="Ej: 10,786" oninput="onEtapaAreaField('+e.id+',&apos;valor&apos;,this.value)">'
-            + '<select class="fselect" style="flex:0 0 66px;" onchange="onEtapaAreaField('+e.id+',&apos;unidad&apos;,this.value)">'
-              + Object.keys(PT_UNIDADES_AREA).map(function(u){ return '<option value="'+u+'"'+(_ptAreaUnidad(e.area)===u?' selected':'')+'>'+PT_UNIDADES_AREA[u]+'</option>'; }).join("")
-            + '</select>'
-          + '</div>'
-        + '</div>'
-        + '<div class="fg" style="margin:0;"><label class="flabel">Horario</label><input class="finput" value="'+(e.horario||"").replace(/"/g,"&quot;")+'" placeholder="07:00 - 17:00" oninput="onEtapaPlanTrabajoField('+e.id+',&apos;horario&apos;,this.value)"></div>'
-      + '</div>'
-      + '<div class="fg" style="margin-bottom:8px;"><label class="flabel">Días de trabajo</label>'
-        + '<div style="display:flex;gap:4px;">'
-          + PT_DIAS_SEMANA_UI.map(function(d){
-              const activo = (e.diasTrabajo||[]).indexOf(d.code) !== -1;
-              return '<div onclick="onEtapaDiaTrabajoToggle('+e.id+',&apos;'+d.code+'&apos;)" style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:7px;cursor:pointer;font-size:11px;font-weight:700;user-select:none;'
-                + (activo ? 'background:var(--navy);color:#fff;' : 'background:#fff;color:var(--tx3);border:1px solid var(--g1);')
-                + '">'+d.label+'</div>';
-            }).join("")
-        + '</div>'
-      + '</div>'
+      + (function(){
+          const _hora = _ptParseHorario(e.horario);
+          function _horaOpciones(which, actual){
+            return '<option value=""'+(!actual?' selected':'')+'>Elegir hora...</option>'
+              + PT_HORAS_OPCIONES.map(function(h){ return '<option value="'+h+'"'+(h===actual?' selected':'')+'>'+h+'</option>'; }).join("");
+          }
+          return '<div class="frow" style="margin-bottom:8px;">'
+            + '<div class="fg" style="margin:0;"><label class="flabel">Hora inicio</label><select class="fselect" id="pt-etapa-hora-inicio-'+e.id+'" onchange="onEtapaHoraField('+e.id+',&apos;inicio&apos;,this.value)">'+_horaOpciones("inicio", _hora.inicio)+'</select></div>'
+            + '<div class="fg" style="margin:0;"><label class="flabel">Hora fin</label><select class="fselect" id="pt-etapa-hora-fin-'+e.id+'" onchange="onEtapaHoraField('+e.id+',&apos;fin&apos;,this.value)">'+_horaOpciones("fin", _hora.fin)+'</select></div>'
+          + '</div>';
+        })()
       + '<div class="fg" style="margin-bottom:8px;"><label class="flabel">Herramientas</label>'
         + '<input class="finput" list="pt-herramientas-datalist" value="'+(e.herramientas||"").replace(/"/g,"&quot;")+'" placeholder="Ej: Hidrolavadora, escobas" oninput="onEtapaPlanTrabajoField('+e.id+',&apos;herramientas&apos;,this.value)"></div>'
       + '<div class="frow" style="margin-bottom:8px;">'
         + _ptRenderCampoProducto(e, productosDisponibles)
       + '</div>'
-      + '<div class="fg"><label class="flabel">EPP</label>'
+      + '<div class="fg" style="margin-bottom:8px;"><label class="flabel">EPP</label>'
         + '<div style="display:flex;flex-wrap:wrap;gap:6px;">'
           + '<div onclick="onEtapaEppTodos('+e.id+')" style="padding:5px 10px;border-radius:16px;cursor:pointer;font-size:10px;font-weight:700;user-select:none;'
             + (PT_EPP_OPCIONES.every(function(o){ return o.match.test(e.epp||""); }) ? 'background:var(--navy);color:#fff;' : 'background:#fff;color:var(--tx2);border:1px solid var(--g1);')
@@ -5196,6 +5313,14 @@ function renderEtapasPlanTrabajo(){
                 + (activo ? 'background:var(--navy);color:#fff;' : 'background:#fff;color:var(--tx2);border:1px solid var(--g1);')
                 + '">'+o.label+'</div>';
             }).join("")
+        + '</div>'
+      + '</div>'
+      + '<div class="fg"><label class="flabel">Área (opcional)</label>'
+        + '<div style="display:flex;gap:6px;">'
+          + '<input class="finput" style="flex:1;" value="'+(_ptAreaValor(e.area)||"").toString().replace(/"/g,"&quot;")+'" placeholder="Ej: 10,786" oninput="onEtapaAreaField('+e.id+',&apos;valor&apos;,this.value)">'
+          + '<select class="fselect" style="flex:0 0 66px;" onchange="onEtapaAreaField('+e.id+',&apos;unidad&apos;,this.value)">'
+            + Object.keys(PT_UNIDADES_AREA).map(function(u){ return '<option value="'+u+'"'+(_ptAreaUnidad(e.area)===u?' selected':'')+'>'+PT_UNIDADES_AREA[u]+'</option>'; }).join("")
+          + '</select>'
         + '</div>'
       + '</div>'
     + '</div>';
@@ -5212,22 +5337,23 @@ async function guardarPlanTrabajo(){
     if(!e.nombre || !e.nombre.trim()){ showToast("⚠️ Todas las etapas necesitan un nombre"); return; }
     if(!e.fechaInicio || !e.fechaFin){ showToast("⚠️ Todas las etapas necesitan fecha de inicio y fin"); return; }
     if(e.fechaFin < e.fechaInicio){ showToast("⚠️ La fecha fin de \""+e.nombre+"\" es anterior a la de inicio"); return; }
-    // Solo bloquea un arreglo EXPLÍCITAMENTE vacío (ej. el usuario destildó
-    // todos los días sin querer) — una etapa sin diasTrabajo (undefined,
-    // planes capturados antes de este campo) se deja pasar, ya que
-    // expandirEtapaADias ya sabe caer a los días por defecto en ese caso.
-    if(Array.isArray(e.diasTrabajo) && e.diasTrabajo.length === 0){ showToast("⚠️ \""+e.nombre+"\" necesita al menos un día de trabajo marcado"); return; }
   }
   const now = Date.now();
   const id = _ptEditandoId || ("plan"+now);
   const existente = _ptEditandoId ? planesTrabajo.find(function(x){ return x.id === _ptEditandoId; }) : null;
+  const proyecto = document.getElementById("pt-proyecto").value.trim();
+  const alcance = document.getElementById("pt-alcance").value.trim();
+  const fechaMin = _ptEtapas.reduce(function(min, e){ return (e.fechaInicio && (!min || e.fechaInicio < min)) ? e.fechaInicio : min; }, null);
+  const folio = document.getElementById("pt-folio").value.trim() || _ptFolioSugerido(cliente, fechaMin, proyecto, alcance);
+  const userEmail = ((currentUser && currentUser.email) || "").toLowerCase();
   const p = {
     id,
     marca: document.getElementById("pt-marca").value,
+    folio,
     cliente,
     ubicacion,
-    proyecto: document.getElementById("pt-proyecto").value.trim(),
-    alcance: document.getElementById("pt-alcance").value.trim(),
+    proyecto,
+    alcance,
     imagenPortada: _ptImagenPortada || null,
     areaTotal: { valor: document.getElementById("pt-area-total").value.trim(), unidad: document.getElementById("pt-area-total-unidad").value },
     departamento: document.getElementById("pt-departamento").value.trim(),
@@ -5239,6 +5365,9 @@ async function guardarPlanTrabajo(){
     clienteRfc: document.getElementById("pt-cliente-rfc").value.trim(),
     cotizacionId: _ptCotizacionVinculada || null,
     etapas: _ptEtapas.map(function(e){ const copia = Object.assign({}, e); delete copia._productoModo; return copia; }),
+    // El creador original NUNCA se reasigna al editar (mismo criterio que
+    // createdAt) — solo se captura la primera vez que se guarda el plan.
+    creadoPor: existente ? (existente.creadoPor || null) : userEmail,
     createdAt: existente ? (existente.createdAt || now) : now,
     updatedAt: now
   };
@@ -5258,38 +5387,26 @@ async function guardarPlanTrabajo(){
 // Se captura por ETAPA (una sola vez); esta función expande automáticamente
 // a filas diarias para la Hoja 2 del PDF y para cualquier vista previa en
 // pantalla — nunca se captura un día individual a mano.
-// Nota: a diferencia del esqueleto original, en un día de descanso SÍ se
-// conserva la fecha real (fecha: new Date(cur)) en vez de null — se necesita
-// para mostrar "Domingo 21 de junio — Descanso" en la Hoja 2; con null no
-// habría forma de mostrar esa fecha.
-// Cada etapa define sus propios días de trabajo (etapa.diasTrabajo, códigos
-// L/M/X/J/V/S/D) en vez de asumir domingo=descanso y sábado=horario
-// reducido — cualquier día fuera de esa lista se expande como "Descanso".
+// Se trabajan los 7 días de la semana dentro del rango fechaInicio–fechaFin,
+// sin excepción: ya no existe el concepto de día de "Descanso" (antes se
+// derivaba de etapa.diasTrabajo). Un plan viejo que sí capturó diasTrabajo
+// simplemente lo ignora al regenerar su PDF — no hace falta migrar ni
+// borrar ese campo en Firestore, no vuelve a leerse.
 function expandirEtapaADias(etapa){
   const dias = [];
   if(!etapa.fechaInicio || !etapa.fechaFin) return dias;
-  // OJO: un arreglo vacío ([]) es "truthy" en JS, así que "|| PT_DIAS_TRABAJO_DEFECTO"
-  // por sí solo NUNCA cae al valor por defecto cuando diasTrabajo quedó vacío (ej.
-  // el usuario destildó todos los días sin querer) — hay que revisar .length
-  // explícitamente, si no, esa etapa se expande con TODOS sus días como "Descanso".
-  const diasTrabajo = (etapa.diasTrabajo && etapa.diasTrabajo.length) ? etapa.diasTrabajo : PT_DIAS_TRABAJO_DEFECTO;
   let cur = new Date(etapa.fechaInicio + "T00:00:00");
   const fin = new Date(etapa.fechaFin + "T00:00:00");
   while(cur <= fin){
-    const codigoDia = PT_DIA_CODIGO_POR_GETDAY[cur.getDay()];
-    if(diasTrabajo.indexOf(codigoDia) === -1){
-      dias.push({ fecha: new Date(cur), descanso: true });
-    } else {
-      dias.push({
-        fecha: new Date(cur),
-        area: etapa.area,
-        actividad: etapa.actividad,
-        horario: etapa.horario,
-        herramientas: etapa.herramientas,
-        producto: etapa.producto,
-        epp: etapa.epp
-      });
-    }
+    dias.push({
+      fecha: new Date(cur),
+      area: etapa.area,
+      actividad: etapa.actividad,
+      horario: etapa.horario,
+      herramientas: etapa.herramientas,
+      producto: etapa.producto,
+      epp: etapa.epp
+    });
     cur = new Date(cur);
     cur.setDate(cur.getDate() + 1);
   }
@@ -5310,16 +5427,6 @@ function expandirPlanADias(plan){
 const PT_MESES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
 const PT_MESES_CORTO = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
 const PT_DIAS_CORTO = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
-const PT_DIAS_NOMBRE = ["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
-// Código de un carácter por día de la semana, indexado por Date.getDay()
-// (0=domingo...6=sábado) — es el mismo código que usan los checkboxes de
-// "Días de trabajo" del formulario (L M X J V S D).
-const PT_DIA_CODIGO_POR_GETDAY = ["D","L","M","X","J","V","S"];
-const PT_DIAS_SEMANA_UI = [
-  {code:"L", label:"L"}, {code:"M", label:"M"}, {code:"X", label:"X"}, {code:"J", label:"J"},
-  {code:"V", label:"V"}, {code:"S", label:"S"}, {code:"D", label:"D"}
-];
-const PT_DIAS_TRABAJO_DEFECTO = ["L","M","X","J","V","S"];
 
 // Unidad de área configurable (m²/ml/lote) — tanto a nivel plan (areaTotal)
 // como por etapa (etapa.area). El valor se guarda como {valor, unidad}; con
@@ -5418,16 +5525,27 @@ function _ptHojaHeaderContinuacion(plan){
   + '</div>';
 }
 
-// Pie compartido por TODAS las hojas del documento: lado izquierdo SOLO el
-// tagline de marca (sin leyendas ni avisos adicionales — esos, si hacen
-// falta, van dentro del contenido de la hoja que los necesita, no repetidos
-// en este pie global). Lado derecho: contador real "Hoja X/Y" — hojaTotal
-// se calcula DESPUÉS de paginar el Plan de Ejecución (ver
-// generarPdfPlanTrabajoEnVentana), nunca queda fijo en un número asumido.
-function _ptHojaFooter(tagline, hojaActual, hojaTotal){
+// Texto de marca del pie — mismo patrón condicional por marca que
+// _ptHeaderTaglineDe/_ptTaglineDe, pero como una sola pieza de texto FIJA
+// (no depende de datos fiscales capturados a mano) para que las 3-4 hojas
+// del documento digan siempre exactamente lo mismo.
+function _ptFooterMarcaTexto(modPlan){
+  if(modPlan === "home") return "HOME by ROMSA · Todo para pisos";
+  if(modPlan === "rackline") return "RACKLINE · Almacenamiento inteligente para la industria";
+  return "ROMSA Servicios y Suministros Industriales";
+}
+
+// Pie compartido por TODAS las hojas del documento (Portada, Ejecución y
+// Gantt) — UNA sola función para que el texto de marca y el folio salgan
+// idénticos en las 3-4 hojas, cambiando solo el número de hoja. Antes cada
+// hoja construía su propio pie con textos ligeramente distintos (la Portada
+// mostraba la razón social capturada a mano, la Ejecución un tagline de
+// marca distinto, y el Gantt un texto genérico "Plan de Trabajo" en vez del
+// folio real).
+function _ptHojaFooter(plan, modPlan, hojaActual, hojaTotal){
   return '<div style="padding:8px 0 16px;display:flex;align-items:center;justify-content:space-between;gap:24px;border-top:1px solid #E4E9F0;">'
-    + '<span style="color:#0B1F3A;font-size:9.5px;font-weight:700;white-space:nowrap;">'+escapeHtml(tagline||"")+'</span>'
-    + '<span style="font-family:\'JetBrains Mono\',monospace;font-size:9px;letter-spacing:.06em;color:#6B7788;white-space:nowrap;">Plan de Trabajo · Hoja '+hojaActual+'/'+hojaTotal+'</span>'
+    + '<span style="color:#0B1F3A;font-size:9.5px;font-weight:700;white-space:nowrap;">'+escapeHtml(_ptFooterMarcaTexto(modPlan))+'</span>'
+    + '<span style="font-family:\'JetBrains Mono\',monospace;font-size:9px;letter-spacing:.06em;color:#6B7788;white-space:nowrap;">'+escapeHtml(_ptFolio(plan))+' · Hoja '+hojaActual+'/'+hojaTotal+'</span>'
   + '</div>';
 }
 
@@ -5440,13 +5558,6 @@ function _ptHojaFooter(tagline, hojaActual, hojaTotal){
 function _ptEtapaHeaderInner(numEtapa, etapa){
   return '<div style="padding:7px 0 7px 9px;border-bottom:1px solid #E9EDF3;border-left:3px solid '+(etapa.colorGantt||"#0B1F3A")+';background:#fff;">'
     + '<span style="font-size:10.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:#0B1F3A;">Etapa '+numEtapa+' — '+escapeHtml(etapa.nombre||"")+'</span>'
-  + '</div>';
-}
-
-function _ptDescansoRowInner(fechaDate){
-  const txt = fechaDate ? (PT_DIAS_NOMBRE[fechaDate.getDay()]+" "+fechaDate.getDate()+" de "+PT_MESES[fechaDate.getMonth()]) : "Descanso";
-  return '<div style="padding:4px 9px;background:#EEF3FB;">'
-    + '<span style="font-size:9.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#3F6299;">'+txt+' — Descanso</span>'
   + '</div>';
 }
 
@@ -5479,10 +5590,6 @@ function _ptDiaRowInner(dia, zebra){
   + '</div>';
 }
 
-function _ptFilaInner(dia, zebra){
-  return dia.descanso ? _ptDescansoRowInner(dia.fecha) : _ptDiaRowInner(dia, zebra);
-}
-
 // Las etapas se capturan en el formulario en cualquier orden (se pueden
 // agregar/quitar libremente), pero el PDF SIEMPRE debe correr en orden
 // cronológico — de lo contrario la Hoja 2 y el Gantt saltan hacia atrás en
@@ -5505,9 +5612,9 @@ function _ptConstruirBloquesHoja2(plan){
       bloques.push('<div class="pt-blk">'+headerHtml+'</div>');
       return;
     }
-    bloques.push('<div class="pt-blk">'+headerHtml+_ptFilaInner(dias[0], zebra)+'</div>');
+    bloques.push('<div class="pt-blk">'+headerHtml+_ptDiaRowInner(dias[0], zebra)+'</div>');
     dias.slice(1).forEach(function(dia){
-      bloques.push('<div class="pt-blk">'+_ptFilaInner(dia, zebra)+'</div>');
+      bloques.push('<div class="pt-blk">'+_ptDiaRowInner(dia, zebra)+'</div>');
     });
   });
   return bloques;
@@ -5617,14 +5724,55 @@ function _ptPeriodoTextoLargo(plan){
   return iniTxt+" al "+finTxt;
 }
 
-// Folio de despliegue derivado de datos reales del plan (cliente + año de
-// creación) — NO es un número de control documental oficial (ROMSA no
-// captura ese dato en este módulo); es solo una etiqueta legible para pie
-// de página, análoga a un folio, hasta que exista una numeración real.
+// Palabras de relleno que no sirven como palabra clave del folio (artículos
+// y preposiciones cortas) — si la primera palabra "significativa" del
+// proyecto/alcance no aparece, esa parte del folio se deja vacía en vez de
+// forzar un resultado raro (el folio sigue siendo editable a mano).
+const PT_FOLIO_STOPWORDS = new Set(["DE","DEL","LA","EL","LOS","LAS","UN","UNA","UNOS","UNAS","PARA","POR","EN","Y","O","A","AL","CON","SIN","SU","SUS","QUE"]);
+
+function _ptFolioPalabraClave(texto){
+  if(!texto) return "";
+  const palabras = String(texto).toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Z0-9\s]/g, " ").split(/\s+/).filter(Boolean);
+  const sig = palabras.find(function(p){ return p.length >= 3 && !PT_FOLIO_STOPWORDS.has(p); });
+  return sig || "";
+}
+
+function _ptFolioFechaYYMMDD(iso){
+  if(!iso) return "";
+  const d = _ptParseISO(iso);
+  const yy = String(d.getFullYear()).slice(-2);
+  const mm = String(d.getMonth()+1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return yy+mm+dd;
+}
+
+// Folio SUGERIDO: PT-{CLIENTE}-{YYMMDD}-{PALABRA_CLAVE} — más específico que
+// el folio genérico anterior (PT-CLIENTE-AÑO), que chocaba entre 2 planes
+// del mismo cliente en el mismo año. YYMMDD es la fecha de inicio MÁS
+// TEMPRANA entre las etapas capturadas; la palabra clave sale de Proyecto
+// (o Alcance si Proyecto está vacío). Cualquier parte sin datos suficientes
+// simplemente se omite (nunca se inventa ni se deja un separador colgado).
+// Es solo una SUGERENCIA: el campo de folio sigue siendo editable, el
+// usuario puede sobrescribirlo antes de guardar (ver _ptActualizarFolioSugerido).
+function _ptFolioSugerido(cliente, fechaInicioMin, proyecto, alcance){
+  const slug = (cliente || "PLAN").split(/[\s,–—-]+/)[0].toUpperCase().replace(/[^A-Z0-9]/g, "") || "PLAN";
+  const fecha = _ptFolioFechaYYMMDD(fechaInicioMin);
+  const keyword = _ptFolioPalabraClave(proyecto) || _ptFolioPalabraClave(alcance);
+  let folio = "PT-"+slug;
+  if(fecha) folio += "-"+fecha;
+  if(keyword) folio += "-"+keyword;
+  return folio;
+}
+
+// Folio EFECTIVO de un plan ya guardado: el capturado a mano en el
+// formulario (plan.folio, editable) si existe; para planes viejos guardados
+// ANTES de que el folio fuera un campo persistido, se deriva con la misma
+// fórmula a partir de los datos ya guardados del plan (nunca se inventa un
+// campo nuevo hacia atrás, solo se calcula al vuelo para imprimir).
 function _ptFolio(plan){
-  const year = new Date(plan.createdAt || Date.now()).getFullYear();
-  const slug = (plan.cliente || "PLAN").split(/[\s,–—-]+/)[0].toUpperCase().replace(/[^A-Z0-9]/g, "") || "PLAN";
-  return "PT-"+slug+"-"+year;
+  if(plan.folio) return plan.folio;
+  const r = _ptRangoGlobal(plan);
+  return _ptFolioSugerido(plan.cliente, r.min, plan.proyecto, plan.alcance);
 }
 
 function _ptHoja1Html(plan, accent, logo, marcaLabel, tagline, hojaTotal){
@@ -5648,14 +5796,6 @@ function _ptHoja1Html(plan, accent, logo, marcaLabel, tagline, hojaTotal){
     + '</div>';
   }).join("");
 
-  // Pie legal: SOLO la razón social real capturada a mano en el formulario
-  // (contratistaRazon) — sin el tagline (ya vive en el header) ni el RFC/
-  // dirección apilados debajo; si el usuario no la llenó, esta franja
-  // simplemente no aparece, nunca se inventa.
-  const footerLegal = plan.contratistaRazon
-    ? '<span style="color:#0B1F3A;font-size:10.5px;font-weight:700;">'+escapeHtml(plan.contratistaRazon)+'</span>'
-    : '<div></div>';
-
   // Header reutilizado TAL CUAL de la plantilla de Reporte General (mismas
   // clases: .header/.logo-center/.logo-img/.header-tagline/.meta-row/
   // .meta-col-label/.meta-col-value/.tipo-badge-line/.tipo-badge) — solo
@@ -5664,10 +5804,16 @@ function _ptHoja1Html(plan, accent, logo, marcaLabel, tagline, hojaTotal){
   // .pt-hoja trae padding lateral que Reporte General no tiene en su
   // propio contenedor de página.
   const _modPlanH1 = _modalidadDePlan(plan);
+  // El isotipo de HOME (casita + wordmark apilado) tiene una relación de
+  // aspecto más cuadrada/vertical que el logo horizontal de ROMSA/RACKLINE,
+  // así que a la misma altura en px se ve visualmente más chico — se le da
+  // ~28% más alto SOLO a HOME (inline, gana por especificidad sobre
+  // .logo-img) sin tocar el tamaño de las otras 2 marcas.
+  const _logoAltoEstilo = _modPlanH1 === "home" ? ' style="height:54px;"' : '';
   const headerReportGeneral = '<div style="margin:0 -34px;">'
     + '<div class="header">'
       + '<div class="logo-center">'
-        + (logo ? '<img src="'+logo+'" class="logo-img" alt="'+escapeHtml(marcaLabel)+'">' : '<div style="font-size:20px;font-weight:800;color:#fff;">'+escapeHtml(marcaLabel)+'</div>')
+        + (logo ? '<img src="'+logo+'" class="logo-img"'+_logoAltoEstilo+' alt="'+escapeHtml(marcaLabel)+'">' : '<div style="font-size:20px;font-weight:800;color:#fff;">'+escapeHtml(marcaLabel)+'</div>')
       + '</div>'
       + '<div class="header-tagline">'+escapeHtml(_ptHeaderTaglineDe(_modPlanH1))+'</div>'
       + '<div class="meta-row">'
@@ -5683,7 +5829,7 @@ function _ptHoja1Html(plan, accent, logo, marcaLabel, tagline, hojaTotal){
     + '</div>'
   + '</div>';
 
-  return '<div class="pt-hoja" style="padding-top:0;padding-bottom:20px;">'
+  return '<div class="pt-hoja" style="padding-top:0;padding-bottom:0;">'
     + headerReportGeneral
     + '<div style="flex:1;display:grid;grid-template-columns:1.15fr .85fr;gap:28px;margin-top:26px;min-height:0;">'
       + '<div style="display:flex;flex-direction:column;min-height:0;">'
@@ -5701,10 +5847,6 @@ function _ptHoja1Html(plan, accent, logo, marcaLabel, tagline, hojaTotal){
                 + '<img src="'+plan.imagenPortada+'" style="max-width:100%;max-height:100%;object-fit:contain;border-radius:10px;border:1px solid #E4E9F0;">'
               + '</div>'
             : '<div style="flex:1"></div>')
-        + '<div style="display:flex;align-items:flex-end;justify-content:space-between;gap:20px;padding-top:16px;border-top:1px solid #E4E9F0;">'
-          + footerLegal
-          + '<span style="font-family:\'JetBrains Mono\',monospace;font-size:9px;letter-spacing:.06em;color:#6B7788;white-space:nowrap;">'+_ptFolio(plan)+' · Hoja 1/'+hojaTotal+'</span>'
-        + '</div>'
       + '</div>'
       + '<div style="background:#F5F7FA;border:1px solid #E4E9F0;border-radius:12px;padding:20px 22px;display:flex;flex-direction:column;gap:14px;min-height:0;">'
         + '<span style="font-size:9px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#5A6880;">Datos del proyecto</span>'
@@ -5716,6 +5858,7 @@ function _ptHoja1Html(plan, accent, logo, marcaLabel, tagline, hojaTotal){
         + '</div>'
       + '</div>'
     + '</div>'
+    + _ptHojaFooter(plan, _modPlanH1, 1, hojaTotal)
   + '</div>';
 }
 
@@ -5836,7 +5979,7 @@ function _ptHoja3GanttHtml(plan, accent, tagline, hojaTotal){
     + '</div>';
   }).join("");
 
-  return '<div class="pt-hoja" style="padding-top:26px;padding-bottom:20px;">'
+  return '<div class="pt-hoja" style="padding-top:26px;padding-bottom:0;">'
     + '<div style="display:flex;align-items:flex-end;justify-content:space-between;gap:24px;padding-bottom:12px;border-bottom:2px solid #0B1F3A;flex-shrink:0;">'
       + '<div style="display:flex;flex-direction:column;gap:4px;">'
         + '<span style="font-size:9.5px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:'+accent+';">Hoja 3 de 3</span>'
@@ -5850,10 +5993,7 @@ function _ptHoja3GanttHtml(plan, accent, tagline, hojaTotal){
       + '<div style="margin-top:10px;display:flex;flex-direction:column;gap:8px;">'+leyendaHtml+'</div>'
     + '</div>'
     + '<div style="flex:1"></div>'
-    + '<div style="display:flex;align-items:center;justify-content:space-between;gap:24px;padding-top:10px;border-top:1px solid #E4E9F0;flex-shrink:0;">'
-      + '<span style="color:#0B1F3A;font-size:9.5px;font-weight:700;white-space:nowrap;">'+escapeHtml(tagline||"")+'</span>'
-      + '<span style="font-family:\'JetBrains Mono\',monospace;font-size:9px;letter-spacing:.06em;color:#6B7788;white-space:nowrap;">'+_ptFolio(plan)+' · Hoja '+hojaTotal+'/'+hojaTotal+'</span>'
-    + '</div>'
+    + _ptHojaFooter(plan, _modalidadDePlan(plan), hojaTotal, hojaTotal)
   + '</div>';
 }
 
@@ -5881,10 +6021,10 @@ function generarPdfPlanTrabajoEnVentana(plan, winRef, soloPreview){
   // conoce cuántas hojas de Ejecución resultaron (el texto del contador no
   // cambia la altura real del pie, así que no hace falta medir dos veces).
   let numHojasEjecucion = 1;
-  const hoja2Html = _ptDistribuirHojasLandscape(bloques, headerP1, _ptHojaFooter(tagline, 1, 1), headerCont, function(idxEnEjecucion, totalEjecucion){
+  const hoja2Html = _ptDistribuirHojasLandscape(bloques, headerP1, _ptHojaFooter(plan, _modPlan, 1, 1), headerCont, function(idxEnEjecucion, totalEjecucion){
     numHojasEjecucion = totalEjecucion;
     const totalHojasDoc = 1 + totalEjecucion + 1;
-    return _ptHojaFooter(tagline, 2 + idxEnEjecucion, totalHojasDoc);
+    return _ptHojaFooter(plan, _modPlan, 2 + idxEnEjecucion, totalHojasDoc);
   });
   const totalHojasDoc = 1 + numHojasEjecucion + 1;
 
