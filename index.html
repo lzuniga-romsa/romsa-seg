@@ -4103,7 +4103,16 @@ body.in-plantrabajo #app{
       <div style="font-size:10px;color:var(--tx3);margin-top:5px;">Se coloca debajo del alcance del proyecto en la Portada del PDF.</div>
     </div>
     <div class="frow">
-      <div class="fg"><label class="flabel">Área total (m²)</label><input class="finput" id="pt-area-total" type="number" min="0" step="any" placeholder="0"></div>
+      <div class="fg"><label class="flabel">Área total</label>
+        <div style="display:flex;gap:6px;">
+          <input class="finput" id="pt-area-total" type="text" placeholder="0" style="flex:1;">
+          <select class="fselect" id="pt-area-total-unidad" style="flex:0 0 66px;">
+            <option value="m2">m²</option>
+            <option value="ml">ml</option>
+            <option value="lote">lote</option>
+          </select>
+        </div>
+      </div>
       <div class="fg"><label class="flabel">Departamento</label><input class="finput" id="pt-departamento" placeholder="Ej: Impermeabilización y Mantenimiento Industrial"></div>
     </div>
     <div class="fg"><label class="flabel">Sistema</label><input class="finput" id="pt-sistema" placeholder="Ej: Poliuretano elastomérico — garantía 5 años"></div>
@@ -4136,6 +4145,7 @@ body.in-plantrabajo #app{
       </div>
       <div style="font-size:10px;color:var(--tx3);margin-top:6px;">Precarga nombre, actividad, horarios, herramientas, producto y EPP típicos de ese trabajo — ajusta lo que necesites después. Las fechas y el área siempre se capturan por proyecto, nunca se precargan.</div>
     </div>
+    <datalist id="pt-herramientas-datalist"></datalist>
     <div id="pt-etapas-list" style="display:flex;flex-direction:column;gap:10px;margin-bottom:10px;"></div>
     <button type="button" class="btn btn-ghost btn-block btn-sm" style="margin-bottom:16px;" onclick="agregarEtapaPlanTrabajo()">+ Agregar etapa</button>
 
@@ -4489,6 +4499,14 @@ function _nombreMarcaPlan(marca){ return marca === "home" ? "HOME by ROMSA" : ma
 // de marca corto pedido para este documento ("Todo para pisos"); para las
 // demás marcas se reutiliza el tagline ya establecido en las cotizaciones.
 function _ptTaglineDe(modPlan){ return modPlan === "home" ? "HOME by ROMSA - Todo para pisos" : _taglineDe(modPlan); }
+// Tagline corto para la barra navy del header de la Portada — mismas 3
+// frases ya usadas como tagline de marca en el pie de Condiciones
+// Generales de la cotización (generarPdfCotEnVentana), no un texto nuevo.
+function _ptHeaderTaglineDe(modPlan){
+  return modPlan === "rackline" ? "Almacenamiento inteligente para la industria"
+    : modPlan === "home" ? "Todo para pisos"
+    : "Servicios y Suministros Industriales";
+}
 let _ptImagenPortada = null; // base64 de la imagen opcional para la Portada — nunca se precarga, es siempre por proyecto
 
 function onImagenPortadaSeleccionada(ev){
@@ -4587,19 +4605,24 @@ function seleccionarCotizacionVinculada(id){
   const totalM2 = (cot.partidas||[]).reduce(function(s,p){
     return s + ((p.unit||"").toLowerCase().includes("m") ? (parseFloat(p.qty)||0) : 0);
   }, 0);
-  if(totalM2 > 0) document.getElementById("pt-area-total").value = totalM2;
+  if(totalM2 > 0){
+    document.getElementById("pt-area-total").value = totalM2;
+    document.getElementById("pt-area-total-unidad").value = "m2";
+  }
   const marca = (typeof _modalidadDe === "function") ? _modalidadDe(cot) : ((cot.modalidad === "home" || cot.modalidad === "rackline") ? cot.modalidad : "industrial");
   document.getElementById("pt-marca").value = marca;
   _ptCotizacionVinculada = cot.id;
   _ptMostrarVinculoBanner(cot);
   closeModal("modal-vincular-cotizacion");
   showToast("✅ Cotización vinculada");
+  renderEtapasPlanTrabajo(); // refresca el campo Producto de cada etapa con los productos de la cotización recién vinculada
   _ptGuardarBorradorDebounced();
 }
 
 function quitarVinculoCotizacion(){
   _ptCotizacionVinculada = null;
   _ptOcultarVinculoBanner();
+  renderEtapasPlanTrabajo(); // el campo Producto de cada etapa vuelve a texto libre
   _ptGuardarBorradorDebounced();
 }
 
@@ -4684,7 +4707,7 @@ function _ptRecolectarBorrador(){
     proyecto: val("pt-proyecto"),
     alcance: val("pt-alcance"),
     imagenPortada: _ptImagenPortada || null,
-    areaTotal: val("pt-area-total"),
+    areaTotal: { valor: val("pt-area-total"), unidad: val("pt-area-total-unidad") || "m2" },
     departamento: val("pt-departamento"),
     sistema: val("pt-sistema"),
     contratistaRazon: val("pt-contratista-razon"),
@@ -4737,7 +4760,8 @@ function _ptAplicarBorradorAlFormulario(b){
   _ptImagenPortada = b.imagenPortada || null;
   const inputImg = document.getElementById("pt-imagen-portada-input"); if(inputImg) inputImg.value = "";
   _ptMostrarPreviewImagenPortada();
-  set("pt-area-total", b.areaTotal);
+  set("pt-area-total", _ptAreaValor(b.areaTotal));
+  set("pt-area-total-unidad", _ptAreaUnidad(b.areaTotal));
   set("pt-departamento", b.departamento);
   set("pt-sistema", b.sistema);
   set("pt-contratista-razon", b.contratistaRazon);
@@ -4794,6 +4818,7 @@ function abrirNuevoPlanTrabajo(){
     const el = document.getElementById(id); if(el) el.value = "";
   });
   document.getElementById("pt-marca").value = "industrial";
+  document.getElementById("pt-area-total-unidad").value = "m2";
   _ptImagenPortada = null;
   const inputImgNuevo = document.getElementById("pt-imagen-portada-input"); if(inputImgNuevo) inputImgNuevo.value = "";
   _ptMostrarPreviewImagenPortada();
@@ -4827,7 +4852,8 @@ function abrirEditarPlanTrabajo(id){
   _ptImagenPortada = p.imagenPortada || null;
   const inputImgEditar = document.getElementById("pt-imagen-portada-input"); if(inputImgEditar) inputImgEditar.value = "";
   _ptMostrarPreviewImagenPortada();
-  document.getElementById("pt-area-total").value = p.areaTotal || "";
+  document.getElementById("pt-area-total").value = _ptAreaValor(p.areaTotal) || "";
+  document.getElementById("pt-area-total-unidad").value = _ptAreaUnidad(p.areaTotal);
   document.getElementById("pt-departamento").value = p.departamento || "";
   document.getElementById("pt-sistema").value = p.sistema || "";
   document.getElementById("pt-contratista-razon").value = p.contratistaRazon || "";
@@ -4848,6 +4874,23 @@ function abrirEditarPlanTrabajo(id){
 }
 
 const PT_COLORES_GANTT = ["#0B1F3A","#1E6FD9","#5FA5F0","#C36F4A","#0B7A5A","#8A5FC9"];
+
+// EPP como checkboxes en vez de texto libre — el valor guardado SIGUE
+// siendo una lista de texto (ej. "Lentes, guantes y chaleco de seguridad")
+// para no romper compatibilidad con planes ya creados con el campo de
+// texto libre. `match` se usa para PRE-MARCAR una etapa vieja si su texto
+// existente ya menciona esa opción (sin exigir coincidencia exacta de la
+// etiqueta completa).
+const PT_EPP_OPCIONES = [
+  { key:"lentes",     label:"Lentes de seguridad",     match:/lentes/i },
+  { key:"chaleco",    label:"Chaleco de seguridad",     match:/chaleco/i },
+  { key:"botas",      label:"Botas de seguridad",       match:/botas/i },
+  { key:"guantes",    label:"Guantes de seguridad",     match:/guantes/i },
+  { key:"arnes",      label:"Arnés",                    match:/arn[ée]s/i },
+  { key:"mascarilla", label:"Mascarilla/respirador",    match:/mascarilla|respirador/i },
+  { key:"tapones",    label:"Tapones auditivos",        match:/tapones/i },
+  { key:"casco",      label:"Casco",                    match:/casco/i }
+];
 
 // Plantillas de etapas por tipo de trabajo — punto de partida semi-
 // automático para no capturar todo a mano cada vez. NUNCA incluyen fecha
@@ -4906,7 +4949,7 @@ function aplicarPlantillaEtapas(){
   _ptEtapas = plantilla.etapas.map(function(preset, i){
     return Object.assign({
       id: _ptEtapaIdSeq++,
-      fechaInicio: "", fechaFin: "", area: "",
+      fechaInicio: "", fechaFin: "", area: { valor:"", unidad:"m2" },
       diasTrabajo: PT_DIAS_TRABAJO_DEFECTO.slice(),
       colorGantt: PT_COLORES_GANTT[i % PT_COLORES_GANTT.length]
     }, preset);
@@ -4920,7 +4963,7 @@ function agregarEtapaPlanTrabajo(){
   const n = _ptEtapas.length;
   _ptEtapas.push({
     id: _ptEtapaIdSeq++,
-    nombre: "", fechaInicio: "", fechaFin: "", area: "", actividad: "",
+    nombre: "", fechaInicio: "", fechaFin: "", area: { valor:"", unidad:"m2" }, actividad: "",
     horario: "07:00 - 17:00", diasTrabajo: PT_DIAS_TRABAJO_DEFECTO.slice(),
     herramientas: "", producto: "", epp: "Lentes, guantes y chaleco de seguridad",
     colorGantt: PT_COLORES_GANTT[n % PT_COLORES_GANTT.length]
@@ -4970,9 +5013,131 @@ function onEtapaDiaTrabajoToggle(id, code){
   _ptGuardarBorradorDebounced();
 }
 
+// Área con unidad configurable (m²/ml/lote) — misma idea que diasTrabajo:
+// fusiona el campo tocado (valor o unidad) sobre el objeto {valor,unidad}
+// existente, migrando de forma transparente una etapa vieja cuyo `area`
+// todavía sea texto libre (se toma como el valor inicial, unidad m² por
+// defecto) en cuanto el usuario toca cualquiera de los dos campos.
+function onEtapaAreaField(id, key, value){
+  const e = _ptEtapas.find(function(x){ return x.id === id; });
+  if(!e) return;
+  const actual = (e.area && typeof e.area === "object") ? e.area : { valor: (typeof e.area === "string" ? e.area : ""), unidad: "m2" };
+  const nueva = Object.assign({}, actual);
+  nueva[key] = value;
+  e.area = nueva;
+  _ptGuardarBorradorDebounced();
+}
+
+// EPP: checkboxes que reconstruyen `e.epp` como lista de texto (para no
+// romper compatibilidad con planes viejos de texto libre) — cada opción se
+// identifica en el texto existente por `match` (ver PT_EPP_OPCIONES),
+// nunca por igualdad exacta de la etiqueta completa.
+function onEtapaEppToggle(id, key){
+  const e = _ptEtapas.find(function(x){ return x.id === id; });
+  if(!e) return;
+  const opt = PT_EPP_OPCIONES.find(function(o){ return o.key === key; });
+  if(!opt) return;
+  const activas = new Set(PT_EPP_OPCIONES.filter(function(o){ return o.match.test(e.epp||""); }).map(function(o){ return o.label; }));
+  if(activas.has(opt.label)) activas.delete(opt.label); else activas.add(opt.label);
+  e.epp = PT_EPP_OPCIONES.filter(function(o){ return activas.has(o.label); }).map(function(o){ return o.label; }).join(", ");
+  renderEtapasPlanTrabajo();
+  _ptGuardarBorradorDebounced();
+}
+
+function onEtapaEppTodos(id){
+  const e = _ptEtapas.find(function(x){ return x.id === id; });
+  if(!e) return;
+  const todasActivas = PT_EPP_OPCIONES.every(function(o){ return o.match.test(e.epp||""); });
+  e.epp = todasActivas ? "" : PT_EPP_OPCIONES.map(function(o){ return o.label; }).join(", ");
+  renderEtapasPlanTrabajo();
+  _ptGuardarBorradorDebounced();
+}
+
+// Productos/sistemas que aparecen en las partidas de una cotización —
+// mismo criterio de título que usa la propia cotización para imprimir cada
+// partida (tituloCustom > servicio > "Sin título"), deduplicado.
+function _ptProductosDeCotizacion(cot){
+  if(!cot || !Array.isArray(cot.partidas)) return [];
+  const vistos = [];
+  cot.partidas.forEach(function(p){
+    let titulo;
+    if(p.tituloCustom && p.tituloCustom.trim()) titulo = p.tituloCustom.trim();
+    else if(p.servicio === "__PERSONALIZADO__") titulo = "Sin título";
+    else titulo = p.servicio || "Sin título";
+    if(vistos.indexOf(titulo) === -1) vistos.push(titulo);
+  });
+  return vistos;
+}
+
+// Selector de Producto cuando hay cotización vinculada: "__OTRO__" activa
+// el modo de texto libre (_productoModo es transitorio de UI, se limpia
+// antes de guardar en guardarPlanTrabajo — nunca se persiste).
+function onEtapaProductoSelect(id, value){
+  const e = _ptEtapas.find(function(x){ return x.id === id; });
+  if(!e) return;
+  if(value === "__OTRO__"){
+    e._productoModo = "otro";
+  } else {
+    delete e._productoModo;
+    e.producto = value;
+  }
+  renderEtapasPlanTrabajo();
+  _ptGuardarBorradorDebounced();
+}
+
+// Herramientas ya escritas en CUALQUIER etapa de CUALQUIER plan de trabajo
+// ya guardado — catálogo vivo sin precargar nada fijo. Se separan por coma
+// (una etapa puede listar varias) y se deduplican por texto exacto tras
+// trim() únicamente (sin normalizar mayúsculas/minúsculas).
+function _ptHerramientasSugeridas(){
+  const vistas = [];
+  (typeof planesTrabajo !== "undefined" ? planesTrabajo : []).forEach(function(p){
+    (p.etapas||[]).forEach(function(e){
+      (e.herramientas||"").split(",").forEach(function(h){
+        const t = h.trim();
+        if(t && vistas.indexOf(t) === -1) vistas.push(t);
+      });
+    });
+  });
+  return vistas;
+}
+
+function _ptRenderHerramientasDatalist(){
+  const dl = document.getElementById("pt-herramientas-datalist");
+  if(!dl) return;
+  dl.innerHTML = _ptHerramientasSugeridas().map(function(h){
+    return '<option value="'+escapeHtml(h)+'"></option>';
+  }).join("");
+}
+
+// Producto de una etapa: si el plan trae una cotización vinculada con
+// partidas, se ofrece un <select> con esos productos + "Otro (especificar)";
+// sin cotización vinculada (o sin partidas), sigue siendo texto libre.
+function _ptRenderCampoProducto(e, productosDisponibles){
+  if(!productosDisponibles.length){
+    return '<div class="fg" style="margin:0;"><label class="flabel">Producto</label><input class="finput" value="'+(e.producto||"").replace(/"/g,"&quot;")+'" placeholder="Ej: Sellador PU" oninput="onEtapaPlanTrabajoField('+e.id+',&apos;producto&apos;,this.value)"></div>';
+  }
+  const modoOtro = e._productoModo === "otro" || (e.producto && productosDisponibles.indexOf(e.producto) === -1);
+  const opciones = productosDisponibles.map(function(p){
+    return '<option value="'+escapeHtml(p)+'"'+(!modoOtro && e.producto===p?' selected':'')+'>'+escapeHtml(p)+'</option>';
+  }).join("");
+  return '<div class="fg" style="margin:0;"><label class="flabel">Producto</label>'
+    + '<select class="fselect" onchange="onEtapaProductoSelect('+e.id+',this.value)">'
+      + '<option value=""'+(!modoOtro && !e.producto?' selected':'')+'>Elegir producto...</option>'
+      + opciones
+      + '<option value="__OTRO__"'+(modoOtro?' selected':'')+'>Otro (especificar)</option>'
+    + '</select>'
+    + (modoOtro ? '<input class="finput" style="margin-top:6px;" value="'+(e.producto||"").replace(/"/g,"&quot;")+'" placeholder="Especifica el producto" oninput="onEtapaPlanTrabajoField('+e.id+',&apos;producto&apos;,this.value)">' : '')
+  + '</div>';
+}
+
 function renderEtapasPlanTrabajo(){
   const wrap = document.getElementById("pt-etapas-list");
   if(!wrap) return;
+  _ptRenderHerramientasDatalist();
+  const listaCot = (typeof cotizaciones !== "undefined" && Array.isArray(cotizaciones)) ? cotizaciones : [];
+  const cotVinculada = _ptCotizacionVinculada ? listaCot.find(function(c){ return c.id === _ptCotizacionVinculada; }) : null;
+  const productosDisponibles = _ptProductosDeCotizacion(cotVinculada);
   wrap.innerHTML = _ptEtapas.map(function(e, i){
     return '<div style="background:var(--off2);border:1px solid var(--g1);border-radius:12px;padding:12px;">'
       + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">'
@@ -4995,7 +5160,14 @@ function renderEtapasPlanTrabajo(){
       + '<div class="fg" style="margin-bottom:8px;"><label class="flabel">Actividad</label>'
         + '<textarea class="ftextarea" rows="2" placeholder="Descripción de la actividad de esta etapa..." oninput="onEtapaPlanTrabajoField('+e.id+',&apos;actividad&apos;,this.value)">'+(e.actividad||"").replace(/</g,"&lt;")+'</textarea></div>'
       + '<div class="frow" style="margin-bottom:8px;">'
-        + '<div class="fg" style="margin:0;"><label class="flabel">Área / m²</label><input class="finput" value="'+(e.area||"").toString().replace(/"/g,"&quot;")+'" placeholder="Ej: 10,786 m²" oninput="onEtapaPlanTrabajoField('+e.id+',&apos;area&apos;,this.value)"></div>'
+        + '<div class="fg" style="margin:0;"><label class="flabel">Área</label>'
+          + '<div style="display:flex;gap:6px;">'
+            + '<input class="finput" style="flex:1;" value="'+(_ptAreaValor(e.area)||"").toString().replace(/"/g,"&quot;")+'" placeholder="Ej: 10,786" oninput="onEtapaAreaField('+e.id+',&apos;valor&apos;,this.value)">'
+            + '<select class="fselect" style="flex:0 0 66px;" onchange="onEtapaAreaField('+e.id+',&apos;unidad&apos;,this.value)">'
+              + Object.keys(PT_UNIDADES_AREA).map(function(u){ return '<option value="'+u+'"'+(_ptAreaUnidad(e.area)===u?' selected':'')+'>'+PT_UNIDADES_AREA[u]+'</option>'; }).join("")
+            + '</select>'
+          + '</div>'
+        + '</div>'
         + '<div class="fg" style="margin:0;"><label class="flabel">Horario</label><input class="finput" value="'+(e.horario||"").replace(/"/g,"&quot;")+'" placeholder="07:00 - 17:00" oninput="onEtapaPlanTrabajoField('+e.id+',&apos;horario&apos;,this.value)"></div>'
       + '</div>'
       + '<div class="fg" style="margin-bottom:8px;"><label class="flabel">Días de trabajo</label>'
@@ -5009,10 +5181,22 @@ function renderEtapasPlanTrabajo(){
         + '</div>'
       + '</div>'
       + '<div class="fg" style="margin-bottom:8px;"><label class="flabel">Herramientas</label>'
-        + '<input class="finput" value="'+(e.herramientas||"").replace(/"/g,"&quot;")+'" placeholder="Ej: Hidrolavadora, escobas" oninput="onEtapaPlanTrabajoField('+e.id+',&apos;herramientas&apos;,this.value)"></div>'
-      + '<div class="frow">'
-        + '<div class="fg" style="margin:0;"><label class="flabel">Producto</label><input class="finput" value="'+(e.producto||"").replace(/"/g,"&quot;")+'" placeholder="Ej: Sellador PU" oninput="onEtapaPlanTrabajoField('+e.id+',&apos;producto&apos;,this.value)"></div>'
-        + '<div class="fg" style="margin:0;"><label class="flabel">EPP</label><input class="finput" value="'+(e.epp||"").replace(/"/g,"&quot;")+'" placeholder="Ej: Kit A" oninput="onEtapaPlanTrabajoField('+e.id+',&apos;epp&apos;,this.value)"></div>'
+        + '<input class="finput" list="pt-herramientas-datalist" value="'+(e.herramientas||"").replace(/"/g,"&quot;")+'" placeholder="Ej: Hidrolavadora, escobas" oninput="onEtapaPlanTrabajoField('+e.id+',&apos;herramientas&apos;,this.value)"></div>'
+      + '<div class="frow" style="margin-bottom:8px;">'
+        + _ptRenderCampoProducto(e, productosDisponibles)
+      + '</div>'
+      + '<div class="fg"><label class="flabel">EPP</label>'
+        + '<div style="display:flex;flex-wrap:wrap;gap:6px;">'
+          + '<div onclick="onEtapaEppTodos('+e.id+')" style="padding:5px 10px;border-radius:16px;cursor:pointer;font-size:10px;font-weight:700;user-select:none;'
+            + (PT_EPP_OPCIONES.every(function(o){ return o.match.test(e.epp||""); }) ? 'background:var(--navy);color:#fff;' : 'background:#fff;color:var(--tx2);border:1px solid var(--g1);')
+            + '">Seleccionar todos</div>'
+          + PT_EPP_OPCIONES.map(function(o){
+              const activo = o.match.test(e.epp||"");
+              return '<div onclick="onEtapaEppToggle('+e.id+',&apos;'+o.key+'&apos;)" style="padding:5px 10px;border-radius:16px;cursor:pointer;font-size:10px;font-weight:600;user-select:none;'
+                + (activo ? 'background:var(--navy);color:#fff;' : 'background:#fff;color:var(--tx2);border:1px solid var(--g1);')
+                + '">'+o.label+'</div>';
+            }).join("")
+        + '</div>'
       + '</div>'
     + '</div>';
   }).join("");
@@ -5045,7 +5229,7 @@ async function guardarPlanTrabajo(){
     proyecto: document.getElementById("pt-proyecto").value.trim(),
     alcance: document.getElementById("pt-alcance").value.trim(),
     imagenPortada: _ptImagenPortada || null,
-    areaTotal: parseFloat(document.getElementById("pt-area-total").value) || 0,
+    areaTotal: { valor: document.getElementById("pt-area-total").value.trim(), unidad: document.getElementById("pt-area-total-unidad").value },
     departamento: document.getElementById("pt-departamento").value.trim(),
     sistema: document.getElementById("pt-sistema").value.trim(),
     contratistaRazon: document.getElementById("pt-contratista-razon").value.trim(),
@@ -5054,7 +5238,7 @@ async function guardarPlanTrabajo(){
     clienteRazon: document.getElementById("pt-cliente-razon").value.trim(),
     clienteRfc: document.getElementById("pt-cliente-rfc").value.trim(),
     cotizacionId: _ptCotizacionVinculada || null,
-    etapas: _ptEtapas.map(function(e){ return Object.assign({}, e); }),
+    etapas: _ptEtapas.map(function(e){ const copia = Object.assign({}, e); delete copia._productoModo; return copia; }),
     createdAt: existente ? (existente.createdAt || now) : now,
     updatedAt: now
   };
@@ -5137,6 +5321,32 @@ const PT_DIAS_SEMANA_UI = [
 ];
 const PT_DIAS_TRABAJO_DEFECTO = ["L","M","X","J","V","S"];
 
+// Unidad de área configurable (m²/ml/lote) — tanto a nivel plan (areaTotal)
+// como por etapa (etapa.area). El valor se guarda como {valor, unidad}; con
+// "lote" el valor es texto libre (ej. "1 lote de reparaciones"), con m²/ml
+// se espera un número que se formatea con separador de miles al imprimir.
+// Compatibilidad: planes/etapas guardados ANTES de este campo traen
+// areaTotal como número plano, o area de etapa como texto libre (que ya
+// incluía la unidad escrita a mano, ej. "10,786 m²") — _ptFmtArea los
+// muestra tal cual, sin reinterpretarlos.
+const PT_UNIDADES_AREA = { m2: "m²", ml: "ml", lote: "lote" };
+function _ptAreaValor(area){ return (area && typeof area === "object") ? area.valor : area; }
+function _ptAreaUnidad(area){ return (area && typeof area === "object" && area.unidad) ? area.unidad : "m2"; }
+function _ptFmtArea(area){
+  if(area === undefined || area === null || area === "") return "—";
+  if(typeof area !== "object"){
+    if(typeof area === "number") return area.toLocaleString("es-MX") + " m²";
+    return String(area);
+  }
+  const valor = area.valor;
+  if(valor === undefined || valor === null || String(valor).trim() === "") return "—";
+  const unidad = area.unidad || "m2";
+  if(unidad === "lote") return String(valor);
+  const num = Number(String(valor).replace(/,/g, ""));
+  const valorTxt = isFinite(num) ? num.toLocaleString("es-MX") : String(valor);
+  return valorTxt + " " + (PT_UNIDADES_AREA[unidad] || "m²");
+}
+
 function _ptParseISO(iso){ return new Date(iso + "T00:00:00"); }
 
 function _ptFmtCorta(date){
@@ -5190,14 +5400,6 @@ function _ptHojaHeaderPrincipal(plan, accent){
         + '<div style="display:flex;flex-direction:column;gap:2px;text-align:right;"><span style="font-size:8.5px;font-weight:600;letter-spacing:.13em;text-transform:uppercase;color:#5F6B7D;">Periodo</span><span style="color:#0B1F3A;font-size:11px;font-weight:600;">'+_ptPeriodoTextoCorto(plan)+'</span></div>'
       + '</div>'
     + '</div>'
-    // Leyenda de "Descanso" + aviso de horarios: vive aquí (solo en la
-    // primera hoja de Ejecución) en vez de repetirse en el pie de cada
-    // hoja física — un plan puede descansar cualquier día de la semana
-    // según diasTrabajo de cada etapa, no siempre domingo.
-    + '<div style="display:flex;align-items:center;gap:18px;padding:8px 0;">'
-      + '<span style="display:flex;align-items:center;gap:7px;color:#5A6880;font-size:9px;font-weight:500;"><span style="width:16px;height:8px;border-radius:2px;background:#EEF3FB;border:1px solid #B9CBE6;display:inline-block;"></span>Día no laborado — Descanso</span>'
-      + '<span style="color:#5A6880;font-size:9px;font-weight:500;">Horarios sujetos a condiciones climáticas y a permisos de acceso a planta.</span>'
-    + '</div>'
     + _ptColHeaderRowHtml()
   + '</div>';
 }
@@ -5249,12 +5451,12 @@ function _ptDiaRowInner(dia, zebra){
   function celda(html){ return '<div style="padding:6px 8px;font-size:10px;color:#33415A;line-height:1.3;">'+html+'</div>'; }
   return '<div style="display:grid;grid-template-columns:'+PT_GRID_COLS+';background:'+bg+';border-bottom:1px solid #E9EDF3;">'
     + celda('<span style="font-family:\'JetBrains Mono\',monospace;">'+_ptFmtCorta(dia.fecha)+'</span>')
-    + celda(escapeHtml(dia.area||""))
+    + celda(escapeHtml(_ptFmtArea(dia.area)))
     + celda(escapeHtml(dia.actividad||""))
     + celda('<span style="font-family:\'JetBrains Mono\',monospace;white-space:nowrap;">'+escapeHtml(dia.horario||"")+'</span>')
-    + celda(escapeHtml(dia.herramientas||""))
-    + celda(escapeHtml(dia.producto||"—"))
-    + celda('<strong style="color:#0B1F3A;">'+escapeHtml(dia.epp||"")+'</strong>')
+    + celda(escapeHtml(dia.herramientas||"N/A"))
+    + celda(escapeHtml(dia.producto||"N/A"))
+    + celda('<strong style="color:#0B1F3A;">'+escapeHtml(dia.epp||"N/A")+'</strong>')
   + '</div>';
 }
 
@@ -5398,7 +5600,7 @@ function _ptHoja1Html(plan, accent, logo, marcaLabel, tagline, hojaTotal){
   if(ubicProy) metaRows.push({k:"Ubicación / Proyecto", v: ubicProy});
   metaRows.push({k:"Contratista", v: marcaLabel});
   if(plan.sistema) metaRows.push({k:"Sistema", v: plan.sistema});
-  metaRows.push({k:"Área de intervención", v: (plan.areaTotal ? Number(plan.areaTotal).toLocaleString("es-MX") : "—") + " m²"});
+  metaRows.push({k:"Área de intervención", v: _ptFmtArea(plan.areaTotal)});
   metaRows.push({k:"Periodo de ejecución", v: _ptPeriodoTextoLargo(plan)});
   if(plan.departamento) metaRows.push({k:"Departamento", v: plan.departamento});
 
@@ -5421,11 +5623,21 @@ function _ptHoja1Html(plan, accent, logo, marcaLabel, tagline, hojaTotal){
         ) : '')
     + '</div>';
 
-  return '<div class="pt-hoja" style="padding-top:26px;padding-bottom:20px;">'
-    + '<div style="display:flex;align-items:center;gap:12px;flex-shrink:0;">'
-      + (logo ? '<img src="'+logo+'" style="height:64px;width:auto;max-width:420px;object-fit:contain;" alt="'+escapeHtml(marcaLabel)+'">' : '<div style="font-size:16px;font-weight:800;color:#0B1F3A;">'+escapeHtml(marcaLabel)+'</div>')
+  // Header tipo membrete: barra navy de ancho completo (bleed con margin
+  // negativo para cubrir el padding lateral de .pt-hoja) con el logo en su
+  // variante BLANCA + tagline corto, seguida de una franja de acento del
+  // color de marca — mismo patrón condicional que ya existe para el resto
+  // de textos de marca (industrial/rackline/home), solo cambia logo+tagline.
+  const _modPlanH1 = _modalidadDePlan(plan);
+  const headerMembrete = '<div style="margin:0 -34px;background:#0B1F3A;padding:38px 60px 24px;">'
+      + (logo ? '<img src="'+logo+'" style="height:65px;width:auto;max-width:420px;object-fit:contain;display:block;" alt="'+escapeHtml(marcaLabel)+'">' : '<div style="font-size:22px;font-weight:800;color:#fff;">'+escapeHtml(marcaLabel)+'</div>')
+      + '<div style="margin-top:14px;font-size:11px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:rgba(255,255,255,.7);">'+escapeHtml(_ptHeaderTaglineDe(_modPlanH1))+'</div>'
     + '</div>'
-    + '<div style="flex:1;display:grid;grid-template-columns:1.15fr .85fr;gap:28px;margin-top:22px;min-height:0;">'
+    + '<div style="margin:0 -34px;height:6px;background:'+accent+';"></div>';
+
+  return '<div class="pt-hoja" style="padding-top:0;padding-bottom:20px;">'
+    + headerMembrete
+    + '<div style="flex:1;display:grid;grid-template-columns:1.15fr .85fr;gap:28px;margin-top:26px;min-height:0;">'
       + '<div style="display:flex;flex-direction:column;min-height:0;">'
         + '<span style="font-size:9.5px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:'+accent+';">Documento técnico</span>'
         + '<h1 style="margin:12px 0 0;color:#0B1F3A;font-size:38px;font-weight:700;letter-spacing:-.03em;line-height:1;">Plan de Trabajo</h1>'
@@ -5602,11 +5814,11 @@ function generarPdfPlanTrabajoEnVentana(plan, winRef, soloPreview){
   const _modPlan = _modalidadDePlan(plan);
   const _esHome = _modPlan === "home";
   const accent = _esHome ? "#C36F4A" : "#1E6FD9";
-  // Mismo criterio de resolución de logo que ya usa el generador de la
-  // cotización (_logoColorDe según la marca, con el navy de ROMSA solo como
-  // último fallback) — así HOME muestra su propio isotipo + wordmark, no el
-  // logo genérico de ROMSA Industrial.
-  const logo = _logoColorDe(_modPlan) || window._romsaLogoAzul || "";
+  // El header de la Portada es una barra navy tipo membrete, así que el
+  // logo va en su variante BLANCA — misma función de resolución que ya usa
+  // el generador de la cotización (_logoBlancoDe según la marca, con el
+  // blanco de ROMSA solo como último fallback), no una nueva.
+  const logo = _logoBlancoDe(_modPlan) || window._romsaLogoBlanco || "";
   const marcaLabel = _nombreMarcaPlan(plan.marca);
   const tagline = _ptTaglineDe(_modPlan);
 
