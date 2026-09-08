@@ -4081,6 +4081,18 @@ body.in-plantrabajo #app{
     <div class="modal-handle"></div>
     <div class="modal-ttl" id="pt-modal-ttl">Nuevo Plan de Trabajo</div>
 
+    <!-- ✨ BOTÓN MÁGICO: Pegar plan completo y auto-parsear (mismo mecanismo que Reportes de Obra) -->
+    <div style="background:linear-gradient(135deg,#FEF3C7,#FED7AA);border:1px solid #F59E0B;border-radius:8px;padding:10px;margin-bottom:14px;cursor:pointer;" onclick="ptAbrirPegadoMagico()">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="font-size:24px;line-height:1;">✨</div>
+        <div style="flex:1;">
+          <div style="font-size:11.5px;font-weight:800;color:#92400E;">Pegar plan completo</div>
+          <div style="font-size:9.5px;color:#92400E;opacity:.85;line-height:1.4;">Pega un texto de Word/PDF/Drive y auto-llena cliente, proyecto y etapas</div>
+        </div>
+        <div style="background:#F59E0B;color:#fff;font-size:10px;font-weight:700;padding:5px 10px;border-radius:6px;">✨ Mágico</div>
+      </div>
+    </div>
+
     <div class="fdivider">Datos generales</div>
     <div class="fg" id="pt-cotizacion-vinculo-row">
       <button type="button" onclick="abrirVincularCotizacion()" style="background:rgba(30,111,217,.08);border:1px solid rgba(30,111,217,.25);color:#1E6FD9;font-size:11px;font-weight:700;padding:8px 12px;border-radius:8px;cursor:pointer;font-family:var(--font);">🔗 Vincular cotización</button>
@@ -5381,6 +5393,327 @@ async function guardarPlanTrabajo(){
     cargarPlanesTrabajo();
   }catch(e){ showToast("❌ Error: "+e.message); }
   finally{ btn.textContent = "Guardar plan →"; btn.disabled = false; }
+}
+
+// ─── PLAN DE TRABAJO · PEGADO MÁGICO ───────────────
+// Mismo mecanismo que el "Pegar reporte completo" de Reportes de Obra
+// (rpAbrirPegadoMagico/rpParsearTexto/rpProbarParseo/rpAplicarPegadoMagico,
+// más arriba en este archivo) — puro regex/heurística en el navegador, SIN
+// llamada a ninguna API de IA. Se reutiliza _rpLimpiarMd (ya compartido)
+// en vez de duplicar la limpieza de Markdown.
+function ptAbrirPegadoMagico(){
+  const ov = document.createElement("div");
+  ov.id = "modal-pt-pegado-magico";
+  ov.style.cssText = "position:fixed;inset:0;background:rgba(11,31,58,.8);z-index:700;display:flex;align-items:flex-end;justify-content:center;";
+  ov.onclick = function(e){ if(e.target === ov) ov.remove(); };
+
+  ov.innerHTML = `<div style="background:#fff;width:100%;max-width:700px;max-height:90vh;border-radius:18px 18px 0 0;overflow-y:auto;display:flex;flex-direction:column;">
+    <div style="padding:14px 18px;border-bottom:1px solid var(--g1);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#fff;z-index:1;">
+      <div>
+        <div style="font-size:9px;color:#F59E0B;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;">Pegado mágico</div>
+        <div style="font-size:15px;font-weight:800;color:var(--navy);">✨ Pegar plan completo</div>
+      </div>
+      <button onclick="document.getElementById('modal-pt-pegado-magico')?.remove()" style="background:none;border:none;font-size:22px;color:var(--tx2);cursor:pointer;">×</button>
+    </div>
+
+    <div style="padding:16px;flex:1;">
+
+      <div style="background:#F0F9FF;border:1px solid #7DD3FC;border-radius:8px;padding:12px;margin-bottom:14px;font-size:11px;color:#075985;line-height:1.6;">
+        <strong>💡 Cómo funciona:</strong><br>
+        1. Copia el texto completo de tu plan (Word, PDF, Drive, lo que sea)<br>
+        2. Pégalo abajo<br>
+        3. Click "Probar" para revisar qué se detectó, y "Aplicar al plan" para llenar el formulario<br>
+        <br>
+        <strong>📋 Detecta automáticamente:</strong> CLIENTE, PROYECTO, UBICACIÓN, ÁREA, SISTEMA, y las etapas — numeradas (1. Nombre) o con viñeta (- Nombre) — con sus sub-campos Horario/Herramientas/Producto/EPP si vienen incluidos. Las fechas de cada etapa siempre se capturan a mano.
+      </div>
+
+      <label style="font-size:9.5px;font-weight:700;color:var(--tx2);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px;display:block;">Pega aquí tu texto completo</label>
+      <textarea id="pt-pegado-texto" placeholder="Pega aquí el texto completo del plan...
+
+Ejemplo:
+
+CLIENTE: SPECTRUM
+PROYECTO: Bacheo de reparaciones en almacén
+UBICACIÓN: Mexicali, Baja California
+ÁREA: 90.5 m²
+
+1. Preparación de la superficie
+Retiro de material suelto, limpieza general y nivelación previa a los
+trabajos de reparación.
+Horario: 07:00 - 17:00
+Herramientas: rotomartillo, llana
+EPP: guantes, lentes, casco
+
+2. Instalación de loseta
+Instalación de loseta con el adhesivo correspondiente, realizando los
+cortes y ajustes necesarios en perímetros y encuentros.
+Producto: adhesivo cementoso
+
+- Aplicación de boquilla
+Aplicación de boquilla en las juntas entre piezas, con limpieza de
+excedentes y revisión general del acabado.
+
+- Limpieza del área
+Limpieza general del área intervenida y entrega final.
+
+..." style="width:100%;min-height:280px;font-family:'Courier New',monospace;font-size:11px;padding:12px;border:2px solid var(--g1);border-radius:8px;resize:vertical;outline:none;line-height:1.5;"></textarea>
+
+      <div id="pt-pegado-preview" style="display:none;margin-top:14px;background:#D1FAE5;border:1px solid #6EE7B7;border-radius:8px;padding:12px;">
+        <div style="font-size:10px;font-weight:800;color:#065F46;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">✓ Detectado</div>
+        <div id="pt-pegado-preview-content" style="font-size:11px;color:#065F46;line-height:1.7;"></div>
+      </div>
+
+    </div>
+
+    <div style="padding:12px 18px;border-top:1px solid var(--g1);display:flex;gap:8px;background:#fff;position:sticky;bottom:0;">
+      <button onclick="ptProbarParseo()" style="flex:1;background:var(--off);border:1px solid var(--g1);color:var(--navy);font-size:12px;font-weight:700;padding:11px;border-radius:8px;cursor:pointer;font-family:var(--font);">🔍 Probar</button>
+      <button onclick="ptAplicarPegadoMagico()" style="flex:2;background:#F59E0B;border:none;color:#fff;font-size:12px;font-weight:800;padding:11px;border-radius:8px;cursor:pointer;font-family:var(--font);">✨ Aplicar al plan</button>
+    </div>
+  </div>`;
+  document.body.appendChild(ov);
+  setTimeout(() => document.getElementById("pt-pegado-texto")?.focus(), 100);
+}
+
+// Campos de encabezado del plan — mismo patrón flexible "ETIQUETA: valor" que Reportes de Obra
+const PT_PATRONES_HEADER = [
+  {regex: /cliente\s*[:：]\s*([^\n]+)/i,     campo: "cliente"},
+  {regex: /proyecto\s*[:：]\s*([^\n]+)/i,    campo: "proyecto"},
+  {regex: /ubicaci[oó]n\s*[:：]\s*([^\n]+)/i, campo: "ubicacion"},
+  {regex: /[aá]rea\s*[:：]\s*([^\n]+)/i,      campo: "area"},
+  {regex: /sistema\s*[:：]\s*([^\n]+)/i,      campo: "sistema"}
+];
+
+// Sub-campos DENTRO del cuerpo de cada etapa — se extraen ANTES de asignar
+// el resto del texto como `actividad`, para que no se dupliquen. Esto NO
+// existe en Reportes de Obra, es propio de Plan de Trabajo.
+const PT_PATRONES_SUBCAMPO = [
+  {regex: /^\s*horario\s*[:：]\s*(.+)$/i,      campo: "horario"},
+  {regex: /^\s*herramientas\s*[:：]\s*(.+)$/i, campo: "herramientas"},
+  {regex: /^\s*producto\s*[:：]\s*(.+)$/i,     campo: "producto"},
+  {regex: /^\s*epp\s*[:：]\s*(.+)$/i,          campo: "epp"}
+];
+
+// Detecta el inicio de una etapa: numerada ("1. Título", "2) Título",
+// "3.- Título", como en Reportes de Obra) O con viñeta ("- Título",
+// "• Título", "* Título", nuevo para Plan de Trabajo) — un mismo texto
+// puede mezclar ambos formatos, el orden en el texto es el orden final.
+// Mismo riesgo heurístico ya aceptado en Reportes de Obra: una línea de
+// actividad que por coincidencia empiece igual se tomaría como una nueva
+// etapa — el ejemplo de este módulo evita ese choque a propósito.
+const PT_REGEX_SECCION = /^\s*[\*_#]*\s*(?:(\d{1,2})\s*[\.\)\-]+|[-•*])\s+(.+?)\s*[\*_]*\s*$/;
+
+// ── Parser principal: convierte texto plano a {campos, etapas} ──
+function ptParsearTexto(txt){
+  if(!txt || !txt.trim()) return null;
+
+  let t = txt.replace(/\r\n/g, "\n").replace(/\r/g, "\n").trim();
+
+  const resultado = {
+    campos: {},   // {cliente, proyecto, ubicacion, areaTotal:{valor,unidad}, sistema}
+    etapas: []    // [{nombre, actividad, horario, herramientas, producto, epp}]
+  };
+
+  // ── 1. Detectar campos del header ──
+  PT_PATRONES_HEADER.forEach(p => {
+    const m = t.match(p.regex);
+    if(m && m[1]){
+      let val = _rpLimpiarMd(m[1].trim());
+      if(p.campo === "area"){
+        const numMatch = val.match(/[\d,\.]+/);
+        const valorNum = numMatch ? numMatch[0].replace(/,/g,"") : "";
+        const unidad = /\bml\b/i.test(val) ? "ml" : /\blote\b/i.test(val) ? "lote" : "m2";
+        if(valorNum) resultado.campos.areaTotal = { valor: valorNum, unidad: unidad };
+      } else {
+        resultado.campos[p.campo] = val;
+      }
+    }
+  });
+
+  // ── 2. Dividir en etapas (numeradas o con viñeta) y extraer sus sub-campos ──
+  const lineas = t.split("\n");
+  let etapaActual = null;
+  let acumulado = [];
+
+  function cerrarEtapaActual(){
+    if(!etapaActual) return;
+    etapaActual.actividad = acumulado.join("\n").trim();
+    if(etapaActual.nombre || etapaActual.actividad){
+      resultado.etapas.push(etapaActual);
+    }
+  }
+
+  for(let i = 0; i < lineas.length; i++){
+    const linea = lineas[i];
+    const mSeccion = linea.match(PT_REGEX_SECCION);
+    if(mSeccion){
+      cerrarEtapaActual();
+      etapaActual = { nombre: _rpLimpiarMd(mSeccion[2].trim()), actividad: "", horario: "", herramientas: "", producto: "", epp: "" };
+      acumulado = [];
+      continue;
+    }
+    if(!etapaActual) continue; // texto antes de la primera etapa (ya cubierto por los campos de header)
+
+    let esSubcampo = false;
+    for(const p of PT_PATRONES_SUBCAMPO){
+      const mSub = linea.match(p.regex);
+      if(mSub && mSub[1]){
+        etapaActual[p.campo] = _rpLimpiarMd(mSub[1].trim());
+        esSubcampo = true;
+        break;
+      }
+    }
+    if(esSubcampo) continue;
+
+    // Una línea de header repetida dentro del cuerpo tampoco cuenta como actividad
+    if(PT_PATRONES_HEADER.some(p => p.regex.test(linea))) continue;
+
+    acumulado.push(linea);
+  }
+  cerrarEtapaActual();
+
+  // ── 3. Limpiar viñetas y markdown en la actividad de cada etapa ──
+  resultado.etapas.forEach(e => {
+    e.actividad = e.actividad
+      .split("\n")
+      .map(l => {
+        let limpia = l.replace(/^[\s]*[•●▪\*\-]\s+/, "• ");
+        limpia = limpia
+          .replace(/\*\*\*([^*]+)\*\*\*/g, "$1")
+          .replace(/\*\*([^*]+)\*\*/g, "$1")
+          .replace(/__([^_]+)__/g, "$1");
+        return limpia;
+      })
+      .join("\n")
+      .replace(/\n{3,}/g, "\n\n")
+      .trim();
+  });
+
+  return resultado;
+}
+
+function ptProbarParseo(){
+  const txt = document.getElementById("pt-pegado-texto")?.value || "";
+  const previewEl = document.getElementById("pt-pegado-preview");
+  const contentEl = document.getElementById("pt-pegado-preview-content");
+  if(!txt.trim()){
+    if(previewEl){
+      previewEl.style.background = "#FEE2E2";
+      previewEl.style.borderColor = "#FCA5A5";
+      previewEl.style.display = "block";
+      contentEl.style.color = "#991B1B";
+      contentEl.innerHTML = "⚠️ Pega algún texto primero";
+    }
+    return;
+  }
+  const parsed = ptParsearTexto(txt);
+  if(!parsed){
+    contentEl.innerHTML = "⚠️ No se pudo procesar el texto";
+    return;
+  }
+
+  let html = "";
+  const camposNombres = { cliente: "Cliente", proyecto: "Proyecto", ubicacion: "Ubicación", areaTotal: "Área", sistema: "Sistema" };
+  const camposDetectados = Object.keys(parsed.campos).filter(k => parsed.campos[k]);
+  if(camposDetectados.length){
+    html += "<strong>📋 Campos detectados (" + camposDetectados.length + "):</strong><br>";
+    camposDetectados.forEach(k => {
+      const val = (k === "areaTotal") ? (parsed.campos.areaTotal.valor + " " + (PT_UNIDADES_AREA[parsed.campos.areaTotal.unidad]||"m²")) : parsed.campos[k];
+      html += "  • <strong>" + camposNombres[k] + ":</strong> " + escapeHtml(val) + "<br>";
+    });
+  } else {
+    html += "<em>Ningún campo del header detectado (CLIENTE, PROYECTO, etc.)</em><br>";
+  }
+
+  html += "<br>";
+  if(parsed.etapas.length){
+    html += "<strong>📝 Etapas detectadas (" + parsed.etapas.length + "):</strong><br>";
+    parsed.etapas.forEach((e, i) => {
+      const preview = (e.actividad||"").slice(0, 80).replace(/\n/g," ");
+      const PT_SUBCAMPO_LABEL = { horario:"Horario", herramientas:"Herramientas", producto:"Producto", epp:"EPP" };
+      const subcampos = ["horario","herramientas","producto","epp"].filter(k => e[k]).map(k => PT_SUBCAMPO_LABEL[k]);
+      html += "  • <strong>" + (i+1) + ". " + escapeHtml(e.nombre) + "</strong> <span style='opacity:.7;'>" + (preview ? "— " + escapeHtml(preview) + (e.actividad.length>80?"...":"") : "(sin actividad)") + "</span>";
+      if(subcampos.length) html += " <span style='opacity:.6;'>[" + subcampos.join(", ") + "]</span>";
+      html += "<br>";
+    });
+  } else {
+    html += "<em>No se detectaron etapas (numeradas '1.' o con viñeta '-')</em><br>";
+  }
+
+  previewEl.style.background = "#D1FAE5";
+  previewEl.style.borderColor = "#6EE7B7";
+  contentEl.style.color = "#065F46";
+  previewEl.style.display = "block";
+  contentEl.innerHTML = html;
+}
+
+function ptAplicarPegadoMagico(){
+  const txt = document.getElementById("pt-pegado-texto")?.value || "";
+  if(!txt.trim()){ alert("⚠️ Pega algún texto primero"); return; }
+
+  const parsed = ptParsearTexto(txt);
+  if(!parsed){ alert("⚠️ No se pudo procesar el texto"); return; }
+
+  // ── Aplicar campos del header ──
+  const setIfPresent = (id, val) => {
+    if(!val) return;
+    const el = document.getElementById(id);
+    if(el) el.value = val;
+  };
+  setIfPresent("pt-cliente",   parsed.campos.cliente);
+  setIfPresent("pt-proyecto",  parsed.campos.proyecto);
+  setIfPresent("pt-ubicacion", parsed.campos.ubicacion);
+  setIfPresent("pt-sistema",   parsed.campos.sistema);
+  if(parsed.campos.areaTotal){
+    setIfPresent("pt-area-total", parsed.campos.areaTotal.valor);
+    const unidadEl = document.getElementById("pt-area-total-unidad");
+    if(unidadEl) unidadEl.value = parsed.campos.areaTotal.unidad;
+  }
+
+  // ── Aplicar etapas: si ya hay etapas capturadas a mano, preguntar qué
+  // hacer con ellas ANTES de perder nada (Cambio 5) ──
+  if(parsed.etapas.length){
+    const nuevasEtapas = parsed.etapas.map(function(e, i){
+      return {
+        id: _ptEtapaIdSeq++,
+        nombre: e.nombre || "",
+        // Las fechas NUNCA se detectan por texto libre (son ambiguas de
+        // parsear con regex de forma confiable) — siempre se capturan a mano.
+        fechaInicio: "", fechaFin: "",
+        area: { valor: "", unidad: "m2" },
+        actividad: e.actividad || "",
+        horario: e.horario || "",
+        herramientas: e.herramientas || "",
+        producto: e.producto || "",
+        epp: e.epp || "",
+        colorGantt: PT_COLORES_GANTT[i % PT_COLORES_GANTT.length]
+      };
+    });
+
+    // "Nuevo Plan" siempre arranca con 1 etapa en blanco (agregarEtapaPlanTrabajo
+    // se llama automáticamente) — un _ptEtapas.length>0 crudo preguntaría SIEMPRE,
+    // hasta en un plan realmente nuevo. Solo se pregunta si hay algo que de
+    // verdad se perdería (mismo criterio que aplicarPlantillaEtapas).
+    const hayDatosCapturados = _ptEtapas.some(function(e){ return (e.nombre||"").trim() || (e.fechaInicio||"") || (e.actividad||"").trim(); });
+    if(hayDatosCapturados){
+      const reemplazar = confirm(
+        "Ya tienes " + _ptEtapas.length + " etapa(s) capturada(s). ¿Qué quieres hacer con las " + nuevasEtapas.length + " etapas nuevas detectadas?\n\n" +
+        "Aceptar = Reemplazar todo\nCancelar = Agregar al final"
+      );
+      _ptEtapas = reemplazar ? nuevasEtapas : _ptEtapas.concat(nuevasEtapas);
+    } else {
+      _ptEtapas = nuevasEtapas;
+    }
+    renderEtapasPlanTrabajo();
+  }
+
+  // Cerrar modal
+  document.getElementById("modal-pt-pegado-magico")?.remove();
+
+  // Feedback
+  const ncampos = Object.keys(parsed.campos).filter(k => parsed.campos[k]).length;
+  const netapas = parsed.etapas.length;
+  showToast("✨ Aplicado: " + ncampos + " campo" + (ncampos===1?"":"s") + " + " + netapas + " etapa" + (netapas===1?"":"s"));
+  _ptGuardarBorradorDebounced();
 }
 
 // ─── PLAN DE TRABAJO · EXPANSIÓN A DÍAS ───────────
@@ -20837,6 +21170,24 @@ Se llevaron a cabo trabajos de suministro y aplicación de un sistema...
   setTimeout(() => document.getElementById("rp-pegado-texto")?.focus(), 100);
 }
 
+// Helper para limpiar formato Markdown (asteriscos, guiones bajos, etc.) —
+// compartido por TODOS los parsers de "pegado mágico" (Reportes de Obra,
+// Plan de Trabajo) en vez de duplicarlo en cada uno.
+function _rpLimpiarMd(s){
+  if(!s) return s;
+  return s
+    .replace(/\*\*\*([^*]+)\*\*\*/g, "$1")  // ***bold italic***
+    .replace(/\*\*([^*]+)\*\*/g, "$1")       // **bold**
+    .replace(/__([^_]+)__/g, "$1")            // __bold__
+    .replace(/^\*\*\s*/, "")                   // ** al inicio sin cerrar
+    .replace(/\s*\*\*$/, "")                   // ** al final
+    .replace(/^\*+\s*/, "")                    // * al inicio
+    .replace(/\s*\*+$/, "")                    // * al final
+    .replace(/^_+\s*/, "")
+    .replace(/\s*_+$/, "")
+    .trim();
+}
+
 // ── Parser principal: convierte texto plano a {campos, secciones} ──
 function rpParsearTexto(txt){
   if(!txt || !txt.trim()) return null;
@@ -20858,22 +21209,6 @@ function rpParsearTexto(txt){
     {regex: /(?:asunto|proyecto)\s*[:：]\s*([^\n]+)/i,           campo: "asunto"},
     {regex: /(?:[aá]rea\s+trabajada|[aá]rea\s+de\s+trabajo|[aá]rea\s+total|[aá]rea)\s*[:：]\s*([^\n]+)/i, campo: "areaTrabajada"}
   ];
-
-  // Helper para limpiar formato Markdown (asteriscos, guiones bajos, etc.)
-  const _rpLimpiarMd = function(s){
-    if(!s) return s;
-    return s
-      .replace(/\*\*\*([^*]+)\*\*\*/g, "$1")  // ***bold italic***
-      .replace(/\*\*([^*]+)\*\*/g, "$1")       // **bold**
-      .replace(/__([^_]+)__/g, "$1")            // __bold__
-      .replace(/^\*\*\s*/, "")                   // ** al inicio sin cerrar
-      .replace(/\s*\*\*$/, "")                   // ** al final
-      .replace(/^\*+\s*/, "")                    // * al inicio
-      .replace(/\s*\*+$/, "")                    // * al final
-      .replace(/^_+\s*/, "")
-      .replace(/\s*_+$/, "")
-      .trim();
-  };
 
   patrones.forEach(p => {
     const m = t.match(p.regex);
