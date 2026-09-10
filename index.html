@@ -26277,21 +26277,31 @@ function fevDibujarOverlaysDeTexto(ctx, timeline, tMs){
 // logoNavyImg, pero sin acoplarse al estado de BCE.
 let FEV_LOGO_IMG_CACHE = {};
 
+// El decode de estos data URI (algunos de >150KB) NO es síncrono — justo
+// después de asignar .src, img.complete todavía puede ser false. Si el
+// primer renderFrameEnTiempo ocurre antes de que termine de cargar,
+// fevDibujarLogo lo salta (correctamente, para no dibujar basura), pero
+// sin este onload el logo se quedaría invisible hasta el siguiente evento
+// que dispare un re-render por otra razón (mover el playhead, etc.) — un
+// hueco real detectado al confirmar el logo de las 4 marcas por separado.
+function fevCrearImagenLogo(src){
+  const img = new Image();
+  img.onload = () => { if (FEV) fevRenderPreviewAt(FEV_PLAYHEAD_MS); };
+  img.src = src || "";
+  return img;
+}
+
 function fevObtenerLogoImg(marca, variante){
   if (marca === "taurina"){
     const key = "taurina";
     if (!FEV_LOGO_IMG_CACHE[key]){
-      const img = new Image();
-      img.src = (typeof window !== "undefined" && window._taurinaLogo) || "";
-      FEV_LOGO_IMG_CACHE[key] = img;
+      FEV_LOGO_IMG_CACHE[key] = fevCrearImagenLogo(typeof window !== "undefined" && window._taurinaLogo);
     }
     return FEV_LOGO_IMG_CACHE[key];
   }
   const key = marca + ":" + (variante === "color" ? "color" : "blanco");
   if (!FEV_LOGO_IMG_CACHE[key]){
-    const img = new Image();
-    img.src = (variante === "color" ? _logoColorDe(marca) : _logoBlancoDe(marca)) || "";
-    FEV_LOGO_IMG_CACHE[key] = img;
+    FEV_LOGO_IMG_CACHE[key] = fevCrearImagenLogo(variante === "color" ? _logoColorDe(marca) : _logoBlancoDe(marca));
   }
   return FEV_LOGO_IMG_CACHE[key];
 }
