@@ -943,16 +943,23 @@ body.in-plantrabajo #app{
 .fev-timeline-wrap{flex-shrink:0;padding:12px 16px;background:#fff;border-top:1px solid var(--g1);}
 .fev-timeline-toolbar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;font-family:"JetBrains Mono",monospace;font-size:11px;color:var(--tx2);}
 .fev-add-btn{background:var(--blue);color:#fff;border:none;padding:6px 12px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:var(--font);}
-.fev-timeline-track{position:relative;height:64px;background:var(--off);border:1px solid var(--g1);border-radius:8px;overflow:hidden;}
-.fev-timeline-clips{display:flex;height:100%;}
-.fev-clip-block{position:relative;height:100%;border-right:2px solid #fff;background:#DDE5F0;cursor:grab;overflow:hidden;min-width:24px;}
+.fev-timeline-track{position:relative;height:108px;background:var(--off);border:1px solid var(--g1);border-radius:8px;overflow:visible;}
+.fev-timeline-clips{position:absolute;top:0;left:0;right:0;height:64px;overflow:hidden;border-radius:8px 8px 0 0;}
+.fev-clip-block{position:absolute;top:0;height:100%;border-left:2px solid #fff;background:#DDE5F0;cursor:grab;overflow:hidden;min-width:24px;box-sizing:border-box;}
 .fev-clip-block.selected{outline:2px solid var(--blue);outline-offset:-2px;}
 .fev-clip-block.dragging{opacity:.4;}
 .fev-clip-thumb{position:absolute;inset:0;background-size:cover;background-position:center;}
 .fev-clip-thumb-video{background:linear-gradient(135deg,#1A3A60,#0B1F3A);}
 .fev-clip-thumb-video::after{content:"🎬";font-size:18px;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);}
 .fev-clip-label{position:absolute;left:4px;bottom:2px;font-family:"JetBrains Mono",monospace;font-size:9px;color:#fff;background:rgba(0,0,0,.55);padding:1px 4px;border-radius:4px;white-space:nowrap;}
-.fev-playhead{position:absolute;top:0;bottom:0;width:2px;background:#F5A623;pointer-events:auto;transform:translateX(-1px);z-index:5;cursor:ew-resize;}
+.fev-transicion-chip{position:absolute;top:2px;transform:translateX(-50%);z-index:30;display:flex;gap:2px;background:#0B1F3A;border-radius:6px;padding:2px;box-shadow:0 1px 4px rgba(0,0,0,.35);}
+.fev-transicion-select{font-family:var(--font);font-size:11px;line-height:1;border:none;border-radius:4px;padding:2px 1px;background:#fff;color:#0B1F3A;width:28px;}
+.fev-transicion-ms{font-family:"JetBrains Mono",monospace;font-size:9px;border:none;border-radius:4px;padding:2px 2px;width:38px;background:#fff;color:#0B1F3A;}
+.fev-timeline-textos{position:absolute;top:64px;left:0;right:0;height:44px;background:#EEF1F6;border-top:1px solid var(--g1);border-radius:0 0 8px 8px;overflow:hidden;}
+.fev-texto-block{position:absolute;top:4px;height:calc(100% - 8px);min-width:20px;box-sizing:border-box;background:#FFD34D;border:1.5px solid #B8860B;border-radius:6px;font-family:var(--font);font-size:10px;font-weight:700;color:#3A2A00;padding:3px 10px 3px 6px;overflow:hidden;white-space:nowrap;cursor:grab;}
+.fev-texto-block.selected{outline:2px solid var(--blue);}
+.fev-texto-resize{position:absolute;top:0;right:0;bottom:0;width:8px;cursor:ew-resize;background:rgba(0,0,0,.18);}
+.fev-playhead{position:absolute;top:0;bottom:0;width:2px;background:#F5A623;pointer-events:auto;transform:translateX(-1px);z-index:25;cursor:ew-resize;}
 .fev-playhead::before{content:"";position:absolute;top:-4px;left:50%;transform:translateX(-50%);width:14px;height:14px;background:#F5A623;border-radius:50%;border:2px solid #fff;}
 
 .fev-clip-editor{display:none;flex-direction:column;gap:12px;padding:12px 16px;background:#fff;border-top:1px solid var(--g1);}
@@ -4106,11 +4113,15 @@ body.in-plantrabajo #app{
         <div class="fev-timeline-wrap">
           <div class="fev-timeline-toolbar">
             <span id="fev-time-label">00:00.0 / 00:00.0</span>
-            <button class="fev-add-btn" onclick="document.getElementById('fev-file-input-2').click()">+ Agregar clip</button>
+            <div style="display:flex;gap:6px;">
+              <button class="fev-add-btn" onclick="fevAgregarTexto()">+ Agregar texto</button>
+              <button class="fev-add-btn" onclick="document.getElementById('fev-file-input-2').click()">+ Agregar clip</button>
+            </div>
             <input type="file" id="fev-file-input-2" accept="image/*,video/*" multiple style="display:none;" onchange="fevHandleUpload(event)">
           </div>
           <div class="fev-timeline-track" id="fev-timeline-track">
             <div class="fev-timeline-clips" id="fev-timeline-clips"></div>
+            <div class="fev-timeline-textos" id="fev-timeline-textos"></div>
             <div class="fev-playhead" id="fev-playhead" style="left:0%;"></div>
           </div>
         </div>
@@ -25944,6 +25955,38 @@ window.taurinaDescargar = taurinaDescargar;
 // reproduciéndose en tiempo real durante exportación, no con seeks
 // forzados). Si en otro lugar (fuera de este archivo) existe ya un
 // prototipo real, avisar para alinear esta implementación con ese código.
+//
+// FASE 2 (transiciones) + FASE 3 (capas de texto independientes), numeradas
+// por separado para poder ubicar el origen de una regresión:
+//
+// FASE 2 — cada clip (salvo el primero) gana transicionEntrada
+// ("corte"|"fundido"|"deslizar") y duracionTransicionMs. calcularClipActivo
+// se extiende (misma idea de recorrido lineal de Fase 1) para detectar la
+// ventana de transición hacia el SIGUIENTE clip y devolver clipA/clipB +
+// progresoTransicion. DECISIÓN DE DISEÑO IMPORTANTE: a diferencia de Fase 1
+// (acumulado = suma plana de duraciones), aquí el "inicio efectivo" de cada
+// clip se adelanta por la duración de su transición de entrada — es decir,
+// la transición SOLAPA en el tiempo a los dos clips (como en un editor real)
+// en vez de insertarse como tiempo extra. Esto es necesario, no cosmético:
+// la Parte 2.4 exige que un clip de video en transición seguya la MISMA
+// regla de Fase 1 (reproducción real con .play() sincronizado al momento en
+// que el clip "se vuelve activo", nunca currentTime forzado por fotograma
+// durante exportación). Si el clip B sólo "apareciera" en el instante del
+// corte, su reloj propio (tLocalB) saltaría de "avanzado" (durante el
+// mezclado) a 0 (justo después del corte) — un salto/retroceso visible y,
+// en video, un tartamudeo real. Con el solape, tLocalB nace en 0 exactamente
+// cuando arranca la transición y avanza de forma continua incluso cruzando
+// el corte. fevDuracionTotal reflejó este mismo modelo (resta el solape de
+// cada transición activa) para que el playhead y el layout del timeline
+// usen la misma escala de tiempo que el motor de render.
+//
+// FASE 3 — timeline.textos es un arreglo independiente de clips (overlays
+// con inicioMs/duracionMs propios y x/y relativos 0..1). Se dibujan SIEMPRE
+// después de los clips (incluida cualquier mezcla de transición), nunca
+// como parte del render de un clip individual. clip.texto (mecanismo de
+// Fase 1) se conserva en el modelo de datos solo para permitir migrar
+// timelines viejos (fevMigrarTextosDeClips) — el pipeline de render ya no
+// lo lee directamente.
 // ══════════════════════════════════════════════════════════════
 
 const FEV_W = 1080, FEV_H = 1920; // formato vertical (Historia), igual convención que el resto de plantillas sociales
@@ -25962,37 +26005,87 @@ const FEV_BRANDS = {
 };
 
 // ── Estado ────────────────────────────────────────────────────
-let FEV = null;               // { timeline: { marca, clips:[...] } } — null hasta elegir marca
+let FEV = null;               // { timeline: { marca, clips:[...], textos:[...] } } — null hasta elegir marca
 let FEV_NEXT_CLIP_ID = 1;
+let FEV_NEXT_TEXTO_ID = 1;
 let FEV_SELECTED_CLIP_ID = null;
+let FEV_SELECTED_TEXTO_ID = null;
 let FEV_PLAYHEAD_MS = 0;
 let FEV_DRAG_CLIP_ID = null;
 let FEV_SCRUBBING = false;
 let FEV_EXPORTING = false;
-let FEV_EXPORT_ACTIVE_CLIP_ID = null;
+let FEV_EXPORT_PLAYING_IDS = new Set(); // ids de clips (posiblemente 2, en transición) con .play() activo durante exportación
 let FEV_FONTS_READY = null;
 let _fevInited = false;
 
-// ── Modelo de datos / motor de tiempo (Parte 2 y 4) ────────────
+// ── Modelo de datos / motor de tiempo (Parte 2 y 4 de Fase 1; extendido en Fase 2) ────
 function fevNuevoTimeline(marca){
-  return { marca: marca, clips: [] };
+  return { marca: marca, clips: [], textos: [] };
+}
+
+// Duración de la transición de ENTRADA de `clipEntrante` (0 si no hay
+// transición real: tipo "corte", duracionTransicionMs 0, o cualquiera de
+// los dos clips ausente). Se acota a la duración de ambos clips para que
+// nunca "coma" más tiempo del que cualquiera de los dos tiene.
+function fevTransicionMs(clipEntrante, clipSaliente){
+  if (!clipEntrante || !clipSaliente) return 0;
+  if (!clipEntrante.transicionEntrada || clipEntrante.transicionEntrada === "corte") return 0;
+  return Math.max(0, Math.min(clipEntrante.duracionTransicionMs || 0, clipSaliente.duracionMs, clipEntrante.duracionMs));
+}
+
+// Recorre los clips una sola vez y calcula, para cada uno, su inicio/fin
+// EFECTIVO en la línea de tiempo — "efectivo" porque una transición hace
+// que el clip siguiente empiece antes (solapado con la cola del actual),
+// en vez de sumarse como tiempo extra (ver nota de diseño arriba del
+// encabezado de esta sección). Único lugar donde vive esta cuenta; tanto
+// fevDuracionTotal como calcularClipActivo y el layout del timeline (Parte
+// 2.3 / 3.3) parten de aquí para no desincronizarse entre sí.
+function fevPosicionesClips(timeline){
+  const out = [];
+  let inicioEfectivo = 0;
+  const clips = timeline.clips;
+  for (let i = 0; i < clips.length; i++){
+    const clip = clips[i];
+    const siguiente = clips[i + 1];
+    const finEfectivo = inicioEfectivo + clip.duracionMs;
+    const transMsSalida = fevTransicionMs(siguiente, clip);
+    out.push({ clip, inicioMs: inicioEfectivo, finMs: finEfectivo, transMsSalida });
+    inicioEfectivo = finEfectivo - transMsSalida;
+  }
+  return out;
 }
 
 function fevDuracionTotal(timeline){
-  return timeline.clips.reduce((s, c) => s + c.duracionMs, 0);
+  const pos = fevPosicionesClips(timeline);
+  return pos.length ? pos[pos.length - 1].finMs : 0;
 }
 
 // La pieza central: dado un tiempo tMs, qué clip está activo y en qué
 // punto local de ESE clip. Recorre timeline.clips en vivo cada vez —
 // nunca cachea posiciones, así que reordenar clips no lo puede dejar
-// desincronizado.
+// desincronizado. Fase 2 lo extiende: si tMs cae dentro de la ventana de
+// transición hacia el siguiente clip, además de {clip, tLocalMs} (formato
+// de Fase 1, se conserva para no romper nada que ya lo use) devuelve
+// clipA/tLocalA (= clip/tLocalMs), clipB y progresoTransicion (0→1).
 function calcularClipActivo(timeline, tMs){
-  let acumulado = 0;
-  for (const clip of timeline.clips){
-    if (tMs < acumulado + clip.duracionMs){
-      return { clip, tLocalMs: tMs - acumulado };
+  const clips = timeline.clips;
+  let inicioEfectivo = 0;
+  for (let i = 0; i < clips.length; i++){
+    const clip = clips[i];
+    const siguiente = clips[i + 1];
+    const finEfectivo = inicioEfectivo + clip.duracionMs;
+    if (tMs < finEfectivo){
+      const tLocalA = tMs - inicioEfectivo;
+      const transMs = fevTransicionMs(siguiente, clip);
+      if (transMs > 0 && tLocalA >= clip.duracionMs - transMs){
+        const inicioTransicion = finEfectivo - transMs;
+        const tLocalB = tMs - inicioTransicion;
+        const progreso = Math.min(1, Math.max(0, tLocalB / transMs));
+        return { clip, tLocalMs: tLocalA, clipA: clip, tLocalA, clipB: siguiente, tLocalB, progresoTransicion: progreso };
+      }
+      return { clip, tLocalMs: tLocalA, clipA: clip, tLocalA, clipB: null, progresoTransicion: null };
     }
-    acumulado += clip.duracionMs;
+    inicioEfectivo = finEfectivo - fevTransicionMs(siguiente, clip);
   }
   return null; // tMs pasa la duración total
 }
@@ -26072,12 +26165,151 @@ function fevDibujarTexto(ctx, marca, texto){
   ctx.restore();
 }
 
+// ── Overlays de texto independientes (Fase 3) ───────────────────
+// Migra clip.texto (mecanismo de Fase 1: un texto simple por clip) a un
+// overlay equivalente en timeline.textos, sin perder el contenido ya
+// existente. Idempotente (limpia clip.texto tras migrar), así que se puede
+// llamar cada vez que se "abre" un timeline sin duplicar overlays.
+function fevMigrarTextosDeClips(timeline){
+  if (!timeline.textos) timeline.textos = [];
+  fevPosicionesClips(timeline).forEach(({ clip, inicioMs, finMs }) => {
+    if (clip.texto){
+      timeline.textos.push({
+        id: FEV_NEXT_TEXTO_ID++,
+        texto: clip.texto,
+        inicioMs,
+        duracionMs: Math.max(1, finMs - inicioMs),
+        x: 0.5, y: 0.88, // centrado, mismo punto donde Fase 1 dibujaba el texto de clip
+        tamano: null,     // null = usar el tamaño default de la marca
+        color: null,      // null = usar el color default de la marca
+      });
+      clip.texto = "";
+    }
+  });
+}
+
+function fevAsegurarTimeline(timeline){
+  if (!timeline.textos) timeline.textos = [];
+  fevMigrarTextosDeClips(timeline);
+  return timeline;
+}
+
+function fevOverlaysVisiblesEn(timeline, tMs){
+  if (!timeline.textos) return [];
+  return timeline.textos.filter(t => tMs >= t.inicioMs && tMs < t.inicioMs + t.duracionMs);
+}
+
+// Caja aproximada (en px de canvas) de un overlay ya dibujado — se usa
+// tanto para el scrim detrás del texto como para el hit-testing al
+// arrastrarlo sobre la vista previa (Parte 3.3). Debe calcularse con la
+// MISMA fuente que fevDibujarOverlayTexto usará, por eso ambas comparten
+// esta función en vez de duplicar la medición.
+function fevBBoxOverlay(ctx, marca, overlay){
+  const b = FEV_BRANDS[marca] || FEV_BRANDS.romsa;
+  const fontSize = overlay.tamano || Math.round(FEV_W * 0.052);
+  ctx.save();
+  ctx.font = `700 ${fontSize}px ${b.font}`;
+  const lines = fevWrapText(ctx, overlay.texto, FEV_W * 0.86);
+  let maxLineW = 0;
+  lines.forEach(l => { maxLineW = Math.max(maxLineW, ctx.measureText(l).width); });
+  ctx.restore();
+  const lineH = fontSize * 1.22;
+  const blockH = lines.length * lineH;
+  const cx = overlay.x * FEV_W, cy = overlay.y * FEV_H;
+  const padX = 24, padY = 14;
+  return { x: cx - maxLineW / 2 - padX, y: cy - blockH / 2 - padY, w: maxLineW + padX * 2, h: blockH + padY * 2, fontSize, lines, lineH, cx, cy };
+}
+
+function fevDibujarOverlayTexto(ctx, marca, overlay){
+  const b = FEV_BRANDS[marca] || FEV_BRANDS.romsa;
+  const box = fevBBoxOverlay(ctx, marca, overlay);
+  const color = overlay.color || b.color;
+  ctx.save();
+  ctx.fillStyle = "rgba(0,0,0,.35)";
+  ctx.fillRect(box.x, box.y, box.w, box.h);
+  ctx.textAlign = "center";
+  ctx.textBaseline = "alphabetic";
+  ctx.fillStyle = color;
+  ctx.font = `700 ${box.fontSize}px ${b.font}`;
+  box.lines.forEach((line, i) => {
+    const y = box.cy - (box.lines.length * box.lineH) / 2 + box.lineH * (i + 1) - box.lineH * 0.22;
+    ctx.fillText(line, box.cx, y);
+  });
+  ctx.restore();
+}
+
+function fevDibujarOverlaysDeTexto(ctx, timeline, tMs){
+  fevOverlaysVisiblesEn(timeline, tMs).forEach(t => fevDibujarOverlayTexto(ctx, timeline.marca, t));
+}
+
+// ── Sincronización de video (Fase 1, Parte 4 — sin cambios de regla en Fase 2) ──
+// (a) scrubbing: todo pausado, se hace seek manual a trimInMs+tLocalMs.
+// (b) exportación: el video se reproduce en tiempo real (.play()), y se
+//     dibuja el frame que el video ya está mostrando por su cuenta — no se
+//     toca currentTime en cada frame (eso se ve entrecortado). Con
+//     transiciones puede haber DOS clips de video relevantes a la vez; cada
+//     uno se sincroniza de forma independiente la primera vez que aparece.
+function fevSincronizarVideoClip(clip, tLocalMs){
+  const vid = clip.elementoCargado;
+  if (FEV_EXPORTING){
+    if (!FEV_EXPORT_PLAYING_IDS.has(clip.id)){
+      FEV_EXPORT_PLAYING_IDS.add(clip.id);
+      vid.currentTime = clip.trimInMs / 1000;
+      vid.play().catch(() => {});
+    }
+    // Ya reproduciéndose solo — se dibuja el frame real, sin forzar currentTime.
+  } else {
+    if (!vid.paused) vid.pause();
+    const target = (clip.trimInMs + tLocalMs) / 1000;
+    if (Math.abs(vid.currentTime - target) > 0.03){
+      vid.currentTime = target;
+    }
+  }
+}
+
+// Pausa cualquier video que estaba reproduciéndose durante exportación pero
+// ya no es clipA ni clipB en este fotograma (el clip por el que se transicionó
+// ya terminó de salir de cuadro).
+function fevPausarVideosIrrelevantes(timeline, idsRelevantes){
+  Array.from(FEV_EXPORT_PLAYING_IDS).forEach(id => {
+    if (idsRelevantes.has(id)) return;
+    const c = timeline.clips.find(cl => cl.id === id);
+    if (c && c.tipo === "video" && c.elementoCargado) c.elementoCargado.pause();
+    FEV_EXPORT_PLAYING_IDS.delete(id);
+  });
+}
+
+// Dibuja un solo clip (foto o video) en tLocalMs propio de ESE clip, con
+// mezcla opcional de transición (alpha para "fundido", desplazamiento en X
+// para "deslizar"). Aislado en su propia función porque Fase 2 necesita
+// invocarlo hasta dos veces por fotograma (clipA y clipB solapados).
+function fevDibujarCapaClip(ctx, clip, tLocalMs, opts){
+  opts = opts || {};
+  const p = clip.duracionMs > 0 ? tLocalMs / clip.duracionMs : 0;
+  ctx.save();
+  if (typeof opts.alpha === "number") ctx.globalAlpha = Math.max(0, Math.min(1, opts.alpha));
+  if (opts.offsetXpx) ctx.translate(opts.offsetXpx, 0);
+  if (clip.tipo === "foto"){
+    const img = clip.elementoCargado;
+    if (img && img.complete && img.naturalWidth){
+      const kb = fevKenBurns(clip, p);
+      fevDibujarCover(ctx, img, img.naturalWidth, img.naturalHeight, 0, 0, FEV_W, FEV_H, kb.zoom, kb.panX, kb.panY);
+    }
+  } else if (clip.tipo === "video"){
+    const vid = clip.elementoCargado;
+    if (vid && vid.readyState >= 2){
+      fevSincronizarVideoClip(clip, tLocalMs);
+      fevDibujarCover(ctx, vid, vid.videoWidth, vid.videoHeight, 0, 0, FEV_W, FEV_H, 1, 0, 0);
+    }
+  }
+  ctx.restore();
+}
+
 // Motor de renderizado por tiempo — de esta función dependen scrubbing Y
-// exportación. Dos casos MUY distintos para clips de video (ver Parte 4):
-//  (a) scrubbing: todo pausado, se hace seek manual a trimInMs+tLocalMs.
-//  (b) exportación: el video se reproduce en tiempo real (.play()), y se
-//      dibuja el frame que el video ya está mostrando por su cuenta — no
-//      se toca currentTime en cada frame (eso se ve entrecortado).
+// exportación. Fase 2 lo extiende para mezclar clipA/clipB cuando
+// calcularClipActivo devuelve una transición activa; Fase 3 agrega, al
+// final y siempre encima (sin importar la transición), los overlays de
+// texto vigentes en tMs.
 function renderFrameEnTiempo(ctx, timeline, tMs){
   ctx.clearRect(0, 0, FEV_W, FEV_H);
   ctx.fillStyle = "#000";
@@ -26093,43 +26325,28 @@ function renderFrameEnTiempo(ctx, timeline, tMs){
     }
     return;
   }
-  const { clip, tLocalMs } = activo;
-  const p = clip.duracionMs > 0 ? tLocalMs / clip.duracionMs : 0;
+  const { clipA, tLocalA, clipB, tLocalB, progresoTransicion } = activo;
 
-  if (clip.tipo === "foto"){
-    const img = clip.elementoCargado;
-    if (img && img.complete && img.naturalWidth){
-      const kb = fevKenBurns(clip, p);
-      fevDibujarCover(ctx, img, img.naturalWidth, img.naturalHeight, 0, 0, FEV_W, FEV_H, kb.zoom, kb.panX, kb.panY);
-    }
-  } else if (clip.tipo === "video"){
-    const vid = clip.elementoCargado;
-    if (vid && vid.readyState >= 2){
-      if (FEV_EXPORTING){
-        if (FEV_EXPORT_ACTIVE_CLIP_ID !== clip.id){
-          if (FEV_EXPORT_ACTIVE_CLIP_ID != null){
-            const prev = timeline.clips.find(c => c.id === FEV_EXPORT_ACTIVE_CLIP_ID);
-            if (prev && prev.tipo === "video" && prev.elementoCargado) prev.elementoCargado.pause();
-          }
-          FEV_EXPORT_ACTIVE_CLIP_ID = clip.id;
-          vid.currentTime = clip.trimInMs / 1000;
-          vid.play().catch(() => {});
-        }
-        // Reproduciendo solo — se dibuja el frame real, sin forzar currentTime.
-      } else {
-        if (!vid.paused) vid.pause();
-        const target = (clip.trimInMs + tLocalMs) / 1000;
-        if (Math.abs(vid.currentTime - target) > 0.03){
-          vid.currentTime = target;
-        }
-      }
-      fevDibujarCover(ctx, vid, vid.videoWidth, vid.videoHeight, 0, 0, FEV_W, FEV_H, 1, 0, 0);
-    }
+  if (FEV_EXPORTING){
+    const relevantes = new Set([clipA.id]);
+    if (clipB) relevantes.add(clipB.id);
+    fevPausarVideosIrrelevantes(timeline, relevantes);
   }
 
-  if (clip.texto){
-    fevDibujarTexto(ctx, timeline.marca, clip.texto);
+  if (!clipB){
+    fevDibujarCapaClip(ctx, clipA, tLocalA);
+  } else if (clipB.transicionEntrada === "deslizar"){
+    fevDibujarCapaClip(ctx, clipA, tLocalA, { offsetXpx: -progresoTransicion * FEV_W });
+    fevDibujarCapaClip(ctx, clipB, tLocalB, { offsetXpx: (1 - progresoTransicion) * FEV_W });
+  } else {
+    // "fundido" (y cualquier valor no reconocido, por seguridad — nunca
+    // debería llegar "corte" aquí porque calcularClipActivo no abre una
+    // ventana de transición para ese tipo).
+    fevDibujarCapaClip(ctx, clipA, tLocalA, { alpha: 1 - progresoTransicion });
+    fevDibujarCapaClip(ctx, clipB, tLocalB, { alpha: progresoTransicion });
   }
+
+  fevDibujarOverlaysDeTexto(ctx, timeline, tMs);
 }
 
 function fevDetenerTodosLosVideos(){
@@ -26157,6 +26374,7 @@ function fevAbrir(){
         document.addEventListener("pointerup", fevTerminarScrub);
       });
     }
+    fevInicializarArrastreDeTexto();
     if (document.fonts && document.fonts.load){
       FEV_FONTS_READY = Promise.all([
         document.fonts.load('700 60px "Playfair Display"'),
@@ -26165,6 +26383,49 @@ function fevAbrir(){
       ]).catch(() => {});
     }
   }
+}
+
+// Arrastre de overlays de texto directamente sobre el canvas de vista
+// previa (Parte 3.3). Hit-testing con la misma caja que se usa para
+// dibujar (fevBBoxOverlay), en orden inverso (el último overlay dibujado
+// queda "encima" para efectos de selección).
+function fevInicializarArrastreDeTexto(){
+  const canvas = document.getElementById("fev-canvas");
+  if (!canvas) return;
+  canvas.addEventListener("pointerdown", (e) => {
+    if (!FEV) return;
+    const rect = canvas.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    const scaleX = FEV_W / rect.width, scaleY = FEV_H / rect.height;
+    const cx = (e.clientX - rect.left) * scaleX;
+    const cy = (e.clientY - rect.top) * scaleY;
+    const ctx = canvas.getContext("2d");
+    const visibles = fevOverlaysVisiblesEn(FEV.timeline, FEV_PLAYHEAD_MS);
+    let objetivo = null;
+    for (let i = visibles.length - 1; i >= 0; i--){
+      const box = fevBBoxOverlay(ctx, FEV.timeline.marca, visibles[i]);
+      if (cx >= box.x && cx <= box.x + box.w && cy >= box.y && cy <= box.y + box.h){
+        objetivo = visibles[i];
+        break;
+      }
+    }
+    if (!objetivo) return;
+    e.preventDefault();
+    fevSeleccionarTexto(objetivo.id);
+    const startX = objetivo.x, startY = objetivo.y;
+    const startClientX = e.clientX, startClientY = e.clientY;
+    function onMove(ev){
+      objetivo.x = Math.min(1, Math.max(0, startX + (ev.clientX - startClientX) * scaleX / FEV_W));
+      objetivo.y = Math.min(1, Math.max(0, startY + (ev.clientY - startClientY) * scaleY / FEV_H));
+      fevRenderPreviewAt(FEV_PLAYHEAD_MS);
+    }
+    function onUp(){
+      document.removeEventListener("pointermove", onMove);
+      document.removeEventListener("pointerup", onUp);
+    }
+    document.addEventListener("pointermove", onMove);
+    document.addEventListener("pointerup", onUp);
+  });
 }
 
 function fevAtras(){
@@ -26182,7 +26443,9 @@ function fevMostrarPaso(paso){
 function fevElegirMarca(marca){
   FEV = { timeline: fevNuevoTimeline(marca) };
   FEV_NEXT_CLIP_ID = 1;
+  FEV_NEXT_TEXTO_ID = 1;
   FEV_SELECTED_CLIP_ID = null;
+  FEV_SELECTED_TEXTO_ID = null;
   FEV_PLAYHEAD_MS = 0;
   const hint = document.getElementById("fev-marca-activa-hint");
   if (hint) hint.textContent = "Marca activa: " + (FEV_BRANDS[marca] ? FEV_BRANDS[marca].nombre : marca);
@@ -26190,6 +26453,7 @@ function fevElegirMarca(marca){
 }
 
 function fevIrAEditor(){
+  fevAsegurarTimeline(FEV.timeline);
   fevMostrarPaso("editor");
   fevRenderTimeline();
   fevSetPlayhead(0);
@@ -26223,7 +26487,8 @@ function fevAgregarArchivo(file){
           duracionMs: durMs,
           trimInMs: 0,
           trimOutMs: durMs,
-          texto: "",
+          transicionEntrada: "corte",
+          duracionTransicionMs: 400,
         };
         FEV.timeline.clips.push(clip);
         fevRenderTimeline();
@@ -26239,7 +26504,8 @@ function fevAgregarArchivo(file){
           archivo: file.name,
           elementoCargado: img,
           duracionMs: 3000,
-          texto: "",
+          transicionEntrada: "corte",
+          duracionTransicionMs: 400,
         };
         FEV.timeline.clips.push(clip);
         fevRenderTimeline();
@@ -26252,17 +26518,25 @@ function fevAgregarArchivo(file){
   reader.readAsDataURL(file);
 }
 
-// ── UI del timeline (Parte 3) ────────────────────────────────────
+// ── UI del timeline (Parte 3 de Fase 1; Parte 2.3 y 3.3 la extienden) ──
+// Los bloques ya no se posicionan con flex secuencial: al poder solaparse
+// (transición) usan izquierda/ancho absolutos en % sobre fevPosicionesClips,
+// la MISMA escala que usa el playhead — así ambos quedan siempre alineados.
 function fevRenderTimeline(){
   const track = document.getElementById("fev-timeline-clips");
   if (!track || !FEV) return;
-  const total = fevDuracionTotal(FEV.timeline) || 1;
+  const timeline = FEV.timeline;
+  const total = fevDuracionTotal(timeline) || 1;
+  const posiciones = fevPosicionesClips(timeline);
   track.innerHTML = "";
-  FEV.timeline.clips.forEach((clip) => {
-    const pct = (clip.duracionMs / total) * 100;
+  posiciones.forEach(({ clip, inicioMs, finMs }, idx) => {
+    const leftPct = (inicioMs / total) * 100;
+    const widthPct = ((finMs - inicioMs) / total) * 100;
     const div = document.createElement("div");
     div.className = "fev-clip-block" + (clip.id === FEV_SELECTED_CLIP_ID ? " selected" : "");
-    div.style.flex = `0 0 ${pct}%`;
+    div.style.left = leftPct + "%";
+    div.style.width = widthPct + "%";
+    div.style.zIndex = String(idx + 1); // el clip más a la derecha queda encima en el solape de una transición
     div.draggable = true;
     div.dataset.clipId = clip.id;
     div.onclick = () => fevSeleccionarClip(clip.id);
@@ -26294,8 +26568,175 @@ function fevRenderTimeline(){
     div.appendChild(label);
 
     track.appendChild(div);
+
+    // Parte 2.3 — selector chico de transición, uno por cada clip que NO
+    // sea el primero (el primero no tiene clip anterior del cual entrar).
+    if (idx > 0){
+      const chip = document.createElement("div");
+      chip.className = "fev-transicion-chip";
+      chip.style.left = leftPct + "%";
+      const tipo = clip.transicionEntrada || "corte";
+      const ms = clip.duracionTransicionMs != null ? clip.duracionTransicionMs : 400;
+      chip.innerHTML = `
+        <select class="fev-transicion-select" onclick="event.stopPropagation()" onchange="fevSetTransicion(${clip.id}, this.value, undefined)">
+          <option value="corte" ${tipo === "corte" ? "selected" : ""}>✂</option>
+          <option value="fundido" ${tipo === "fundido" ? "selected" : ""}>🌫</option>
+          <option value="deslizar" ${tipo === "deslizar" ? "selected" : ""}>➡</option>
+        </select>
+        <input type="number" class="fev-transicion-ms" min="0" step="50" value="${ms}" title="Duración de la transición (ms)" onclick="event.stopPropagation()" onchange="fevSetTransicion(${clip.id}, undefined, parseInt(this.value)||0)">
+      `;
+      chip.addEventListener("pointerdown", (e) => e.stopPropagation());
+      chip.addEventListener("click", (e) => e.stopPropagation());
+      track.appendChild(chip);
+    }
   });
+  fevRenderPistaTextos();
   fevActualizarTiempoLabel();
+}
+
+function fevSetTransicion(clipId, tipo, ms){
+  if (!FEV) return;
+  const clip = FEV.timeline.clips.find(c => c.id === clipId);
+  if (!clip) return;
+  if (tipo !== undefined) clip.transicionEntrada = tipo;
+  if (ms !== undefined) clip.duracionTransicionMs = Math.max(0, ms);
+  fevRenderTimeline();
+  fevSetPlayhead(Math.min(FEV_PLAYHEAD_MS, fevDuracionTotal(FEV.timeline)));
+}
+
+// ── Pista de overlays de texto (Parte 3.3) ──────────────────────
+// Segunda pista horizontal, debajo de la de clips, con el mismo espacio de
+// tiempo (0..fevDuracionTotal) que los bloques de clip y el playhead.
+function fevRenderPistaTextos(){
+  const track = document.getElementById("fev-timeline-textos");
+  if (!track || !FEV) return;
+  const timeline = FEV.timeline;
+  if (!timeline.textos) timeline.textos = [];
+  const total = fevDuracionTotal(timeline) || 1;
+  track.innerHTML = "";
+  timeline.textos.forEach((t) => {
+    const leftPct = (t.inicioMs / total) * 100;
+    const widthPct = (t.duracionMs / total) * 100;
+    const div = document.createElement("div");
+    div.className = "fev-texto-block" + (t.id === FEV_SELECTED_TEXTO_ID ? " selected" : "");
+    div.style.left = leftPct + "%";
+    div.style.width = widthPct + "%";
+    div.textContent = t.texto || "(texto)";
+    div.title = t.texto || "";
+
+    div.addEventListener("pointerdown", (e) => {
+      if (e.target.classList.contains("fev-texto-resize")) return; // el handle tiene su propio listener
+      e.preventDefault();
+      e.stopPropagation();
+      fevSeleccionarTexto(t.id);
+      const trackRect = document.getElementById("fev-timeline-track").getBoundingClientRect();
+      const startX = e.clientX;
+      const startInicio = t.inicioMs;
+      function onMove(ev){
+        const deltaMs = ((ev.clientX - startX) / trackRect.width) * total;
+        const totalActual = fevDuracionTotal(timeline);
+        t.inicioMs = Math.max(0, Math.min(startInicio + deltaMs, Math.max(0, totalActual - t.duracionMs)));
+        fevRenderPistaTextos();
+        fevRenderPreviewAt(FEV_PLAYHEAD_MS);
+      }
+      function onUp(){
+        document.removeEventListener("pointermove", onMove);
+        document.removeEventListener("pointerup", onUp);
+      }
+      document.addEventListener("pointermove", onMove);
+      document.addEventListener("pointerup", onUp);
+    });
+
+    const handle = document.createElement("div");
+    handle.className = "fev-texto-resize";
+    handle.addEventListener("pointerdown", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      fevSeleccionarTexto(t.id);
+      const trackRect = document.getElementById("fev-timeline-track").getBoundingClientRect();
+      const startX = e.clientX;
+      const startDur = t.duracionMs;
+      function onMove(ev){
+        const deltaMs = ((ev.clientX - startX) / trackRect.width) * total;
+        const totalActual = fevDuracionTotal(timeline);
+        t.duracionMs = Math.max(200, Math.min(startDur + deltaMs, Math.max(200, totalActual - t.inicioMs)));
+        fevRenderPistaTextos();
+        fevRenderPreviewAt(FEV_PLAYHEAD_MS);
+      }
+      function onUp(){
+        document.removeEventListener("pointermove", onMove);
+        document.removeEventListener("pointerup", onUp);
+      }
+      document.addEventListener("pointermove", onMove);
+      document.addEventListener("pointerup", onUp);
+    });
+    div.appendChild(handle);
+
+    track.appendChild(div);
+  });
+}
+
+function fevAgregarTexto(){
+  if (!FEV) return;
+  fevAsegurarTimeline(FEV.timeline);
+  const total = fevDuracionTotal(FEV.timeline);
+  const overlay = {
+    id: FEV_NEXT_TEXTO_ID++,
+    texto: "Nuevo texto",
+    inicioMs: Math.min(FEV_PLAYHEAD_MS, Math.max(0, total - 2000)),
+    duracionMs: 2000,
+    x: 0.5, y: 0.5,
+    tamano: null,
+    color: null,
+  };
+  FEV.timeline.textos.push(overlay);
+  fevSeleccionarTexto(overlay.id);
+  fevRenderPreviewAt(FEV_PLAYHEAD_MS);
+}
+
+function fevSeleccionarTexto(textoId){
+  FEV_SELECTED_TEXTO_ID = textoId;
+  FEV_SELECTED_CLIP_ID = null;
+  fevRenderTimeline();
+  fevRenderClipEditor();
+}
+
+function fevSetTextoOverlay(textoId, valor){
+  if (!FEV) return;
+  const t = FEV.timeline.textos.find(x => x.id === textoId);
+  if (!t) return;
+  t.texto = valor;
+  fevRenderPistaTextos();
+  fevRenderPreviewAt(FEV_PLAYHEAD_MS);
+}
+
+function fevSetTiempoTexto(textoId, inicioMs, duracionMs){
+  if (!FEV) return;
+  const t = FEV.timeline.textos.find(x => x.id === textoId);
+  if (!t) return;
+  if (inicioMs !== undefined) t.inicioMs = Math.max(0, inicioMs);
+  if (duracionMs !== undefined) t.duracionMs = Math.max(200, duracionMs);
+  const total = fevDuracionTotal(FEV.timeline);
+  t.inicioMs = Math.min(t.inicioMs, Math.max(0, total - 1));
+  fevRenderTimeline();
+  fevRenderPreviewAt(FEV_PLAYHEAD_MS);
+}
+
+function fevSetEstiloTexto(textoId, campo, valor){
+  if (!FEV) return;
+  const t = FEV.timeline.textos.find(x => x.id === textoId);
+  if (!t) return;
+  t[campo] = valor;
+  fevRenderPreviewAt(FEV_PLAYHEAD_MS);
+}
+
+function fevEliminarTexto(textoId){
+  if (!FEV) return;
+  FEV.timeline.textos = FEV.timeline.textos.filter(t => t.id !== textoId);
+  if (FEV_SELECTED_TEXTO_ID === textoId) FEV_SELECTED_TEXTO_ID = null;
+  fevRenderTimeline();
+  fevRenderClipEditor();
+  fevRenderPreviewAt(FEV_PLAYHEAD_MS);
 }
 
 function fevReordenar(clipIdArrastrado, clipIdDestino){
@@ -26314,13 +26755,20 @@ function fevReordenar(clipIdArrastrado, clipIdDestino){
 
 function fevSeleccionarClip(clipId){
   FEV_SELECTED_CLIP_ID = clipId;
+  FEV_SELECTED_TEXTO_ID = null;
   fevRenderTimeline();
   fevRenderClipEditor();
 }
 
+// El panel inferior edita, exclusivamente, o el clip seleccionado o el
+// overlay de texto seleccionado (nunca ambos a la vez).
 function fevRenderClipEditor(){
   const wrap = document.getElementById("fev-clip-editor");
   if (!wrap || !FEV) return;
+  if (FEV_SELECTED_TEXTO_ID != null){
+    fevRenderEditorTexto(wrap);
+    return;
+  }
   const clip = FEV.timeline.clips.find(c => c.id === FEV_SELECTED_CLIP_ID);
   if (!clip){ wrap.style.display = "none"; wrap.innerHTML = ""; return; }
   wrap.style.display = "flex";
@@ -26340,10 +26788,6 @@ function fevRenderClipEditor(){
 
   wrap.innerHTML = `
     <div class="fev-ctrl-group">
-      <label class="fev-ctrl-label">Texto del clip</label>
-      <input type="text" class="fev-input" value="${escapeHtml(clip.texto || "")}" placeholder="Texto sobre este clip (opcional)" oninput="fevSetTexto(${clip.id}, this.value)">
-    </div>
-    <div class="fev-ctrl-group">
       <label class="fev-ctrl-label">Duración (segundos)</label>
       <input type="number" class="fev-input" style="max-width:120px;" step="0.1" min="0.3" value="${(clip.duracionMs / 1000).toFixed(1)}" ${clip.tipo === "video" ? 'disabled title="La duración de un clip de video depende del recorte"' : ""} onchange="fevSetDuracion(${clip.id}, this.value)">
     </div>
@@ -26354,12 +26798,34 @@ function fevRenderClipEditor(){
   `;
 }
 
-function fevSetTexto(clipId, valor){
-  if (!FEV) return;
-  const clip = FEV.timeline.clips.find(c => c.id === clipId);
-  if (!clip) return;
-  clip.texto = valor;
-  fevRenderPreviewAt(FEV_PLAYHEAD_MS);
+function fevRenderEditorTexto(wrap){
+  const t = FEV.timeline.textos.find(x => x.id === FEV_SELECTED_TEXTO_ID);
+  if (!t){ wrap.style.display = "none"; wrap.innerHTML = ""; return; }
+  wrap.style.display = "flex";
+  wrap.innerHTML = `
+    <div class="fev-ctrl-group">
+      <label class="fev-ctrl-label">Texto</label>
+      <input type="text" class="fev-input" value="${escapeHtml(t.texto || "")}" oninput="fevSetTextoOverlay(${t.id}, this.value)">
+    </div>
+    <div class="fev-ctrl-group">
+      <label class="fev-ctrl-label">Inicio (segundos) / Duración (segundos)</label>
+      <div style="display:flex;gap:8px;">
+        <input type="number" class="fev-input" step="0.1" min="0" value="${(t.inicioMs / 1000).toFixed(1)}" onchange="fevSetTiempoTexto(${t.id}, Math.round(parseFloat(this.value)*1000)||0, undefined)">
+        <input type="number" class="fev-input" step="0.1" min="0.2" value="${(t.duracionMs / 1000).toFixed(1)}" onchange="fevSetTiempoTexto(${t.id}, undefined, Math.round(parseFloat(this.value)*1000)||200)">
+      </div>
+    </div>
+    <div class="fev-ctrl-group">
+      <label class="fev-ctrl-label">Tamaño en px (vacío = tamaño de marca)</label>
+      <input type="number" class="fev-input" style="max-width:120px;" min="10" value="${t.tamano || ""}" placeholder="auto" onchange="fevSetEstiloTexto(${t.id}, 'tamano', this.value ? (parseInt(this.value)||null) : null)">
+    </div>
+    <div class="fev-ctrl-group">
+      <label class="fev-ctrl-label">Color (vacío = color de marca)</label>
+      <input type="text" class="fev-input" style="max-width:120px;" value="${escapeHtml(t.color || "")}" placeholder="#RRGGBB" onchange="fevSetEstiloTexto(${t.id}, 'color', this.value || null)">
+    </div>
+    <div class="fev-ctrl-group">
+      <button class="fev-btn fev-btn-ghost" type="button" onclick="fevEliminarTexto(${t.id})">🗑 Eliminar texto</button>
+    </div>
+  `;
 }
 
 function fevSetDuracion(clipId, valorSeg){
@@ -26462,7 +26928,7 @@ async function fevExportar(){
   const btn = document.getElementById("fev-export-btn");
 
   FEV_EXPORTING = true;
-  FEV_EXPORT_ACTIVE_CLIP_ID = null;
+  FEV_EXPORT_PLAYING_IDS = new Set();
   if (btn){ btn.disabled = true; btn.textContent = "Exportando… 0%"; }
 
   const stream = canvas.captureStream(30);
@@ -26495,7 +26961,7 @@ async function fevExportar(){
   await detenido;
 
   FEV_EXPORTING = false;
-  FEV_EXPORT_ACTIVE_CLIP_ID = null;
+  FEV_EXPORT_PLAYING_IDS = new Set();
   if (btn){ btn.disabled = false; btn.textContent = "⬇ Exportar video"; }
 
   const blob = new Blob(chunks, { type: "video/webm" });
