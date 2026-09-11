@@ -946,7 +946,7 @@ body.in-plantrabajo #app{
 .fev-add-btn-auto{background:linear-gradient(135deg,#F59E0B,#F97316);}
 .fev-timeline-track{position:relative;height:148px;background:var(--off);border:1px solid var(--g1);border-radius:8px;overflow:visible;}
 .fev-timeline-clips{position:absolute;top:0;left:0;right:0;height:64px;overflow:hidden;border-radius:8px 8px 0 0;}
-.fev-clip-block{position:absolute;top:0;height:100%;border-left:2px solid #fff;background:#DDE5F0;cursor:grab;overflow:hidden;min-width:24px;box-sizing:border-box;}
+.fev-clip-block{position:absolute;top:0;height:100%;border-left:2px solid #fff;background:#DDE5F0;cursor:grab;overflow:hidden;min-width:24px;box-sizing:border-box;touch-action:none;}
 .fev-clip-block.selected{outline:3px solid var(--blue);outline-offset:1px;box-shadow:0 0 0 2px rgba(30,111,217,.3),0 2px 10px rgba(30,111,217,.4);z-index:40 !important;}
 .fev-clip-block.dragging{opacity:.4;}
 .fev-clip-thumb{position:absolute;inset:0;background-size:cover;background-position:center;}
@@ -969,8 +969,9 @@ body.in-plantrabajo #app{
 .fev-logo-block.selected{outline:3px solid var(--blue);outline-offset:1px;box-shadow:0 0 0 2px rgba(30,111,217,.3);}
 .fev-logo-resize{position:absolute;top:0;right:0;bottom:0;width:16px;cursor:ew-resize;background:rgba(0,0,0,.22);}
 .fev-logo-resize::after{content:"";position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:3px;height:60%;border-left:2px solid rgba(255,255,255,.85);border-right:2px solid rgba(255,255,255,.85);}
-.fev-playhead{position:absolute;top:0;bottom:0;width:2px;background:#F5A623;pointer-events:auto;transform:translateX(-1px);z-index:25;cursor:ew-resize;}
-.fev-playhead::before{content:"";position:absolute;top:-4px;left:50%;transform:translateX(-50%);width:14px;height:14px;background:#F5A623;border-radius:50%;border:2px solid #fff;}
+.fev-playhead{position:absolute;top:0;bottom:0;width:24px;pointer-events:auto;transform:translateX(-12px);z-index:25;cursor:ew-resize;touch-action:none;}
+.fev-playhead::after{content:"";position:absolute;top:0;bottom:0;left:50%;width:2px;background:#F5A623;transform:translateX(-50%);}
+.fev-playhead::before{content:"";position:absolute;top:-6px;left:50%;transform:translateX(-50%);width:20px;height:20px;background:#F5A623;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 5px rgba(245,166,35,.28);}
 
 .fev-clip-editor{display:none;flex-direction:column;gap:14px;padding:18px 16px calc(env(safe-area-inset-bottom,0px) + 8px);background:var(--off);border-top:1px solid var(--g1);scroll-margin-top:8px;}
 .fev-panel-heading{font-family:var(--font);font-size:13px;font-weight:800;color:var(--navy);display:flex;align-items:center;gap:6px;}
@@ -26361,13 +26362,45 @@ function fevBBoxOverlay(ctx, marca, overlay){
   return { x: cx - maxLineW / 2 - padX, y: cy - blockH / 2 - padY, w: maxLineW + padX * 2, h: blockH + padY * 2, fontSize, lines, lineH, cx, cy };
 }
 
-function fevDibujarOverlayTexto(ctx, marca, overlay){
+// Degradado sutil detrás de un overlay (texto o logo) cuando cae sobre una
+// foto/video — mismo patrón que el scrim de las plantillas estáticas
+// (transparente arriba, oscuro hacia abajo), pero acotado a la caja del
+// overlay en vez de a toda la pantalla. No se usa sobre intro/cierre
+// (fondo navy sólido, ver fevOverlaySobreFondoSolido).
+function fevDibujarScrimTrasOverlay(ctx, box){
+  const pad = box.h * 0.22;
+  const x = box.x - pad, y = box.y - pad, w = box.w + pad * 2, h = box.h + pad * 2;
+  const grad = ctx.createLinearGradient(0, y, 0, y + h);
+  grad.addColorStop(0, "rgba(0,0,0,0)");
+  grad.addColorStop(1, "rgba(0,0,0,.55)");
+  ctx.save();
+  ctx.fillStyle = grad;
+  ctx.fillRect(x, y, w, h);
+  ctx.restore();
+}
+
+// true si el/los clip(s) activos en tMs son intro/cierre (fondo navy sólido
+// propio) — en ese caso los overlays no necesitan el scrim de legibilidad
+// de la Parte 2, ya tienen suficiente contraste. Solo lee calcularClipActivo
+// (sin modificarlo) para saber el tipo de fondo actual.
+function fevOverlaySobreFondoSolido(timeline, tMs){
+  const activo = calcularClipActivo(timeline, tMs);
+  if (!activo) return false;
+  const esSolido = (c) => c && c.tipo !== "foto" && c.tipo !== "video";
+  return esSolido(activo.clipA) && (!activo.clipB || esSolido(activo.clipB));
+}
+
+function fevDibujarOverlayTexto(ctx, marca, overlay, sobreFondoSolido){
   const b = FEV_BRANDS[marca] || FEV_BRANDS.romsa;
   const box = fevBBoxOverlay(ctx, marca, overlay);
   const color = overlay.color || b.color;
   ctx.save();
-  ctx.fillStyle = "rgba(0,0,0,.35)";
-  ctx.fillRect(box.x, box.y, box.w, box.h);
+  if (!sobreFondoSolido){
+    fevDibujarScrimTrasOverlay(ctx, box);
+  } else {
+    ctx.fillStyle = "rgba(0,0,0,.35)";
+    ctx.fillRect(box.x, box.y, box.w, box.h);
+  }
   ctx.textAlign = "center";
   ctx.textBaseline = "alphabetic";
   ctx.fillStyle = color;
@@ -26380,7 +26413,8 @@ function fevDibujarOverlayTexto(ctx, marca, overlay){
 }
 
 function fevDibujarOverlaysDeTexto(ctx, timeline, tMs){
-  fevOverlaysVisiblesEn(timeline, tMs).forEach(t => fevDibujarOverlayTexto(ctx, timeline.marca, t));
+  const sobreFondoSolido = fevOverlaySobreFondoSolido(timeline, tMs);
+  fevOverlaysVisiblesEn(timeline, tMs).forEach(t => fevDibujarOverlayTexto(ctx, timeline.marca, t, sobreFondoSolido));
 }
 
 // ── Logo / Badges (Fase 4) ───────────────────────────────────────
@@ -26437,8 +26471,9 @@ function fevBBoxLogo(ctx, marca, overlay){
   return { x: cx - anchoPx / 2, y: cy - altoPx / 2, w: anchoPx, h: altoPx, img };
 }
 
-function fevDibujarLogo(ctx, marca, overlay){
+function fevDibujarLogo(ctx, marca, overlay, sobreFondoSolido){
   const box = fevBBoxLogo(ctx, marca, overlay);
+  if (!sobreFondoSolido) fevDibujarScrimTrasOverlay(ctx, box);
   if (box.img && box.img.complete && box.img.naturalWidth){
     ctx.drawImage(box.img, box.x, box.y, box.w, box.h);
   }
@@ -26485,9 +26520,10 @@ function fevDibujarBadge(ctx, marca, overlay){
 }
 
 function fevDibujarLogosYBadges(ctx, timeline, tMs){
+  const sobreFondoSolido = fevOverlaySobreFondoSolido(timeline, tMs);
   fevLogosVisiblesEn(timeline, tMs).forEach(item => {
     if (item.tipo === "badge") fevDibujarBadge(ctx, timeline.marca, item);
-    else fevDibujarLogo(ctx, timeline.marca, item);
+    else fevDibujarLogo(ctx, timeline.marca, item, sobreFondoSolido);
   });
 }
 
@@ -26986,20 +27022,15 @@ function fevRenderTimeline(){
     div.style.left = leftPct + "%";
     div.style.width = widthPct + "%";
     div.style.zIndex = String(idx + 1); // el clip más a la derecha queda encima en el solape de una transición
-    div.draggable = true;
     div.dataset.clipId = clip.id;
-    div.onclick = () => fevSeleccionarClip(clip.id);
-    div.addEventListener("dragstart", (e) => {
-      FEV_DRAG_CLIP_ID = clip.id;
-      e.dataTransfer.effectAllowed = "move";
-      div.classList.add("dragging");
-    });
-    div.addEventListener("dragend", () => { div.classList.remove("dragging"); FEV_DRAG_CLIP_ID = null; });
-    div.addEventListener("dragover", (e) => e.preventDefault());
-    div.addEventListener("drop", (e) => {
+    // Reordenar por arrastre vía Pointer Events (no HTML5 Drag-and-Drop):
+    // ningún navegador móvil dispara dragstart/dragover/drop desde gestos
+    // táctiles, así que el drag&drop nativo de Fase 1 nunca funcionó en
+    // touch — no es que los íconos de transición lo tapen. Pointer Events
+    // sí unifica mouse y touch, y reutiliza fevReordenar tal cual.
+    div.addEventListener("pointerdown", (e) => {
       e.preventDefault();
-      if (FEV_DRAG_CLIP_ID == null || FEV_DRAG_CLIP_ID === clip.id) return;
-      fevReordenar(FEV_DRAG_CLIP_ID, clip.id);
+      fevIniciarArrastreClip(clip.id, e);
     });
 
     const thumb = document.createElement("div");
@@ -27378,6 +27409,59 @@ function fevEliminarLogo(logoId){
   fevRenderTimeline();
   fevRenderClipEditor();
   fevRenderPreviewAt(FEV_PLAYHEAD_MS);
+}
+
+// Qué clip cae bajo una posición X de pantalla, usando la misma proporción
+// de tiempo que ya usan fevPosicionesClips/el playhead — evita depender de
+// hit-testing por DOM (document.elementFromPoint), que se complica con los
+// chips de transición superpuestos en el borde de cada bloque.
+function fevObtenerClipEnX(clientX){
+  const track = document.getElementById("fev-timeline-track");
+  if (!track || !FEV) return null;
+  const rect = track.getBoundingClientRect();
+  if (!rect.width) return null;
+  const total = fevDuracionTotal(FEV.timeline) || 1;
+  const frac = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
+  const tMs = frac * total;
+  const posiciones = fevPosicionesClips(FEV.timeline);
+  if (!posiciones.length) return null;
+  const pos = posiciones.find(p => tMs >= p.inicioMs && tMs < p.finMs) || posiciones[posiciones.length - 1];
+  return pos.clip.id;
+}
+
+// Arrastre de bloques del timeline vía Pointer Events (mouse y touch por
+// igual) — reemplaza el drag&drop nativo de Fase 1, que dependía de
+// dragstart/dragover/drop y por eso nunca funcionó en pantallas táctiles.
+// Un tap sin movimiento significativo selecciona el clip, igual que antes.
+function fevIniciarArrastreClip(clipId, e){
+  const startX = e.clientX, startY = e.clientY;
+  const UMBRAL_PX = 6;
+  let arrastrando = false;
+
+  function onMove(ev){
+    if (!arrastrando){
+      if (Math.abs(ev.clientX - startX) < UMBRAL_PX && Math.abs(ev.clientY - startY) < UMBRAL_PX) return;
+      arrastrando = true;
+      FEV_DRAG_CLIP_ID = clipId;
+      const el = document.querySelector('.fev-clip-block[data-clip-id="' + clipId + '"]');
+      if (el) el.classList.add("dragging");
+    }
+  }
+  function onUp(ev){
+    document.removeEventListener("pointermove", onMove);
+    document.removeEventListener("pointerup", onUp);
+    if (arrastrando){
+      const el = document.querySelector('.fev-clip-block[data-clip-id="' + clipId + '"]');
+      if (el) el.classList.remove("dragging");
+      FEV_DRAG_CLIP_ID = null;
+      const destinoId = fevObtenerClipEnX(ev.clientX);
+      if (destinoId != null && destinoId !== clipId) fevReordenar(clipId, destinoId);
+    } else {
+      fevSeleccionarClip(clipId);
+    }
+  }
+  document.addEventListener("pointermove", onMove);
+  document.addEventListener("pointerup", onUp);
 }
 
 function fevReordenar(clipIdArrastrado, clipIdDestino){
