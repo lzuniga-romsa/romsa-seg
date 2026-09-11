@@ -938,39 +938,47 @@ body.in-plantrabajo #app{
 .fev-dropzone{border:2px dashed var(--g2);border-radius:14px;padding:40px 16px;text-align:center;cursor:pointer;background:var(--off);}
 
 .fev-canvas-area{flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:16px;background:#0B1F3A;position:relative;}
-.fev-canvas-area canvas{max-width:100%;max-height:46vh;background:#000;border-radius:6px;box-shadow:0 10px 30px rgba(0,0,0,.35);}
+.fev-canvas-area canvas{max-width:100%;max-height:34vh;background:#000;border-radius:6px;box-shadow:0 10px 30px rgba(0,0,0,.35);}
 
 .fev-timeline-wrap{flex-shrink:0;padding:12px 16px;background:#fff;border-top:1px solid var(--g1);}
 .fev-timeline-toolbar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;font-family:"JetBrains Mono",monospace;font-size:11px;color:var(--tx2);}
 .fev-add-btn{background:var(--blue);color:#fff;border:none;padding:6px 12px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:var(--font);}
+.fev-add-btn-auto{background:linear-gradient(135deg,#F59E0B,#F97316);}
 .fev-timeline-track{position:relative;height:148px;background:var(--off);border:1px solid var(--g1);border-radius:8px;overflow:visible;}
 .fev-timeline-clips{position:absolute;top:0;left:0;right:0;height:64px;overflow:hidden;border-radius:8px 8px 0 0;}
 .fev-clip-block{position:absolute;top:0;height:100%;border-left:2px solid #fff;background:#DDE5F0;cursor:grab;overflow:hidden;min-width:24px;box-sizing:border-box;}
-.fev-clip-block.selected{outline:2px solid var(--blue);outline-offset:-2px;}
+.fev-clip-block.selected{outline:3px solid var(--blue);outline-offset:1px;box-shadow:0 0 0 2px rgba(30,111,217,.3),0 2px 10px rgba(30,111,217,.4);z-index:40 !important;}
 .fev-clip-block.dragging{opacity:.4;}
 .fev-clip-thumb{position:absolute;inset:0;background-size:cover;background-position:center;}
 .fev-clip-thumb-video{background:linear-gradient(135deg,#1A3A60,#0B1F3A);}
 .fev-clip-thumb-video::after{content:"🎬";font-size:18px;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);}
 .fev-clip-label{position:absolute;left:4px;bottom:2px;font-family:"JetBrains Mono",monospace;font-size:9px;color:#fff;background:rgba(0,0,0,.55);padding:1px 4px;border-radius:4px;white-space:nowrap;}
-.fev-transicion-chip{position:absolute;top:2px;transform:translateX(-50%);z-index:30;display:flex;gap:2px;background:#0B1F3A;border-radius:6px;padding:2px;box-shadow:0 1px 4px rgba(0,0,0,.35);}
-.fev-transicion-select{font-family:var(--font);font-size:11px;line-height:1;border:none;border-radius:4px;padding:2px 1px;background:#fff;color:#0B1F3A;width:28px;}
-.fev-transicion-ms{font-family:"JetBrains Mono",monospace;font-size:9px;border:none;border-radius:4px;padding:2px 2px;width:38px;background:#fff;color:#0B1F3A;}
+.fev-transicion-chip{position:absolute;top:2px;transform:translateX(-50%);z-index:30;display:flex;align-items:center;justify-content:center;width:22px;height:22px;background:#0B1F3A;color:#fff;border:1.5px solid #fff;border-radius:50%;box-shadow:0 1px 4px rgba(0,0,0,.35);cursor:pointer;padding:0;}
+.fev-transicion-chip:hover{background:var(--blue);}
 .fev-timeline-textos{position:absolute;top:64px;left:0;right:0;height:44px;background:#EEF1F6;border-top:1px solid var(--g1);overflow:hidden;}
 .fev-texto-block{position:absolute;top:4px;height:calc(100% - 8px);min-width:20px;box-sizing:border-box;background:#FFD34D;border:1.5px solid #B8860B;border-radius:6px;font-family:var(--font);font-size:10px;font-weight:700;color:#3A2A00;padding:3px 10px 3px 6px;overflow:hidden;white-space:nowrap;cursor:grab;}
-.fev-texto-block.selected{outline:2px solid var(--blue);}
+.fev-texto-block.selected{outline:3px solid var(--blue);outline-offset:1px;box-shadow:0 0 0 2px rgba(30,111,217,.3);}
 .fev-texto-resize{position:absolute;top:0;right:0;bottom:0;width:8px;cursor:ew-resize;background:rgba(0,0,0,.18);}
 .fev-timeline-logos{position:absolute;top:108px;left:0;right:0;height:40px;background:#F5F0FA;border-top:1px solid var(--g1);border-radius:0 0 8px 8px;overflow:hidden;}
 .fev-logo-block{position:absolute;top:4px;height:calc(100% - 8px);min-width:20px;box-sizing:border-box;background:#C9A6F0;border:1.5px solid #7B4FA0;border-radius:6px;font-family:var(--font);font-size:10px;font-weight:700;color:#3A1A5C;padding:3px 10px 3px 6px;overflow:hidden;white-space:nowrap;cursor:grab;}
 .fev-logo-block.fev-logo-block-badge{background:#FFD9A0;border-color:#B8720B;color:#4A2A00;}
-.fev-logo-block.selected{outline:2px solid var(--blue);}
+.fev-logo-block.selected{outline:3px solid var(--blue);outline-offset:1px;box-shadow:0 0 0 2px rgba(30,111,217,.3);}
 .fev-logo-resize{position:absolute;top:0;right:0;bottom:0;width:8px;cursor:ew-resize;background:rgba(0,0,0,.18);}
 .fev-playhead{position:absolute;top:0;bottom:0;width:2px;background:#F5A623;pointer-events:auto;transform:translateX(-1px);z-index:25;cursor:ew-resize;}
 .fev-playhead::before{content:"";position:absolute;top:-4px;left:50%;transform:translateX(-50%);width:14px;height:14px;background:#F5A623;border-radius:50%;border:2px solid #fff;}
 
-.fev-clip-editor{display:none;flex-direction:column;gap:12px;padding:12px 16px;background:#fff;border-top:1px solid var(--g1);}
-.fev-ctrl-group{display:flex;flex-direction:column;gap:6px;}
+.fev-clip-editor{display:none;flex-direction:column;gap:14px;padding:18px 16px calc(env(safe-area-inset-bottom,0px) + 8px);background:var(--off);border-top:1px solid var(--g1);scroll-margin-top:8px;}
+.fev-panel-heading{font-family:var(--font);font-size:13px;font-weight:800;color:var(--navy);display:flex;align-items:center;gap:6px;}
+.fev-ctrl-group{display:flex;flex-direction:column;gap:8px;background:#fff;border:1px solid var(--g1);border-radius:14px;padding:14px 16px;box-shadow:0 1px 3px rgba(11,31,58,.05);}
 .fev-ctrl-label{font-size:10px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.5px;font-family:var(--font);}
 .fev-input{border:1.5px solid var(--g1);border-radius:8px;padding:9px 11px;font-size:13px;font-family:var(--font);color:var(--navy);background:#fff;width:100%;}
+.fev-input-unidad{position:relative;display:flex;align-items:center;}
+.fev-input-unidad input{padding-right:34px;}
+.fev-input-unidad span{position:absolute;right:11px;font-size:11px;font-weight:700;color:var(--tx2);pointer-events:none;}
+.fev-transicion-segmentado{display:flex;gap:6px;}
+.fev-transicion-opcion{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 6px;border:1.5px solid var(--g1);border-radius:10px;background:#fff;color:var(--tx2);cursor:pointer;font-family:var(--font);font-size:10.5px;font-weight:700;}
+.fev-transicion-opcion svg{width:16px;height:16px;}
+.fev-transicion-opcion.activa{border-color:var(--blue);background:var(--blue-pale);color:var(--blue);}
 
 .fev-actions{flex-shrink:0;display:flex;gap:8px;padding:12px 16px calc(env(safe-area-inset-bottom,0px) + 12px);background:#fff;border-top:1px solid var(--g1);}
 .fev-btn{flex:1;padding:12px;border-radius:10px;font-size:12.5px;font-weight:700;border:none;cursor:pointer;font-family:var(--font);}
@@ -4123,6 +4131,7 @@ body.in-plantrabajo #app{
               <button class="fev-add-btn" onclick="fevAgregarLogo()">+ Agregar logo</button>
               <button class="fev-add-btn" onclick="fevAgregarBadge()">+ Agregar badge</button>
               <button class="fev-add-btn" onclick="document.getElementById('fev-file-input-2').click()">+ Agregar clip</button>
+              <button class="fev-add-btn fev-add-btn-auto" onclick="fevAutoArmar()">⚡ Auto-armar</button>
             </div>
             <input type="file" id="fev-file-input-2" accept="image/*,video/*" multiple style="display:none;" onchange="fevHandleUpload(event)">
           </div>
@@ -26031,6 +26040,55 @@ const FEV_BRANDS = {
   rackline: { nombre:"RACKLINE",          font:'"Inter", sans-serif',        color:"#FFFFFF",             accent: BCE_BRANDS.rackline.accent,      fondoFallback: BCE_BRANDS.rackline.navy },
 };
 
+// Estilos de texto prediseñados por marca (2 por marca) — punto de partida
+// rápido para un overlay de texto, reutilizando EXACTAMENTE las
+// tipografías/colores ya establecidos para cada marca en el resto del CRM,
+// nada inventado aquí:
+//  - home/taurina/romsa: valores dados explícitamente en el encargo.
+//  - rackline: Manrope 700/800 y el navy/naranja del brand kit oficial de
+//    RACKLINE (ya cargado en <link> de Google Fonts, ya usado en otros
+//    módulos del CRM — no es una fuente nueva).
+// Elegir un preset PRE-LLENA fontFamily/fontWeight/italic/color en el
+// overlay; el usuario lo puede seguir ajustando a mano después (no es una
+// restricción rígida). "Personalizado" (estilo=null) usa el default de
+// FEV_BRANDS[marca], igual que en Fase 3, sin ningún preset aplicado.
+const FEV_ESTILOS_TEXTO = {
+  home: [
+    { id:"titulo", nombre:"Título Principal", fontFamily:'"Playfair Display", serif', fontWeight:700, italic:false, color: HOME_BRAND.navy },
+    { id:"acento", nombre:"Acento Cálido",     fontFamily:'"Playfair Display", serif', fontWeight:400, italic:true,  color: HOME_BRAND.terracota },
+  ],
+  taurina: [
+    { id:"headline", nombre:"Headline",           fontFamily:'"Norwester"',        fontWeight:400, italic:false, color:"#FFFFFF" },
+    { id:"acento",   nombre:"Acento Manuscrito",  fontFamily:'"Permanent Marker"', fontWeight:400, italic:false, color: TAURINA_BRAND.dorado },
+  ],
+  romsa: [
+    { id:"titulo", nombre:"Título", fontFamily:'"Inter", sans-serif', fontWeight:800, italic:false, color:"#FFFFFF" },
+    { id:"acento", nombre:"Acento", fontFamily:'"Inter", sans-serif', fontWeight:700, italic:false, color:"#1E6FD9" },
+  ],
+  rackline: [
+    { id:"titulo", nombre:"Título", fontFamily:'"Manrope", sans-serif', fontWeight:800, italic:false, color:"#FFFFFF" },
+    { id:"acento", nombre:"Acento", fontFamily:'"Manrope", sans-serif', fontWeight:700, italic:false, color: BCE_BRANDS.rackline.accent },
+  ],
+};
+
+// Iconos chicos (SVG inline, monocromo vía currentColor) para el selector
+// de transición — no dependen de fuentes emoji del sistema (a diferencia de
+// los símbolos ✂️/🌫️/➡️ usados antes, que en algunos entornos no rendereaban).
+function fevIconoTransicion(tipo){
+  if (tipo === "fundido"){
+    return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="12" r="7"></circle><circle cx="15" cy="12" r="7"></circle></svg>';
+  }
+  if (tipo === "deslizar"){
+    return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>';
+  }
+  // "corte" (tijeras) — default
+  return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"></circle><circle cx="6" cy="18" r="3"></circle><line x1="20" y1="4" x2="8.12" y2="15.88"></line><line x1="14.47" y1="14.48" x2="20" y2="20"></line><line x1="8.12" y1="8.12" x2="12" y2="12"></line></svg>';
+}
+
+function fevNombreTransicion(tipo){
+  return tipo === "fundido" ? "Fundido" : (tipo === "deslizar" ? "Deslizar" : "Corte");
+}
+
 // ── Estado ────────────────────────────────────────────────────
 let FEV = null;               // { timeline: { marca, clips:[...], textos:[...], logos:[...] } } — null hasta elegir marca
 let FEV_NEXT_CLIP_ID = 1;
@@ -26211,6 +26269,10 @@ function fevMigrarTextosDeClips(timeline){
         x: 0.5, y: 0.88, // centrado, mismo punto donde Fase 1 dibujaba el texto de clip
         tamano: null,     // null = usar el tamaño default de la marca
         color: null,      // null = usar el color default de la marca
+        estilo: null,       // null = "Personalizado" (sin preset de estilo aplicado)
+        fontFamily: null,   // null = usar la fuente default de FEV_BRANDS[marca]
+        fontWeight: null,   // null = 700 (mismo comportamiento que antes de que existieran los presets)
+        italic: false,
       });
       clip.texto = "";
     }
@@ -26229,6 +26291,19 @@ function fevOverlaysVisiblesEn(timeline, tMs){
   return timeline.textos.filter(t => tMs >= t.inicioMs && tMs < t.inicioMs + t.duracionMs);
 }
 
+// Cadena de ctx.font para un overlay de texto — Parte 5 permite que un
+// preset de estilo (FEV_ESTILOS_TEXTO) anule fontFamily/fontWeight/italic
+// por overlay; sin preset (los tres campos en null/false, igual que todo
+// overlay de Fase 3 antes de que existieran los presets) da EXACTAMENTE
+// `700 ${fontSize}px ${b.font}` — mismo resultado de siempre, sin cambio de
+// comportamiento para nada creado antes de esta función existir.
+function fevFontDeOverlay(overlay, b, fontSize){
+  const familia = overlay.fontFamily || b.font;
+  const peso = overlay.fontWeight || 700;
+  const estilo = overlay.italic ? "italic" : "normal";
+  return `${estilo} ${peso} ${fontSize}px ${familia}`;
+}
+
 // Caja aproximada (en px de canvas) de un overlay ya dibujado — se usa
 // tanto para el scrim detrás del texto como para el hit-testing al
 // arrastrarlo sobre la vista previa (Parte 3.3). Debe calcularse con la
@@ -26238,7 +26313,7 @@ function fevBBoxOverlay(ctx, marca, overlay){
   const b = FEV_BRANDS[marca] || FEV_BRANDS.romsa;
   const fontSize = overlay.tamano || Math.round(FEV_W * 0.052);
   ctx.save();
-  ctx.font = `700 ${fontSize}px ${b.font}`;
+  ctx.font = fevFontDeOverlay(overlay, b, fontSize);
   const lines = fevWrapText(ctx, overlay.texto, FEV_W * 0.86);
   let maxLineW = 0;
   lines.forEach(l => { maxLineW = Math.max(maxLineW, ctx.measureText(l).width); });
@@ -26260,7 +26335,7 @@ function fevDibujarOverlayTexto(ctx, marca, overlay){
   ctx.textAlign = "center";
   ctx.textBaseline = "alphabetic";
   ctx.fillStyle = color;
-  ctx.font = `700 ${box.fontSize}px ${b.font}`;
+  ctx.font = fevFontDeOverlay(overlay, b, box.fontSize);
   box.lines.forEach((line, i) => {
     const y = box.cy - (box.lines.length * box.lineH) / 2 + box.lineH * (i + 1) - box.lineH * 0.22;
     ctx.fillText(line, box.cx, y);
@@ -26730,24 +26805,23 @@ function fevRenderTimeline(){
 
     track.appendChild(div);
 
-    // Parte 2.3 — selector chico de transición, uno por cada clip que NO
-    // sea el primero (el primero no tiene clip anterior del cual entrar).
+    // Indicador chico de transición, uno por cada clip que NO sea el
+    // primero (el primero no tiene clip anterior del cual entrar). Ya NO es
+    // un dropdown sin etiqueta (Parte 1) — solo un ícono de "vistazo rápido"
+    // del tipo activo; el selector real, con los 3 nombres y la duración en
+    // ms, vive en el panel de edición de abajo (fevRenderEditorClip), donde
+    // sí cabe un control legible. Click aquí selecciona el clip y lleva el
+    // foco a ese panel.
     if (idx > 0){
-      const chip = document.createElement("div");
+      const tipo = clip.transicionEntrada || "corte";
+      const chip = document.createElement("button");
+      chip.type = "button";
       chip.className = "fev-transicion-chip";
       chip.style.left = leftPct + "%";
-      const tipo = clip.transicionEntrada || "corte";
-      const ms = clip.duracionTransicionMs != null ? clip.duracionTransicionMs : 400;
-      chip.innerHTML = `
-        <select class="fev-transicion-select" onclick="event.stopPropagation()" onchange="fevSetTransicion(${clip.id}, this.value, undefined)">
-          <option value="corte" ${tipo === "corte" ? "selected" : ""}>✂</option>
-          <option value="fundido" ${tipo === "fundido" ? "selected" : ""}>🌫</option>
-          <option value="deslizar" ${tipo === "deslizar" ? "selected" : ""}>➡</option>
-        </select>
-        <input type="number" class="fev-transicion-ms" min="0" step="50" value="${ms}" title="Duración de la transición (ms)" onclick="event.stopPropagation()" onchange="fevSetTransicion(${clip.id}, undefined, parseInt(this.value)||0)">
-      `;
+      chip.title = "Transición: " + fevNombreTransicion(tipo);
+      chip.innerHTML = fevIconoTransicion(tipo);
       chip.addEventListener("pointerdown", (e) => e.stopPropagation());
-      chip.addEventListener("click", (e) => e.stopPropagation());
+      chip.addEventListener("click", (e) => { e.stopPropagation(); fevSeleccionarClip(clip.id); });
       track.appendChild(chip);
     }
   });
@@ -26963,6 +27037,10 @@ function fevAgregarTexto(){
     x: 0.5, y: 0.5,
     tamano: null,
     color: null,
+    estilo: null,
+    fontFamily: null,
+    fontWeight: null,
+    italic: false,
   };
   FEV.timeline.textos.push(overlay);
   fevSeleccionarTexto(overlay.id);
@@ -27003,6 +27081,33 @@ function fevSetEstiloTexto(textoId, campo, valor){
   const t = FEV.timeline.textos.find(x => x.id === textoId);
   if (!t) return;
   t[campo] = valor;
+  fevRenderPreviewAt(FEV_PLAYHEAD_MS);
+}
+
+// Parte 5 — aplica (o quita, si presetId es null/"") un estilo prediseñado
+// de FEV_ESTILOS_TEXTO[marca]. Pre-llena fuente/peso/itálica/color; el
+// usuario los puede seguir ajustando después con los campos manuales de
+// abajo (el preset es un punto de partida, no una restricción).
+function fevSetEstiloTextoPreset(textoId, presetId){
+  if (!FEV) return;
+  const t = FEV.timeline.textos.find(x => x.id === textoId);
+  if (!t) return;
+  if (!presetId){
+    t.estilo = null;
+    t.fontFamily = null;
+    t.fontWeight = null;
+    t.italic = false;
+  } else {
+    const preset = (FEV_ESTILOS_TEXTO[FEV.timeline.marca] || []).find(p => p.id === presetId);
+    if (!preset) return;
+    t.estilo = preset.id;
+    t.fontFamily = preset.fontFamily;
+    t.fontWeight = preset.fontWeight;
+    t.italic = preset.italic;
+    t.color = preset.color;
+  }
+  fevRenderClipEditor(); // el campo de color y el propio dropdown deben reflejar el nuevo valor
+  fevRenderPistaTextos();
   fevRenderPreviewAt(FEV_PLAYHEAD_MS);
 }
 
@@ -27084,20 +27189,30 @@ function fevSeleccionarLogo(logoId){
 
 // El panel inferior edita, exclusivamente, el clip / overlay de texto /
 // logo-badge seleccionado (nunca más de uno a la vez).
+// Parte 2 — sin importar qué se seleccionó (clip/texto/logo), el panel
+// queda pegado justo debajo del timeline en el DOM; este scrollIntoView
+// solo garantiza que también quede DENTRO del viewport sin que el usuario
+// tenga que buscarlo — un scroll que hace la interfaz, no el usuario.
 function fevRenderClipEditor(){
   const wrap = document.getElementById("fev-clip-editor");
   if (!wrap || !FEV) return;
+  let mostrado = true;
   if (FEV_SELECTED_LOGO_ID != null){
     fevRenderEditorLogo(wrap);
-    return;
-  }
-  if (FEV_SELECTED_TEXTO_ID != null){
+  } else if (FEV_SELECTED_TEXTO_ID != null){
     fevRenderEditorTexto(wrap);
-    return;
+  } else {
+    const clip = FEV.timeline.clips.find(c => c.id === FEV_SELECTED_CLIP_ID);
+    if (!clip){ wrap.style.display = "none"; wrap.innerHTML = ""; mostrado = false; }
+    else { wrap.style.display = "flex"; fevRenderEditorClip(wrap, clip); }
   }
-  const clip = FEV.timeline.clips.find(c => c.id === FEV_SELECTED_CLIP_ID);
-  if (!clip){ wrap.style.display = "none"; wrap.innerHTML = ""; return; }
-  wrap.style.display = "flex";
+  if (mostrado){
+    requestAnimationFrame(() => wrap.scrollIntoView({ behavior: "smooth", block: "nearest" }));
+  }
+}
+
+function fevRenderEditorClip(wrap, clip){
+  const idx = FEV.timeline.clips.findIndex(c => c.id === clip.id);
 
   let trimHtml = "";
   if (clip.tipo === "video"){
@@ -27112,12 +27227,39 @@ function fevRenderClipEditor(){
       </div>`;
   }
 
+  // Parte 1 — selector de transición con los 3 nombres reales + ícono
+  // (no el dropdown sin etiqueta de antes). Solo aplica si hay un clip
+  // anterior del cual entrar.
+  let transicionHtml = "";
+  if (idx > 0){
+    const tipoActivo = clip.transicionEntrada || "corte";
+    const msActivo = clip.duracionTransicionMs != null ? clip.duracionTransicionMs : 400;
+    transicionHtml = `
+      <div class="fev-ctrl-group">
+        <label class="fev-ctrl-label">Transición de entrada</label>
+        <div class="fev-transicion-segmentado">
+          ${["corte", "fundido", "deslizar"].map(op => `
+            <button type="button" class="fev-transicion-opcion${op === tipoActivo ? " activa" : ""}" onclick="fevSetTransicion(${clip.id}, '${op}', undefined)">
+              ${fevIconoTransicion(op)}
+              <span>${fevNombreTransicion(op)}</span>
+            </button>
+          `).join("")}
+        </div>
+        <div class="fev-input-unidad" style="max-width:130px;">
+          <input type="number" class="fev-input" min="0" step="50" value="${msActivo}" onchange="fevSetTransicion(${clip.id}, undefined, parseInt(this.value)||0)">
+          <span>ms</span>
+        </div>
+      </div>`;
+  }
+
   wrap.innerHTML = `
+    <div class="fev-panel-heading">Editar clip</div>
     <div class="fev-ctrl-group">
       <label class="fev-ctrl-label">Duración (segundos)</label>
       <input type="number" class="fev-input" style="max-width:120px;" step="0.1" min="0.3" value="${(clip.duracionMs / 1000).toFixed(1)}" ${clip.tipo === "video" ? 'disabled title="La duración de un clip de video depende del recorte"' : ""} onchange="fevSetDuracion(${clip.id}, this.value)">
     </div>
     ${trimHtml}
+    ${transicionHtml}
     <div class="fev-ctrl-group">
       <button class="fev-btn fev-btn-ghost" type="button" onclick="fevEliminarClip(${clip.id})">🗑 Eliminar clip</button>
     </div>
@@ -27128,10 +27270,19 @@ function fevRenderEditorTexto(wrap){
   const t = FEV.timeline.textos.find(x => x.id === FEV_SELECTED_TEXTO_ID);
   if (!t){ wrap.style.display = "none"; wrap.innerHTML = ""; return; }
   wrap.style.display = "flex";
+  const presets = FEV_ESTILOS_TEXTO[FEV.timeline.marca] || [];
   wrap.innerHTML = `
+    <div class="fev-panel-heading">Editar texto</div>
     <div class="fev-ctrl-group">
       <label class="fev-ctrl-label">Texto</label>
       <input type="text" class="fev-input" value="${escapeHtml(t.texto || "")}" oninput="fevSetTextoOverlay(${t.id}, this.value)">
+    </div>
+    <div class="fev-ctrl-group">
+      <label class="fev-ctrl-label">Estilo</label>
+      <select class="fev-input" onchange="fevSetEstiloTextoPreset(${t.id}, this.value || null)">
+        <option value="" ${!t.estilo ? "selected" : ""}>Personalizado</option>
+        ${presets.map(p => `<option value="${p.id}" ${t.estilo === p.id ? "selected" : ""}>${escapeHtml(p.nombre)}</option>`).join("")}
+      </select>
     </div>
     <div class="fev-ctrl-group">
       <label class="fev-ctrl-label">Inicio (segundos) / Duración (segundos)</label>
@@ -27141,11 +27292,11 @@ function fevRenderEditorTexto(wrap){
       </div>
     </div>
     <div class="fev-ctrl-group">
-      <label class="fev-ctrl-label">Tamaño en px (vacío = tamaño de marca)</label>
+      <label class="fev-ctrl-label">Tamaño en px (vacío = tamaño del estilo/marca)</label>
       <input type="number" class="fev-input" style="max-width:120px;" min="10" value="${t.tamano || ""}" placeholder="auto" onchange="fevSetEstiloTexto(${t.id}, 'tamano', this.value ? (parseInt(this.value)||null) : null)">
     </div>
     <div class="fev-ctrl-group">
-      <label class="fev-ctrl-label">Color (vacío = color de marca)</label>
+      <label class="fev-ctrl-label">Color (vacío = color del estilo/marca)</label>
       <input type="text" class="fev-input" style="max-width:120px;" value="${escapeHtml(t.color || "")}" placeholder="#RRGGBB" onchange="fevSetEstiloTexto(${t.id}, 'color', this.value || null)">
     </div>
     <div class="fev-ctrl-group">
@@ -27192,6 +27343,7 @@ function fevRenderEditorLogo(wrap){
   }
 
   wrap.innerHTML = `
+    <div class="fev-panel-heading">Editar ${item.tipo === "logo" ? "logo" : "badge"}</div>
     ${camposHtml}
     <div class="fev-ctrl-group">
       <label class="fev-ctrl-label">Inicio (segundos) / Duración (segundos)</label>
@@ -27237,6 +27389,36 @@ function fevEliminarClip(clipId){
   fevRenderTimeline();
   fevRenderClipEditor();
   fevSetPlayhead(Math.min(FEV_PLAYHEAD_MS, fevDuracionTotal(FEV.timeline)));
+}
+
+// ── Parte 6 — "⚡ Auto-armar": reglas fijas, sin IA, sin mecanismo paralelo ──
+// Opera sobre los clips YA presentes en FEV.timeline.clips (en el orden en
+// que se subieron, salvo que el usuario ya los haya reordenado a mano) y
+// reconfigura cada uno llamando a las MISMAS funciones que usa la edición
+// manual (fevSetDuracion/fevSetTrim/fevSetTransicion) — el resultado queda
+// 100% editable después con los controles normales, no es un modo de
+// "solo lectura" aparte. No agrega texto ni inventa copy.
+function fevAutoArmar(){
+  if (!FEV || !FEV.timeline.clips.length){
+    showToast("Sube al menos una foto o video antes de usar Auto-armar");
+    return;
+  }
+  const ALTERNANCIA = ["fundido", "deslizar"];
+  FEV.timeline.clips.forEach((clip, idx) => {
+    if (clip.tipo === "foto"){
+      fevSetDuracion(clip.id, 2.5);
+    } else if (clip.tipo === "video"){
+      const fullDurMs = Math.round((clip.elementoCargado.duration || 0) * 1000);
+      const topeMs = Math.min(fullDurMs, 5000);
+      fevSetTrim(clip.id, 0, topeMs);
+    }
+    if (idx > 0){
+      // 2do clip → fundido, 3ro → deslizar, 4to → fundido, ... (el primero
+      // no lleva transición de entrada, no tiene clip anterior).
+      fevSetTransicion(clip.id, ALTERNANCIA[(idx - 1) % 2], 400);
+    }
+  });
+  showToast("Timeline armado — puedes seguir editando cualquier clip normalmente");
 }
 
 // ── Scrubbing (Parte 5) ──────────────────────────────────────────
