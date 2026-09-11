@@ -938,34 +938,47 @@ body.in-plantrabajo #app{
 .fev-dropzone{border:2px dashed var(--g2);border-radius:14px;padding:40px 16px;text-align:center;cursor:pointer;background:var(--off);}
 
 .fev-canvas-area{flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:16px;background:#0B1F3A;position:relative;}
-.fev-canvas-area canvas{max-width:100%;max-height:46vh;background:#000;border-radius:6px;box-shadow:0 10px 30px rgba(0,0,0,.35);}
+.fev-canvas-area canvas{max-width:100%;max-height:34vh;background:#000;border-radius:6px;box-shadow:0 10px 30px rgba(0,0,0,.35);}
 
 .fev-timeline-wrap{flex-shrink:0;padding:12px 16px;background:#fff;border-top:1px solid var(--g1);}
 .fev-timeline-toolbar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;font-family:"JetBrains Mono",monospace;font-size:11px;color:var(--tx2);}
 .fev-add-btn{background:var(--blue);color:#fff;border:none;padding:6px 12px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:var(--font);}
-.fev-timeline-track{position:relative;height:108px;background:var(--off);border:1px solid var(--g1);border-radius:8px;overflow:visible;}
+.fev-add-btn-auto{background:linear-gradient(135deg,#F59E0B,#F97316);}
+.fev-timeline-track{position:relative;height:148px;background:var(--off);border:1px solid var(--g1);border-radius:8px;overflow:visible;}
 .fev-timeline-clips{position:absolute;top:0;left:0;right:0;height:64px;overflow:hidden;border-radius:8px 8px 0 0;}
 .fev-clip-block{position:absolute;top:0;height:100%;border-left:2px solid #fff;background:#DDE5F0;cursor:grab;overflow:hidden;min-width:24px;box-sizing:border-box;}
-.fev-clip-block.selected{outline:2px solid var(--blue);outline-offset:-2px;}
+.fev-clip-block.selected{outline:3px solid var(--blue);outline-offset:1px;box-shadow:0 0 0 2px rgba(30,111,217,.3),0 2px 10px rgba(30,111,217,.4);z-index:40 !important;}
 .fev-clip-block.dragging{opacity:.4;}
 .fev-clip-thumb{position:absolute;inset:0;background-size:cover;background-position:center;}
 .fev-clip-thumb-video{background:linear-gradient(135deg,#1A3A60,#0B1F3A);}
 .fev-clip-thumb-video::after{content:"🎬";font-size:18px;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);}
 .fev-clip-label{position:absolute;left:4px;bottom:2px;font-family:"JetBrains Mono",monospace;font-size:9px;color:#fff;background:rgba(0,0,0,.55);padding:1px 4px;border-radius:4px;white-space:nowrap;}
-.fev-transicion-chip{position:absolute;top:2px;transform:translateX(-50%);z-index:30;display:flex;gap:2px;background:#0B1F3A;border-radius:6px;padding:2px;box-shadow:0 1px 4px rgba(0,0,0,.35);}
-.fev-transicion-select{font-family:var(--font);font-size:11px;line-height:1;border:none;border-radius:4px;padding:2px 1px;background:#fff;color:#0B1F3A;width:28px;}
-.fev-transicion-ms{font-family:"JetBrains Mono",monospace;font-size:9px;border:none;border-radius:4px;padding:2px 2px;width:38px;background:#fff;color:#0B1F3A;}
-.fev-timeline-textos{position:absolute;top:64px;left:0;right:0;height:44px;background:#EEF1F6;border-top:1px solid var(--g1);border-radius:0 0 8px 8px;overflow:hidden;}
+.fev-transicion-chip{position:absolute;top:2px;transform:translateX(-50%);z-index:30;display:flex;align-items:center;justify-content:center;width:22px;height:22px;background:#0B1F3A;color:#fff;border:1.5px solid #fff;border-radius:50%;box-shadow:0 1px 4px rgba(0,0,0,.35);cursor:pointer;padding:0;}
+.fev-transicion-chip:hover{background:var(--blue);}
+.fev-timeline-textos{position:absolute;top:64px;left:0;right:0;height:44px;background:#EEF1F6;border-top:1px solid var(--g1);overflow:hidden;}
 .fev-texto-block{position:absolute;top:4px;height:calc(100% - 8px);min-width:20px;box-sizing:border-box;background:#FFD34D;border:1.5px solid #B8860B;border-radius:6px;font-family:var(--font);font-size:10px;font-weight:700;color:#3A2A00;padding:3px 10px 3px 6px;overflow:hidden;white-space:nowrap;cursor:grab;}
-.fev-texto-block.selected{outline:2px solid var(--blue);}
+.fev-texto-block.selected{outline:3px solid var(--blue);outline-offset:1px;box-shadow:0 0 0 2px rgba(30,111,217,.3);}
 .fev-texto-resize{position:absolute;top:0;right:0;bottom:0;width:8px;cursor:ew-resize;background:rgba(0,0,0,.18);}
+.fev-timeline-logos{position:absolute;top:108px;left:0;right:0;height:40px;background:#F5F0FA;border-top:1px solid var(--g1);border-radius:0 0 8px 8px;overflow:hidden;}
+.fev-logo-block{position:absolute;top:4px;height:calc(100% - 8px);min-width:20px;box-sizing:border-box;background:#C9A6F0;border:1.5px solid #7B4FA0;border-radius:6px;font-family:var(--font);font-size:10px;font-weight:700;color:#3A1A5C;padding:3px 10px 3px 6px;overflow:hidden;white-space:nowrap;cursor:grab;}
+.fev-logo-block.fev-logo-block-badge{background:#FFD9A0;border-color:#B8720B;color:#4A2A00;}
+.fev-logo-block.selected{outline:3px solid var(--blue);outline-offset:1px;box-shadow:0 0 0 2px rgba(30,111,217,.3);}
+.fev-logo-resize{position:absolute;top:0;right:0;bottom:0;width:8px;cursor:ew-resize;background:rgba(0,0,0,.18);}
 .fev-playhead{position:absolute;top:0;bottom:0;width:2px;background:#F5A623;pointer-events:auto;transform:translateX(-1px);z-index:25;cursor:ew-resize;}
 .fev-playhead::before{content:"";position:absolute;top:-4px;left:50%;transform:translateX(-50%);width:14px;height:14px;background:#F5A623;border-radius:50%;border:2px solid #fff;}
 
-.fev-clip-editor{display:none;flex-direction:column;gap:12px;padding:12px 16px;background:#fff;border-top:1px solid var(--g1);}
-.fev-ctrl-group{display:flex;flex-direction:column;gap:6px;}
+.fev-clip-editor{display:none;flex-direction:column;gap:14px;padding:18px 16px calc(env(safe-area-inset-bottom,0px) + 8px);background:var(--off);border-top:1px solid var(--g1);scroll-margin-top:8px;}
+.fev-panel-heading{font-family:var(--font);font-size:13px;font-weight:800;color:var(--navy);display:flex;align-items:center;gap:6px;}
+.fev-ctrl-group{display:flex;flex-direction:column;gap:8px;background:#fff;border:1px solid var(--g1);border-radius:14px;padding:14px 16px;box-shadow:0 1px 3px rgba(11,31,58,.05);}
 .fev-ctrl-label{font-size:10px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.5px;font-family:var(--font);}
 .fev-input{border:1.5px solid var(--g1);border-radius:8px;padding:9px 11px;font-size:13px;font-family:var(--font);color:var(--navy);background:#fff;width:100%;}
+.fev-input-unidad{position:relative;display:flex;align-items:center;}
+.fev-input-unidad input{padding-right:34px;}
+.fev-input-unidad span{position:absolute;right:11px;font-size:11px;font-weight:700;color:var(--tx2);pointer-events:none;}
+.fev-transicion-segmentado{display:flex;gap:6px;}
+.fev-transicion-opcion{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 6px;border:1.5px solid var(--g1);border-radius:10px;background:#fff;color:var(--tx2);cursor:pointer;font-family:var(--font);font-size:10.5px;font-weight:700;}
+.fev-transicion-opcion svg{width:16px;height:16px;}
+.fev-transicion-opcion.activa{border-color:var(--blue);background:var(--blue-pale);color:var(--blue);}
 
 .fev-actions{flex-shrink:0;display:flex;gap:8px;padding:12px 16px calc(env(safe-area-inset-bottom,0px) + 12px);background:#fff;border-top:1px solid var(--g1);}
 .fev-btn{flex:1;padding:12px;border-radius:10px;font-size:12.5px;font-weight:700;border:none;cursor:pointer;font-family:var(--font);}
@@ -4113,15 +4126,19 @@ body.in-plantrabajo #app{
         <div class="fev-timeline-wrap">
           <div class="fev-timeline-toolbar">
             <span id="fev-time-label">00:00.0 / 00:00.0</span>
-            <div style="display:flex;gap:6px;">
+            <div style="display:flex;gap:6px;flex-wrap:wrap;">
               <button class="fev-add-btn" onclick="fevAgregarTexto()">+ Agregar texto</button>
+              <button class="fev-add-btn" onclick="fevAgregarLogo()">+ Agregar logo</button>
+              <button class="fev-add-btn" onclick="fevAgregarBadge()">+ Agregar badge</button>
               <button class="fev-add-btn" onclick="document.getElementById('fev-file-input-2').click()">+ Agregar clip</button>
+              <button class="fev-add-btn fev-add-btn-auto" onclick="fevAutoArmar()">⚡ Auto-armar</button>
             </div>
             <input type="file" id="fev-file-input-2" accept="image/*,video/*" multiple style="display:none;" onchange="fevHandleUpload(event)">
           </div>
           <div class="fev-timeline-track" id="fev-timeline-track">
             <div class="fev-timeline-clips" id="fev-timeline-clips"></div>
             <div class="fev-timeline-textos" id="fev-timeline-textos"></div>
+            <div class="fev-timeline-logos" id="fev-timeline-logos"></div>
             <div class="fev-playhead" id="fev-playhead" style="left:0%;"></div>
           </div>
         </div>
@@ -25987,6 +26004,25 @@ window.taurinaDescargar = taurinaDescargar;
 // Fase 1) se conserva en el modelo de datos solo para permitir migrar
 // timelines viejos (fevMigrarTextosDeClips) — el pipeline de render ya no
 // lo lee directamente.
+//
+// FASE 4 — logo/badges: timeline.logos es OTRO arreglo independiente, mismo
+// patrón que timeline.textos (Parte 3.1) — inicioMs/duracionMs propios,
+// x/y relativos 0..1, su propia pista en el timeline y arrastre directo
+// sobre el canvas. Cada entrada trae tipo:"logo"|"badge":
+//  - "logo": el logotipo REAL de la marca activa, reutilizando los mismos
+//    assets ya usados en el resto del CRM (_logoBlancoDe/_logoColorDe para
+//    ROMSA/RACKLINE/HOME, window._taurinaLogo para Taurina — que solo tiene
+//    una versión) — no se generan logos nuevos. Se dibuja preservando su
+//    aspect ratio real (ancho relativo editable, alto se calcula solo).
+//  - "badge": una etiqueta de texto con fondo (pill), mismo lenguaje visual
+//    que cCategoryBadge en modo "badge" del generador de posts (BCE) —
+//    reutiliza bceContrastColor/bceTrackedWidth/bceFillTextTracked en vez
+//    de reinventar el dibujo de una pastilla con texto.
+// Se dibujan DESPUÉS de los overlays de texto (Parte 3.2) — quedan como la
+// capa más superior, igual que un watermark de marca por encima de todo lo
+// demás. No había ningún mecanismo de logo en Fases 1-3, así que no hace
+// falta migración — solo asegurar que timeline.logos exista (igual que
+// fevAsegurarTimeline ya hace con timeline.textos).
 // ══════════════════════════════════════════════════════════════
 
 const FEV_W = 1080, FEV_H = 1920; // formato vertical (Historia), igual convención que el resto de plantillas sociales
@@ -26004,12 +26040,63 @@ const FEV_BRANDS = {
   rackline: { nombre:"RACKLINE",          font:'"Inter", sans-serif',        color:"#FFFFFF",             accent: BCE_BRANDS.rackline.accent,      fondoFallback: BCE_BRANDS.rackline.navy },
 };
 
+// Estilos de texto prediseñados por marca (2 por marca) — punto de partida
+// rápido para un overlay de texto, reutilizando EXACTAMENTE las
+// tipografías/colores ya establecidos para cada marca en el resto del CRM,
+// nada inventado aquí:
+//  - home/taurina/romsa: valores dados explícitamente en el encargo.
+//  - rackline: Manrope 700/800 y el navy/naranja del brand kit oficial de
+//    RACKLINE (ya cargado en <link> de Google Fonts, ya usado en otros
+//    módulos del CRM — no es una fuente nueva).
+// Elegir un preset PRE-LLENA fontFamily/fontWeight/italic/color en el
+// overlay; el usuario lo puede seguir ajustando a mano después (no es una
+// restricción rígida). "Personalizado" (estilo=null) usa el default de
+// FEV_BRANDS[marca], igual que en Fase 3, sin ningún preset aplicado.
+const FEV_ESTILOS_TEXTO = {
+  home: [
+    { id:"titulo", nombre:"Título Principal", fontFamily:'"Playfair Display", serif', fontWeight:700, italic:false, color: HOME_BRAND.navy },
+    { id:"acento", nombre:"Acento Cálido",     fontFamily:'"Playfair Display", serif', fontWeight:400, italic:true,  color: HOME_BRAND.terracota },
+  ],
+  taurina: [
+    { id:"headline", nombre:"Headline",           fontFamily:'"Norwester"',        fontWeight:400, italic:false, color:"#FFFFFF" },
+    { id:"acento",   nombre:"Acento Manuscrito",  fontFamily:'"Permanent Marker"', fontWeight:400, italic:false, color: TAURINA_BRAND.dorado },
+  ],
+  romsa: [
+    { id:"titulo", nombre:"Título", fontFamily:'"Inter", sans-serif', fontWeight:800, italic:false, color:"#FFFFFF" },
+    { id:"acento", nombre:"Acento", fontFamily:'"Inter", sans-serif', fontWeight:700, italic:false, color:"#1E6FD9" },
+  ],
+  rackline: [
+    { id:"titulo", nombre:"Título", fontFamily:'"Manrope", sans-serif', fontWeight:800, italic:false, color:"#FFFFFF" },
+    { id:"acento", nombre:"Acento", fontFamily:'"Manrope", sans-serif', fontWeight:700, italic:false, color: BCE_BRANDS.rackline.accent },
+  ],
+};
+
+// Iconos chicos (SVG inline, monocromo vía currentColor) para el selector
+// de transición — no dependen de fuentes emoji del sistema (a diferencia de
+// los símbolos ✂️/🌫️/➡️ usados antes, que en algunos entornos no rendereaban).
+function fevIconoTransicion(tipo){
+  if (tipo === "fundido"){
+    return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="12" r="7"></circle><circle cx="15" cy="12" r="7"></circle></svg>';
+  }
+  if (tipo === "deslizar"){
+    return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>';
+  }
+  // "corte" (tijeras) — default
+  return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"></circle><circle cx="6" cy="18" r="3"></circle><line x1="20" y1="4" x2="8.12" y2="15.88"></line><line x1="14.47" y1="14.48" x2="20" y2="20"></line><line x1="8.12" y1="8.12" x2="12" y2="12"></line></svg>';
+}
+
+function fevNombreTransicion(tipo){
+  return tipo === "fundido" ? "Fundido" : (tipo === "deslizar" ? "Deslizar" : "Corte");
+}
+
 // ── Estado ────────────────────────────────────────────────────
-let FEV = null;               // { timeline: { marca, clips:[...], textos:[...] } } — null hasta elegir marca
+let FEV = null;               // { timeline: { marca, clips:[...], textos:[...], logos:[...] } } — null hasta elegir marca
 let FEV_NEXT_CLIP_ID = 1;
 let FEV_NEXT_TEXTO_ID = 1;
+let FEV_NEXT_LOGO_ID = 1;
 let FEV_SELECTED_CLIP_ID = null;
 let FEV_SELECTED_TEXTO_ID = null;
+let FEV_SELECTED_LOGO_ID = null;
 let FEV_PLAYHEAD_MS = 0;
 let FEV_DRAG_CLIP_ID = null;
 let FEV_SCRUBBING = false;
@@ -26020,7 +26107,7 @@ let _fevInited = false;
 
 // ── Modelo de datos / motor de tiempo (Parte 2 y 4 de Fase 1; extendido en Fase 2) ────
 function fevNuevoTimeline(marca){
-  return { marca: marca, clips: [], textos: [] };
+  return { marca: marca, clips: [], textos: [], logos: [] };
 }
 
 // Duración de la transición de ENTRADA de `clipEntrante` (0 si no hay
@@ -26182,6 +26269,10 @@ function fevMigrarTextosDeClips(timeline){
         x: 0.5, y: 0.88, // centrado, mismo punto donde Fase 1 dibujaba el texto de clip
         tamano: null,     // null = usar el tamaño default de la marca
         color: null,      // null = usar el color default de la marca
+        estilo: null,       // null = "Personalizado" (sin preset de estilo aplicado)
+        fontFamily: null,   // null = usar la fuente default de FEV_BRANDS[marca]
+        fontWeight: null,   // null = 700 (mismo comportamiento que antes de que existieran los presets)
+        italic: false,
       });
       clip.texto = "";
     }
@@ -26190,6 +26281,7 @@ function fevMigrarTextosDeClips(timeline){
 
 function fevAsegurarTimeline(timeline){
   if (!timeline.textos) timeline.textos = [];
+  if (!timeline.logos) timeline.logos = [];
   fevMigrarTextosDeClips(timeline);
   return timeline;
 }
@@ -26197,6 +26289,19 @@ function fevAsegurarTimeline(timeline){
 function fevOverlaysVisiblesEn(timeline, tMs){
   if (!timeline.textos) return [];
   return timeline.textos.filter(t => tMs >= t.inicioMs && tMs < t.inicioMs + t.duracionMs);
+}
+
+// Cadena de ctx.font para un overlay de texto — Parte 5 permite que un
+// preset de estilo (FEV_ESTILOS_TEXTO) anule fontFamily/fontWeight/italic
+// por overlay; sin preset (los tres campos en null/false, igual que todo
+// overlay de Fase 3 antes de que existieran los presets) da EXACTAMENTE
+// `700 ${fontSize}px ${b.font}` — mismo resultado de siempre, sin cambio de
+// comportamiento para nada creado antes de esta función existir.
+function fevFontDeOverlay(overlay, b, fontSize){
+  const familia = overlay.fontFamily || b.font;
+  const peso = overlay.fontWeight || 700;
+  const estilo = overlay.italic ? "italic" : "normal";
+  return `${estilo} ${peso} ${fontSize}px ${familia}`;
 }
 
 // Caja aproximada (en px de canvas) de un overlay ya dibujado — se usa
@@ -26208,7 +26313,7 @@ function fevBBoxOverlay(ctx, marca, overlay){
   const b = FEV_BRANDS[marca] || FEV_BRANDS.romsa;
   const fontSize = overlay.tamano || Math.round(FEV_W * 0.052);
   ctx.save();
-  ctx.font = `700 ${fontSize}px ${b.font}`;
+  ctx.font = fevFontDeOverlay(overlay, b, fontSize);
   const lines = fevWrapText(ctx, overlay.texto, FEV_W * 0.86);
   let maxLineW = 0;
   lines.forEach(l => { maxLineW = Math.max(maxLineW, ctx.measureText(l).width); });
@@ -26230,7 +26335,7 @@ function fevDibujarOverlayTexto(ctx, marca, overlay){
   ctx.textAlign = "center";
   ctx.textBaseline = "alphabetic";
   ctx.fillStyle = color;
-  ctx.font = `700 ${box.fontSize}px ${b.font}`;
+  ctx.font = fevFontDeOverlay(overlay, b, box.fontSize);
   box.lines.forEach((line, i) => {
     const y = box.cy - (box.lines.length * box.lineH) / 2 + box.lineH * (i + 1) - box.lineH * 0.22;
     ctx.fillText(line, box.cx, y);
@@ -26240,6 +26345,114 @@ function fevDibujarOverlayTexto(ctx, marca, overlay){
 
 function fevDibujarOverlaysDeTexto(ctx, timeline, tMs){
   fevOverlaysVisiblesEn(timeline, tMs).forEach(t => fevDibujarOverlayTexto(ctx, timeline.marca, t));
+}
+
+// ── Logo / Badges (Fase 4) ───────────────────────────────────────
+// Caché de Image por "marca:variante" — igual idea que BCE.logoWhiteImg/
+// logoNavyImg, pero sin acoplarse al estado de BCE.
+let FEV_LOGO_IMG_CACHE = {};
+
+// El decode de estos data URI (algunos de >150KB) NO es síncrono — justo
+// después de asignar .src, img.complete todavía puede ser false. Si el
+// primer renderFrameEnTiempo ocurre antes de que termine de cargar,
+// fevDibujarLogo lo salta (correctamente, para no dibujar basura), pero
+// sin este onload el logo se quedaría invisible hasta el siguiente evento
+// que dispare un re-render por otra razón (mover el playhead, etc.) — un
+// hueco real detectado al confirmar el logo de las 4 marcas por separado.
+function fevCrearImagenLogo(src){
+  const img = new Image();
+  img.onload = () => { if (FEV) fevRenderPreviewAt(FEV_PLAYHEAD_MS); };
+  img.src = src || "";
+  return img;
+}
+
+function fevObtenerLogoImg(marca, variante){
+  if (marca === "taurina"){
+    const key = "taurina";
+    if (!FEV_LOGO_IMG_CACHE[key]){
+      FEV_LOGO_IMG_CACHE[key] = fevCrearImagenLogo(typeof window !== "undefined" && window._taurinaLogo);
+    }
+    return FEV_LOGO_IMG_CACHE[key];
+  }
+  const key = marca + ":" + (variante === "color" ? "color" : "blanco");
+  if (!FEV_LOGO_IMG_CACHE[key]){
+    FEV_LOGO_IMG_CACHE[key] = fevCrearImagenLogo(variante === "color" ? _logoColorDe(marca) : _logoBlancoDe(marca));
+  }
+  return FEV_LOGO_IMG_CACHE[key];
+}
+
+function fevLogosVisiblesEn(timeline, tMs){
+  if (!timeline.logos) return [];
+  return timeline.logos.filter(l => tMs >= l.inicioMs && tMs < l.inicioMs + l.duracionMs);
+}
+
+// Caja del logo preservando su aspect ratio real — nunca se estira. Si la
+// imagen todavía no cargó su tamaño natural, usa un alto aproximado (16:9
+// horizontal, el caso típico de estos wordmarks) solo para que el
+// hit-testing tenga algo razonable con qué trabajar hasta que cargue.
+function fevBBoxLogo(ctx, marca, overlay){
+  const img = fevObtenerLogoImg(marca, overlay.variante);
+  const anchoPx = (overlay.ancho || 0.30) * FEV_W;
+  let altoPx = anchoPx * 0.28;
+  if (img && img.complete && img.naturalWidth && img.naturalHeight){
+    altoPx = anchoPx * (img.naturalHeight / img.naturalWidth);
+  }
+  const cx = overlay.x * FEV_W, cy = overlay.y * FEV_H;
+  return { x: cx - anchoPx / 2, y: cy - altoPx / 2, w: anchoPx, h: altoPx, img };
+}
+
+function fevDibujarLogo(ctx, marca, overlay){
+  const box = fevBBoxLogo(ctx, marca, overlay);
+  if (box.img && box.img.complete && box.img.naturalWidth){
+    ctx.drawImage(box.img, box.x, box.y, box.w, box.h);
+  }
+}
+
+// Caja del badge (pastilla) — mismo cálculo de padding/radio que
+// cCategoryBadge en modo "badge" (generador de posts BCE), para no
+// reinventar el lenguaje visual de una etiqueta con fondo.
+function fevBBoxBadge(ctx, marca, overlay){
+  const fontSize = overlay.tamano || Math.round(FEV_W * 0.032);
+  const spacing = fontSize * 0.16;
+  const upper = String(overlay.texto || "").toUpperCase();
+  ctx.save();
+  ctx.font = `700 ${fontSize}px "Inter", Arial, sans-serif`;
+  const textW = bceTrackedWidth(ctx, upper, spacing);
+  ctx.restore();
+  const padX = fontSize * 0.85, padY = fontSize * 0.55;
+  const boxW = textW + padX * 2, boxH = fontSize + padY * 2;
+  const cx = overlay.x * FEV_W, cy = overlay.y * FEV_H;
+  return { x: cx - boxW / 2, y: cy - boxH / 2, w: boxW, h: boxH, fontSize, spacing, padX, padY, upper };
+}
+
+function fevDibujarBadge(ctx, marca, overlay){
+  const b = FEV_BRANDS[marca] || FEV_BRANDS.romsa;
+  const box = fevBBoxBadge(ctx, marca, overlay);
+  const colorFondo = overlay.colorFondo || b.accent;
+  const colorTexto = overlay.color || bceContrastColor(colorFondo);
+  ctx.save();
+  const r = box.h * 0.28;
+  ctx.beginPath();
+  ctx.moveTo(box.x + r, box.y);
+  ctx.arcTo(box.x + box.w, box.y, box.x + box.w, box.y + box.h, r);
+  ctx.arcTo(box.x + box.w, box.y + box.h, box.x, box.y + box.h, r);
+  ctx.arcTo(box.x, box.y + box.h, box.x, box.y, r);
+  ctx.arcTo(box.x, box.y, box.x + box.w, box.y, r);
+  ctx.closePath();
+  ctx.fillStyle = colorFondo;
+  ctx.fill();
+  ctx.fillStyle = colorTexto;
+  ctx.font = `700 ${box.fontSize}px "Inter", Arial, sans-serif`;
+  ctx.textBaseline = "top";
+  bceFillTextTracked(ctx, box.upper, box.x + box.padX, box.y + box.padY, box.spacing);
+  ctx.restore();
+}
+
+function fevDibujarLogosYBadges(ctx, timeline, tMs){
+  fevLogosVisiblesEn(timeline, tMs).forEach(item => {
+    if (item.tipo === "badge") fevDibujarBadge(ctx, timeline.marca, item);
+    else fevDibujarLogo(ctx, timeline.marca, item);
+  });
 }
 
 // ── Sincronización de video (Fase 1, Parte 4 — sin cambios de regla en Fase 2) ──
@@ -26309,7 +26522,8 @@ function fevDibujarCapaClip(ctx, clip, tLocalMs, opts){
 // exportación. Fase 2 lo extiende para mezclar clipA/clipB cuando
 // calcularClipActivo devuelve una transición activa; Fase 3 agrega, al
 // final y siempre encima (sin importar la transición), los overlays de
-// texto vigentes en tMs.
+// texto vigentes en tMs; Fase 4 agrega, encima de TODO (incluidos los
+// textos), el logo/badges vigentes en tMs.
 function renderFrameEnTiempo(ctx, timeline, tMs){
   ctx.clearRect(0, 0, FEV_W, FEV_H);
   ctx.fillStyle = "#000";
@@ -26347,6 +26561,7 @@ function renderFrameEnTiempo(ctx, timeline, tMs){
   }
 
   fevDibujarOverlaysDeTexto(ctx, timeline, tMs);
+  fevDibujarLogosYBadges(ctx, timeline, tMs);
 }
 
 function fevDetenerTodosLosVideos(){
@@ -26385,10 +26600,31 @@ function fevAbrir(){
   }
 }
 
-// Arrastre de overlays de texto directamente sobre el canvas de vista
-// previa (Parte 3.3). Hit-testing con la misma caja que se usa para
-// dibujar (fevBBoxOverlay), en orden inverso (el último overlay dibujado
-// queda "encima" para efectos de selección).
+// Arrastra la posición x/y de un overlay (texto o logo/badge) mientras se
+// mantiene el pointer presionado — extraído para que tanto el texto (Fase
+// 3) como el logo/badge (Fase 4) compartan el mismo gesto sin duplicarlo.
+function fevIniciarArrastrePosicion(objetivo, e, scaleX, scaleY){
+  const startX = objetivo.x, startY = objetivo.y;
+  const startClientX = e.clientX, startClientY = e.clientY;
+  function onMove(ev){
+    objetivo.x = Math.min(1, Math.max(0, startX + (ev.clientX - startClientX) * scaleX / FEV_W));
+    objetivo.y = Math.min(1, Math.max(0, startY + (ev.clientY - startClientY) * scaleY / FEV_H));
+    fevRenderPreviewAt(FEV_PLAYHEAD_MS);
+  }
+  function onUp(){
+    document.removeEventListener("pointermove", onMove);
+    document.removeEventListener("pointerup", onUp);
+  }
+  document.addEventListener("pointermove", onMove);
+  document.addEventListener("pointerup", onUp);
+}
+
+// Arrastre de overlays directamente sobre el canvas de vista previa (Parte
+// 3.3, extendido en Parte 4.3 para logo/badges). Hit-testing con la misma
+// caja que se usa para dibujar cada tipo, en orden inverso (el último
+// dibujado queda "encima" para efectos de selección). Los logo/badges se
+// prueban PRIMERO porque renderFrameEnTiempo los dibuja después de los
+// textos (quedan visualmente encima).
 function fevInicializarArrastreDeTexto(){
   const canvas = document.getElementById("fev-canvas");
   if (!canvas) return;
@@ -26400,31 +26636,29 @@ function fevInicializarArrastreDeTexto(){
     const cx = (e.clientX - rect.left) * scaleX;
     const cy = (e.clientY - rect.top) * scaleY;
     const ctx = canvas.getContext("2d");
+
+    const logosVisibles = fevLogosVisiblesEn(FEV.timeline, FEV_PLAYHEAD_MS);
+    for (let i = logosVisibles.length - 1; i >= 0; i--){
+      const item = logosVisibles[i];
+      const box = item.tipo === "badge" ? fevBBoxBadge(ctx, FEV.timeline.marca, item) : fevBBoxLogo(ctx, FEV.timeline.marca, item);
+      if (cx >= box.x && cx <= box.x + box.w && cy >= box.y && cy <= box.y + box.h){
+        e.preventDefault();
+        fevSeleccionarLogo(item.id);
+        fevIniciarArrastrePosicion(item, e, scaleX, scaleY);
+        return;
+      }
+    }
+
     const visibles = fevOverlaysVisiblesEn(FEV.timeline, FEV_PLAYHEAD_MS);
-    let objetivo = null;
     for (let i = visibles.length - 1; i >= 0; i--){
       const box = fevBBoxOverlay(ctx, FEV.timeline.marca, visibles[i]);
       if (cx >= box.x && cx <= box.x + box.w && cy >= box.y && cy <= box.y + box.h){
-        objetivo = visibles[i];
-        break;
+        e.preventDefault();
+        fevSeleccionarTexto(visibles[i].id);
+        fevIniciarArrastrePosicion(visibles[i], e, scaleX, scaleY);
+        return;
       }
     }
-    if (!objetivo) return;
-    e.preventDefault();
-    fevSeleccionarTexto(objetivo.id);
-    const startX = objetivo.x, startY = objetivo.y;
-    const startClientX = e.clientX, startClientY = e.clientY;
-    function onMove(ev){
-      objetivo.x = Math.min(1, Math.max(0, startX + (ev.clientX - startClientX) * scaleX / FEV_W));
-      objetivo.y = Math.min(1, Math.max(0, startY + (ev.clientY - startClientY) * scaleY / FEV_H));
-      fevRenderPreviewAt(FEV_PLAYHEAD_MS);
-    }
-    function onUp(){
-      document.removeEventListener("pointermove", onMove);
-      document.removeEventListener("pointerup", onUp);
-    }
-    document.addEventListener("pointermove", onMove);
-    document.addEventListener("pointerup", onUp);
   });
 }
 
@@ -26444,8 +26678,10 @@ function fevElegirMarca(marca){
   FEV = { timeline: fevNuevoTimeline(marca) };
   FEV_NEXT_CLIP_ID = 1;
   FEV_NEXT_TEXTO_ID = 1;
+  FEV_NEXT_LOGO_ID = 1;
   FEV_SELECTED_CLIP_ID = null;
   FEV_SELECTED_TEXTO_ID = null;
+  FEV_SELECTED_LOGO_ID = null;
   FEV_PLAYHEAD_MS = 0;
   const hint = document.getElementById("fev-marca-activa-hint");
   if (hint) hint.textContent = "Marca activa: " + (FEV_BRANDS[marca] ? FEV_BRANDS[marca].nombre : marca);
@@ -26569,28 +26805,28 @@ function fevRenderTimeline(){
 
     track.appendChild(div);
 
-    // Parte 2.3 — selector chico de transición, uno por cada clip que NO
-    // sea el primero (el primero no tiene clip anterior del cual entrar).
+    // Indicador chico de transición, uno por cada clip que NO sea el
+    // primero (el primero no tiene clip anterior del cual entrar). Ya NO es
+    // un dropdown sin etiqueta (Parte 1) — solo un ícono de "vistazo rápido"
+    // del tipo activo; el selector real, con los 3 nombres y la duración en
+    // ms, vive en el panel de edición de abajo (fevRenderEditorClip), donde
+    // sí cabe un control legible. Click aquí selecciona el clip y lleva el
+    // foco a ese panel.
     if (idx > 0){
-      const chip = document.createElement("div");
+      const tipo = clip.transicionEntrada || "corte";
+      const chip = document.createElement("button");
+      chip.type = "button";
       chip.className = "fev-transicion-chip";
       chip.style.left = leftPct + "%";
-      const tipo = clip.transicionEntrada || "corte";
-      const ms = clip.duracionTransicionMs != null ? clip.duracionTransicionMs : 400;
-      chip.innerHTML = `
-        <select class="fev-transicion-select" onclick="event.stopPropagation()" onchange="fevSetTransicion(${clip.id}, this.value, undefined)">
-          <option value="corte" ${tipo === "corte" ? "selected" : ""}>✂</option>
-          <option value="fundido" ${tipo === "fundido" ? "selected" : ""}>🌫</option>
-          <option value="deslizar" ${tipo === "deslizar" ? "selected" : ""}>➡</option>
-        </select>
-        <input type="number" class="fev-transicion-ms" min="0" step="50" value="${ms}" title="Duración de la transición (ms)" onclick="event.stopPropagation()" onchange="fevSetTransicion(${clip.id}, undefined, parseInt(this.value)||0)">
-      `;
+      chip.title = "Transición: " + fevNombreTransicion(tipo);
+      chip.innerHTML = fevIconoTransicion(tipo);
       chip.addEventListener("pointerdown", (e) => e.stopPropagation());
-      chip.addEventListener("click", (e) => e.stopPropagation());
+      chip.addEventListener("click", (e) => { e.stopPropagation(); fevSeleccionarClip(clip.id); });
       track.appendChild(chip);
     }
   });
   fevRenderPistaTextos();
+  fevRenderPistaLogos();
   fevActualizarTiempoLabel();
 }
 
@@ -26676,6 +26912,119 @@ function fevRenderPistaTextos(){
   });
 }
 
+// ── Pista de logo/badges (Parte 4.3) ────────────────────────────
+// Tercera pista horizontal, debajo de la de textos — mismo patrón exacto de
+// arrastrar/redimensionar que fevRenderPistaTextos (Fase 3), duplicado en
+// vez de compartido a propósito: así una futura Fase 5 no puede romper el
+// texto por tocar código que ahora también usan los logos, y viceversa.
+function fevRenderPistaLogos(){
+  const track = document.getElementById("fev-timeline-logos");
+  if (!track || !FEV) return;
+  const timeline = FEV.timeline;
+  if (!timeline.logos) timeline.logos = [];
+  const total = fevDuracionTotal(timeline) || 1;
+  track.innerHTML = "";
+  timeline.logos.forEach((item) => {
+    const leftPct = (item.inicioMs / total) * 100;
+    const widthPct = (item.duracionMs / total) * 100;
+    const div = document.createElement("div");
+    div.className = "fev-logo-block" + (item.tipo === "badge" ? " fev-logo-block-badge" : "") + (item.id === FEV_SELECTED_LOGO_ID ? " selected" : "");
+    div.style.left = leftPct + "%";
+    div.style.width = widthPct + "%";
+    div.textContent = item.tipo === "logo" ? "🏷 Logo" : ("🔖 " + (item.texto || "Badge"));
+    div.title = div.textContent;
+
+    div.addEventListener("pointerdown", (e) => {
+      if (e.target.classList.contains("fev-logo-resize")) return; // el handle tiene su propio listener
+      e.preventDefault();
+      e.stopPropagation();
+      fevSeleccionarLogo(item.id);
+      const trackRect = document.getElementById("fev-timeline-track").getBoundingClientRect();
+      const startX = e.clientX;
+      const startInicio = item.inicioMs;
+      function onMove(ev){
+        const deltaMs = ((ev.clientX - startX) / trackRect.width) * total;
+        const totalActual = fevDuracionTotal(timeline);
+        item.inicioMs = Math.max(0, Math.min(startInicio + deltaMs, Math.max(0, totalActual - item.duracionMs)));
+        fevRenderPistaLogos();
+        fevRenderPreviewAt(FEV_PLAYHEAD_MS);
+      }
+      function onUp(){
+        document.removeEventListener("pointermove", onMove);
+        document.removeEventListener("pointerup", onUp);
+      }
+      document.addEventListener("pointermove", onMove);
+      document.addEventListener("pointerup", onUp);
+    });
+
+    const handle = document.createElement("div");
+    handle.className = "fev-logo-resize";
+    handle.addEventListener("pointerdown", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      fevSeleccionarLogo(item.id);
+      const trackRect = document.getElementById("fev-timeline-track").getBoundingClientRect();
+      const startX = e.clientX;
+      const startDur = item.duracionMs;
+      function onMove(ev){
+        const deltaMs = ((ev.clientX - startX) / trackRect.width) * total;
+        const totalActual = fevDuracionTotal(timeline);
+        item.duracionMs = Math.max(200, Math.min(startDur + deltaMs, Math.max(200, totalActual - item.inicioMs)));
+        fevRenderPistaLogos();
+        fevRenderPreviewAt(FEV_PLAYHEAD_MS);
+      }
+      function onUp(){
+        document.removeEventListener("pointermove", onMove);
+        document.removeEventListener("pointerup", onUp);
+      }
+      document.addEventListener("pointermove", onMove);
+      document.addEventListener("pointerup", onUp);
+    });
+    div.appendChild(handle);
+
+    track.appendChild(div);
+  });
+}
+
+function fevAgregarLogo(){
+  if (!FEV) return;
+  fevAsegurarTimeline(FEV.timeline);
+  const total = fevDuracionTotal(FEV.timeline);
+  const item = {
+    id: FEV_NEXT_LOGO_ID++,
+    tipo: "logo",
+    inicioMs: FEV_PLAYHEAD_MS,
+    // Un logo suele ser un watermark persistente — por default dura lo que
+    // resta del video desde el playhead, no un instante corto como el texto.
+    duracionMs: Math.max(200, total - FEV_PLAYHEAD_MS),
+    x: 0.82, y: 0.08,
+    ancho: 0.30,
+    variante: "blanco",
+  };
+  FEV.timeline.logos.push(item);
+  fevSeleccionarLogo(item.id);
+  fevRenderPreviewAt(FEV_PLAYHEAD_MS);
+}
+
+function fevAgregarBadge(){
+  if (!FEV) return;
+  fevAsegurarTimeline(FEV.timeline);
+  const item = {
+    id: FEV_NEXT_LOGO_ID++,
+    tipo: "badge",
+    inicioMs: FEV_PLAYHEAD_MS,
+    duracionMs: 2000,
+    x: 0.5, y: 0.12,
+    texto: "NUEVO",
+    colorFondo: null, // null = accent de la marca activa
+    color: null,      // null = contraste automático sobre colorFondo
+    tamano: null,     // null = tamaño default
+  };
+  FEV.timeline.logos.push(item);
+  fevSeleccionarLogo(item.id);
+  fevRenderPreviewAt(FEV_PLAYHEAD_MS);
+}
+
 function fevAgregarTexto(){
   if (!FEV) return;
   fevAsegurarTimeline(FEV.timeline);
@@ -26688,6 +27037,10 @@ function fevAgregarTexto(){
     x: 0.5, y: 0.5,
     tamano: null,
     color: null,
+    estilo: null,
+    fontFamily: null,
+    fontWeight: null,
+    italic: false,
   };
   FEV.timeline.textos.push(overlay);
   fevSeleccionarTexto(overlay.id);
@@ -26697,6 +27050,7 @@ function fevAgregarTexto(){
 function fevSeleccionarTexto(textoId){
   FEV_SELECTED_TEXTO_ID = textoId;
   FEV_SELECTED_CLIP_ID = null;
+  FEV_SELECTED_LOGO_ID = null;
   fevRenderTimeline();
   fevRenderClipEditor();
 }
@@ -26730,10 +27084,74 @@ function fevSetEstiloTexto(textoId, campo, valor){
   fevRenderPreviewAt(FEV_PLAYHEAD_MS);
 }
 
+// Parte 5 — aplica (o quita, si presetId es null/"") un estilo prediseñado
+// de FEV_ESTILOS_TEXTO[marca]. Pre-llena fuente/peso/itálica/color; el
+// usuario los puede seguir ajustando después con los campos manuales de
+// abajo (el preset es un punto de partida, no una restricción).
+function fevSetEstiloTextoPreset(textoId, presetId){
+  if (!FEV) return;
+  const t = FEV.timeline.textos.find(x => x.id === textoId);
+  if (!t) return;
+  if (!presetId){
+    t.estilo = null;
+    t.fontFamily = null;
+    t.fontWeight = null;
+    t.italic = false;
+  } else {
+    const preset = (FEV_ESTILOS_TEXTO[FEV.timeline.marca] || []).find(p => p.id === presetId);
+    if (!preset) return;
+    t.estilo = preset.id;
+    t.fontFamily = preset.fontFamily;
+    t.fontWeight = preset.fontWeight;
+    t.italic = preset.italic;
+    t.color = preset.color;
+  }
+  fevRenderClipEditor(); // el campo de color y el propio dropdown deben reflejar el nuevo valor
+  fevRenderPistaTextos();
+  fevRenderPreviewAt(FEV_PLAYHEAD_MS);
+}
+
 function fevEliminarTexto(textoId){
   if (!FEV) return;
   FEV.timeline.textos = FEV.timeline.textos.filter(t => t.id !== textoId);
   if (FEV_SELECTED_TEXTO_ID === textoId) FEV_SELECTED_TEXTO_ID = null;
+  fevRenderTimeline();
+  fevRenderClipEditor();
+  fevRenderPreviewAt(FEV_PLAYHEAD_MS);
+}
+
+// ── Setters de logo/badge (Parte 4.3) — mismo patrón que los de texto ──
+function fevSetEstiloLogo(logoId, campo, valor){
+  if (!FEV) return;
+  const item = FEV.timeline.logos.find(x => x.id === logoId);
+  if (!item) return;
+  item[campo] = valor;
+  fevRenderPistaLogos();
+  // "variante"/"ancho" se editan con onchange (número/botón), no oninput,
+  // así que re-renderizar el panel completo aquí no pierde el foco de
+  // ningún campo de texto — sí lo haría para "texto"/"colorFondo".
+  if (campo === "variante" || campo === "ancho"){
+    fevRenderClipEditor();
+  }
+  fevRenderPreviewAt(FEV_PLAYHEAD_MS);
+}
+
+function fevSetTiempoLogo(logoId, inicioMs, duracionMs){
+  if (!FEV) return;
+  const item = FEV.timeline.logos.find(x => x.id === logoId);
+  if (!item) return;
+  if (inicioMs !== undefined) item.inicioMs = Math.max(0, inicioMs);
+  if (duracionMs !== undefined) item.duracionMs = Math.max(200, duracionMs);
+  const total = fevDuracionTotal(FEV.timeline);
+  item.inicioMs = Math.min(item.inicioMs, Math.max(0, total - 1));
+  fevRenderTimeline();
+  fevRenderPreviewAt(FEV_PLAYHEAD_MS);
+}
+
+function fevEliminarLogo(logoId){
+  if (!FEV) return;
+  FEV.timeline.logos = FEV.timeline.logos.filter(x => x.id !== logoId);
+  if (FEV_SELECTED_LOGO_ID === logoId) FEV_SELECTED_LOGO_ID = null;
   fevRenderTimeline();
   fevRenderClipEditor();
   fevRenderPreviewAt(FEV_PLAYHEAD_MS);
@@ -26756,22 +27174,45 @@ function fevReordenar(clipIdArrastrado, clipIdDestino){
 function fevSeleccionarClip(clipId){
   FEV_SELECTED_CLIP_ID = clipId;
   FEV_SELECTED_TEXTO_ID = null;
+  FEV_SELECTED_LOGO_ID = null;
   fevRenderTimeline();
   fevRenderClipEditor();
 }
 
-// El panel inferior edita, exclusivamente, o el clip seleccionado o el
-// overlay de texto seleccionado (nunca ambos a la vez).
+function fevSeleccionarLogo(logoId){
+  FEV_SELECTED_LOGO_ID = logoId;
+  FEV_SELECTED_CLIP_ID = null;
+  FEV_SELECTED_TEXTO_ID = null;
+  fevRenderTimeline();
+  fevRenderClipEditor();
+}
+
+// El panel inferior edita, exclusivamente, el clip / overlay de texto /
+// logo-badge seleccionado (nunca más de uno a la vez).
+// Parte 2 — sin importar qué se seleccionó (clip/texto/logo), el panel
+// queda pegado justo debajo del timeline en el DOM; este scrollIntoView
+// solo garantiza que también quede DENTRO del viewport sin que el usuario
+// tenga que buscarlo — un scroll que hace la interfaz, no el usuario.
 function fevRenderClipEditor(){
   const wrap = document.getElementById("fev-clip-editor");
   if (!wrap || !FEV) return;
-  if (FEV_SELECTED_TEXTO_ID != null){
+  let mostrado = true;
+  if (FEV_SELECTED_LOGO_ID != null){
+    fevRenderEditorLogo(wrap);
+  } else if (FEV_SELECTED_TEXTO_ID != null){
     fevRenderEditorTexto(wrap);
-    return;
+  } else {
+    const clip = FEV.timeline.clips.find(c => c.id === FEV_SELECTED_CLIP_ID);
+    if (!clip){ wrap.style.display = "none"; wrap.innerHTML = ""; mostrado = false; }
+    else { wrap.style.display = "flex"; fevRenderEditorClip(wrap, clip); }
   }
-  const clip = FEV.timeline.clips.find(c => c.id === FEV_SELECTED_CLIP_ID);
-  if (!clip){ wrap.style.display = "none"; wrap.innerHTML = ""; return; }
-  wrap.style.display = "flex";
+  if (mostrado){
+    requestAnimationFrame(() => wrap.scrollIntoView({ behavior: "smooth", block: "nearest" }));
+  }
+}
+
+function fevRenderEditorClip(wrap, clip){
+  const idx = FEV.timeline.clips.findIndex(c => c.id === clip.id);
 
   let trimHtml = "";
   if (clip.tipo === "video"){
@@ -26786,12 +27227,39 @@ function fevRenderClipEditor(){
       </div>`;
   }
 
+  // Parte 1 — selector de transición con los 3 nombres reales + ícono
+  // (no el dropdown sin etiqueta de antes). Solo aplica si hay un clip
+  // anterior del cual entrar.
+  let transicionHtml = "";
+  if (idx > 0){
+    const tipoActivo = clip.transicionEntrada || "corte";
+    const msActivo = clip.duracionTransicionMs != null ? clip.duracionTransicionMs : 400;
+    transicionHtml = `
+      <div class="fev-ctrl-group">
+        <label class="fev-ctrl-label">Transición de entrada</label>
+        <div class="fev-transicion-segmentado">
+          ${["corte", "fundido", "deslizar"].map(op => `
+            <button type="button" class="fev-transicion-opcion${op === tipoActivo ? " activa" : ""}" onclick="fevSetTransicion(${clip.id}, '${op}', undefined)">
+              ${fevIconoTransicion(op)}
+              <span>${fevNombreTransicion(op)}</span>
+            </button>
+          `).join("")}
+        </div>
+        <div class="fev-input-unidad" style="max-width:130px;">
+          <input type="number" class="fev-input" min="0" step="50" value="${msActivo}" onchange="fevSetTransicion(${clip.id}, undefined, parseInt(this.value)||0)">
+          <span>ms</span>
+        </div>
+      </div>`;
+  }
+
   wrap.innerHTML = `
+    <div class="fev-panel-heading">Editar clip</div>
     <div class="fev-ctrl-group">
       <label class="fev-ctrl-label">Duración (segundos)</label>
       <input type="number" class="fev-input" style="max-width:120px;" step="0.1" min="0.3" value="${(clip.duracionMs / 1000).toFixed(1)}" ${clip.tipo === "video" ? 'disabled title="La duración de un clip de video depende del recorte"' : ""} onchange="fevSetDuracion(${clip.id}, this.value)">
     </div>
     ${trimHtml}
+    ${transicionHtml}
     <div class="fev-ctrl-group">
       <button class="fev-btn fev-btn-ghost" type="button" onclick="fevEliminarClip(${clip.id})">🗑 Eliminar clip</button>
     </div>
@@ -26802,10 +27270,19 @@ function fevRenderEditorTexto(wrap){
   const t = FEV.timeline.textos.find(x => x.id === FEV_SELECTED_TEXTO_ID);
   if (!t){ wrap.style.display = "none"; wrap.innerHTML = ""; return; }
   wrap.style.display = "flex";
+  const presets = FEV_ESTILOS_TEXTO[FEV.timeline.marca] || [];
   wrap.innerHTML = `
+    <div class="fev-panel-heading">Editar texto</div>
     <div class="fev-ctrl-group">
       <label class="fev-ctrl-label">Texto</label>
       <input type="text" class="fev-input" value="${escapeHtml(t.texto || "")}" oninput="fevSetTextoOverlay(${t.id}, this.value)">
+    </div>
+    <div class="fev-ctrl-group">
+      <label class="fev-ctrl-label">Estilo</label>
+      <select class="fev-input" onchange="fevSetEstiloTextoPreset(${t.id}, this.value || null)">
+        <option value="" ${!t.estilo ? "selected" : ""}>Personalizado</option>
+        ${presets.map(p => `<option value="${p.id}" ${t.estilo === p.id ? "selected" : ""}>${escapeHtml(p.nombre)}</option>`).join("")}
+      </select>
     </div>
     <div class="fev-ctrl-group">
       <label class="fev-ctrl-label">Inicio (segundos) / Duración (segundos)</label>
@@ -26815,15 +27292,68 @@ function fevRenderEditorTexto(wrap){
       </div>
     </div>
     <div class="fev-ctrl-group">
-      <label class="fev-ctrl-label">Tamaño en px (vacío = tamaño de marca)</label>
+      <label class="fev-ctrl-label">Tamaño en px (vacío = tamaño del estilo/marca)</label>
       <input type="number" class="fev-input" style="max-width:120px;" min="10" value="${t.tamano || ""}" placeholder="auto" onchange="fevSetEstiloTexto(${t.id}, 'tamano', this.value ? (parseInt(this.value)||null) : null)">
     </div>
     <div class="fev-ctrl-group">
-      <label class="fev-ctrl-label">Color (vacío = color de marca)</label>
+      <label class="fev-ctrl-label">Color (vacío = color del estilo/marca)</label>
       <input type="text" class="fev-input" style="max-width:120px;" value="${escapeHtml(t.color || "")}" placeholder="#RRGGBB" onchange="fevSetEstiloTexto(${t.id}, 'color', this.value || null)">
     </div>
     <div class="fev-ctrl-group">
       <button class="fev-btn fev-btn-ghost" type="button" onclick="fevEliminarTexto(${t.id})">🗑 Eliminar texto</button>
+    </div>
+  `;
+}
+
+function fevRenderEditorLogo(wrap){
+  const item = FEV.timeline.logos.find(x => x.id === FEV_SELECTED_LOGO_ID);
+  if (!item){ wrap.style.display = "none"; wrap.innerHTML = ""; return; }
+  wrap.style.display = "flex";
+
+  // Taurina solo tiene una versión de logo (ver fevObtenerLogoImg) — no
+  // tiene sentido mostrarle al usuario un toggle blanco/color que no hace nada.
+  const esTaurina = FEV.timeline.marca === "taurina";
+  let camposHtml;
+  if (item.tipo === "logo"){
+    camposHtml = `
+      <div class="fev-ctrl-group">
+        <label class="fev-ctrl-label">Ancho del logo (% del video)</label>
+        <input type="number" class="fev-input" style="max-width:120px;" min="10" max="90" value="${Math.round((item.ancho || 0.30) * 100)}" onchange="fevSetEstiloLogo(${item.id}, 'ancho', (parseInt(this.value)||30)/100)">
+      </div>
+      ${esTaurina ? "" : `
+      <div class="fev-ctrl-group">
+        <label class="fev-ctrl-label">Versión del logo</label>
+        <div style="display:flex;gap:8px;">
+          <button type="button" class="fev-btn ${item.variante !== "color" ? "fev-btn-primary" : "fev-btn-ghost"}" onclick="fevSetEstiloLogo(${item.id}, 'variante', 'blanco')">Blanco</button>
+          <button type="button" class="fev-btn ${item.variante === "color" ? "fev-btn-primary" : "fev-btn-ghost"}" onclick="fevSetEstiloLogo(${item.id}, 'variante', 'color')">A color</button>
+        </div>
+      </div>`}
+    `;
+  } else {
+    camposHtml = `
+      <div class="fev-ctrl-group">
+        <label class="fev-ctrl-label">Texto del badge</label>
+        <input type="text" class="fev-input" value="${escapeHtml(item.texto || "")}" oninput="fevSetEstiloLogo(${item.id}, 'texto', this.value)">
+      </div>
+      <div class="fev-ctrl-group">
+        <label class="fev-ctrl-label">Color de fondo (vacío = color de marca)</label>
+        <input type="text" class="fev-input" style="max-width:120px;" value="${escapeHtml(item.colorFondo || "")}" placeholder="#RRGGBB" onchange="fevSetEstiloLogo(${item.id}, 'colorFondo', this.value || null)">
+      </div>
+    `;
+  }
+
+  wrap.innerHTML = `
+    <div class="fev-panel-heading">Editar ${item.tipo === "logo" ? "logo" : "badge"}</div>
+    ${camposHtml}
+    <div class="fev-ctrl-group">
+      <label class="fev-ctrl-label">Inicio (segundos) / Duración (segundos)</label>
+      <div style="display:flex;gap:8px;">
+        <input type="number" class="fev-input" step="0.1" min="0" value="${(item.inicioMs / 1000).toFixed(1)}" onchange="fevSetTiempoLogo(${item.id}, Math.round(parseFloat(this.value)*1000)||0, undefined)">
+        <input type="number" class="fev-input" step="0.1" min="0.2" value="${(item.duracionMs / 1000).toFixed(1)}" onchange="fevSetTiempoLogo(${item.id}, undefined, Math.round(parseFloat(this.value)*1000)||200)">
+      </div>
+    </div>
+    <div class="fev-ctrl-group">
+      <button class="fev-btn fev-btn-ghost" type="button" onclick="fevEliminarLogo(${item.id})">🗑 Eliminar ${item.tipo === "logo" ? "logo" : "badge"}</button>
     </div>
   `;
 }
@@ -26859,6 +27389,36 @@ function fevEliminarClip(clipId){
   fevRenderTimeline();
   fevRenderClipEditor();
   fevSetPlayhead(Math.min(FEV_PLAYHEAD_MS, fevDuracionTotal(FEV.timeline)));
+}
+
+// ── Parte 6 — "⚡ Auto-armar": reglas fijas, sin IA, sin mecanismo paralelo ──
+// Opera sobre los clips YA presentes en FEV.timeline.clips (en el orden en
+// que se subieron, salvo que el usuario ya los haya reordenado a mano) y
+// reconfigura cada uno llamando a las MISMAS funciones que usa la edición
+// manual (fevSetDuracion/fevSetTrim/fevSetTransicion) — el resultado queda
+// 100% editable después con los controles normales, no es un modo de
+// "solo lectura" aparte. No agrega texto ni inventa copy.
+function fevAutoArmar(){
+  if (!FEV || !FEV.timeline.clips.length){
+    showToast("Sube al menos una foto o video antes de usar Auto-armar");
+    return;
+  }
+  const ALTERNANCIA = ["fundido", "deslizar"];
+  FEV.timeline.clips.forEach((clip, idx) => {
+    if (clip.tipo === "foto"){
+      fevSetDuracion(clip.id, 2.5);
+    } else if (clip.tipo === "video"){
+      const fullDurMs = Math.round((clip.elementoCargado.duration || 0) * 1000);
+      const topeMs = Math.min(fullDurMs, 5000);
+      fevSetTrim(clip.id, 0, topeMs);
+    }
+    if (idx > 0){
+      // 2do clip → fundido, 3ro → deslizar, 4to → fundido, ... (el primero
+      // no lleva transición de entrada, no tiene clip anterior).
+      fevSetTransicion(clip.id, ALTERNANCIA[(idx - 1) % 2], 400);
+    }
+  });
+  showToast("Timeline armado — puedes seguir editando cualquier clip normalmente");
 }
 
 // ── Scrubbing (Parte 5) ──────────────────────────────────────────
