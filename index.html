@@ -4148,6 +4148,9 @@ body.in-plantrabajo #app{
             </div>
             <input type="file" id="fev-file-input-2" accept="image/*,video/*" multiple style="display:none;" onchange="fevHandleUpload(event)">
           </div>
+          <label id="fev-toggle-membrete" style="display:none;align-items:center;gap:6px;font-size:11px;color:var(--tx2);cursor:pointer;margin-bottom:8px;">
+            <input type="checkbox" id="fev-chk-membrete" checked onchange="fevToggleMembreteMarca(this.checked)"> Franja de marca persistente
+          </label>
           <div class="fev-timeline-track" id="fev-timeline-track">
             <div class="fev-timeline-clips" id="fev-timeline-clips"></div>
             <div class="fev-timeline-textos" id="fev-timeline-textos"></div>
@@ -14007,6 +14010,11 @@ function _proyectoDe(c){
 }
 function _logoBlancoDe(modalidad){ return modalidad === "rackline" ? (window._racklineLogoBlanco||window._romsaLogoBlanco) : (modalidad === "home" ? (window._homeLogoBlanco||window._romsaLogoBlanco) : window._romsaLogoBlanco); }
 function _logoColorDe(modalidad){ return modalidad === "rackline" ? (window._racklineLogoColor||window._romsaLogoAzul) : (modalidad === "home" ? (window._homeLogoColor||window._romsaLogoAzul) : window._romsaLogoAzul); }
+// Solo ícono (sin wordmark), blanco — el mismo asset que usa el chip navy
+// de las plantillas del Editor de Fotos (fehDrawLogoLockup con full=false).
+// Únicamente HOME tiene este asset dedicado por ahora; el resto cae al
+// logo completo, sin romper nada para esas marcas.
+function _logoBlancoIconoDe(modalidad){ return modalidad === "home" ? (window._homeLogoBlancoIcono || _logoBlancoDe(modalidad)) : _logoBlancoDe(modalidad); }
 function _taglineDe(modalidad){ return (MODALIDADES[modalidad]||MODALIDADES.industrial).tagline; }
 
 // Cambiar modalidad del editor de cotización (visual + estado)
@@ -26444,9 +26452,10 @@ function fevObtenerLogoImg(marca, variante){
     }
     return FEV_LOGO_IMG_CACHE[key];
   }
-  const key = marca + ":" + (variante === "color" ? "color" : "blanco");
+  const key = marca + ":" + (variante === "color" ? "color" : variante === "icono" ? "icono" : "blanco");
   if (!FEV_LOGO_IMG_CACHE[key]){
-    FEV_LOGO_IMG_CACHE[key] = fevCrearImagenLogo(variante === "color" ? _logoColorDe(marca) : _logoBlancoDe(marca));
+    const src = variante === "color" ? _logoColorDe(marca) : variante === "icono" ? _logoBlancoIconoDe(marca) : _logoBlancoDe(marca);
+    FEV_LOGO_IMG_CACHE[key] = fevCrearImagenLogo(src);
   }
   return FEV_LOGO_IMG_CACHE[key];
 }
@@ -26642,6 +26651,53 @@ function fevDibujarCapaOutro(ctx, marca, clip){
   ctx.restore();
 }
 
+// ── Tratamiento de marca persistente (HOME por ahora) ────────────
+// Objetivo: que el video se sienta consistentemente de marca en vez de una
+// mezcla de fotos sueltas. Tres piezas, todas dibujadas desde esta única
+// capa aditiva llamada desde renderFrameEnTiempo justo después del clip
+// base y antes de los overlays de texto/logo — no toca calcularClipActivo
+// ni el cálculo de tiempo efectivo, solo agrega dibujo encima.
+//  1) Membrete: chip navy + isotipo, esquina superior izquierda — mismo
+//     diseño que ya usan las plantillas estáticas del Editor de Fotos
+//     (fehDrawLogoLockup con full=false sobre un fillRect rgba(11,31,58,.92)
+//     de 200×46px en 56,40). Persistente en TODOS los clips (incluyendo
+//     intro/cierre), con toggle para desactivarlo si algún caso lo requiere.
+//  2) Baño de color navy al 8% sobre todo el frame — solo foto/video.
+//  3) Línea de acento terracota pegada al borde inferior — solo foto/video.
+function fevDibujarMembreteMarca(ctx, marca){
+  if (marca !== "home") return;
+  const img = fevObtenerLogoImg(marca, "icono");
+  ctx.save();
+  ctx.fillStyle = "rgba(11,31,58,.92)";
+  ctx.fillRect(56, 40, 200, 46);
+  if (img && img.complete && img.naturalWidth){
+    const targetH = 38;
+    const w = img.naturalWidth * (targetH / img.naturalHeight);
+    ctx.drawImage(img, 66, 44, w, targetH);
+  }
+  ctx.restore();
+}
+
+function fevDibujarTratamientoDeMarca(ctx, timeline, clipA, clipB){
+  if (timeline.marca !== "home") return;
+  if (timeline.membreteMarca !== false) fevDibujarMembreteMarca(ctx, timeline.marca);
+
+  const esFondoSolido = (c) => c && c.tipo !== "foto" && c.tipo !== "video";
+  const sobreFondoSolido = esFondoSolido(clipA) && (!clipB || esFondoSolido(clipB));
+  if (sobreFondoSolido) return; // intro/cierre ya son navy sólido, sin necesidad de baño/acento
+
+  ctx.save();
+  ctx.fillStyle = "rgba(11,31,58,.08)";
+  ctx.fillRect(0, 0, FEV_W, FEV_H);
+  ctx.restore();
+
+  const ALTO_ACENTO = 5;
+  ctx.save();
+  ctx.fillStyle = "#C36F4A";
+  ctx.fillRect(0, FEV_H - ALTO_ACENTO, FEV_W, ALTO_ACENTO);
+  ctx.restore();
+}
+
 // Dibuja un solo clip (foto, video, intro o outro) en tLocalMs propio de
 // ESE clip, con mezcla opcional de transición (alpha para "fundido",
 // desplazamiento en X para "deslizar"). Aislado en su propia función
@@ -26716,6 +26772,8 @@ function renderFrameEnTiempo(ctx, timeline, tMs){
     fevDibujarCapaClip(ctx, clipA, tLocalA, { alpha: 1 - progresoTransicion }, timeline.marca);
     fevDibujarCapaClip(ctx, clipB, tLocalB, { alpha: progresoTransicion }, timeline.marca);
   }
+
+  fevDibujarTratamientoDeMarca(ctx, timeline, clipA, clipB);
 
   fevDibujarOverlaysDeTexto(ctx, timeline, tMs);
   fevDibujarLogosYBadges(ctx, timeline, tMs);
@@ -26906,6 +26964,26 @@ function fevActualizarBotonesDeMarca(){
   const btnOutro = document.getElementById("fev-btn-outro");
   if (btnIntro) btnIntro.style.display = esHomeORomsa ? "" : "none";
   if (btnOutro) btnOutro.style.display = esHomeORomsa ? "" : "none";
+
+  // Toggle de la franja de marca persistente (Parte 1) — solo HOME por ahora.
+  const esHome = FEV.timeline.marca === "home";
+  const toggleMembrete = document.getElementById("fev-toggle-membrete");
+  const chkMembrete = document.getElementById("fev-chk-membrete");
+  if (toggleMembrete) toggleMembrete.style.display = esHome ? "flex" : "none";
+  if (chkMembrete) chkMembrete.checked = FEV.timeline.membreteMarca !== false;
+}
+
+function fevToggleMembreteMarca(activo){
+  if (!FEV) return;
+  FEV.timeline.membreteMarca = !!activo;
+  fevRenderPreviewAt(FEV_PLAYHEAD_MS);
+}
+
+// Parte 4 — transición "firma" de marca: HOME siempre entra con Fundido
+// por default (manual o Auto-armar), salvo que el usuario la cambie a mano
+// en un clip puntual. El resto de marcas sigue con "corte" (sin cambios).
+function fevTransicionDefault(){
+  return (FEV && FEV.timeline.marca === "home") ? "fundido" : "corte";
 }
 
 // ── Subida de archivos (Parte 2 — crea clips) ───────────────────
@@ -26936,7 +27014,7 @@ function fevAgregarArchivo(file){
           duracionMs: durMs,
           trimInMs: 0,
           trimOutMs: durMs,
-          transicionEntrada: "corte",
+          transicionEntrada: fevTransicionDefault(),
           duracionTransicionMs: 400,
         };
         FEV.timeline.clips.push(clip);
@@ -26953,7 +27031,7 @@ function fevAgregarArchivo(file){
           archivo: file.name,
           elementoCargado: img,
           duracionMs: 3000,
-          transicionEntrada: "corte",
+          transicionEntrada: fevTransicionDefault(),
           duracionTransicionMs: 400,
         };
         FEV.timeline.clips.push(clip);
@@ -26993,8 +27071,11 @@ function fevAgregarOutro(){
     id: FEV_NEXT_CLIP_ID++,
     tipo: "outro",
     duracionMs: 2000,
-    texto: "Cotiza por WhatsApp",
-    transicionEntrada: "corte",
+    // HOME: cierre limpio por default (solo navy + logo, igual que el
+    // intro) — el CTA sigue siendo editable, solo deja de venir precargado.
+    // ROMSA Industrial no cambia (fuera de alcance de este cambio).
+    texto: FEV.timeline.marca === "home" ? "" : "Cotiza por WhatsApp",
+    transicionEntrada: fevTransicionDefault(),
     duracionTransicionMs: 400,
   };
   FEV.timeline.clips.push(clip);
@@ -27541,7 +27622,7 @@ function fevRenderEditorClip(wrap, clip){
     ctaHtml = `
       <div class="fev-ctrl-group">
         <label class="fev-ctrl-label">Texto del cierre (CTA)</label>
-        <input type="text" class="fev-input" value="${escapeHtml(clip.texto || "")}" oninput="fevSetTextoClip(${clip.id}, this.value)">
+        <input type="text" class="fev-input" placeholder="Vacío = solo logo (recomendado). Ej. Cotiza por WhatsApp" value="${escapeHtml(clip.texto || "")}" oninput="fevSetTextoClip(${clip.id}, this.value)">
       </div>`;
   }
 
@@ -27748,6 +27829,10 @@ function fevAutoArmar(){
     showToast("Sube al menos una foto o video antes de usar Auto-armar");
     return;
   }
+  // Parte 4 — HOME usa Fundido siempre como transición "firma" de marca
+  // (ya no alterna con Deslizar); el resto de marcas conserva la alternancia
+  // de siempre. El usuario puede seguir cambiando cualquier clip a mano.
+  const esHome = FEV.timeline.marca === "home";
   const ALTERNANCIA = ["fundido", "deslizar"];
   FEV.timeline.clips.forEach((clip, idx) => {
     if (clip.tipo === "foto"){
@@ -27759,8 +27844,9 @@ function fevAutoArmar(){
     }
     if (idx > 0){
       // 2do clip → fundido, 3ro → deslizar, 4to → fundido, ... (el primero
-      // no lleva transición de entrada, no tiene clip anterior).
-      fevSetTransicion(clip.id, ALTERNANCIA[(idx - 1) % 2], 400);
+      // no lleva transición de entrada, no tiene clip anterior). HOME: fundido
+      // siempre.
+      fevSetTransicion(clip.id, esHome ? "fundido" : ALTERNANCIA[(idx - 1) % 2], 400);
     }
   });
   showToast("Timeline armado — puedes seguir editando cualquier clip normalmente");
