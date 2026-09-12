@@ -4144,13 +4144,16 @@ body.in-plantrabajo #app{
               <button class="fev-add-btn" onclick="fevAgregarLogo()">+ Agregar logo</button>
               <button class="fev-add-btn" onclick="fevAgregarBadge()">+ Agregar badge</button>
               <button class="fev-add-btn" onclick="document.getElementById('fev-file-input-2').click()">+ Agregar clip</button>
+              <button class="fev-add-btn" id="fev-btn-audio" onclick="document.getElementById('fev-file-input-audio').click()">+ Agregar música</button>
               <button class="fev-add-btn fev-add-btn-auto" onclick="fevAutoArmar()">⚡ Auto-armar</button>
             </div>
             <input type="file" id="fev-file-input-2" accept="image/*,video/*" multiple style="display:none;" onchange="fevHandleUpload(event)">
+            <input type="file" id="fev-file-input-audio" accept="audio/*" style="display:none;" onchange="fevHandleUploadAudio(event)">
           </div>
           <label id="fev-toggle-membrete" style="display:none;align-items:center;gap:6px;font-size:11px;color:var(--tx2);cursor:pointer;margin-bottom:8px;">
             <input type="checkbox" id="fev-chk-membrete" checked onchange="fevToggleMembreteMarca(this.checked)"> Franja de marca persistente
           </label>
+          <div id="fev-audio-panel" style="display:none;"></div>
           <div class="fev-timeline-track" id="fev-timeline-track">
             <div class="fev-timeline-clips" id="fev-timeline-clips"></div>
             <div class="fev-timeline-textos" id="fev-timeline-textos"></div>
@@ -26093,6 +26096,20 @@ const FEV_ESTILOS_TEXTO = {
   ],
 };
 
+// Selector de tipografía (ajuste de tipografía) — las 4 variantes reales
+// que usa HOME by ROMSA en el resto del CRM. Solo se muestra para HOME
+// (mismo criterio que FEV_PALETAS_COLOR); el resto de marcas sigue con su
+// tipografía de marca fija de FEV_BRANDS/FEV_ESTILOS_TEXTO, sin selector.
+// Independiente del selector "Estilo" de arriba (que también fija color) —
+// este solo toca fontFamily/fontWeight/italic, para poder probar rápido
+// cuál se lee mejor sobre una foto/video en particular.
+const FEV_TIPOGRAFIAS_HOME = [
+  { id:"playfair-bold",   nombre:"Playfair Display — Bold",   fontFamily:'"Playfair Display", serif', fontWeight:700, italic:false },
+  { id:"playfair-italic", nombre:"Playfair Display — Italic", fontFamily:'"Playfair Display", serif', fontWeight:400, italic:true },
+  { id:"inter-bold",      nombre:"Inter — Bold",               fontFamily:'"Inter", sans-serif',       fontWeight:700, italic:false },
+  { id:"inter-medium",    nombre:"Inter — Medium",             fontFamily:'"Inter", sans-serif',       fontWeight:500, italic:false },
+];
+
 // Paleta de swatches por marca (Parte 6) — solo HOME y ROMSA Industrial
 // por ahora (alcance de este cambio); Taurina/RACKLINE conservan el campo
 // de código hex libre tal como estaba.
@@ -26398,21 +26415,26 @@ function fevOverlaySobreFondoSolido(timeline, tMs){
   return esSolido(activo.clipA) && (!activo.clipB || esSolido(activo.clipB));
 }
 
-function fevDibujarOverlayTexto(ctx, marca, overlay, sobreFondoSolido){
+// Parte 1 (ajuste de tipografía) — el texto ya no lleva una caja de fondo
+// ajustada a su tamaño (ni la plana de antes sobre fondo sólido, ni el
+// degradado de Fase 7 sobre foto/video); en su lugar, una sombra suave da
+// legibilidad sobre cualquier fondo sin tapar nada detrás. Aplica a TODAS
+// las marcas por igual (a diferencia del selector de tipografía, que es
+// solo para HOME). El scrim de Fase 7 (fevDibujarScrimTrasOverlay) sigue
+// existiendo tal cual para el logo (fevDibujarLogo), que sí lo necesita.
+function fevDibujarOverlayTexto(ctx, marca, overlay){
   const b = FEV_BRANDS[marca] || FEV_BRANDS.romsa;
   const box = fevBBoxOverlay(ctx, marca, overlay);
   const color = overlay.color || b.color;
   ctx.save();
-  if (!sobreFondoSolido){
-    fevDibujarScrimTrasOverlay(ctx, box);
-  } else {
-    ctx.fillStyle = "rgba(0,0,0,.35)";
-    ctx.fillRect(box.x, box.y, box.w, box.h);
-  }
   ctx.textAlign = "center";
   ctx.textBaseline = "alphabetic";
   ctx.fillStyle = color;
   ctx.font = fevFontDeOverlay(overlay, b, box.fontSize);
+  ctx.shadowColor = "rgba(0,0,0,.4)";
+  ctx.shadowBlur = 4;
+  ctx.shadowOffsetX = 0;
+  ctx.shadowOffsetY = 2;
   box.lines.forEach((line, i) => {
     const y = box.cy - (box.lines.length * box.lineH) / 2 + box.lineH * (i + 1) - box.lineH * 0.22;
     ctx.fillText(line, box.cx, y);
@@ -26421,8 +26443,7 @@ function fevDibujarOverlayTexto(ctx, marca, overlay, sobreFondoSolido){
 }
 
 function fevDibujarOverlaysDeTexto(ctx, timeline, tMs){
-  const sobreFondoSolido = fevOverlaySobreFondoSolido(timeline, tMs);
-  fevOverlaysVisiblesEn(timeline, tMs).forEach(t => fevDibujarOverlayTexto(ctx, timeline.marca, t, sobreFondoSolido));
+  fevOverlaysVisiblesEn(timeline, tMs).forEach(t => fevDibujarOverlayTexto(ctx, timeline.marca, t));
 }
 
 // ── Logo / Badges (Fase 4) ───────────────────────────────────────
@@ -26951,6 +26972,7 @@ function fevIrAEditor(){
   fevMostrarPaso("editor");
   fevActualizarBotonesDeMarca();
   fevRenderTimeline();
+  fevRenderAudioPanel();
   fevSetPlayhead(0);
 }
 
@@ -27043,6 +27065,70 @@ function fevAgregarArchivo(file){
     }
   };
   reader.readAsDataURL(file);
+}
+
+// ── Música de fondo (Fase 5) ─────────────────────────────────────
+// timeline.audio = { archivo, elementoCargado, volumen } — un único audio
+// para todo el timeline, no por clip. Mismo patrón de carga que fotos/video
+// (FileReader → data URL) para no introducir un mecanismo distinto.
+function fevHandleUploadAudio(e){
+  const file = (e.target.files || [])[0];
+  e.target.value = "";
+  if (!file || !FEV) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    const audio = new Audio();
+    audio.preload = "auto";
+    audio.src = ev.target.result;
+    FEV.timeline.audio = {
+      archivo: file.name,
+      elementoCargado: audio,
+      volumen: 0.7,
+    };
+    fevRenderAudioPanel();
+  };
+  reader.readAsDataURL(file);
+}
+
+function fevSetVolumenAudio(v){
+  if (!FEV || !FEV.timeline.audio) return;
+  FEV.timeline.audio.volumen = Math.max(0, Math.min(1, v));
+}
+
+function fevQuitarAudio(){
+  if (!FEV || !FEV.timeline.audio) return;
+  fevPausarAudio();
+  FEV.timeline.audio = null;
+  fevRenderAudioPanel();
+}
+
+function fevPausarAudio(){
+  if (FEV && FEV.timeline.audio && FEV.timeline.audio.elementoCargado){
+    FEV.timeline.audio.elementoCargado.pause();
+  }
+}
+
+function fevRenderAudioPanel(){
+  const panel = document.getElementById("fev-audio-panel");
+  if (!panel || !FEV) return;
+  const audio = FEV.timeline.audio;
+  if (!audio){
+    panel.style.display = "none";
+    panel.innerHTML = "";
+    return;
+  }
+  panel.style.display = "flex";
+  panel.style.cssText = "display:flex;align-items:center;gap:10px;font-size:11px;color:var(--tx2);margin-bottom:8px;flex-wrap:wrap;";
+  const pct = Math.round(audio.volumen * 100);
+  panel.innerHTML = `
+    <span>🎵 ${escapeHtml(audio.archivo)}</span>
+    <label style="display:flex;align-items:center;gap:6px;">
+      Volumen
+      <input type="range" min="0" max="100" value="${pct}" oninput="fevSetVolumenAudio(this.value/100); this.nextElementSibling.textContent = this.value + '%'">
+      <span>${pct}%</span>
+    </label>
+    <button type="button" class="fev-btn fev-btn-ghost" style="padding:2px 10px;font-size:11px;" onclick="fevQuitarAudio()">Quitar música</button>
+  `;
 }
 
 // ── Intro / outro de marca (Partes 1-2) ─────────────────────────
@@ -27445,6 +27531,35 @@ function fevSetEstiloTextoPreset(textoId, presetId){
   fevRenderPreviewAt(FEV_PLAYHEAD_MS);
 }
 
+// Selector de tipografía (solo HOME) — fija fontFamily/fontWeight/italic
+// SIN tocar el color ni el "estilo" (preset) del overlay, para que el
+// usuario pueda probar rápido las 4 variantes reales de HOME sobre una
+// foto/video en particular sin perder el color que ya tenía.
+function fevSetTipografiaTexto(textoId, tipografiaId){
+  if (!FEV) return;
+  const t = FEV.timeline.textos.find(x => x.id === textoId);
+  if (!t) return;
+  const tipografia = FEV_TIPOGRAFIAS_HOME.find(f => f.id === tipografiaId);
+  if (!tipografia) return;
+  t.fontFamily = tipografia.fontFamily;
+  t.fontWeight = tipografia.fontWeight;
+  t.italic = tipografia.italic;
+  fevRenderClipEditor();
+  fevRenderPreviewAt(FEV_PLAYHEAD_MS);
+}
+
+// Qué opción del selector coincide con el overlay actual — null/null/false
+// (nunca tocado) coincide con "Playfair Display — Bold" porque ese es
+// exactamente el default de FEV_BRANDS.home (ver fevFontDeOverlay), así
+// que el selector arranca ya reflejando el default real sin necesitar un
+// valor especial para "nada elegido todavía".
+function fevTipografiaActivaDe(t){
+  const fam = t.fontFamily || null, peso = t.fontWeight || null, italic = !!t.italic;
+  if (!fam && !peso && !italic) return "playfair-bold";
+  const match = FEV_TIPOGRAFIAS_HOME.find(f => f.fontFamily === fam && f.fontWeight === peso && f.italic === italic);
+  return match ? match.id : "";
+}
+
 function fevEliminarTexto(textoId){
   if (!FEV) return;
   FEV.timeline.textos = FEV.timeline.textos.filter(t => t.id !== textoId);
@@ -27715,6 +27830,13 @@ function fevRenderEditorTexto(wrap){
         ${presets.map(p => `<option value="${p.id}" ${t.estilo === p.id ? "selected" : ""}>${escapeHtml(p.nombre)}</option>`).join("")}
       </select>
     </div>
+    ${FEV.timeline.marca === "home" ? `
+    <div class="fev-ctrl-group">
+      <label class="fev-ctrl-label">Tipografía</label>
+      <select class="fev-input" onchange="fevSetTipografiaTexto(${t.id}, this.value)">
+        ${FEV_TIPOGRAFIAS_HOME.map(f => `<option value="${f.id}" ${fevTipografiaActivaDe(t) === f.id ? "selected" : ""}>${escapeHtml(f.nombre)}</option>`).join("")}
+      </select>
+    </div>` : ""}
     <div class="fev-ctrl-group">
       <label class="fev-ctrl-label">Inicio (segundos) / Duración (segundos)</label>
       <div style="display:flex;gap:8px;">
@@ -27915,6 +28037,20 @@ function fevRenderPreviewAt(ms){
 // (.play()) en vez de hacer seek manual en cada fotograma — exactamente la
 // misma regla que ya aplica durante la exportación real, porque la vista
 // previa TAMBIÉN es reproducción en tiempo real, no scrubbing.
+// Volumen efectivo de la música de fondo en tMs, aplicando el mismo
+// fundido de 400ms que ya usa el fundido visual global (Fase 6, Parte 4)
+// en los últimos instantes del timeline — mismo criterio de tiempo, sin
+// tocar renderFrameEnTiempo ni el fundido visual en sí, solo leyendo
+// `total` para calcular una curva de volumen equivalente e independiente.
+const FEV_FUNDIDO_AUDIO_MS = 400;
+function fevVolumenConFundido(volumenBase, tMs, total){
+  if (total <= 0) return volumenBase;
+  let alphaSalida = 0;
+  if (tMs > total - FEV_FUNDIDO_AUDIO_MS) alphaSalida = (tMs - (total - FEV_FUNDIDO_AUDIO_MS)) / FEV_FUNDIDO_AUDIO_MS;
+  alphaSalida = Math.max(0, Math.min(1, alphaSalida));
+  return volumenBase * (1 - alphaSalida);
+}
+
 function fevVistaPrevia(){
   if (FEV_PREVIEWING){ fevDetenerVistaPrevia(); return; }
   if (FEV_EXPORTING || !FEV) return;
@@ -27933,6 +28069,14 @@ function fevVistaPrevia(){
   if (btn) btn.textContent = "⏸ Detener vista previa";
   if (exportBtn) exportBtn.disabled = true;
 
+  const audio = FEV.timeline.audio;
+  if (audio && audio.elementoCargado){
+    audio.elementoCargado.currentTime = 0;
+    audio.elementoCargado.loop = true;
+    audio.elementoCargado.volume = audio.volumen;
+    audio.elementoCargado.play().catch(() => {});
+  }
+
   const inicioReal = performance.now();
   function fotograma(){
     const tMs = performance.now() - inicioReal;
@@ -27942,6 +28086,9 @@ function fevVistaPrevia(){
       return;
     }
     renderFrameEnTiempo(ctx, FEV.timeline, tMs);
+    if (audio && audio.elementoCargado){
+      audio.elementoCargado.volume = fevVolumenConFundido(audio.volumen, tMs, total);
+    }
     FEV_PLAYHEAD_MS = tMs;
     fevPosicionarPlayheadUI();
     FEV_PREVIEW_RAF_ID = requestAnimationFrame(fotograma);
@@ -27955,6 +28102,7 @@ function fevDetenerVistaPrevia(){
   FEV_EXPORTING = false;
   FEV_EXPORT_PLAYING_IDS = new Set();
   fevDetenerTodosLosVideos();
+  fevPausarAudio();
   const btn = document.getElementById("fev-preview-btn");
   const exportBtn = document.getElementById("fev-export-btn");
   if (btn) btn.textContent = "▶ Vista previa";
@@ -27964,6 +28112,26 @@ function fevDetenerVistaPrevia(){
 }
 
 // ── Exportación (Parte 6) ────────────────────────────────────────
+// Crea (una sola vez por elemento de audio — createMediaElementSource()
+// truena si se llama dos veces sobre el mismo <audio>) el grafo de Web
+// Audio para exportar: source → gainNode (para el fundido y el volumen
+// elegido) → destino (su .stream trae la pista de audio que se combina con
+// la del canvas). Se cachea en el propio objeto `audio` para que exportar
+// más de una vez en la misma sesión reutilice el mismo grafo en vez de
+// volver a intentar conectar el mismo elemento.
+function fevObtenerGrafoAudio(audio){
+  if (!audio._webAudio){
+    const AudioContextClase = window.AudioContext || window.webkitAudioContext;
+    const audioCtx = new AudioContextClase();
+    const source = audioCtx.createMediaElementSource(audio.elementoCargado);
+    const destino = audioCtx.createMediaStreamDestination();
+    const gainNode = audioCtx.createGain();
+    source.connect(gainNode).connect(destino);
+    audio._webAudio = { audioCtx, source, destino, gainNode };
+  }
+  return audio._webAudio;
+}
+
 async function fevExportar(){
   if (FEV_EXPORTING || !FEV) return;
   if (!FEV.timeline.clips.length){ showToast("Agrega al menos un clip antes de exportar"); return; }
@@ -27980,7 +28148,23 @@ async function fevExportar(){
   if (btn){ btn.disabled = true; btn.textContent = "Exportando… 0%"; }
   if (previewBtn) previewBtn.disabled = true;
 
-  const stream = canvas.captureStream(30);
+  // Música de fondo (Fase 5) — timeline.audio es opcional; si no existe, el
+  // stream es exactamente el mismo canvas.captureStream(30) de siempre, sin
+  // ninguna rama nueva de por medio (exportar sin audio sigue igual).
+  const audio = FEV.timeline.audio;
+  let grafoAudio = null;
+  if (audio && audio.elementoCargado){
+    grafoAudio = fevObtenerGrafoAudio(audio);
+    grafoAudio.gainNode.gain.value = audio.volumen;
+    audio.elementoCargado.currentTime = 0;
+    audio.elementoCargado.loop = true; // si el audio es más corto que el timeline, hace loop; si es más largo, se corta abajo al llegar a `total`
+    audio.elementoCargado.play().catch(() => {});
+  }
+
+  const streamVideo = canvas.captureStream(30);
+  const stream = grafoAudio
+    ? new MediaStream([...streamVideo.getVideoTracks(), ...grafoAudio.destino.stream.getAudioTracks()])
+    : streamVideo;
   const mimeType = (typeof MediaRecorder.isTypeSupported === "function" && MediaRecorder.isTypeSupported("video/webm;codecs=vp9"))
     ? "video/webm;codecs=vp9" : "video/webm";
   const recorder = new MediaRecorder(stream, { mimeType });
@@ -27999,6 +28183,7 @@ async function fevExportar(){
         return;
       }
       renderFrameEnTiempo(ctx, FEV.timeline, tMs);
+      if (grafoAudio) grafoAudio.gainNode.gain.value = fevVolumenConFundido(audio.volumen, tMs, total);
       if (btn) btn.textContent = "Exportando… " + Math.round((tMs / total) * 100) + "%";
       requestAnimationFrame(fotograma);
     }
@@ -28007,6 +28192,7 @@ async function fevExportar(){
 
   recorder.stop();
   fevDetenerTodosLosVideos();
+  fevPausarAudio();
   await detenido;
 
   FEV_EXPORTING = false;
