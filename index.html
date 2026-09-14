@@ -4150,9 +4150,6 @@ body.in-plantrabajo #app{
             <input type="file" id="fev-file-input-2" accept="image/*,video/*" multiple style="display:none;" onchange="fevHandleUpload(event)">
             <input type="file" id="fev-file-input-audio" accept="audio/*" style="display:none;" onchange="fevHandleUploadAudio(event)">
           </div>
-          <label id="fev-toggle-membrete" style="display:none;align-items:center;gap:6px;font-size:11px;color:var(--tx2);cursor:pointer;margin-bottom:8px;">
-            <input type="checkbox" id="fev-chk-membrete" checked onchange="fevToggleMembreteMarca(this.checked)"> Franja de marca persistente
-          </label>
           <div id="fev-audio-panel" style="display:none;"></div>
           <div class="fev-timeline-track" id="fev-timeline-track">
             <div class="fev-timeline-clips" id="fev-timeline-clips"></div>
@@ -26672,50 +26669,157 @@ function fevDibujarCapaOutro(ctx, marca, clip){
   ctx.restore();
 }
 
-// ── Tratamiento de marca persistente (HOME por ahora) ────────────
-// Objetivo: que el video se sienta consistentemente de marca en vez de una
-// mezcla de fotos sueltas. Tres piezas, todas dibujadas desde esta única
+// ── Marco de marca persistente para HOME ─────────────────────────
+// Reemplaza por completo el tratamiento anterior (franja/chip en la
+// esquina + baño navy 8% + línea terracota inferior) — no coexisten.
+// Estructura fija de 3 zonas sobre el canvas de 1080×1920, SOLO para
+// clips de tipo foto/video; intro/cierre mantienen su navy sólido + logo
+// centrado de siempre, sin este marco. Todo se dibuja desde esta única
 // capa aditiva llamada desde renderFrameEnTiempo justo después del clip
-// base y antes de los overlays de texto/logo — no toca calcularClipActivo
-// ni el cálculo de tiempo efectivo, solo agrega dibujo encima.
-//  1) Membrete: chip navy + isotipo, esquina superior izquierda — mismo
-//     diseño que ya usan las plantillas estáticas del Editor de Fotos
-//     (fehDrawLogoLockup con full=false sobre un fillRect rgba(11,31,58,.92)
-//     de 200×46px en 56,40). Persistente en TODOS los clips (incluyendo
-//     intro/cierre), con toggle para desactivarlo si algún caso lo requiere.
-//  2) Baño de color navy al 8% sobre todo el frame — solo foto/video.
-//  3) Línea de acento terracota pegada al borde inferior — solo foto/video.
-function fevDibujarMembreteMarca(ctx, marca){
-  if (marca !== "home") return;
-  const img = fevObtenerLogoImg(marca, "icono");
+// base y antes de los overlays de texto/logo/badge — no toca
+// calcularClipActivo ni el cálculo de tiempo efectivo, solo lee su
+// resultado para saber qué punto de progreso resaltar.
+const FEV_HOME_MARCO = {
+  zonaSupH: 355,
+  zonaInfH: 325,
+  margenLateral: 71,
+  radioEsquina: 22,
+  bordeAncho: 3,
+};
+
+// Rectángulo (en px de canvas) de la "ventana" de contenido donde se
+// recorta la foto/video — el resto del canvas queda para las 2 franjas
+// navy. Único lugar donde vive esta cuenta (igual criterio que
+// fevPosicionesClips para el tiempo): tanto el dibujo del clip como el
+// clamp de arrastre de overlays (Parte 2) parten de aquí.
+function fevVentanaHome(){
+  const m = FEV_HOME_MARCO;
+  return { x: m.margenLateral, y: m.zonaSupH, w: FEV_W - m.margenLateral * 2, h: FEV_H - m.zonaSupH - m.zonaInfH };
+}
+
+// Textura diagonal sutil (líneas blancas ~16% opacidad) para las zonas
+// navy del marco, acotada a la región dada.
+function fevDibujarTexturaDiagonal(ctx, x, y, w, h){
   ctx.save();
-  ctx.fillStyle = "rgba(11,31,58,.92)";
-  ctx.fillRect(56, 40, 200, 46);
-  if (img && img.complete && img.naturalWidth){
-    const targetH = 38;
-    const w = img.naturalWidth * (targetH / img.naturalHeight);
-    ctx.drawImage(img, 66, 44, w, targetH);
+  ctx.beginPath();
+  ctx.rect(x, y, w, h);
+  ctx.clip();
+  ctx.strokeStyle = "rgba(255,255,255,.16)";
+  ctx.lineWidth = 1.5;
+  const paso = 26;
+  for (let i = -h; i < w + h; i += paso){
+    ctx.beginPath();
+    ctx.moveTo(x + i, y);
+    ctx.lineTo(x + i + h, y + h);
+    ctx.stroke();
   }
   ctx.restore();
 }
 
-function fevDibujarTratamientoDeMarca(ctx, timeline, clipA, clipB){
-  if (timeline.marca !== "home") return;
-  if (timeline.membreteMarca !== false) fevDibujarMembreteMarca(ctx, timeline.marca);
-
-  const esFondoSolido = (c) => c && c.tipo !== "foto" && c.tipo !== "video";
-  const sobreFondoSolido = esFondoSolido(clipA) && (!clipB || esFondoSolido(clipB));
-  if (sobreFondoSolido) return; // intro/cierre ya son navy sólido, sin necesidad de baño/acento
-
+// Dibuja la foto/video de un clip HOME recortada dentro de la ventana
+// (cover, esquinas redondeadas, borde terracota) en vez de a canvas
+// completo — para el resto de marcas, exactamente el mismo
+// fevDibujarCover de siempre a canvas completo, sin cambios.
+function fevDibujarMediaEnVentana(ctx, elemento, naturalW, naturalH, zoom, panX, panY, marca){
+  if (marca !== "home"){
+    fevDibujarCover(ctx, elemento, naturalW, naturalH, 0, 0, FEV_W, FEV_H, zoom, panX, panY);
+    return;
+  }
+  const m = FEV_HOME_MARCO;
+  const v = fevVentanaHome();
   ctx.save();
-  ctx.fillStyle = "rgba(11,31,58,.08)";
-  ctx.fillRect(0, 0, FEV_W, FEV_H);
+  fehRoundRect(ctx, v.x, v.y, v.w, v.h, m.radioEsquina);
+  ctx.clip();
+  fevDibujarCover(ctx, elemento, naturalW, naturalH, v.x, v.y, v.w, v.h, zoom, panX, panY);
+  ctx.restore();
+  ctx.save();
+  fehRoundRect(ctx, v.x, v.y, v.w, v.h, m.radioEsquina);
+  ctx.strokeStyle = "#C36F4A";
+  ctx.lineWidth = m.bordeAncho;
+  ctx.stroke();
+  ctx.restore();
+}
+
+// El marco completo (zonas navy + logo + puntos de progreso + tagline +
+// handle/teléfono) — nada de esto depende de tMs salvo qué punto de
+// progreso está resaltado, que se calcula leyendo calcularClipActivo (sin
+// modificarlo).
+function fevDibujarMarcoHome(ctx, timeline, tMs){
+  const m = FEV_HOME_MARCO;
+  const v = fevVentanaHome();
+
+  // Zona superior: navy + textura + logotipo real de HOME centrado.
+  ctx.fillStyle = "#0B1F3A";
+  ctx.fillRect(0, 0, FEV_W, m.zonaSupH);
+  fevDibujarTexturaDiagonal(ctx, 0, 0, FEV_W, m.zonaSupH);
+  const logo = fevObtenerLogoImg(timeline.marca, "blanco");
+  if (logo && logo.complete && logo.naturalWidth){
+    const anchoLogo = 231;
+    const altoLogo = anchoLogo * (logo.naturalHeight / logo.naturalWidth);
+    ctx.drawImage(logo, (FEV_W - anchoLogo) / 2, 61, anchoLogo, altoLogo);
+  }
+
+  // Márgenes laterales de la ventana — el clip ya se dibujó recortado a la
+  // ventana (fevDibujarMediaEnVentana), así que estas 2 tiras verticales a
+  // los costados (entre las zonas navy superior e inferior) también deben
+  // quedar navy, o si no se ve negro puro (el fillRect inicial de
+  // renderFrameEnTiempo) entre el margen y la foto/video.
+  const altoMedio = FEV_H - m.zonaSupH - m.zonaInfH;
+  ctx.fillStyle = "#0B1F3A";
+  ctx.fillRect(0, m.zonaSupH, m.margenLateral, altoMedio);
+  ctx.fillRect(FEV_W - m.margenLateral, m.zonaSupH, m.margenLateral, altoMedio);
+  fevDibujarTexturaDiagonal(ctx, 0, m.zonaSupH, m.margenLateral, altoMedio);
+  fevDibujarTexturaDiagonal(ctx, FEV_W - m.margenLateral, m.zonaSupH, m.margenLateral, altoMedio);
+
+  // Borde terracota alrededor de la ventana de contenido (encima de la
+  // foto/video, que fevDibujarMediaEnVentana ya recortó a este mismo rect).
+  ctx.save();
+  fehRoundRect(ctx, v.x, v.y, v.w, v.h, m.radioEsquina);
+  ctx.strokeStyle = "#C36F4A";
+  ctx.lineWidth = m.bordeAncho;
+  ctx.stroke();
   ctx.restore();
 
-  const ALTO_ACENTO = 5;
+  // Zona inferior: navy + textura + puntos de progreso + tagline + handle/tel.
+  const yInf = FEV_H - m.zonaInfH;
+  ctx.fillStyle = "#0B1F3A";
+  ctx.fillRect(0, yInf, FEV_W, m.zonaInfH);
+  fevDibujarTexturaDiagonal(ctx, 0, yInf, FEV_W, m.zonaInfH);
+
+  // Puntos de progreso tipo "stories" — uno por clip de tipo foto/video
+  // (NO cuenta intro/cierre); el activo en tMs (clipA de
+  // calcularClipActivo) resaltado en terracota, el resto en blanco 35%.
+  const clipsFotoVideo = timeline.clips.filter(c => c.tipo === "foto" || c.tipo === "video");
+  if (clipsFotoVideo.length){
+    const activo = calcularClipActivo(timeline, tMs);
+    const idActivo = activo ? activo.clipA.id : null;
+    const anchoPunto = 44, altoPunto = 4, espacio = 10;
+    const totalAncho = clipsFotoVideo.length * anchoPunto + (clipsFotoVideo.length - 1) * espacio;
+    let x0 = (FEV_W - totalAncho) / 2;
+    const yPuntos = yInf + 40;
+    clipsFotoVideo.forEach(c => {
+      ctx.fillStyle = c.id === idActivo ? "#C36F4A" : "rgba(255,255,255,.35)";
+      ctx.fillRect(x0, yPuntos, anchoPunto, altoPunto);
+      x0 += anchoPunto + espacio;
+    });
+  }
+
+  // Tagline.
   ctx.save();
+  ctx.textAlign = "center";
+  ctx.textBaseline = "alphabetic";
   ctx.fillStyle = "#C36F4A";
-  ctx.fillRect(0, FEV_H - ALTO_ACENTO, FEV_W, ALTO_ACENTO);
+  ctx.font = 'italic 700 40px "Playfair Display", serif';
+  ctx.fillText("Calidad que se nota", FEV_W / 2, yInf + 128);
+  ctx.restore();
+
+  // Handle + teléfono.
+  ctx.save();
+  ctx.textAlign = "center";
+  ctx.textBaseline = "alphabetic";
+  ctx.fillStyle = "#D9DDE3";
+  ctx.font = '500 26px "Inter", sans-serif';
+  ctx.fillText("@homebyromsa · " + (window._homeTel || ""), FEV_W / 2, yInf + 172);
   ctx.restore();
 }
 
@@ -26736,13 +26840,13 @@ function fevDibujarCapaClip(ctx, clip, tLocalMs, opts, marca){
     const img = clip.elementoCargado;
     if (img && img.complete && img.naturalWidth){
       const kb = fevKenBurns(clip, p);
-      fevDibujarCover(ctx, img, img.naturalWidth, img.naturalHeight, 0, 0, FEV_W, FEV_H, kb.zoom, kb.panX, kb.panY);
+      fevDibujarMediaEnVentana(ctx, img, img.naturalWidth, img.naturalHeight, kb.zoom, kb.panX, kb.panY, marca);
     }
   } else if (clip.tipo === "video"){
     const vid = clip.elementoCargado;
     if (vid && vid.readyState >= 2){
       fevSincronizarVideoClip(clip, tLocalMs);
-      fevDibujarCover(ctx, vid, vid.videoWidth, vid.videoHeight, 0, 0, FEV_W, FEV_H, 1, 0, 0);
+      fevDibujarMediaEnVentana(ctx, vid, vid.videoWidth, vid.videoHeight, 1, 0, 0, marca);
     }
   } else if (clip.tipo === "intro"){
     fevDibujarCapaIntro(ctx, marca);
@@ -26794,7 +26898,14 @@ function renderFrameEnTiempo(ctx, timeline, tMs){
     fevDibujarCapaClip(ctx, clipB, tLocalB, { alpha: progresoTransicion }, timeline.marca);
   }
 
-  fevDibujarTratamientoDeMarca(ctx, timeline, clipA, clipB);
+  // Marco de marca HOME (Partes 1 y 3) — solo si al menos uno de los clips
+  // activos es foto/video; si ambos son intro/cierre (navy sólido propio),
+  // no se dibuja nada encima. Mismo criterio que usaba el tratamiento
+  // anterior que este marco reemplaza.
+  const esFondoSolidoHome = (c) => c && c.tipo !== "foto" && c.tipo !== "video";
+  if (timeline.marca === "home" && !(esFondoSolidoHome(clipA) && (!clipB || esFondoSolidoHome(clipB)))){
+    fevDibujarMarcoHome(ctx, timeline, tMs);
+  }
 
   fevDibujarOverlaysDeTexto(ctx, timeline, tMs);
   fevDibujarLogosYBadges(ctx, timeline, tMs);
@@ -26878,10 +26989,20 @@ function fevIniciarArrastrePosicion(objetivo, e, scaleX, scaleY, ctx, marca){
   const startClientX = e.clientX, startClientY = e.clientY;
 
   const box = fevBBoxDeOverlay(ctx, marca, objetivo);
-  const medioAnchoRel = (box.w / 2) / FEV_W;
-  const medioAltoRel = (box.h / 2) / FEV_H;
-  const minX = Math.min(0.5, medioAnchoRel), maxX = Math.max(0.5, 1 - medioAnchoRel);
-  const minY = Math.min(0.5, medioAltoRel), maxY = Math.max(0.5, 1 - medioAltoRel);
+  const medioAnchoPx = box.w / 2, medioAltoPx = box.h / 2;
+
+  // Parte 2 del marco de marca HOME — ya existe una "ventana" de contenido
+  // más chica que el canvas completo (las zonas navy superior/inferior no
+  // son arrastrables); el clamp se acota a esa ventana en vez de al canvas
+  // completo. El resto de marcas sigue acotando contra el canvas completo,
+  // sin cambios.
+  let areaX = 0, areaY = 0, areaW = FEV_W, areaH = FEV_H;
+  if (marca === "home"){
+    const v = fevVentanaHome();
+    areaX = v.x; areaY = v.y; areaW = v.w; areaH = v.h;
+  }
+  const minX = Math.min(0.5, (areaX + medioAnchoPx) / FEV_W), maxX = Math.max(0.5, (areaX + areaW - medioAnchoPx) / FEV_W);
+  const minY = Math.min(0.5, (areaY + medioAltoPx) / FEV_H), maxY = Math.max(0.5, (areaY + areaH - medioAltoPx) / FEV_H);
 
   function onMove(ev){
     const nuevoX = startX + (ev.clientX - startClientX) * scaleX / FEV_W;
@@ -26986,19 +27107,6 @@ function fevActualizarBotonesDeMarca(){
   const btnOutro = document.getElementById("fev-btn-outro");
   if (btnIntro) btnIntro.style.display = esHomeORomsa ? "" : "none";
   if (btnOutro) btnOutro.style.display = esHomeORomsa ? "" : "none";
-
-  // Toggle de la franja de marca persistente (Parte 1) — solo HOME por ahora.
-  const esHome = FEV.timeline.marca === "home";
-  const toggleMembrete = document.getElementById("fev-toggle-membrete");
-  const chkMembrete = document.getElementById("fev-chk-membrete");
-  if (toggleMembrete) toggleMembrete.style.display = esHome ? "flex" : "none";
-  if (chkMembrete) chkMembrete.checked = FEV.timeline.membreteMarca !== false;
-}
-
-function fevToggleMembreteMarca(activo){
-  if (!FEV) return;
-  FEV.timeline.membreteMarca = !!activo;
-  fevRenderPreviewAt(FEV_PLAYHEAD_MS);
 }
 
 // Parte 4 — transición "firma" de marca: HOME siempre entra con Fundido
