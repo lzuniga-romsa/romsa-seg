@@ -26740,36 +26740,91 @@ function fevDibujarMediaEnVentana(ctx, elemento, naturalW, naturalH, zoom, panX,
   ctx.restore();
 }
 
-// El marco completo (zonas navy + logo + puntos de progreso + tagline +
-// handle/teléfono) — nada de esto depende de tMs salvo qué punto de
-// progreso está resaltado, que se calcula leyendo calcularClipActivo (sin
-// modificarlo).
-function fevDibujarMarcoHome(ctx, timeline, tMs){
-  const m = FEV_HOME_MARCO;
-  const v = fevVentanaHome();
+// Capa ESTÁTICA del marco (zonas navy + textura diagonal + logo + tagline
+// + handle/teléfono) — nada de esto cambia de un fotograma a otro dentro
+// de una misma exportación, así que se dibuja UNA sola vez a un canvas
+// offscreen y de ahí en adelante cada fotograma solo hace drawImage() de
+// ese resultado (medido: redibujar la textura línea por línea cada
+// fotograma costaba ~0.46ms de los ~11.6ms de renderFrameEnTiempo — no es
+// el cuello de botella dominante del export lento con transición de
+// video, pero tampoco cuesta nada evitarlo). Los puntos de progreso NO
+// van aquí porque sí dependen de tMs (qué clip está activo); el borde
+// terracota tampoco, porque debe pintarse ENCIMA de la foto/video real de
+// cada fotograma, no antes.
+let _fevMarcoHomeEstaticoCache = null; // { canvas, logoListo }
 
-  // Zona superior: navy + textura + logotipo real de HOME centrado.
-  ctx.fillStyle = "#0B1F3A";
-  ctx.fillRect(0, 0, FEV_W, m.zonaSupH);
-  fevDibujarTexturaDiagonal(ctx, 0, 0, FEV_W, m.zonaSupH);
+function fevMarcoHomeCapaEstatica(timeline){
+  const m = FEV_HOME_MARCO;
   const logo = fevObtenerLogoImg(timeline.marca, "blanco");
-  if (logo && logo.complete && logo.naturalWidth){
-    const anchoLogo = 231;
-    const altoLogo = anchoLogo * (logo.naturalHeight / logo.naturalWidth);
-    ctx.drawImage(logo, (FEV_W - anchoLogo) / 2, 61, anchoLogo, altoLogo);
+  const logoListo = !!(logo && logo.complete && logo.naturalWidth);
+  if (_fevMarcoHomeEstaticoCache && _fevMarcoHomeEstaticoCache.logoListo === logoListo){
+    return _fevMarcoHomeEstaticoCache.canvas;
   }
 
-  // Márgenes laterales de la ventana — el clip ya se dibujó recortado a la
+  const capa = document.createElement("canvas");
+  capa.width = FEV_W;
+  capa.height = FEV_H;
+  const c = capa.getContext("2d");
+
+  // Zona superior: navy + textura + logotipo real de HOME centrado.
+  c.fillStyle = "#0B1F3A";
+  c.fillRect(0, 0, FEV_W, m.zonaSupH);
+  fevDibujarTexturaDiagonal(c, 0, 0, FEV_W, m.zonaSupH);
+  if (logoListo){
+    const anchoLogo = 231;
+    const altoLogo = anchoLogo * (logo.naturalHeight / logo.naturalWidth);
+    c.drawImage(logo, (FEV_W - anchoLogo) / 2, 61, anchoLogo, altoLogo);
+  }
+
+  // Márgenes laterales de la ventana — el clip se dibuja recortado a la
   // ventana (fevDibujarMediaEnVentana), así que estas 2 tiras verticales a
   // los costados (entre las zonas navy superior e inferior) también deben
   // quedar navy, o si no se ve negro puro (el fillRect inicial de
   // renderFrameEnTiempo) entre el margen y la foto/video.
   const altoMedio = FEV_H - m.zonaSupH - m.zonaInfH;
-  ctx.fillStyle = "#0B1F3A";
-  ctx.fillRect(0, m.zonaSupH, m.margenLateral, altoMedio);
-  ctx.fillRect(FEV_W - m.margenLateral, m.zonaSupH, m.margenLateral, altoMedio);
-  fevDibujarTexturaDiagonal(ctx, 0, m.zonaSupH, m.margenLateral, altoMedio);
-  fevDibujarTexturaDiagonal(ctx, FEV_W - m.margenLateral, m.zonaSupH, m.margenLateral, altoMedio);
+  c.fillStyle = "#0B1F3A";
+  c.fillRect(0, m.zonaSupH, m.margenLateral, altoMedio);
+  c.fillRect(FEV_W - m.margenLateral, m.zonaSupH, m.margenLateral, altoMedio);
+  fevDibujarTexturaDiagonal(c, 0, m.zonaSupH, m.margenLateral, altoMedio);
+  fevDibujarTexturaDiagonal(c, FEV_W - m.margenLateral, m.zonaSupH, m.margenLateral, altoMedio);
+
+  // Zona inferior: navy + textura + tagline + handle/tel (los puntos de
+  // progreso se dibujan aparte, por fotograma, en fevDibujarMarcoHome).
+  const yInf = FEV_H - m.zonaInfH;
+  c.fillStyle = "#0B1F3A";
+  c.fillRect(0, yInf, FEV_W, m.zonaInfH);
+  fevDibujarTexturaDiagonal(c, 0, yInf, FEV_W, m.zonaInfH);
+
+  c.save();
+  c.textAlign = "center";
+  c.textBaseline = "alphabetic";
+  c.fillStyle = "#C36F4A";
+  c.font = 'italic 700 40px "Playfair Display", serif';
+  c.fillText("Calidad que se nota", FEV_W / 2, yInf + 148);
+  c.restore();
+
+  c.save();
+  c.textAlign = "center";
+  c.textBaseline = "alphabetic";
+  c.fillStyle = "#D9DDE3";
+  c.font = '500 26px "Inter", sans-serif';
+  c.fillText("@homebyromsapisos · " + (window._homeTel || ""), FEV_W / 2, yInf + 200);
+  c.restore();
+
+  _fevMarcoHomeEstaticoCache = { canvas: capa, logoListo };
+  return capa;
+}
+
+// El marco completo por fotograma: capa estática (cacheada, ver arriba) +
+// borde terracota + puntos de progreso, los únicos 2 elementos que deben
+// pintarse en cada llamada (el borde va encima de la foto/video real de
+// este fotograma; los puntos dependen de qué clip está activo en tMs,
+// leyendo calcularClipActivo sin modificarlo).
+function fevDibujarMarcoHome(ctx, timeline, tMs){
+  const m = FEV_HOME_MARCO;
+  const v = fevVentanaHome();
+
+  ctx.drawImage(fevMarcoHomeCapaEstatica(timeline), 0, 0);
 
   // Borde terracota alrededor de la ventana de contenido (encima de la
   // foto/video, que fevDibujarMediaEnVentana ya recortó a este mismo rect).
@@ -26780,15 +26835,10 @@ function fevDibujarMarcoHome(ctx, timeline, tMs){
   ctx.stroke();
   ctx.restore();
 
-  // Zona inferior: navy + textura + puntos de progreso + tagline + handle/tel.
-  const yInf = FEV_H - m.zonaInfH;
-  ctx.fillStyle = "#0B1F3A";
-  ctx.fillRect(0, yInf, FEV_W, m.zonaInfH);
-  fevDibujarTexturaDiagonal(ctx, 0, yInf, FEV_W, m.zonaInfH);
-
   // Puntos de progreso tipo "stories" — uno por clip de tipo foto/video
   // (NO cuenta intro/cierre); el activo en tMs (clipA de
   // calcularClipActivo) resaltado en terracota, el resto en blanco 35%.
+  const yInf = FEV_H - m.zonaInfH;
   const clipsFotoVideo = timeline.clips.filter(c => c.tipo === "foto" || c.tipo === "video");
   if (clipsFotoVideo.length){
     const activo = calcularClipActivo(timeline, tMs);
@@ -26803,24 +26853,6 @@ function fevDibujarMarcoHome(ctx, timeline, tMs){
       x0 += anchoPunto + espacio;
     });
   }
-
-  // Tagline.
-  ctx.save();
-  ctx.textAlign = "center";
-  ctx.textBaseline = "alphabetic";
-  ctx.fillStyle = "#C36F4A";
-  ctx.font = 'italic 700 40px "Playfair Display", serif';
-  ctx.fillText("Calidad que se nota", FEV_W / 2, yInf + 148);
-  ctx.restore();
-
-  // Handle + teléfono.
-  ctx.save();
-  ctx.textAlign = "center";
-  ctx.textBaseline = "alphabetic";
-  ctx.fillStyle = "#D9DDE3";
-  ctx.font = '500 26px "Inter", sans-serif';
-  ctx.fillText("@homebyromsapisos · " + (window._homeTel || ""), FEV_W / 2, yInf + 200);
-  ctx.restore();
 }
 
 // Dibuja un solo clip (foto, video, intro o outro) en tLocalMs propio de
@@ -28303,23 +28335,82 @@ async function fevExportar(){
   fevPausarAudio();
   await detenido;
 
-  FEV_EXPORTING = false;
   FEV_EXPORT_PLAYING_IDS = new Set();
-  if (btn){ btn.disabled = false; btn.textContent = "⬇ Exportar video"; }
   if (previewBtn) previewBtn.disabled = false;
 
   const blob = new Blob(chunks, { type: "video/webm" });
-  const url = URL.createObjectURL(blob);
   const resultEl = document.getElementById("fev-export-result");
-  if (resultEl){
-    resultEl.style.display = "block";
+  if (resultEl) resultEl.style.display = "block";
+
+  // Sube el .webm y lo convierte a .mp4 en el servidor (ver
+  // fevMostrarResultadoExportacion) — el motor de renderizado/MediaRecorder
+  // de arriba no cambia en nada; esto es un paso posterior a la
+  // exportación. Si no hay backend disponible (Storage/Cloud Functions/
+  // sesión) o la conversión falla, cae de vuelta al .webm de siempre, sin
+  // dejar al usuario sin ningún resultado.
+  if (btn) btn.textContent = "Convirtiendo…";
+  await fevMostrarResultadoExportacion(blob, resultEl);
+
+  FEV_EXPORTING = false;
+  if (btn){ btn.disabled = false; btn.textContent = "⬇ Exportar video"; }
+
+  // Vuelve a modo scrubbing normal en el mismo punto del playhead.
+  fevSetPlayhead(FEV_PLAYHEAD_MS);
+}
+
+// Sube el .webm recién exportado a Storage (mismo patrón de
+// storage.ref().child(path).put(...) que ya usa el resto del CRM para
+// fotos/videos, ver uploadVideoToStorage) y llama a la Cloud Function
+// convertirVideoAMp4 para obtener un .mp4 (H.264+AAC) que sí se reproduce y
+// descarga bien en cualquier celular. Si Storage/Cloud Functions no están
+// disponibles (p.ej. sesión sin backend, como en pruebas locales) o la
+// conversión falla por cualquier motivo, se cae de vuelta al .webm
+// original vía blob URL — el usuario nunca se queda sin ningún resultado.
+async function fevMostrarResultadoExportacion(blob, resultEl){
+  function mostrarWebmDirecto(avisoExtra){
+    const url = URL.createObjectURL(blob);
+    if (!resultEl) return;
     resultEl.innerHTML = `
+      ${avisoExtra ? `<div style="font-size:11px;color:#B45309;margin-bottom:8px;text-align:center;">${avisoExtra}</div>` : ""}
       <video src="${url}" controls style="width:100%;max-width:360px;border-radius:10px;background:#000;display:block;margin:0 auto;"></video>
       <a href="${url}" download="video-romsa-${Date.now()}.webm" class="fev-btn fev-btn-primary" style="display:block;text-align:center;margin-top:10px;text-decoration:none;">⬇ Descargar .webm</a>
     `;
   }
-  // Vuelve a modo scrubbing normal en el mismo punto del playhead.
-  fevSetPlayhead(FEV_PLAYHEAD_MS);
+
+  if (!storage || !cloudFunctions || !currentUser){
+    mostrarWebmDirecto();
+    return;
+  }
+
+  if (resultEl){
+    resultEl.innerHTML = `
+      <div style="text-align:center;padding:24px 0;">
+        <div style="font-size:13px;color:var(--tx2);">⏳ Convirtiendo a MP4…</div>
+        <div style="font-size:11px;color:var(--tx3,#999);margin-top:4px;">Puede tardar hasta un minuto</div>
+      </div>
+    `;
+  }
+
+  try {
+    const storagePath = `video-exports/${currentUser.uid}/${Date.now()}.webm`;
+    const ref = storage.ref().child(storagePath);
+    await ref.put(blob, { contentType: "video/webm" });
+
+    const fn = cloudFunctions.httpsCallable("convertirVideoAMp4", { timeout: 300000 });
+    const res = await fn({ storagePath });
+    const mp4Url = res && res.data && res.data.url;
+    if (!mp4Url) throw new Error("La conversión no devolvió una URL de MP4.");
+
+    if (resultEl){
+      resultEl.innerHTML = `
+        <video src="${mp4Url}" controls style="width:100%;max-width:360px;border-radius:10px;background:#000;display:block;margin:0 auto;"></video>
+        <a href="${mp4Url}" download="video-romsa-${Date.now()}.mp4" class="fev-btn fev-btn-primary" style="display:block;text-align:center;margin-top:10px;text-decoration:none;">⬇ Descargar .mp4</a>
+      `;
+    }
+  } catch (e){
+    console.error("[FEV] Error convirtiendo a MP4:", e);
+    mostrarWebmDirecto("⚠️ No se pudo convertir a MP4; puedes descargar el .webm mientras tanto.");
+  }
 }
 
 // ══════════════════════════════════════════════════════════════

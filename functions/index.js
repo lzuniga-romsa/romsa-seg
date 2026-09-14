@@ -2,6 +2,18 @@ const { onCall, HttpsError } = require("firebase-functions/v2/https");
 const { defineSecret } = require("firebase-functions/params");
 const logger = require("firebase-functions/logger");
 const Anthropic = require("@anthropic-ai/sdk");
+const { initializeApp } = require("firebase-admin/app");
+const { getStorage } = require("firebase-admin/storage");
+const path = require("path");
+const os = require("os");
+const fs = require("fs");
+const { execFile } = require("child_process");
+const { promisify } = require("util");
+const ffmpegPath = require("ffmpeg-static");
+
+const execFileAsync = promisify(execFile);
+
+initializeApp();
 
 const ANTHROPIC_API_KEY = defineSecret("ANTHROPIC_API_KEY");
 
@@ -181,5 +193,115 @@ exports.diagnosticoVisualIA = onCall(
     });
 
     return resultado;
+  }
+);
+
+// ══════════════════════════════════════════════════════════════
+// Generador de Video — conversión de .webm (salida real de
+// MediaRecorder/canvas.captureStream, sin cambios en ese pipeline) a .mp4
+// (H.264 + AAC) con ffmpeg real, para que el video final se reproduzca y
+// descargue sin problemas en cualquier celular. El cliente sube el .webm a
+// Storage con el mismo patrón que ya usa el resto del CRM
+// (storage.ref().child(path).put(...)) y llama este callable con la ruta
+// exacta; no se usa Firestore para avisar cuando está listo porque no hace
+// falta — el callable ya espera a que termine la conversión y regresa
+// directamente la URL final (mismo patrón síncrono que diagnosticoVisualIA
+// arriba, que es el único proceso asíncrono-de-servidor que ya existía en
+// este archivo).
+const MAX_BYTES_VIDEO_WEBM = 300 * 1024 * 1024; // 300 MB — generoso para un reel de pocos minutos, pero acotado.
+const VIGENCIA_URL_MP4_MS = 7 * 24 * 60 * 60 * 1000; // 7 días.
+
+// Solo acepta una ruta DENTRO de la carpeta del propio usuario autenticado
+// (video-exports/{uid}/...), nunca una URL arbitraria — evita que alguien
+// use este callable para convertir o borrar el archivo de otra persona.
+function validarStoragePathDeUsuario(storagePath, uid) {
+  if (typeof storagePath !== "string" || !storagePath.trim()) {
+    throw new HttpsError("invalid-argument", "Falta storagePath.");
+  }
+  if (storagePath.includes("..") || storagePath.includes("\0")) {
+    throw new HttpsError("invalid-argument", "storagePath inválido.");
+  }
+  const prefijoEsperado = `video-exports/${uid}/`;
+  if (!storagePath.startsWith(prefijoEsperado) || !storagePath.toLowerCase().endsWith(".webm")) {
+    throw new HttpsError(
+      "invalid-argument",
+      `storagePath debe apuntar a un .webm propio dentro de ${prefijoEsperado}.`
+    );
+  }
+}
+
+exports.convertirVideoAMp4 = onCall(
+  { region: "us-central1", timeoutSeconds: 300, memory: "1GiB" },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError("unauthenticated", "Debes iniciar sesión para convertir un video.");
+    }
+    const uid = request.auth.uid;
+    const { storagePath } = request.data || {};
+    validarStoragePathDeUsuario(storagePath, uid);
+
+    const bucket = getStorage().bucket();
+    const archivoWebm = bucket.file(storagePath);
+
+    const [existe] = await archivoWebm.exists();
+    if (!existe) {
+      throw new HttpsError("not-found", "No se encontró el archivo .webm a convertir.");
+    }
+    const [metadata] = await archivoWebm.getMetadata();
+    if (Number(metadata.size) > MAX_BYTES_VIDEO_WEBM) {
+      throw new HttpsError("invalid-argument", "El video es demasiado grande para convertir (máx. 300 MB).");
+    }
+
+    const nombreBase = path.basename(storagePath, ".webm");
+    const tmpWebm = path.join(os.tmpdir(), `in_${nombreBase}.webm`);
+    const tmpMp4 = path.join(os.tmpdir(), `out_${nombreBase}.mp4`);
+    const mp4Path = storagePath.slice(0, -".webm".length) + ".mp4";
+
+    try {
+      await archivoWebm.download({ destination: tmpWebm });
+
+      // H.264 High/yuv420p + AAC + faststart: el combo con mejor compatibilidad
+      // conocida en iOS/Android/escritorio (yuv420p en particular es lo que
+      // exige Safari/QuickTime para decodificar por hardware).
+      await execFileAsync(ffmpegPath, [
+        "-y",
+        "-i", tmpWebm,
+        "-c:v", "libx264",
+        "-profile:v", "high",
+        "-level", "4.1",
+        "-pix_fmt", "yuv420p",
+        "-preset", "veryfast",
+        "-crf", "23",
+        "-c:a", "aac",
+        "-b:a", "128k",
+        "-movflags", "+faststart",
+        tmpMp4,
+      ], { timeout: 270000, maxBuffer: 1024 * 1024 * 20 });
+
+      await bucket.upload(tmpMp4, {
+        destination: mp4Path,
+        metadata: { contentType: "video/mp4" },
+      });
+
+      const [url] = await bucket.file(mp4Path).getSignedUrl({
+        action: "read",
+        expires: Date.now() + VIGENCIA_URL_MP4_MS,
+      });
+
+      // Borra el .webm temporal — ya cumplió su propósito y no debe
+      // acumularse sin límite en Storage. Si el borrado falla no se
+      // considera un error de la conversión (el usuario ya tiene su mp4).
+      archivoWebm.delete().catch((e) => logger.warn("No se pudo borrar el .webm temporal tras convertir:", e));
+
+      logger.info("Video convertido a MP4", { uid, storagePath, mp4Path, bytesEntrada: metadata.size });
+
+      return { url, path: mp4Path };
+    } catch (err) {
+      logger.error("Error convirtiendo video a MP4:", err);
+      throw new HttpsError("internal", "No se pudo convertir el video a MP4. Intenta de nuevo.");
+    } finally {
+      fs.unlink(tmpWebm, () => {});
+      fs.unlink(tmpMp4, () => {});
+    }
   }
 );

@@ -8,6 +8,8 @@
   },
   "dependencies": {
     "firebase-functions": "^6.4.0",
-    "@anthropic-ai/sdk": "^0.32.0"
+    "firebase-admin": "^13.0.0",
+    "@anthropic-ai/sdk": "^0.32.0",
+    "ffmpeg-static": "^5.2.0"
   }
 }
