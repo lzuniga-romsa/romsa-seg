@@ -26511,7 +26511,12 @@ function fevDibujarLogo(ctx, marca, overlay, sobreFondoSolido){
 // cCategoryBadge en modo "badge" (generador de posts BCE), para no
 // reinventar el lenguaje visual de una etiqueta con fondo.
 function fevBBoxBadge(ctx, marca, overlay){
-  const fontSize = overlay.tamano || Math.round(FEV_W * 0.032);
+  // Tamaño default reducido (antes 0.032*FEV_W ≈ 35px, se veía demasiado
+  // grande — ver captura real: "CONCRETO DECORATIVO" ocupaba buena parte
+  // del ancho de la ventana). 0.024*FEV_W ≈ 26px, más cerca de la
+  // proporción del sello "Cotización sin costo" de las plantillas
+  // estáticas (22px sobre el mismo ancho de canvas de 1080).
+  const fontSize = overlay.tamano || Math.round(FEV_W * 0.024);
   const spacing = fontSize * 0.16;
   const upper = String(overlay.texto || "").toUpperCase();
   ctx.save();
@@ -27045,6 +27050,34 @@ function fevBBoxDeOverlay(ctx, marca, item){
 // de bbox que se usa para dibujar) quede siempre dentro de [0,FEV_W]x
 // [0,FEV_H], en vez de solo acotar el centro a [0,1] como antes (eso
 // dejaba que la mitad del overlay se saliera si estaba cerca del borde).
+// Parte 4 — guías de alineación tipo Canva/Figma: distancia (en px de
+// canvas, 1080x1920) dentro de la cual el borde de un overlay se ajusta
+// (snap) al borde correspondiente de la ventana de contenido.
+const FEV_SNAP_PX = 10;
+
+// Dibuja las líneas guía activas (se llama DESPUÉS de repintar el
+// fotograma, encima de todo — son feedback de arrastre, no parte del
+// contenido; nunca se llama durante exportación/renderFrameEnTiempo).
+function fevDibujarGuiasDeAlineacion(ctx, guias, areaX, areaY, areaW, areaH){
+  if (!guias.length) return;
+  ctx.save();
+  ctx.strokeStyle = "#00E5FF";
+  ctx.lineWidth = 2;
+  ctx.setLineDash([7, 7]);
+  guias.forEach(g => {
+    ctx.beginPath();
+    if (g.tipo === "v"){
+      ctx.moveTo(g.pos, areaY);
+      ctx.lineTo(g.pos, areaY + areaH);
+    } else {
+      ctx.moveTo(areaX, g.pos);
+      ctx.lineTo(areaX + areaW, g.pos);
+    }
+    ctx.stroke();
+  });
+  ctx.restore();
+}
+
 function fevIniciarArrastrePosicion(objetivo, e, scaleX, scaleY, ctx, marca){
   const startX = objetivo.x, startY = objetivo.y;
   const startClientX = e.clientX, startClientY = e.clientY;
@@ -27065,16 +27098,52 @@ function fevIniciarArrastrePosicion(objetivo, e, scaleX, scaleY, ctx, marca){
   const minX = Math.min(0.5, (areaX + medioAnchoPx) / FEV_W), maxX = Math.max(0.5, (areaX + areaW - medioAnchoPx) / FEV_W);
   const minY = Math.min(0.5, (areaY + medioAltoPx) / FEV_H), maxY = Math.max(0.5, (areaY + areaH - medioAltoPx) / FEV_H);
 
+  // Snapea el CENTRO propuesto (en px) si el borde del overlay que resulta
+  // de ese centro queda a FEV_SNAP_PX o menos de un borde de la ventana —
+  // izquierda/derecha compiten entre sí en X (igual arriba/abajo en Y), el
+  // overlay puede snapear en ambos ejes a la vez.
+  function fevAplicarSnap(xPx, yPx){
+    const guias = [];
+    let xFinal = xPx, yFinal = yPx;
+
+    const izqOverlay = xPx - medioAnchoPx, derOverlay = xPx + medioAnchoPx;
+    if (Math.abs(izqOverlay - areaX) <= FEV_SNAP_PX){
+      xFinal = areaX + medioAnchoPx;
+      guias.push({ tipo: "v", pos: areaX });
+    } else if (Math.abs(derOverlay - (areaX + areaW)) <= FEV_SNAP_PX){
+      xFinal = areaX + areaW - medioAnchoPx;
+      guias.push({ tipo: "v", pos: areaX + areaW });
+    }
+
+    const arribaOverlay = yPx - medioAltoPx, abajoOverlay = yPx + medioAltoPx;
+    if (Math.abs(arribaOverlay - areaY) <= FEV_SNAP_PX){
+      yFinal = areaY + medioAltoPx;
+      guias.push({ tipo: "h", pos: areaY });
+    } else if (Math.abs(abajoOverlay - (areaY + areaH)) <= FEV_SNAP_PX){
+      yFinal = areaY + areaH - medioAltoPx;
+      guias.push({ tipo: "h", pos: areaY + areaH });
+    }
+
+    return { xPx: xFinal, yPx: yFinal, guias };
+  }
+
   function onMove(ev){
     const nuevoX = startX + (ev.clientX - startClientX) * scaleX / FEV_W;
     const nuevoY = startY + (ev.clientY - startClientY) * scaleY / FEV_H;
-    objetivo.x = Math.min(maxX, Math.max(minX, nuevoX));
-    objetivo.y = Math.min(maxY, Math.max(minY, nuevoY));
+    const xClampPx = Math.min(maxX, Math.max(minX, nuevoX)) * FEV_W;
+    const yClampPx = Math.min(maxY, Math.max(minY, nuevoY)) * FEV_H;
+
+    const { xPx, yPx, guias } = fevAplicarSnap(xClampPx, yClampPx);
+    objetivo.x = xPx / FEV_W;
+    objetivo.y = yPx / FEV_H;
+
     fevRenderPreviewAt(FEV_PLAYHEAD_MS);
+    fevDibujarGuiasDeAlineacion(ctx, guias, areaX, areaY, areaW, areaH);
   }
   function onUp(){
     document.removeEventListener("pointermove", onMove);
     document.removeEventListener("pointerup", onUp);
+    fevRenderPreviewAt(FEV_PLAYHEAD_MS); // repinta sin guías — evita que quede la línea pegada tras soltar
   }
   document.addEventListener("pointermove", onMove);
   document.addEventListener("pointerup", onUp);
@@ -27187,6 +27256,7 @@ function fevRenderTaglinePanel(){
       ✎ Tagline del marco
       <input type="text" class="fev-input" style="flex:1;" maxlength="80" value="${escapeHtml(valor)}" oninput="fevSetTaglineHome(this.value)">
     </label>
+    <div style="width:100%;font-size:10px;color:var(--tx3,#999);">Se ve sobre las fotos/videos, no en el intro ni el cierre — mueve el playhead sobre un clip para confirmarlo aquí.</div>
   `;
 }
 
@@ -28146,7 +28216,7 @@ function fevRenderEditorLogo(wrap){
         <input type="text" class="fev-input" value="${escapeHtml(item.texto || "")}" oninput="fevSetEstiloLogo(${item.id}, 'texto', this.value)">
       </div>
       <div class="fev-ctrl-group">
-        <button type="button" class="fev-btn fev-btn-ghost" onclick="fevPosicionarBadgeEsquina(${item.id})">↗ Posición: Esquina superior derecha</button>
+        <button type="button" class="fev-btn fev-btn-primary" style="width:100%;" onclick="fevPosicionarBadgeEsquina(${item.id})">↗ Mover a la esquina superior derecha</button>
       </div>
       ${fevColorPickerHtml(FEV.timeline.marca, item.colorFondo, "Color de fondo (vacío = color de marca)", `fevSetEstiloLogo(${item.id}, 'colorFondo', {{HEX}})`)}
     `;
@@ -28507,6 +28577,10 @@ async function fevMostrarResultadoExportacion(blob, resultEl){
   }
 
   if (!storage || !cloudFunctions || !currentUser){
+    // Esto NO debería mostrar el aviso de "no se pudo convertir" — es un
+    // salto silencioso porque falta backend/sesión, un caso distinto a que
+    // algo haya fallado. Si ves el aviso con texto, NO caíste aquí.
+    console.warn("[FEV] Conversión a MP4 omitida (sin intentar red): falta storage, cloudFunctions o sesión iniciada.", { hayStorage: !!storage, hayCloudFunctions: !!cloudFunctions, haySesion: !!currentUser });
     mostrarWebmDirecto();
     return;
   }
@@ -28520,11 +28594,24 @@ async function fevMostrarResultadoExportacion(blob, resultEl){
     `;
   }
 
+  // Diagnóstico: paso 1 (subir a Storage) y paso 2 (llamar la Cloud
+  // Function) están en try/catch SEPARADOS a propósito — si algo falla,
+  // el mensaje en consola y en pantalla dice EXACTAMENTE en cuál de los
+  // dos se detuvo, en vez de un error genérico que obliga a adivinar
+  // (p.ej. "Solicitudes 24h: 0" en Firebase Console significa que se
+  // detuvo en el paso 1, nunca en el paso 2).
+  const storagePath = `video-exports/${currentUser.uid}/${Date.now()}.webm`;
+
   try {
-    const storagePath = `video-exports/${currentUser.uid}/${Date.now()}.webm`;
     const ref = storage.ref().child(storagePath);
     await ref.put(blob, { contentType: "video/webm" });
+  } catch (e){
+    console.error("[FEV] Paso 1/2 — falló la SUBIDA del .webm a Storage (" + storagePath + "); la Cloud Function NUNCA se llega a llamar:", e);
+    mostrarWebmDirecto(`⚠️ No se pudo subir el video a Storage (${e.code || e.message || "error desconocido"}); puedes descargar el .webm mientras tanto.`);
+    return;
+  }
 
+  try {
     const fn = cloudFunctions.httpsCallable("convertirVideoAMp4", { timeout: 300000 });
     const res = await fn({ storagePath });
     const mp4Url = res && res.data && res.data.url;
@@ -28537,8 +28624,8 @@ async function fevMostrarResultadoExportacion(blob, resultEl){
       `;
     }
   } catch (e){
-    console.error("[FEV] Error convirtiendo a MP4:", e);
-    mostrarWebmDirecto("⚠️ No se pudo convertir a MP4; puedes descargar el .webm mientras tanto.");
+    console.error("[FEV] Paso 2/2 — el .webm SÍ se subió a " + storagePath + ", pero falló la llamada a la Cloud Function convertirVideoAMp4:", e);
+    mostrarWebmDirecto(`⚠️ El video se subió pero no se pudo convertir a MP4 (${e.code || e.message || "error desconocido"}); puedes descargar el .webm mientras tanto.`);
   }
 }
 
