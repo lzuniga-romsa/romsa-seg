@@ -4151,6 +4151,7 @@ body.in-plantrabajo #app{
             <input type="file" id="fev-file-input-audio" accept="audio/*" style="display:none;" onchange="fevHandleUploadAudio(event)">
           </div>
           <div id="fev-audio-panel" style="display:none;"></div>
+          <div id="fev-tagline-panel" style="display:none;"></div>
           <div class="fev-timeline-track" id="fev-timeline-track">
             <div class="fev-timeline-clips" id="fev-timeline-clips"></div>
             <div class="fev-timeline-textos" id="fev-timeline-textos"></div>
@@ -26751,13 +26752,15 @@ function fevDibujarMediaEnVentana(ctx, elemento, naturalW, naturalH, zoom, panX,
 // van aquí porque sí dependen de tMs (qué clip está activo); el borde
 // terracota tampoco, porque debe pintarse ENCIMA de la foto/video real de
 // cada fotograma, no antes.
-let _fevMarcoHomeEstaticoCache = null; // { canvas, logoListo }
+const FEV_TAGLINE_HOME_DEFAULT = "Calidad que se nota";
+let _fevMarcoHomeEstaticoCache = null; // { canvas, logoListo, tagline }
 
 function fevMarcoHomeCapaEstatica(timeline){
   const m = FEV_HOME_MARCO;
   const logo = fevObtenerLogoImg(timeline.marca, "blanco");
   const logoListo = !!(logo && logo.complete && logo.naturalWidth);
-  if (_fevMarcoHomeEstaticoCache && _fevMarcoHomeEstaticoCache.logoListo === logoListo){
+  const tagline = timeline.taglineHome || FEV_TAGLINE_HOME_DEFAULT;
+  if (_fevMarcoHomeEstaticoCache && _fevMarcoHomeEstaticoCache.logoListo === logoListo && _fevMarcoHomeEstaticoCache.tagline === tagline){
     return _fevMarcoHomeEstaticoCache.canvas;
   }
 
@@ -26795,12 +26798,24 @@ function fevMarcoHomeCapaEstatica(timeline){
   c.fillRect(0, yInf, FEV_W, m.zonaInfH);
   fevDibujarTexturaDiagonal(c, 0, yInf, FEV_W, m.zonaInfH);
 
+  // Tagline editable (Parte 3) — "Calidad que se nota" es el valor por
+  // default, pero timeline.taglineHome lo puede reemplazar por cualquier
+  // texto. Máximo 2 líneas (fevWrapText, el mismo wrap que ya usan los
+  // overlays de texto) para que un texto largo no se desborde de la zona
+  // inferior: con 1 sola línea (el caso de siempre) las posiciones quedan
+  // IDÉNTICAS a antes; con 2 líneas, la primera sube y el handle/teléfono
+  // baja lo mismo que creció el bloque, sin salirse de la zona.
   c.save();
   c.textAlign = "center";
   c.textBaseline = "alphabetic";
   c.fillStyle = "#C36F4A";
   c.font = 'italic 700 40px "Playfair Display", serif';
-  c.fillText("Calidad que se nota", FEV_W / 2, yInf + 148);
+  const lineasTagline = fevWrapText(c, tagline, FEV_W * 0.8).slice(0, 2);
+  const lineHTagline = 46;
+  const yBaseTagline = yInf + 148 - (lineasTagline.length - 1) * lineHTagline;
+  lineasTagline.forEach((linea, i) => {
+    c.fillText(linea, FEV_W / 2, yBaseTagline + i * lineHTagline);
+  });
   c.restore();
 
   c.save();
@@ -26808,10 +26823,11 @@ function fevMarcoHomeCapaEstatica(timeline){
   c.textBaseline = "alphabetic";
   c.fillStyle = "#D9DDE3";
   c.font = '500 26px "Inter", sans-serif';
-  c.fillText("@homebyromsapisos · " + (window._homeTel || ""), FEV_W / 2, yInf + 200);
+  const yHandle = yInf + 200 + (lineasTagline.length - 1) * lineHTagline;
+  c.fillText("@homebyromsapisos · " + (window._homeTel || ""), FEV_W / 2, yHandle);
   c.restore();
 
-  _fevMarcoHomeEstaticoCache = { canvas: capa, logoListo };
+  _fevMarcoHomeEstaticoCache = { canvas: capa, logoListo, tagline };
   return capa;
 }
 
@@ -26971,6 +26987,19 @@ function fevDetenerTodosLosVideos(){
 // ── Apertura / navegación entre pasos ───────────────────────────
 function fevAbrir(){
   document.getElementById("fev-root").style.display = "flex";
+  // Limpia los <video> adjuntos al DOM y sus blob URLs del timeline
+  // anterior (si lo había) antes de descartarlo — a diferencia de los
+  // data: URI de antes, un blob URL no se libera solo y se queda
+  // acumulando memoria si no se revoca a mano.
+  if (FEV && FEV.timeline && FEV.timeline.clips){
+    FEV.timeline.clips.forEach(c => {
+      if (c.tipo === "video" && c.elementoCargado){
+        c.elementoCargado.pause();
+        if (c.elementoCargado.parentNode) c.elementoCargado.parentNode.removeChild(c.elementoCargado);
+        if (c.blobUrl) URL.revokeObjectURL(c.blobUrl);
+      }
+    });
+  }
   FEV = null;
   FEV_SELECTED_CLIP_ID = null;
   FEV_PLAYHEAD_MS = 0;
@@ -27126,7 +27155,39 @@ function fevIrAEditor(){
   fevActualizarBotonesDeMarca();
   fevRenderTimeline();
   fevRenderAudioPanel();
+  fevRenderTaglinePanel();
   fevSetPlayhead(0);
+}
+
+// ── Tagline editable del marco HOME (Parte 3) ───────────────────
+// A nivel de TODO el timeline (como la música), no por clip — "Calidad
+// que se nota" es el valor por default (FEV_TAGLINE_HOME_DEFAULT) pero
+// timeline.taglineHome lo reemplaza si el usuario escribe algo. Se
+// mantiene la misma tipografía (Playfair Display Italic Bold, terracota)
+// sin importar el texto (fevMarcoHomeCapaEstatica).
+function fevSetTaglineHome(texto){
+  if (!FEV) return;
+  FEV.timeline.taglineHome = String(texto || "").slice(0, 80);
+  fevRenderPreviewAt(FEV_PLAYHEAD_MS);
+}
+
+function fevRenderTaglinePanel(){
+  const panel = document.getElementById("fev-tagline-panel");
+  if (!panel || !FEV) return;
+  if (FEV.timeline.marca !== "home"){
+    panel.style.display = "none";
+    panel.innerHTML = "";
+    return;
+  }
+  panel.style.display = "flex";
+  panel.style.cssText = "display:flex;align-items:center;gap:10px;font-size:11px;color:var(--tx2);margin-bottom:8px;flex-wrap:wrap;";
+  const valor = FEV.timeline.taglineHome || FEV_TAGLINE_HOME_DEFAULT;
+  panel.innerHTML = `
+    <label style="display:flex;align-items:center;gap:6px;flex:1;min-width:220px;">
+      ✎ Tagline del marco
+      <input type="text" class="fev-input" style="flex:1;" maxlength="80" value="${escapeHtml(valor)}" oninput="fevSetTaglineHome(this.value)">
+    </label>
+  `;
 }
 
 // Partes 1-2 — intro/outro de marca (y Parte 6, paleta de swatches) están
@@ -27158,33 +27219,52 @@ function fevHandleUpload(e){
 function fevAgregarArchivo(file){
   if (!FEV) return;
   const esVideo = file.type.startsWith("video/");
-  const reader = new FileReader();
-  reader.onload = (ev) => {
-    if (esVideo){
-      const vid = document.createElement("video");
-      vid.muted = true;
-      vid.playsInline = true;
-      vid.preload = "auto";
-      vid.src = ev.target.result;
-      vid.onloadedmetadata = () => {
-        const durMs = Math.max(300, Math.round((vid.duration || 3) * 1000));
-        const clip = {
-          id: FEV_NEXT_CLIP_ID++,
-          tipo: "video",
-          archivo: file.name,
-          elementoCargado: vid,
-          duracionMs: durMs,
-          trimInMs: 0,
-          trimOutMs: durMs,
-          transicionEntrada: fevTransicionDefault(),
-          duracionTransicionMs: 400,
-        };
-        FEV.timeline.clips.push(clip);
-        fevRenderTimeline();
-        fevSeleccionarClip(clip.id);
-        if (FEV.timeline.clips.length === 1) fevIrAEditor();
+  if (esVideo){
+    // Bug real confirmado en celular (no reproducible en Chrome desktop):
+    // un <video src="data:..."> (FileReader.readAsDataURL, como se hacía
+    // antes) no carga de forma confiable en Safari/iOS — es una limitación
+    // conocida de WebKit, cuyo pipeline de decodificación de video espera
+    // un recurso servido con soporte de range-requests, algo que un data:
+    // URI no ofrece; un <img src="data:...">, en cambio, sí funciona bien
+    // ahí (por eso las fotos nunca tuvieron este problema). Se usa
+    // URL.createObjectURL(file) en su lugar — el mismo patrón que ya usa
+    // renderUpdVideoPreview en otra parte de este CRM para preview de
+    // video, y que no tiene esa limitación en ningún navegador.
+    const blobUrl = URL.createObjectURL(file);
+    const vid = document.createElement("video");
+    vid.muted = true;
+    vid.playsInline = true;
+    vid.setAttribute("playsinline", ""); // atributo plano además de la propiedad IDL — algunas versiones de iOS Safari solo lo respetan si está en el HTML.
+    vid.preload = "auto";
+    // Adjunto al documento (oculto, fuera de pantalla) en vez de quedar
+    // suelto en memoria: hay versiones de iOS Safari que no decodifican
+    // fotogramas de un <video> que nunca formó parte del DOM, aunque nunca
+    // se muestre visualmente ni se necesite para nada más que canvas.
+    vid.style.cssText = "position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;";
+    document.body.appendChild(vid);
+    vid.src = blobUrl;
+    vid.onloadedmetadata = () => {
+      const durMs = Math.max(300, Math.round((vid.duration || 3) * 1000));
+      const clip = {
+        id: FEV_NEXT_CLIP_ID++,
+        tipo: "video",
+        archivo: file.name,
+        elementoCargado: vid,
+        blobUrl,
+        duracionMs: durMs,
+        trimInMs: 0,
+        trimOutMs: durMs,
+        transicionEntrada: fevTransicionDefault(),
+        duracionTransicionMs: 400,
       };
-    } else {
+      FEV.timeline.clips.push(clip);
+      fevRenderTimeline();
+      fevSeleccionarClip(clip.id);
+      if (FEV.timeline.clips.length === 1) fevIrAEditor();
+    };
+  } else {
+    const reader = new FileReader();
+    reader.onload = (ev) => {
       const img = new Image();
       img.onload = () => {
         const clip = {
@@ -27202,9 +27282,9 @@ function fevAgregarArchivo(file){
         if (FEV.timeline.clips.length === 1) fevIrAEditor();
       };
       img.src = ev.target.result;
-    }
-  };
-  reader.readAsDataURL(file);
+    };
+    reader.readAsDataURL(file);
+  }
 }
 
 // ── Música de fondo (Fase 5) ─────────────────────────────────────
@@ -27579,6 +27659,46 @@ function fevAgregarBadge(){
   FEV.timeline.logos.push(item);
   fevSeleccionarLogo(item.id);
   fevRenderPreviewAt(FEV_PLAYHEAD_MS);
+}
+
+// Preset de posición rápida para un badge — lo coloca en la esquina
+// superior derecha de la ventana de contenido (no del canvas completo:
+// para HOME eso es fevVentanaHome(), para el resto de marcas es el canvas
+// entero, mismo criterio que ya usa el arrastre manual en
+// fevIniciarArrastrePosicion) con el mismo margen (56px sobre un canvas de
+// 1080 de ancho) que usa el sello "Cotización sin costo" de las
+// plantillas estáticas del Editor de Fotos (fehDrawPill) — punto de
+// partida consistente con esa convención de marca, no una restricción: el
+// usuario puede seguir arrastrándolo a mano después. Se acota con el
+// MISMO clamp que el arrastre manual para garantizar que nunca quede
+// fuera de la ventana, sin importar qué tan largo sea el texto del badge.
+function fevPosicionarBadgeEsquina(logoId){
+  if (!FEV) return;
+  const item = FEV.timeline.logos.find(x => x.id === logoId);
+  if (!item || item.tipo !== "badge") return;
+
+  const canvas = document.getElementById("fev-canvas");
+  const ctx = canvas.getContext("2d");
+  const marca = FEV.timeline.marca;
+  const box = fevBBoxDeOverlay(ctx, marca, item);
+  const medioAnchoPx = box.w / 2, medioAltoPx = box.h / 2;
+
+  let areaX = 0, areaY = 0, areaW = FEV_W, areaH = FEV_H;
+  if (marca === "home"){
+    const v = fevVentanaHome();
+    areaX = v.x; areaY = v.y; areaW = v.w; areaH = v.h;
+  }
+  const minX = Math.min(0.5, (areaX + medioAnchoPx) / FEV_W), maxX = Math.max(0.5, (areaX + areaW - medioAnchoPx) / FEV_W);
+  const minY = Math.min(0.5, (areaY + medioAltoPx) / FEV_H), maxY = Math.max(0.5, (areaY + areaH - medioAltoPx) / FEV_H);
+
+  const margen = 56;
+  const xDeseado = (areaX + areaW - margen - medioAnchoPx) / FEV_W;
+  const yDeseado = (areaY + margen + medioAltoPx) / FEV_H;
+  item.x = Math.min(maxX, Math.max(minX, xDeseado));
+  item.y = Math.min(maxY, Math.max(minY, yDeseado));
+
+  fevRenderPreviewAt(FEV_PLAYHEAD_MS);
+  fevRenderClipEditor();
 }
 
 function fevAgregarTexto(){
@@ -28025,6 +28145,9 @@ function fevRenderEditorLogo(wrap){
         <label class="fev-ctrl-label">Texto del badge</label>
         <input type="text" class="fev-input" value="${escapeHtml(item.texto || "")}" oninput="fevSetEstiloLogo(${item.id}, 'texto', this.value)">
       </div>
+      <div class="fev-ctrl-group">
+        <button type="button" class="fev-btn fev-btn-ghost" onclick="fevPosicionarBadgeEsquina(${item.id})">↗ Posición: Esquina superior derecha</button>
+      </div>
       ${fevColorPickerHtml(FEV.timeline.marca, item.colorFondo, "Color de fondo (vacío = color de marca)", `fevSetEstiloLogo(${item.id}, 'colorFondo', {{HEX}})`)}
     `;
   }
@@ -28072,6 +28195,12 @@ function fevSetTrim(clipId, inMs, outMs){
 
 function fevEliminarClip(clipId){
   if (!FEV) return;
+  const clip = FEV.timeline.clips.find(c => c.id === clipId);
+  if (clip && clip.tipo === "video" && clip.elementoCargado){
+    clip.elementoCargado.pause();
+    if (clip.elementoCargado.parentNode) clip.elementoCargado.parentNode.removeChild(clip.elementoCargado);
+    if (clip.blobUrl) URL.revokeObjectURL(clip.blobUrl);
+  }
   FEV.timeline.clips = FEV.timeline.clips.filter(c => c.id !== clipId);
   if (FEV_SELECTED_CLIP_ID === clipId) FEV_SELECTED_CLIP_ID = null;
   fevRenderTimeline();
