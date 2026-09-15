@@ -215,65 +215,72 @@ exports.diagnosticoVisualIA = onCall(
 // Generador de Video — conversión de .webm (salida real de
 // MediaRecorder/canvas.captureStream, sin cambios en ese pipeline) a .mp4
 // (H.264 + AAC) con ffmpeg real, para que el video final se reproduzca y
-// descargue sin problemas en cualquier celular. El cliente sube el .webm a
-// Storage con el mismo patrón que ya usa el resto del CRM
-// (storage.ref().child(path).put(...)) y llama este callable con la ruta
-// exacta; no se usa Firestore para avisar cuando está listo porque no hace
-// falta — el callable ya espera a que termine la conversión y regresa
-// directamente la URL final (mismo patrón síncrono que diagnosticoVisualIA
-// arriba, que es el único proceso asíncrono-de-servidor que ya existía en
-// este archivo).
+// descargue sin problemas en cualquier celular.
+//
+// Diseño: trigger de STORAGE (onObjectFinalized), NO callable (onCall).
+// Se intentó como callable primero, pero el proyecto tiene una política
+// de organización (Domain Restricted Sharing) que bloquea otorgar
+// invocación pública (allUsers) a Cloud Run — confirmado directamente por
+// Google: "gcloud functions add-invoker-policy-binding" regresó
+// HTTP 400 "perhaps due to an organization policy", y los logs reales de
+// Cloud Run mostraban el preflight OPTIONS rechazado con 403 antes de que
+// el código de la función llegara a correr (0 invocaciones reales, pese a
+// que el contenedor arrancaba sano). Un trigger de Storage evita el
+// problema de raíz: Eventarc entrega el evento con una identidad de
+// servicio interna de Google, no con acceso público, así que la política
+// de organización no aplica.
+//
+// El cliente sube el .webm a Storage exactamente igual que antes
+// (storage.ref().child(path).put(...)); esta función se dispara sola al
+// terminar esa subida, sin que el navegador la invoque directamente. Como
+// ya no hay una respuesta síncrona que devolver, el resultado se escribe
+// en Firestore (video_conversions/{uid}/jobs/{ts}) y el cliente lo
+// escucha con onSnapshot — mismo patrón que ya usa el resto del CRM para
+// datos en tiempo real.
+const { onObjectFinalized } = require("firebase-functions/v2/storage");
+const { getFirestore, FieldValue } = require("firebase-admin/firestore");
+
 const MAX_BYTES_VIDEO_WEBM = 300 * 1024 * 1024; // 300 MB — generoso para un reel de pocos minutos, pero acotado.
 const VIGENCIA_URL_MP4_MS = 7 * 24 * 60 * 60 * 1000; // 7 días.
 
-// Solo acepta una ruta DENTRO de la carpeta del propio usuario autenticado
-// (video-exports/{uid}/...), nunca una URL arbitraria — evita que alguien
-// use este callable para convertir o borrar el archivo de otra persona.
-function validarStoragePathDeUsuario(storagePath, uid) {
-  if (typeof storagePath !== "string" || !storagePath.trim()) {
-    throw new HttpsError("invalid-argument", "Falta storagePath.");
-  }
-  if (storagePath.includes("..") || storagePath.includes("\0")) {
-    throw new HttpsError("invalid-argument", "storagePath inválido.");
-  }
-  const prefijoEsperado = `video-exports/${uid}/`;
-  if (!storagePath.startsWith(prefijoEsperado) || !storagePath.toLowerCase().endsWith(".webm")) {
-    throw new HttpsError(
-      "invalid-argument",
-      `storagePath debe apuntar a un .webm propio dentro de ${prefijoEsperado}.`
-    );
-  }
-}
+// video-exports/{uid}/{timestamp}.webm — mismo patrón que ya usaba el
+// callable anterior. Este trigger se dispara para CUALQUIER archivo
+// finalizado en el bucket completo (fotos de obras, etc.), así que el
+// regex filtra explícitamente y descarta (return temprano, sin costo real
+// más allá de la invocación mínima) todo lo que no sea un .webm dentro de
+// esta carpeta específica.
+const PATRON_STORAGE_PATH = /^video-exports\/([^/]+)\/(\d+)\.webm$/;
 
-exports.convertirVideoAMp4 = onCall(
+exports.convertirVideoAMp4 = onObjectFinalized(
   { region: "us-central1", timeoutSeconds: 300, memory: "1GiB" },
-  async (request) => {
-    if (!request.auth) {
-      throw new HttpsError("unauthenticated", "Debes iniciar sesión para convertir un video.");
-    }
-    const uid = request.auth.uid;
-    const { storagePath } = request.data || {};
-    validarStoragePathDeUsuario(storagePath, uid);
+  async (event) => {
+    const storagePath = event.data.name || "";
+    const match = PATRON_STORAGE_PATH.exec(storagePath);
+    if (!match) return; // no es un .webm de video-exports/{uid}/ — no es para nosotros.
+    const [, uid, ts] = match;
 
     asegurarAdminApp();
-    const bucket = getStorage().bucket();
+    const db = getFirestore();
+    const jobRef = db.collection("video_conversions").doc(uid).collection("jobs").doc(ts);
+
+    const bucket = getStorage().bucket(event.data.bucket);
     const archivoWebm = bucket.file(storagePath);
-
-    const [existe] = await archivoWebm.exists();
-    if (!existe) {
-      throw new HttpsError("not-found", "No se encontró el archivo .webm a convertir.");
-    }
-    const [metadata] = await archivoWebm.getMetadata();
-    if (Number(metadata.size) > MAX_BYTES_VIDEO_WEBM) {
-      throw new HttpsError("invalid-argument", "El video es demasiado grande para convertir (máx. 300 MB).");
-    }
-
     const nombreBase = path.basename(storagePath, ".webm");
     const tmpWebm = path.join(os.tmpdir(), `in_${nombreBase}.webm`);
     const tmpMp4 = path.join(os.tmpdir(), `out_${nombreBase}.mp4`);
     const mp4Path = storagePath.slice(0, -".webm".length) + ".mp4";
 
+    await jobRef.set({
+      status: "procesando",
+      creadoEn: FieldValue.serverTimestamp(),
+    });
+
     try {
+      const bytesEntrada = Number(event.data.size || 0);
+      if (bytesEntrada > MAX_BYTES_VIDEO_WEBM) {
+        throw new Error("El video es demasiado grande para convertir (máx. 300 MB).");
+      }
+
       await archivoWebm.download({ destination: tmpWebm });
 
       // H.264 High/yuv420p + AAC + faststart: el combo con mejor compatibilidad
@@ -309,12 +316,21 @@ exports.convertirVideoAMp4 = onCall(
       // considera un error de la conversión (el usuario ya tiene su mp4).
       archivoWebm.delete().catch((e) => logger.warn("No se pudo borrar el .webm temporal tras convertir:", e));
 
-      logger.info("Video convertido a MP4", { uid, storagePath, mp4Path, bytesEntrada: metadata.size });
+      await jobRef.set({
+        status: "listo",
+        url,
+        path: mp4Path,
+        actualizadoEn: FieldValue.serverTimestamp(),
+      }, { merge: true });
 
-      return { url, path: mp4Path };
+      logger.info("Video convertido a MP4", { uid, storagePath, mp4Path, bytesEntrada });
     } catch (err) {
       logger.error("Error convirtiendo video a MP4:", err);
-      throw new HttpsError("internal", "No se pudo convertir el video a MP4. Intenta de nuevo.");
+      await jobRef.set({
+        status: "error",
+        mensajeError: String((err && err.message) || err || "error desconocido"),
+        actualizadoEn: FieldValue.serverTimestamp(),
+      }, { merge: true }).catch((e) => logger.error("Ademas fallo al escribir el estado de error en Firestore:", e));
     } finally {
       fs.unlink(tmpWebm, () => {});
       fs.unlink(tmpMp4, () => {});

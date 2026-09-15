@@ -76,6 +76,17 @@ service cloud.firestore {
       allow read, write: if request.auth != null;
     }
 
+    // ── Estado de conversión de video a MP4 (Generador de Video) ─────
+    // Escrito EXCLUSIVAMENTE por la Cloud Function convertirVideoAMp4
+    // (Admin SDK, que ignora estas reglas) al terminar de convertir un
+    // .webm subido a Storage — el cliente nunca escribe aquí, solo
+    // escucha. Solo el dueño del job (mismo uid) puede leerlo, "editor_fotos"
+    // incluido: el Generador de Video vive dentro de Editor de Fotos, así
+    // que ese rol sí necesita ver el resultado de su propia conversión.
+    match /video_conversions/{uid}/jobs/{jobId} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+    }
+
     // ── EXCEPCIÓN: Vista pública de obras (link para clientes) ───────
     // La lectura pública (sin login) NO SE TOCA — sigue funcionando
     // exactamente igual. La escritura ya requería sesión iniciada; se le

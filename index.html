@@ -28576,11 +28576,11 @@ async function fevMostrarResultadoExportacion(blob, resultEl){
     `;
   }
 
-  if (!storage || !cloudFunctions || !currentUser){
+  if (!storage || !db || !currentUser){
     // Esto NO debería mostrar el aviso de "no se pudo convertir" — es un
     // salto silencioso porque falta backend/sesión, un caso distinto a que
     // algo haya fallado. Si ves el aviso con texto, NO caíste aquí.
-    console.warn("[FEV] Conversión a MP4 omitida (sin intentar red): falta storage, cloudFunctions o sesión iniciada.", { hayStorage: !!storage, hayCloudFunctions: !!cloudFunctions, haySesion: !!currentUser });
+    console.warn("[FEV] Conversión a MP4 omitida (sin intentar red): falta storage, Firestore o sesión iniciada.", { hayStorage: !!storage, hayDb: !!db, haySesion: !!currentUser });
     mostrarWebmDirecto();
     return;
   }
@@ -28594,39 +28594,82 @@ async function fevMostrarResultadoExportacion(blob, resultEl){
     `;
   }
 
-  // Diagnóstico: paso 1 (subir a Storage) y paso 2 (llamar la Cloud
-  // Function) están en try/catch SEPARADOS a propósito — si algo falla,
-  // el mensaje en consola y en pantalla dice EXACTAMENTE en cuál de los
-  // dos se detuvo, en vez de un error genérico que obliga a adivinar
-  // (p.ej. "Solicitudes 24h: 0" en Firebase Console significa que se
-  // detuvo en el paso 1, nunca en el paso 2).
-  const storagePath = `video-exports/${currentUser.uid}/${Date.now()}.webm`;
+  const ts = Date.now();
+  const storagePath = `video-exports/${currentUser.uid}/${ts}.webm`;
 
   try {
     const ref = storage.ref().child(storagePath);
     await ref.put(blob, { contentType: "video/webm" });
   } catch (e){
-    console.error("[FEV] Paso 1/2 — falló la SUBIDA del .webm a Storage (" + storagePath + "); la Cloud Function NUNCA se llega a llamar:", e);
+    console.error("[FEV] Falló la SUBIDA del .webm a Storage (" + storagePath + "); la conversión (disparada por Storage) nunca se activa:", e);
     mostrarWebmDirecto(`⚠️ No se pudo subir el video a Storage (${e.code || e.message || "error desconocido"}); puedes descargar el .webm mientras tanto.`);
     return;
   }
 
-  try {
-    const fn = cloudFunctions.httpsCallable("convertirVideoAMp4", { timeout: 300000 });
-    const res = await fn({ storagePath });
-    const mp4Url = res && res.data && res.data.url;
-    if (!mp4Url) throw new Error("La conversión no devolvió una URL de MP4.");
+  // La conversión a MP4 ya NO es un callable — se dispara sola en el
+  // servidor con un trigger de Storage en cuanto termina la subida de
+  // arriba (ver functions/index.js: convertirVideoAMp4 es onObjectFinalized,
+  // no onCall). Se cambió de diseño porque el proyecto tiene una política
+  // de organización que bloquea otorgar invocación pública a Cloud Run —
+  // confirmado con Google rechazando el intento de otorgar el permiso, y
+  // con los logs de Cloud Run mostrando el preflight CORS rechazado antes
+  // de llegar al código de la función (0 invocaciones reales pese a un
+  // despliegue sano). Un trigger de Storage no necesita ese permiso en
+  // absoluto. El resultado se escucha en Firestore
+  // (video_conversions/{uid}/jobs/{ts}), mismo patrón de tiempo real que
+  // ya usa el resto del CRM.
+  const jobRef = db.collection("video_conversions").doc(currentUser.uid).collection("jobs").doc(String(ts));
+  // 6 min: más largo que el timeoutSeconds:300 (5 min) de la propia Cloud
+  // Function en functions/index.js, a propósito — así el cliente nunca se
+  // rinde ANTES de que la función alcance su propio límite de tiempo.
+  const TIMEOUT_CONVERSION_MS = 6 * 60 * 1000;
 
-    if (resultEl){
-      resultEl.innerHTML = `
-        <video src="${mp4Url}" controls style="width:100%;max-width:360px;border-radius:10px;background:#000;display:block;margin:0 auto;"></video>
-        <a href="${mp4Url}" download="video-romsa-${Date.now()}.mp4" class="fev-btn fev-btn-primary" style="display:block;text-align:center;margin-top:10px;text-decoration:none;">⬇ Descargar .mp4</a>
-      `;
-    }
-  } catch (e){
-    console.error("[FEV] Paso 2/2 — el .webm SÍ se subió a " + storagePath + ", pero falló la llamada a la Cloud Function convertirVideoAMp4:", e);
-    mostrarWebmDirecto(`⚠️ El video se subió pero no se pudo convertir a MP4 (${e.code || e.message || "error desconocido"}); puedes descargar el .webm mientras tanto.`);
-  }
+  await new Promise((resolve) => {
+    let resuelto = false;
+    let unsub = () => {};
+
+    const limite = setTimeout(() => {
+      if (resuelto) return;
+      resuelto = true;
+      unsub();
+      console.error("[FEV] La conversión a MP4 no terminó en " + (TIMEOUT_CONVERSION_MS / 1000) + "s (" + storagePath + "); puede que la Cloud Function no se haya disparado.");
+      mostrarWebmDirecto("⚠️ La conversión a MP4 está tardando más de lo normal; puedes descargar el .webm mientras tanto.");
+      resolve();
+    }, TIMEOUT_CONVERSION_MS);
+
+    unsub = jobRef.onSnapshot((snap) => {
+      if (resuelto) return;
+      const data = snap.data();
+      if (!data || data.status === "procesando") return; // la función aún no escribe el resultado final — seguir esperando.
+
+      if (data.status === "listo" && data.url){
+        resuelto = true;
+        clearTimeout(limite);
+        unsub();
+        if (resultEl){
+          resultEl.innerHTML = `
+            <video src="${data.url}" controls style="width:100%;max-width:360px;border-radius:10px;background:#000;display:block;margin:0 auto;"></video>
+            <a href="${data.url}" download="video-romsa-${Date.now()}.mp4" class="fev-btn fev-btn-primary" style="display:block;text-align:center;margin-top:10px;text-decoration:none;">⬇ Descargar .mp4</a>
+          `;
+        }
+        resolve();
+      } else if (data.status === "error"){
+        resuelto = true;
+        clearTimeout(limite);
+        unsub();
+        console.error("[FEV] La Cloud Function reportó un error convirtiendo el video (" + storagePath + "):", data.mensajeError);
+        mostrarWebmDirecto(`⚠️ El video se subió pero no se pudo convertir a MP4 (${data.mensajeError || "error desconocido"}); puedes descargar el .webm mientras tanto.`);
+        resolve();
+      }
+    }, (err) => {
+      if (resuelto) return;
+      resuelto = true;
+      clearTimeout(limite);
+      console.error("[FEV] Error escuchando el estado de conversión en Firestore (" + storagePath + "):", err);
+      mostrarWebmDirecto(`⚠️ No se pudo comprobar el estado de la conversión (${err.code || err.message || "error desconocido"}); puedes descargar el .webm mientras tanto.`);
+      resolve();
+    });
+  });
 }
 
 // ══════════════════════════════════════════════════════════════
