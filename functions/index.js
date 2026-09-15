@@ -2,7 +2,7 @@ const { onCall, HttpsError } = require("firebase-functions/v2/https");
 const { defineSecret } = require("firebase-functions/params");
 const logger = require("firebase-functions/logger");
 const Anthropic = require("@anthropic-ai/sdk");
-const { initializeApp } = require("firebase-admin/app");
+const { initializeApp, getApps } = require("firebase-admin/app");
 const { getStorage } = require("firebase-admin/storage");
 const path = require("path");
 const os = require("os");
@@ -13,7 +13,22 @@ const ffmpegPath = require("ffmpeg-static");
 
 const execFileAsync = promisify(execFile);
 
-initializeApp();
+// NO se llama initializeApp() aquí a nivel de módulo — ver
+// asegurarAdminApp() más abajo, invocada de forma perezosa DENTRO de
+// convertirVideoAMp4. Ya nos topamos exactamente con este mismo error una
+// vez antes (commit d3722cd, "Corregir timeout de deploy en
+// diagnosticoVisualIA"): admin.initializeApp() a nivel de módulo, al
+// correr sin credenciales locales (ADC) configuradas, intenta resolver
+// contra el metadata server de GCE y se cuelga hasta agotar la ventana de
+// 10s que usa firebase-tools para descubrir qué funciones existen en el
+// archivo — ANTES de subir nada, sin relación con permisos IAM. En aquel
+// caso la solución fue quitar firebase-admin por completo porque
+// diagnosticoVisualIA nunca lo necesitó; esta vez sí hace falta (Storage
+// real para descargar/subir el video), así que se difiere la
+// inicialización al momento de la llamada real en vez de quitarla.
+function asegurarAdminApp() {
+  if (!getApps().length) initializeApp();
+}
 
 const ANTHROPIC_API_KEY = defineSecret("ANTHROPIC_API_KEY");
 
@@ -240,6 +255,7 @@ exports.convertirVideoAMp4 = onCall(
     const { storagePath } = request.data || {};
     validarStoragePathDeUsuario(storagePath, uid);
 
+    asegurarAdminApp();
     const bucket = getStorage().bucket();
     const archivoWebm = bucket.file(storagePath);
 
