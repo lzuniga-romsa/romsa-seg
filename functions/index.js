@@ -252,7 +252,12 @@ const VIGENCIA_URL_MP4_MS = 7 * 24 * 60 * 60 * 1000; // 7 días.
 const PATRON_STORAGE_PATH = /^video-exports\/([^/]+)\/(\d+)\.webm$/;
 
 exports.convertirVideoAMp4 = onObjectFinalized(
-  { region: "us-central1", timeoutSeconds: 300, memory: "1GiB" },
+  // El bucket de Storage de este proyecto vive en us-west1, no en
+  // us-central1 (donde sigue diagnosticoVisualIA, sin relación con
+  // Storage) — un trigger de Storage exige que la función y el bucket
+  // estén en la MISMA región, o el deploy falla con "A function in
+  // region us-central1 cannot listen to a bucket in region us-west1".
+  { region: "us-west1", timeoutSeconds: 300, memory: "1GiB" },
   async (event) => {
     const storagePath = event.data.name || "";
     const match = PATRON_STORAGE_PATH.exec(storagePath);
