@@ -955,6 +955,8 @@ body.in-plantrabajo #app{
 .fev-clip-thumb-intro,.fev-clip-thumb-outro{background:linear-gradient(135deg,#152C4D,#0B1F3A);}
 .fev-clip-thumb-intro::after{content:"INTRO";font-size:8.5px;font-weight:800;letter-spacing:.5px;color:#fff;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);}
 .fev-clip-thumb-outro::after{content:"CIERRE";font-size:8.5px;font-weight:800;letter-spacing:.5px;color:#fff;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);}
+.fev-clip-thumb-antes-despues{background:linear-gradient(135deg,#1A3A60,#0B1F3A);}
+.fev-clip-thumb-antes-despues::after{content:"🔄 A/D";font-size:9px;font-weight:800;letter-spacing:.5px;color:#fff;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);}
 .fev-clip-label{position:absolute;left:4px;bottom:2px;font-family:"JetBrains Mono",monospace;font-size:9px;color:#fff;background:rgba(0,0,0,.55);padding:1px 4px;border-radius:4px;white-space:nowrap;}
 .fev-transicion-chip{position:absolute;top:2px;transform:translateX(-50%);z-index:30;display:flex;align-items:center;justify-content:center;width:22px;height:22px;background:#0B1F3A;color:#fff;border:1.5px solid #fff;border-radius:50%;box-shadow:0 1px 4px rgba(0,0,0,.35);cursor:pointer;padding:0;}
 .fev-transicion-chip:hover{background:var(--blue);}
@@ -4144,11 +4146,14 @@ body.in-plantrabajo #app{
               <button class="fev-add-btn" onclick="fevAgregarLogo()">+ Agregar logo</button>
               <button class="fev-add-btn" onclick="fevAgregarBadge()">+ Agregar badge</button>
               <button class="fev-add-btn" onclick="document.getElementById('fev-file-input-2').click()">+ Agregar clip</button>
+              <button class="fev-add-btn" onclick="fevIniciarAgregarAntesDespues()">+ Agregar Antes/Después</button>
               <button class="fev-add-btn" id="fev-btn-audio" onclick="document.getElementById('fev-file-input-audio').click()">+ Agregar música</button>
               <button class="fev-add-btn fev-add-btn-auto" onclick="fevAutoArmar()">⚡ Auto-armar</button>
             </div>
             <input type="file" id="fev-file-input-2" accept="image/*,video/*" multiple style="display:none;" onchange="fevHandleUpload(event)">
             <input type="file" id="fev-file-input-audio" accept="audio/*" style="display:none;" onchange="fevHandleUploadAudio(event)">
+            <input type="file" id="fev-file-input-antes" accept="image/*" style="display:none;" onchange="fevHandleUploadAntes(event)">
+            <input type="file" id="fev-file-input-despues" accept="image/*" style="display:none;" onchange="fevHandleUploadDespues(event)">
           </div>
           <div id="fev-audio-panel" style="display:none;"></div>
           <div id="fev-tagline-panel" style="display:none;"></div>
@@ -26746,6 +26751,45 @@ function fevDibujarMediaEnVentana(ctx, elemento, naturalW, naturalH, zoom, panX,
   ctx.restore();
 }
 
+// Clip "antes_despues" (Parte 3): 2 fotos en pantalla dividida
+// horizontalmente (mitad superior = Antes, mitad inferior = Después),
+// dentro de la misma ventana de contenido que ya usan foto/video (o el
+// canvas completo para el resto de marcas) — mismo criterio que
+// fevDibujarMediaEnVentana. Reutiliza fehDrawPhoto/fehCoverRect/fehTag,
+// las mismas funciones puras que ya dibujan la plantilla estática "Feed
+// Antes/Después" (fehDrawFeedB) del Editor de Fotos, en vez de reinventar
+// el recorte "cover" — son funciones puras (solo leen ctx/img/params), no
+// dependen del estado mutable de BCE/FEH, así que reusarlas aquí es
+// seguro (mismo criterio ya usado para fehRoundRect en el marco de HOME).
+function fevDibujarAntesDespuesEnVentana(ctx, clip, marca){
+  let areaX = 0, areaY = 0, areaW = FEV_W, areaH = FEV_H, radio = 0;
+  if (marca === "home"){
+    const v = fevVentanaHome();
+    areaX = v.x; areaY = v.y; areaW = v.w; areaH = v.h;
+    radio = FEV_HOME_MARCO.radioEsquina;
+  }
+  const rowH = areaH / 2;
+
+  ctx.save();
+  if (radio){ fehRoundRect(ctx, areaX, areaY, areaW, areaH, radio); ctx.clip(); }
+  else { ctx.beginPath(); ctx.rect(areaX, areaY, areaW, areaH); ctx.clip(); }
+  fehDrawPhoto(ctx, clip.fotoAntes, areaX, areaY, areaW, rowH, "foto ANTES");
+  fehDrawPhoto(ctx, clip.fotoDespues, areaX, areaY + rowH, areaW, rowH, "foto DESPUÉS");
+  ctx.restore();
+
+  fehTag(ctx, "ANTES", areaX + 24, areaY + 24, "#3A4250", "#FFFFFF");
+  fehTag(ctx, "DESPUÉS", areaX + 24, areaY + rowH + 24, "#C36F4A", "#0B1F3A");
+
+  if (marca === "home"){
+    ctx.save();
+    fehRoundRect(ctx, areaX, areaY, areaW, areaH, radio);
+    ctx.strokeStyle = "#C36F4A";
+    ctx.lineWidth = FEV_HOME_MARCO.bordeAncho;
+    ctx.stroke();
+    ctx.restore();
+  }
+}
+
 // Capa ESTÁTICA del marco (zonas navy + textura diagonal + logo + tagline
 // + handle/teléfono) — nada de esto cambia de un fotograma a otro dentro
 // de una misma exportación, así que se dibuja UNA sola vez a un canvas
@@ -26856,11 +26900,11 @@ function fevDibujarMarcoHome(ctx, timeline, tMs){
   ctx.stroke();
   ctx.restore();
 
-  // Puntos de progreso tipo "stories" — uno por clip de tipo foto/video
-  // (NO cuenta intro/cierre); el activo en tMs (clipA de
+  // Puntos de progreso tipo "stories" — uno por clip de tipo foto/video/
+  // antes_despues (NO cuenta intro/cierre); el activo en tMs (clipA de
   // calcularClipActivo) resaltado en terracota, el resto en blanco 35%.
   const yInf = FEV_H - m.zonaInfH;
-  const clipsFotoVideo = timeline.clips.filter(c => c.tipo === "foto" || c.tipo === "video");
+  const clipsFotoVideo = timeline.clips.filter(c => c.tipo === "foto" || c.tipo === "video" || c.tipo === "antes_despues");
   if (clipsFotoVideo.length){
     const activo = calcularClipActivo(timeline, tMs);
     const idActivo = activo ? activo.clipA.id : null;
@@ -26905,6 +26949,10 @@ function fevDibujarCapaClip(ctx, clip, tLocalMs, opts, marca){
     fevDibujarCapaIntro(ctx, marca);
   } else if (clip.tipo === "outro"){
     fevDibujarCapaOutro(ctx, marca, clip);
+  } else if (clip.tipo === "antes_despues"){
+    if (clip.fotoAntes && clip.fotoDespues){
+      fevDibujarAntesDespuesEnVentana(ctx, clip, marca);
+    }
   }
   ctx.restore();
 }
@@ -26955,7 +27003,7 @@ function renderFrameEnTiempo(ctx, timeline, tMs){
   // activos es foto/video; si ambos son intro/cierre (navy sólido propio),
   // no se dibuja nada encima. Mismo criterio que usaba el tratamiento
   // anterior que este marco reemplaza.
-  const esFondoSolidoHome = (c) => c && c.tipo !== "foto" && c.tipo !== "video";
+  const esFondoSolidoHome = (c) => c && c.tipo !== "foto" && c.tipo !== "video" && c.tipo !== "antes_despues";
   if (timeline.marca === "home" && !(esFondoSolidoHome(clipA) && (!clipB || esFondoSolidoHome(clipB)))){
     fevDibujarMarcoHome(ctx, timeline, tMs);
   }
@@ -27357,6 +27405,66 @@ function fevAgregarArchivo(file){
   }
 }
 
+// ── Clip "antes_despues" (Parte 3) — 2 fotos, pantalla dividida ──
+// Flujo en 2 pasos: el botón abre el selector de la foto ANTES; al
+// elegirla, se abre automáticamente el selector de la foto DESPUÉS; con
+// ambas cargadas, recién ahí se crea el clip (mismo patrón de FileReader→
+// Image→clip que fevAgregarArchivo usa para fotos sueltas). Si el usuario
+// cancela el segundo selector, _fevAntesDespuesPendiente simplemente se
+// sobrescribe la próxima vez que se intenta de nuevo — no queda un clip a
+// medias en el timeline.
+let _fevAntesDespuesPendiente = null;
+
+function fevIniciarAgregarAntesDespues(){
+  if (!FEV) return;
+  document.getElementById("fev-file-input-antes").click();
+}
+
+function fevHandleUploadAntes(e){
+  const file = (e.target.files || [])[0];
+  e.target.value = "";
+  if (!file || !FEV) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    const img = new Image();
+    img.onload = () => {
+      _fevAntesDespuesPendiente = { archivoAntes: file.name, fotoAntes: img };
+      document.getElementById("fev-file-input-despues").click();
+    };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function fevHandleUploadDespues(e){
+  const file = (e.target.files || [])[0];
+  e.target.value = "";
+  if (!file || !FEV || !_fevAntesDespuesPendiente) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    const img = new Image();
+    img.onload = () => {
+      const clip = {
+        id: FEV_NEXT_CLIP_ID++,
+        tipo: "antes_despues",
+        archivo: _fevAntesDespuesPendiente.archivoAntes + " / " + file.name,
+        fotoAntes: _fevAntesDespuesPendiente.fotoAntes,
+        fotoDespues: img,
+        duracionMs: 3000,
+        transicionEntrada: fevTransicionDefault(),
+        duracionTransicionMs: 400,
+      };
+      _fevAntesDespuesPendiente = null;
+      FEV.timeline.clips.push(clip);
+      fevRenderTimeline();
+      fevSeleccionarClip(clip.id);
+      if (FEV.timeline.clips.length === 1) fevIrAEditor();
+    };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
 // ── Música de fondo (Fase 5) ─────────────────────────────────────
 // timeline.audio = { archivo, elementoCargado, volumen } — un único audio
 // para todo el timeline, no por clip. Mismo patrón de carga que fotos/video
@@ -27498,12 +27606,14 @@ function fevRenderTimeline(){
       thumb.className = "fev-clip-thumb fev-clip-thumb-intro";
     } else if (clip.tipo === "outro"){
       thumb.className = "fev-clip-thumb fev-clip-thumb-outro";
+    } else if (clip.tipo === "antes_despues"){
+      thumb.className = "fev-clip-thumb fev-clip-thumb-antes-despues";
     } else {
       thumb.className = "fev-clip-thumb fev-clip-thumb-video";
     }
     div.appendChild(thumb);
 
-    const iconoPorTipo = { foto: "🖼️ ", video: "🎬 ", intro: "▶ ", outro: "■ " };
+    const iconoPorTipo = { foto: "🖼️ ", video: "🎬 ", intro: "▶ ", outro: "■ ", antes_despues: "🔄 " };
     const label = document.createElement("div");
     label.className = "fev-clip-label";
     label.textContent = (iconoPorTipo[clip.tipo] || "") + (clip.duracionMs / 1000).toFixed(1) + "s";
@@ -28572,7 +28682,7 @@ async function fevMostrarResultadoExportacion(blob, resultEl){
     resultEl.innerHTML = `
       ${avisoExtra ? `<div style="font-size:11px;color:#B45309;margin-bottom:8px;text-align:center;">${avisoExtra}</div>` : ""}
       <video src="${url}" controls style="width:100%;max-width:360px;border-radius:10px;background:#000;display:block;margin:0 auto;"></video>
-      <a href="${url}" download="video-romsa-${Date.now()}.webm" class="fev-btn fev-btn-primary" style="display:block;text-align:center;margin-top:10px;text-decoration:none;">⬇ Descargar .webm</a>
+      <a href="${url}" download="video-romsa-${Date.now()}.webm" target="_blank" rel="noopener" class="fev-btn fev-btn-primary" style="display:block;text-align:center;margin-top:10px;text-decoration:none;">⬇ Descargar .webm</a>
     `;
   }
 
@@ -28649,7 +28759,7 @@ async function fevMostrarResultadoExportacion(blob, resultEl){
         if (resultEl){
           resultEl.innerHTML = `
             <video src="${data.url}" controls style="width:100%;max-width:360px;border-radius:10px;background:#000;display:block;margin:0 auto;"></video>
-            <a href="${data.url}" download="video-romsa-${Date.now()}.mp4" class="fev-btn fev-btn-primary" style="display:block;text-align:center;margin-top:10px;text-decoration:none;">⬇ Descargar .mp4</a>
+            <a href="${data.url}" download="video-romsa-${Date.now()}.mp4" target="_blank" rel="noopener" class="fev-btn fev-btn-primary" style="display:block;text-align:center;margin-top:10px;text-decoration:none;">⬇ Descargar .mp4</a>
           `;
         }
         resolve();

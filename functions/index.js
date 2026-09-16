@@ -291,15 +291,34 @@ exports.convertirVideoAMp4 = onObjectFinalized(
       // H.264 High/yuv420p + AAC + faststart: el combo con mejor compatibilidad
       // conocida en iOS/Android/escritorio (yuv420p en particular es lo que
       // exige Safari/QuickTime para decodificar por hardware).
+      //
+      // -r 30 -fps_mode cfr: el .webm de entrada (canvas.captureStream(30) +
+      // MediaRecorder) tiene timestamps de fotograma irregulares — se
+      // confirmó con showinfo que, SIN esta bandera, 15 fotogramas
+      // consecutivos del mp4 de salida quedaban comprimidos en apenas 14ms
+      // (heredado tal cual del capture en vivo), en vez de repartidos a 30fps
+      // reales — eso es lo que se percibía como "transiciones lentas/con
+      // stutter" en el resultado FINAL (distinto del problema de fps en vivo
+      // durante la exportación, que es otro tema ya investigado aparte). Con
+      // esta bandera, ffmpeg normaliza a 30fps constantes de verdad
+      // (confirmado: 0, 0.0333, 0.0666... exactamente cada 33.3ms).
+      //
+      // CRF 20 (antes 23) + preset "faster" (antes "veryfast"): mejor
+      // calidad visual perceptible, y con margen de sobra dentro de los 300s
+      // de este trigger — probado con un timeline real con transición
+      // Deslizar, el mp4 resultante queda MÁS chico que antes (menos
+      // fotogramas redundantes que codificar) a pesar de la mejor calidad.
       await execFileAsync(ffmpegPath, [
         "-y",
         "-i", tmpWebm,
+        "-r", "30",
+        "-fps_mode", "cfr",
         "-c:v", "libx264",
         "-profile:v", "high",
         "-level", "4.1",
         "-pix_fmt", "yuv420p",
-        "-preset", "veryfast",
-        "-crf", "23",
+        "-preset", "faster",
+        "-crf", "20",
         "-c:a", "aac",
         "-b:a", "128k",
         "-movflags", "+faststart",
