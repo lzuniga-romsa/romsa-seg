@@ -28638,6 +28638,42 @@ function fevObtenerGrafoAudio(audio){
   return audio._webAudio;
 }
 
+// Espera a que una <img> termine de decodificar de verdad (no solo de
+// descargarse) — img.decode() es la API correcta para esto: a diferencia
+// de "onload"/"complete", garantiza que el bitmap ya está listo para
+// pintarse. IMPORTANTE: se llama a decode() SIEMPRE que exista, aunque
+// "complete" ya sea true — un navegador puede reportar complete=true y
+// naturalWidth>0 (esas banderas no cambian nunca una vez que la imagen
+// cargó) mientras el BITMAP decodificado ya fue descartado de memoria por
+// presión de memoria (típico en Safari/iOS con fotos de cámara grandes,
+// más probable cuanto más tarde en el timeline está el clip — coincide
+// con el reporte de ráfagas de duplicados repartidas en distintos puntos
+// del video, no solo al inicio); decode() es la única llamada que fuerza
+// una re-decodificación real en ese caso, "complete && naturalWidth" no lo
+// detecta. Si decode() no existe (navegador viejo) o rechaza, cae a
+// sondear complete/naturalWidth directamente. Un tope de tiempo evita que
+// una imagen corrupta/nunca-cargada cuelgue la exportación entera —
+// pasado ese tope se sigue igual, y el guard ya existente en
+// fevDibujarCapaClip (img.complete && img.naturalWidth) sigue protegiendo
+// ese caso como red de seguridad (frame en negro para ESE clip, no un
+// export colgado).
+function fevEsperarImagenListaPorSondeo(img){
+  return new Promise((resolve) => {
+    const revisar = () => {
+      if (img.complete && img.naturalWidth) resolve();
+      else setTimeout(revisar, 30);
+    };
+    revisar();
+  });
+}
+function fevEsperarImagenLista(img, timeoutMs){
+  const listo = (typeof img.decode === "function")
+    ? img.decode().catch(() => fevEsperarImagenListaPorSondeo(img))
+    : fevEsperarImagenListaPorSondeo(img);
+  const limite = new Promise((resolve) => setTimeout(resolve, timeoutMs));
+  return Promise.race([listo, limite]);
+}
+
 async function fevExportar(){
   if (FEV_EXPORTING || !FEV) return;
   if (!FEV.timeline.clips.length){ showToast("Agrega al menos un clip antes de exportar"); return; }
@@ -28696,6 +28732,27 @@ async function fevExportar(){
   const chunks = [];
   recorder.ondataavailable = (e) => { if (e.data && e.data.size) chunks.push(e.data); };
   const detenido = new Promise(resolve => { recorder.onstop = resolve; });
+
+  // Confirmado con evidencia real (brillo promedio ~1/255 en el primer
+  // fotograma capturado): el guard de fevDibujarCapaClip
+  // (`img.complete && img.naturalWidth`, línea ~26937) deja el frame
+  // NEGRO cuando le toca turno a una foto que todavía no terminó de
+  // decodificar, sin bloquear ni reintentar — puede pasarle a CUALQUIER
+  // foto del timeline (no solo la primera) si el usuario exporta justo
+  // después de subir varias fotos seguidas. Se espera la decodificación de
+  // TODAS las fotos ANTES de arrancar la grabación — img.decode() es la
+  // vía correcta (espera el decode real, no solo la descarga), con un
+  // fallback a sondear complete/naturalWidth para navegadores sin
+  // decode(), y un tope de tiempo para no dejar la exportación colgada si
+  // alguna imagen nunca termina de cargar (se procede igual — el guard de
+  // fevDibujarCapaClip sigue protegiendo ese caso como red de seguridad).
+  if (btn) btn.textContent = "Preparando…";
+  const fotosPendientes = FEV.timeline.clips
+    .filter(c => c.tipo === "foto" && c.elementoCargado)
+    .map(c => c.elementoCargado);
+  await Promise.all(fotosPendientes.map((img) => fevEsperarImagenLista(img, 5000)));
+  if (btn) btn.textContent = "Exportando… 0%";
+
   recorder.start();
 
   // Loop determinístico: tMs se calcula de forma SINTÉTICA (i * intervalo
