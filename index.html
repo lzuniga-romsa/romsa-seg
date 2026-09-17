@@ -26265,17 +26265,21 @@ function fevDibujarCover(ctx, source, sw, sh, x, y, w, h, zoom, panX, panY){
 function fevKenBurns(clip, p){
   p = Math.min(1, Math.max(0, p));
   const dir = (clip.id % 2 === 0) ? 1 : -1;
-  // Zoom mínimo 1.05 (antes 1): confirmado con medición real (diff pixel a
+  // Zoom mínimo 1.15 (antes 1): confirmado con medición real (diff pixel a
   // pixel) + cálculo exacto de maxOffX/maxOffY (fevDibujarCover) que una
   // foto cuyo aspecto coincide casi exacto con el de la ventana de la
   // marca (ej. HOME, 938x1240 ≈ 0.756) deja maxOffX(0) y maxOffY(0) casi
   // en cero simultáneamente a zoom=1 — sin margen de paneo en NINGÚN eje,
-  // produciendo ~12 fotogramas pixel-idénticos al arrancar el Ken Burns
+  // produciendo ~12 fotogramas casi congelados al arrancar el Ken Burns
   // (no es un bug de redondeo ni del race de decode, ya descartados por
-  // separado). Arrancar el zoom en 1.05 en vez de 1 garantiza margen de
-  // paneo real desde el primer fotograma sin importar el aspecto de la
-  // foto.
-  const zoom = 1.05 + 0.12 * p;
+  // separado). 1.05 y 1.10 se probaron primero y resultaron insuficientes
+  // (mejora marginal o parcial, dentro/cerca del ruido de compresión VP9
+  // en la ventana crítica justo después del fundido de entrada); 1.15 es
+  // el primer valor que, medido en un .webm real exportado, duplica con
+  // claridad la diferencia de pixel promedio en esa ventana frente al
+  // zoom=1 original, confirmando margen de paneo real desde el primer
+  // fotograma sin importar el aspecto de la foto.
+  const zoom = 1.15 + 0.12 * p;
   const panX = dir * (p * 2 - 1) * 0.5;
   const panY = -dir * (p * 2 - 1) * 0.3;
   return { zoom, panX, panY };
