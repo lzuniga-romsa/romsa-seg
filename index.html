@@ -4148,14 +4148,13 @@ body.in-plantrabajo #app{
               <button class="fev-add-btn" onclick="fevAgregarLogo()">+ Agregar logo</button>
               <button class="fev-add-btn" onclick="fevAgregarBadge()">+ Agregar badge</button>
               <button class="fev-add-btn" onclick="document.getElementById('fev-file-input-2').click()">+ Agregar clip</button>
-              <button class="fev-add-btn" onclick="fevIniciarAgregarAntesDespues()">+ Agregar Antes/Después</button>
+              <button class="fev-add-btn" onclick="fevIniciarAgregarAntesDespues()" title="Elige 2 fotos a la vez: la 1ª será ANTES, la 2ª será DESPUÉS (se puede intercambiar después)">+ Agregar Antes/Después</button>
               <button class="fev-add-btn" id="fev-btn-audio" onclick="document.getElementById('fev-file-input-audio').click()">+ Agregar música</button>
               <button class="fev-add-btn fev-add-btn-auto" onclick="fevAutoArmar()">⚡ Auto-armar</button>
             </div>
             <input type="file" id="fev-file-input-2" accept="image/*,video/*" multiple style="display:none;" onchange="fevHandleUpload(event)">
             <input type="file" id="fev-file-input-audio" accept="audio/*" style="display:none;" onchange="fevHandleUploadAudio(event)">
-            <input type="file" id="fev-file-input-antes" accept="image/*" style="display:none;" onchange="fevHandleUploadAntes(event)">
-            <input type="file" id="fev-file-input-despues" accept="image/*" style="display:none;" onchange="fevHandleUploadDespues(event)">
+            <input type="file" id="fev-file-input-antes-despues" accept="image/*" multiple style="display:none;" onchange="fevHandleUploadAntesDespues(event)">
           </div>
           <div id="fev-audio-panel" style="display:none;"></div>
           <div id="fev-tagline-panel" style="display:none;"></div>
@@ -27364,6 +27363,7 @@ function fevAgregarArchivo(file){
     const blobUrl = URL.createObjectURL(file);
     const vid = document.createElement("video");
     vid.muted = true;
+    vid.setAttribute("muted", ""); // atributo plano además de la propiedad IDL — algunas versiones de iOS Safari solo permiten play() sin gesto de usuario si "muted" está en el HTML, no solo como propiedad JS.
     vid.playsInline = true;
     vid.setAttribute("playsinline", ""); // atributo plano además de la propiedad IDL — algunas versiones de iOS Safari solo lo respetan si está en el HTML.
     vid.preload = "auto";
@@ -27375,6 +27375,18 @@ function fevAgregarArchivo(file){
     document.body.appendChild(vid);
     vid.src = blobUrl;
     vid.onloadedmetadata = () => {
+      // "Priming" del decoder — confirmado en uso real (iPhone) que un
+      // <video> oculto al que nunca se le llamó play() puede no decodificar
+      // el fotograma pedido por un seek manual en Safari/iOS: el scrubbing
+      // normal (fevSincronizarVideoClip) hace SOLO seek, nunca play(), así
+      // que si el decoder de WebKit nunca arrancó, currentTime cambia pero
+      // el frame dibujado en el canvas se queda en negro/vacío. Un
+      // play()+pause() silencioso (muted, sin audio ni cambio visible)
+      // fuerza a arrancar ese pipeline una sola vez, para que los seeks
+      // posteriores sí devuelvan fotogramas reales. Esto NO cambia la regla
+      // de play() vs seek durante scrubbing/exportación — eso sigue
+      // exactamente igual en fevSincronizarVideoClip, sin tocarse.
+      vid.play().then(() => { vid.pause(); vid.currentTime = 0; }).catch(() => {});
       const durMs = Math.max(300, Math.round((vid.duration || 3) * 1000));
       const clip = {
         id: FEV_NEXT_CLIP_ID++,
@@ -27419,29 +27431,23 @@ function fevAgregarArchivo(file){
 }
 
 // ── Clip "antes_despues" (Parte 3) — 2 fotos, pantalla dividida ──
-// Flujo en 2 pasos: el botón abre el selector de la foto ANTES; al
-// elegirla, se abre automáticamente el selector de la foto DESPUÉS; con
-// ambas cargadas, recién ahí se crea el clip. Si el usuario cancela el
-// segundo selector, _fevAntesDespuesPendiente simplemente se sobrescribe la
-// próxima vez que se intenta de nuevo — no queda un clip a medias en el
-// timeline.
-//
-// Bug confirmado en uso real (no reproducía en la prueba automatizada,
-// que usa setInputFiles y no pasa por un gesto de usuario real): el
-// segundo `.click()` sobre el input oculto se disparaba DESPUÉS de que la
-// foto ANTES terminara de decodificarse (dentro de FileReader.onload →
-// Image.onload, dos saltos asíncronos fuera del evento "change" original).
-// Varios navegadores móviles (Safari/iOS en particular) exigen que abrir
-// un selector de archivos ocurra dentro de la activación de usuario del
-// evento que lo dispara; ese margen se agota o se vuelve poco fiable tras
-// dos callbacks asíncronos de por medio, sobre todo con fotos de cámara de
-// varios MB que tardan más en decodificar. Fix: el segundo `.click()` pasa
-// a ser SÍNCRONO dentro del propio manejador de "change" del primer input
-// (misma tarea que el evento confiable), y la decodificación de cada foto
-// ocurre en paralelo vía una promesa — el clip se crea recién cuando AMBAS
-// resuelven, con un error visible (no un silencio) si alguna falla.
-let _fevAntesDespuesPendiente = null;
-
+// Ronda anterior: flujo en 2 pasos (2 inputs de archivo, el 2º se abría
+// programáticamente al terminar el 1º). Confirmado en iPhone real que esto
+// sigue sin funcionar incluso después de mover el 2º `.click()` a ser
+// síncrono — el síntoma cambió (ahora solo llega a pedir 1 foto) pero no se
+// resolvió. La causa más probable, documentada en WebKit/iOS Safari: un
+// segundo selector de archivo disparado programáticamente (sin un toque
+// directo del usuario para ESE selector específico, aunque sea síncrono
+// dentro del evento "change" del primero) puede bloquearse como medida
+// anti-abuso de diálogos encadenados — no es (solo) un problema de
+// actividad síncrona vs. asíncrona.
+// Fix: UN solo <input type="file" multiple accept="image/*">, un solo
+// diálogo, un solo gesto de usuario — el usuario elige las 2 fotos a la
+// vez (selección múltiple nativa de la galería). El orden de selección
+// define ANTES (1ª) / DESPUÉS (2ª); como el orden de selección puede no
+// ser obvio para el usuario, el panel de edición del clip (más abajo,
+// fevRenderEditorClip) agrega un botón "🔄 Intercambiar Antes/Después"
+// para corregirlo sin tener que rehacer la selección.
 function fevCargarImagenComoPromesa(file){
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -27458,32 +27464,24 @@ function fevCargarImagenComoPromesa(file){
 
 function fevIniciarAgregarAntesDespues(){
   if (!FEV) return;
-  document.getElementById("fev-file-input-antes").click();
+  document.getElementById("fev-file-input-antes-despues").click();
 }
 
-function fevHandleUploadAntes(e){
-  const file = (e.target.files || [])[0];
+function fevHandleUploadAntesDespues(e){
+  const files = Array.from(e.target.files || []).slice(0, 2);
   e.target.value = "";
-  if (!file || !FEV) return;
-  _fevAntesDespuesPendiente = { archivoAntes: file.name, cargaAntes: fevCargarImagenComoPromesa(file) };
-  // Síncrono dentro del handler de "change" (activación de usuario real) —
-  // no esperar a que la foto ANTES termine de decodificar primero.
-  document.getElementById("fev-file-input-despues").click();
-}
-
-function fevHandleUploadDespues(e){
-  const file = (e.target.files || [])[0];
-  e.target.value = "";
-  if (!file || !FEV || !_fevAntesDespuesPendiente) return;
-  const pendiente = _fevAntesDespuesPendiente;
-  _fevAntesDespuesPendiente = null;
-  Promise.all([pendiente.cargaAntes, fevCargarImagenComoPromesa(file)])
+  if (!FEV || files.length === 0) return;
+  if (files.length < 2){
+    alert("Selecciona 2 fotos a la vez (mantén presionado o usa la selección múltiple de tu galería): la 1ª será ANTES y la 2ª será DESPUÉS.");
+    return;
+  }
+  Promise.all(files.map(fevCargarImagenComoPromesa))
     .then(([fotoAntes, fotoDespues]) => {
       if (!FEV) return; // el usuario pudo haber salido del editor mientras se decodificaba
       const clip = {
         id: FEV_NEXT_CLIP_ID++,
         tipo: "antes_despues",
-        archivo: pendiente.archivoAntes + " / " + file.name,
+        archivo: files[0].name + " / " + files[1].name,
         fotoAntes,
         fotoDespues,
         duracionMs: 3000,
@@ -27499,6 +27497,16 @@ function fevHandleUploadDespues(e){
       console.error("[FEV] Error cargando fotos de Antes/Después:", err);
       alert("No se pudieron cargar las fotos de Antes/Después. Intenta de nuevo.");
     });
+}
+
+function fevIntercambiarAntesDespues(clipId){
+  if (!FEV) return;
+  const clip = FEV.timeline.clips.find(c => c.id === clipId);
+  if (!clip || clip.tipo !== "antes_despues") return;
+  const tmp = clip.fotoAntes;
+  clip.fotoAntes = clip.fotoDespues;
+  clip.fotoDespues = tmp;
+  fevRenderPreviewAt(FEV_PLAYHEAD_MS);
 }
 
 // ── Música de fondo (Fase 5) ─────────────────────────────────────
@@ -28206,6 +28214,18 @@ function fevRenderEditorClip(wrap, clip){
       </div>`;
   }
 
+  // Antes/Después se elige con un solo selector multi-archivo (ver
+  // fevHandleUploadAntesDespues) — el orden de selección define cuál foto
+  // es ANTES y cuál DESPUÉS, así que este botón deja corregirlo sin tener
+  // que rehacer la selección completa.
+  let antesDespuesHtml = "";
+  if (clip.tipo === "antes_despues"){
+    antesDespuesHtml = `
+      <div class="fev-ctrl-group">
+        <button class="fev-btn fev-btn-ghost" type="button" onclick="fevIntercambiarAntesDespues(${clip.id})">🔄 Intercambiar Antes/Después</button>
+      </div>`;
+  }
+
   // Parte 2 — el cierre de marca trae su propio texto de CTA editable
   // (color/tipografía fijos por diseño: blanco, tipografía de la marca).
   let ctaHtml = "";
@@ -28250,6 +28270,7 @@ function fevRenderEditorClip(wrap, clip){
       <input type="number" class="fev-input" style="max-width:120px;" step="0.1" min="0.3" value="${(clip.duracionMs / 1000).toFixed(1)}" ${clip.tipo === "video" ? 'disabled title="La duración de un clip de video depende del recorte"' : ""} onchange="fevSetDuracion(${clip.id}, this.value)">
     </div>
     ${trimHtml}
+    ${antesDespuesHtml}
     ${ctaHtml}
     ${transicionHtml}
     <div class="fev-ctrl-group">
