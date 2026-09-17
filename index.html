@@ -28655,7 +28655,7 @@ async function fevExportar(){
   if (previewBtn) previewBtn.disabled = true;
 
   // Música de fondo (Fase 5) — timeline.audio es opcional; si no existe, el
-  // stream es exactamente el mismo canvas.captureStream(30) de siempre, sin
+  // stream es el mismo streamVideo de abajo sin combinar con audio, sin
   // ninguna rama nueva de por medio (exportar sin audio sigue igual).
   const audio = FEV.timeline.audio;
   let grafoAudio = null;
@@ -28667,7 +28667,26 @@ async function fevExportar(){
     audio.elementoCargado.play().catch(() => {});
   }
 
-  const streamVideo = canvas.captureStream(30);
+  // captureStream(0) + track.requestFrame() en vez de captureStream(30) +
+  // requestAnimationFrame(): con captureStream(30), MediaRecorder muestrea
+  // el canvas por SU PROPIO temporizador interno, en tiempo real — si el
+  // loop de renderizado no logra pintar contenido nuevo antes de que ese
+  // temporizador dispare (por ej. una foto tardando en decodificar, o el
+  // hilo principal ocupado), MediaRecorder captura el fotograma anterior
+  // otra vez. Confirmado con medición real (hash exacto fotograma a
+  // fotograma sobre un .webm exportado): hasta 78% de fotogramas
+  // duplicados, concentrados en una sola ráfaga de ~70% del video — y el
+  // problema persistía casi igual bajando de 30 a 24fps, o sea que no era
+  // cuestión de fps sino de que la captura automática por temporizador no
+  // está atada a si el canvas realmente cambió.
+  // captureStream(0) desactiva ese temporizador automático por completo —
+  // NINGÚN fotograma se captura solo. Cada llamada a
+  // track.requestFrame() empuja exactamente UN fotograma, en el momento
+  // exacto en que se llama, con el contenido que ACABA de dibujarse — cero
+  // posibilidad de que MediaRecorder repita un fotograma viejo por su
+  // cuenta.
+  const streamVideo = canvas.captureStream(0);
+  const videoTrack = streamVideo.getVideoTracks()[0];
   const stream = grafoAudio
     ? new MediaStream([...streamVideo.getVideoTracks(), ...grafoAudio.destino.stream.getAudioTracks()])
     : streamVideo;
@@ -28679,22 +28698,34 @@ async function fevExportar(){
   const detenido = new Promise(resolve => { recorder.onstop = resolve; });
   recorder.start();
 
-  const inicioReal = performance.now();
-  await new Promise((resolve) => {
-    function fotograma(){
-      const tMs = performance.now() - inicioReal;
-      if (tMs >= total){
-        renderFrameEnTiempo(ctx, FEV.timeline, total - 1);
-        resolve();
-        return;
-      }
-      renderFrameEnTiempo(ctx, FEV.timeline, tMs);
-      if (grafoAudio) grafoAudio.gainNode.gain.value = fevVolumenConFundido(audio.volumen, tMs, total);
-      if (btn) btn.textContent = "Exportando… " + Math.round((tMs / total) * 100) + "%";
-      requestAnimationFrame(fotograma);
-    }
-    requestAnimationFrame(fotograma);
-  });
+  // Loop determinístico: tMs se calcula de forma SINTÉTICA (i * intervalo
+  // de fotograma), no leyendo el reloj — renderFrameEnTiempo/
+  // calcularClipActivo/fevKenBurns ya son funciones puras de tMs, así que
+  // el contenido de cada fotograma queda exacto sin importar cuánto tarde
+  // el hilo principal en dibujarlo. La ÚNICA razón para seguir esperando
+  // tiempo real entre fotogramas (en vez de un for síncrono sin pausas) es
+  // que un clip de VIDEO sigue reproduciéndose en tiempo real durante la
+  // exportación (.play(), regla existente de fevSincronizarVideoClip, sin
+  // tocar) y el audio de fondo también fluye en tiempo real — si el loop
+  // corriera sin pausas, ambos quedarían desincronizados del fotograma que
+  // se está capturando. La espera usa un objetivo absoluto (loopStart + (i
+  // +1)*intervalo) en vez de un delay fijo por iteración, para que un
+  // fotograma que tardó más de la cuenta en dibujarse no vaya arrastrando
+  // el resto del video fuera de sincronía con el audio.
+  const FEV_EXPORT_FPS = 30;
+  const frameIntervalMs = 1000 / FEV_EXPORT_FPS;
+  const totalFrames = Math.max(1, Math.ceil(total / frameIntervalMs));
+  const loopStart = performance.now();
+  for (let i = 0; i < totalFrames; i++){
+    const tMs = Math.min(i * frameIntervalMs, total - 1);
+    renderFrameEnTiempo(ctx, FEV.timeline, tMs);
+    if (grafoAudio) grafoAudio.gainNode.gain.value = fevVolumenConFundido(audio.volumen, tMs, total);
+    if (btn) btn.textContent = "Exportando… " + Math.round(((i + 1) / totalFrames) * 100) + "%";
+    videoTrack.requestFrame();
+    const objetivoReal = loopStart + (i + 1) * frameIntervalMs;
+    const esperaMs = objetivoReal - performance.now();
+    if (esperaMs > 0) await new Promise(r => setTimeout(r, esperaMs));
+  }
 
   recorder.stop();
   fevDetenerTodosLosVideos();
