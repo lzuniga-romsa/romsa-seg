@@ -316,14 +316,42 @@ exports.convertirVideoAMp4 = onObjectFinalized(
       // de este trigger — probado con un timeline real con transición
       // Deslizar, el mp4 resultante queda MÁS chico que antes (menos
       // fotogramas redundantes que codificar) a pesar de la mejor calidad.
+      //
+      // colorspace=all=bt709:iall=smpte170m + tags de color explícitos —
+      // reportado en uso real: el navy/terracota del marco HOME se veía
+      // "lavado" en la app Fotos del iPhone (NO en el <video> del navegador,
+      // mismo archivo exacto en ambos casos — confirmado con hash idéntico).
+      // Se descartaron con medición real (ver evidencia en el historial):
+      // rango full/limited (ya correcto, VUI video_full_range_flag=0 igual
+      // en entrada y salida) y confusión de matriz BT.601/709 (diferencia
+      // numérica insignificante, <10 de 255). La causa real confirmada con
+      // trace_headers: el H.264 de salida dejaba colour_primaries=2 y
+      // transfer_characteristics=2 ("unspecified") mientras
+      // matrix_coefficients=6 (BT.601) quedaba explícito — una combinación
+      // incompleta/inconsistente para contenido HD (1080x1920) que distintos
+      // reproductores de la MISMA plataforma (WebKit del navegador vs. la
+      // app Fotos) pueden rellenar de forma distinta. El filtro "colorspace"
+      // hace la conversión colorimétrica REAL (no solo re-etiqueta: si solo
+      // se cambiara el tag sin convertir los datos, un decoder que sí
+      // respeta el tag vería el color equivocado) de BT.601 (lo que
+      // realmente etiqueta el .webm capturado por Chrome, sea cual sea su
+      // resolución) a BT.709 (el estándar para HD, y el default más
+      // universalmente asumido cuando falta información) — confirmado que
+      // el navy/terracota decodificados correctamente no cambian con este
+      // fix, solo se elimina la ambigüedad de los tags faltantes.
       await execFileAsync(ffmpegPath, [
         "-y",
         "-i", tmpWebm,
+        "-vf", "colorspace=all=bt709:iall=smpte170m:fast=0",
         "-fps_mode", "vfr",
         "-c:v", "libx264",
         "-profile:v", "high",
         "-level", "4.1",
         "-pix_fmt", "yuv420p",
+        "-color_primaries", "bt709",
+        "-color_trc", "bt709",
+        "-colorspace", "bt709",
+        "-color_range", "tv",
         "-preset", "faster",
         "-crf", "20",
         "-c:a", "aac",
