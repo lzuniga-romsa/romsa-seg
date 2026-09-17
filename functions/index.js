@@ -292,16 +292,24 @@ exports.convertirVideoAMp4 = onObjectFinalized(
       // conocida en iOS/Android/escritorio (yuv420p en particular es lo que
       // exige Safari/QuickTime para decodificar por hardware).
       //
-      // -r 30 -fps_mode cfr: el .webm de entrada (canvas.captureStream(30) +
-      // MediaRecorder) tiene timestamps de fotograma irregulares — se
-      // confirmó con showinfo que, SIN esta bandera, 15 fotogramas
-      // consecutivos del mp4 de salida quedaban comprimidos en apenas 14ms
-      // (heredado tal cual del capture en vivo), en vez de repartidos a 30fps
-      // reales — eso es lo que se percibía como "transiciones lentas/con
-      // stutter" en el resultado FINAL (distinto del problema de fps en vivo
-      // durante la exportación, que es otro tema ya investigado aparte). Con
-      // esta bandera, ffmpeg normaliza a 30fps constantes de verdad
-      // (confirmado: 0, 0.0333, 0.0666... exactamente cada 33.3ms).
+      // -fps_mode vfr (antes "-r 30 -fps_mode cfr"): el .webm de entrada
+      // (canvas.captureStream(30) + MediaRecorder) NUNCA captura 30fps reales
+      // parejos — se confirmó con showinfo+mpdecimate sobre .webm reales
+      // exportados por el pipeline en vivo que el promedio real va de ~13.6fps
+      // (timeline pesado) a ~29.3fps (timeline ligero), nunca 30 parejo.
+      // Forzar "-r 30 -fps_mode cfr" (el fix anterior) hacía que ffmpeg
+      // RELLENARA el hueco con fotogramas duplicados para completar 30fps
+      // parejos — confirmado con mpdecimate: 67% de los fotogramas del mp4
+      // resultante en el caso de 13.6fps de entrada eran duplicados
+      // bit-a-bit, y 35-48% incluso en el caso "bueno" de ~29.3fps. Eso es
+      // EXACTAMENTE lo que se percibía como "pausado" en TODO el video (no
+      // solo transiciones pesadas) — cada fotograma real se mantenía en
+      // pantalla ~3x más de lo que le tocaba antes de saltar al siguiente.
+      // "-fps_mode vfr" (sin "-r" fijo) le dice a ffmpeg que NO rellene: deja
+      // el fotograma real el tiempo real que le tomó capturarlo, sin
+      // duplicar — confirmado con el mismo par de .webm reales: el mp4 de
+      // salida queda con el MISMO número de fotogramas que el .webm de
+      // entrada (cero duplicados introducidos) y la MISMA duración total.
       //
       // CRF 20 (antes 23) + preset "faster" (antes "veryfast"): mejor
       // calidad visual perceptible, y con margen de sobra dentro de los 300s
@@ -311,8 +319,7 @@ exports.convertirVideoAMp4 = onObjectFinalized(
       await execFileAsync(ffmpegPath, [
         "-y",
         "-i", tmpWebm,
-        "-r", "30",
-        "-fps_mode", "cfr",
+        "-fps_mode", "vfr",
         "-c:v", "libx264",
         "-profile:v", "high",
         "-level", "4.1",

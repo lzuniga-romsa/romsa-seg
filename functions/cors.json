@@ -1,0 +1,13 @@
+[
+  {
+    "origin": [
+      "https://romsa-industrial.web.app",
+      "https://romsa-industrial.firebaseapp.com",
+      "https://romsaindustrial-obras.com",
+      "https://www.romsaindustrial-obras.com"
+    ],
+    "method": ["GET"],
+    "maxAgeSeconds": 3600,
+    "responseHeader": ["Content-Type"]
+  }
+]

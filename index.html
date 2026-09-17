@@ -4126,6 +4126,8 @@ body.in-plantrabajo #app{
             <div style="font-size:12px;color:#7A7A82;">Toca aquí — puedes elegir varios archivos a la vez</div>
           </div>
           <input type="file" id="fev-file-input" accept="image/*,video/*" multiple style="display:none;" onchange="fevHandleUpload(event)">
+          <button type="button" class="fev-btn fev-btn-ghost" style="margin-top:14px;width:100%;" onclick="fevEntrarSinSubir()">Ir directo al editor (sin subir nada) →</button>
+          <div class="fev-hint" style="padding:8px 4px 0;text-align:center;">Para empezar solo con texto, un badge, o un clip Antes/Después</div>
         </div>
         <div class="fev-hint" id="fev-marca-activa-hint" style="padding:0 16px 16px;"></div>
       </div>
@@ -27276,6 +27278,17 @@ function fevIrAEditor(){
   fevSetPlayhead(0);
 }
 
+// Parte 4 — "entrada directa": permite llegar al editor con un timeline
+// vacío (FEV.timeline.clips === []), sin forzar a subir una foto/video
+// primero. calcularClipActivo/renderFrameEnTiempo ya manejan un timeline
+// sin clips de forma segura (no hay clip activo → pantalla negra, sin
+// errores) — este botón solo salta el paso "upload", no cambia esa lógica.
+// Deja al usuario agregar texto/logo/badge/Antes-Después desde cero.
+function fevEntrarSinSubir(){
+  if (!FEV) return;
+  fevIrAEditor();
+}
+
 // ── Tagline editable del marco HOME (Parte 3) ───────────────────
 // A nivel de TODO el timeline (como la música), no por clip — "Calidad
 // que se nota" es el valor por default (FEV_TAGLINE_HOME_DEFAULT) pero
@@ -27408,12 +27421,40 @@ function fevAgregarArchivo(file){
 // ── Clip "antes_despues" (Parte 3) — 2 fotos, pantalla dividida ──
 // Flujo en 2 pasos: el botón abre el selector de la foto ANTES; al
 // elegirla, se abre automáticamente el selector de la foto DESPUÉS; con
-// ambas cargadas, recién ahí se crea el clip (mismo patrón de FileReader→
-// Image→clip que fevAgregarArchivo usa para fotos sueltas). Si el usuario
-// cancela el segundo selector, _fevAntesDespuesPendiente simplemente se
-// sobrescribe la próxima vez que se intenta de nuevo — no queda un clip a
-// medias en el timeline.
+// ambas cargadas, recién ahí se crea el clip. Si el usuario cancela el
+// segundo selector, _fevAntesDespuesPendiente simplemente se sobrescribe la
+// próxima vez que se intenta de nuevo — no queda un clip a medias en el
+// timeline.
+//
+// Bug confirmado en uso real (no reproducía en la prueba automatizada,
+// que usa setInputFiles y no pasa por un gesto de usuario real): el
+// segundo `.click()` sobre el input oculto se disparaba DESPUÉS de que la
+// foto ANTES terminara de decodificarse (dentro de FileReader.onload →
+// Image.onload, dos saltos asíncronos fuera del evento "change" original).
+// Varios navegadores móviles (Safari/iOS en particular) exigen que abrir
+// un selector de archivos ocurra dentro de la activación de usuario del
+// evento que lo dispara; ese margen se agota o se vuelve poco fiable tras
+// dos callbacks asíncronos de por medio, sobre todo con fotos de cámara de
+// varios MB que tardan más en decodificar. Fix: el segundo `.click()` pasa
+// a ser SÍNCRONO dentro del propio manejador de "change" del primer input
+// (misma tarea que el evento confiable), y la decodificación de cada foto
+// ocurre en paralelo vía una promesa — el clip se crea recién cuando AMBAS
+// resuelven, con un error visible (no un silencio) si alguna falla.
 let _fevAntesDespuesPendiente = null;
+
+function fevCargarImagenComoPromesa(file){
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => reject(new Error("No se pudo decodificar la imagen"));
+      img.src = ev.target.result;
+    };
+    reader.onerror = () => reject(new Error("No se pudo leer el archivo"));
+    reader.readAsDataURL(file);
+  });
+}
 
 function fevIniciarAgregarAntesDespues(){
   if (!FEV) return;
@@ -27424,45 +27465,40 @@ function fevHandleUploadAntes(e){
   const file = (e.target.files || [])[0];
   e.target.value = "";
   if (!file || !FEV) return;
-  const reader = new FileReader();
-  reader.onload = (ev) => {
-    const img = new Image();
-    img.onload = () => {
-      _fevAntesDespuesPendiente = { archivoAntes: file.name, fotoAntes: img };
-      document.getElementById("fev-file-input-despues").click();
-    };
-    img.src = ev.target.result;
-  };
-  reader.readAsDataURL(file);
+  _fevAntesDespuesPendiente = { archivoAntes: file.name, cargaAntes: fevCargarImagenComoPromesa(file) };
+  // Síncrono dentro del handler de "change" (activación de usuario real) —
+  // no esperar a que la foto ANTES termine de decodificar primero.
+  document.getElementById("fev-file-input-despues").click();
 }
 
 function fevHandleUploadDespues(e){
   const file = (e.target.files || [])[0];
   e.target.value = "";
   if (!file || !FEV || !_fevAntesDespuesPendiente) return;
-  const reader = new FileReader();
-  reader.onload = (ev) => {
-    const img = new Image();
-    img.onload = () => {
+  const pendiente = _fevAntesDespuesPendiente;
+  _fevAntesDespuesPendiente = null;
+  Promise.all([pendiente.cargaAntes, fevCargarImagenComoPromesa(file)])
+    .then(([fotoAntes, fotoDespues]) => {
+      if (!FEV) return; // el usuario pudo haber salido del editor mientras se decodificaba
       const clip = {
         id: FEV_NEXT_CLIP_ID++,
         tipo: "antes_despues",
-        archivo: _fevAntesDespuesPendiente.archivoAntes + " / " + file.name,
-        fotoAntes: _fevAntesDespuesPendiente.fotoAntes,
-        fotoDespues: img,
+        archivo: pendiente.archivoAntes + " / " + file.name,
+        fotoAntes,
+        fotoDespues,
         duracionMs: 3000,
         transicionEntrada: fevTransicionDefault(),
         duracionTransicionMs: 400,
       };
-      _fevAntesDespuesPendiente = null;
       FEV.timeline.clips.push(clip);
       fevRenderTimeline();
       fevSeleccionarClip(clip.id);
       if (FEV.timeline.clips.length === 1) fevIrAEditor();
-    };
-    img.src = ev.target.result;
-  };
-  reader.readAsDataURL(file);
+    })
+    .catch((err) => {
+      console.error("[FEV] Error cargando fotos de Antes/Después:", err);
+      alert("No se pudieron cargar las fotos de Antes/Después. Intenta de nuevo.");
+    });
 }
 
 // ── Música de fondo (Fase 5) ─────────────────────────────────────
@@ -28675,6 +28711,49 @@ async function fevExportar(){
 // disponibles (p.ej. sesión sin backend, como en pruebas locales) o la
 // conversión falla por cualquier motivo, se cae de vuelta al .webm
 // original vía blob URL — el usuario nunca se queda sin ningún resultado.
+// Parte 1 (ronda de descarga real en celular) — un <a href="URL_FIRMADA"
+// download> NO funciona en iPhone (ni en varios Android): el atributo
+// download solo lo respetan los navegadores cuando la URL es del MISMO
+// origen; con una URL firmada de Storage (otro dominio), el navegador la
+// trata como una navegación normal y solo la abre/reproduce. La solución
+// es traer el archivo completo como Blob del lado del cliente (fetch) y
+// disparar la descarga desde un blob: URL local — ESE sí cuenta como
+// mismo origen para el navegador y respeta "download" de forma consistente
+// en escritorio, Android, y iOS Safari reciente.
+// Requiere que el bucket de Storage tenga CORS habilitado para el dominio
+// del CRM (si no, este fetch falla con un error de CORS, NO silenciosamente
+// — ver el catch abajo) — configurado por separado con `gsutil cors set`.
+async function fevDescargarArchivoComoBlob(url, filename, btnEl){
+  const textoOriginal = btnEl ? btnEl.textContent : "";
+  if (btnEl){
+    btnEl.textContent = "⏳ Descargando…";
+    btnEl.disabled = true;
+    btnEl.style.opacity = "0.6";
+  }
+  try {
+    const resp = await fetch(url);
+    if (!resp.ok) throw new Error("HTTP " + resp.status);
+    const blob = await resp.blob();
+    const blobUrl = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = blobUrl;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 30000);
+  } catch (e){
+    console.error("[FEV] Falló la descarga del archivo (" + url + "):", e);
+    alert("No se pudo descargar el video (" + (e.message || "error desconocido") + "). Puedes reproducirlo arriba y guardarlo desde ahí, o intenta de nuevo.");
+  } finally {
+    if (btnEl){
+      btnEl.textContent = textoOriginal;
+      btnEl.disabled = false;
+      btnEl.style.opacity = "";
+    }
+  }
+}
+
 async function fevMostrarResultadoExportacion(blob, resultEl){
   function mostrarWebmDirecto(avisoExtra){
     const url = URL.createObjectURL(blob);
@@ -28759,8 +28838,13 @@ async function fevMostrarResultadoExportacion(blob, resultEl){
         if (resultEl){
           resultEl.innerHTML = `
             <video src="${data.url}" controls style="width:100%;max-width:360px;border-radius:10px;background:#000;display:block;margin:0 auto;"></video>
-            <a href="${data.url}" download="video-romsa-${Date.now()}.mp4" target="_blank" rel="noopener" class="fev-btn fev-btn-primary" style="display:block;text-align:center;margin-top:10px;text-decoration:none;">⬇ Descargar .mp4</a>
+            <button type="button" class="fev-btn fev-btn-primary" id="fev-btn-descargar-mp4" style="display:block;width:100%;max-width:360px;margin:10px auto 0;">⬇ Descargar .mp4</button>
           `;
+          const btnDescarga = document.getElementById("fev-btn-descargar-mp4");
+          if (btnDescarga){
+            const urlMp4 = data.url;
+            btnDescarga.addEventListener("click", () => fevDescargarArchivoComoBlob(urlMp4, `video-romsa-${Date.now()}.mp4`, btnDescarga));
+          }
         }
         resolve();
       } else if (data.status === "error"){
