@@ -26668,7 +26668,43 @@ function fevSincronizarVideoClip(clip, tLocalMs){
 // cambia; la regla de fondo sigue igual. Además ahora trackea cuándo el
 // evento 'seeked' confirma que el video ya está en la posición correcta
 // (con un tope de seguridad, por si 'seeked' nunca dispara).
-function fevIniciarVideoParaExport(clip){
+// Para el/los clip(s) de video que ocupan tMs=0 (ver más abajo, antes de
+// recorder.start()): a diferencia de fevIniciarVideoParaExport, aquí NO se
+// llama a play() hasta que el seek ya resolvió. Motivo (confirmado con
+// evidencia real): si se llama play() de una vez y LUEGO se espera varios
+// cientos de ms a que 'seeked' confirme (un video que tarda en arrancar en
+// frío es justamente el caso que estamos protegiendo), el video sigue
+// reproduciéndose en tiempo real DURANTE esa espera — consumiendo por
+// adelantado parte de su propia duración de archivo antes de que la
+// grabación siquiera empiece. Para un clip cuyo trimIn+duracionMs ya está
+// ajustado al límite del archivo, eso adelanta el momento en que el video
+// llega a su propio final, produciendo una ráfaga de fotogramas
+// congelados al FINAL del clip — el mismo síntoma que se estaba
+// arreglando, solo que movido de lugar. Separar seek (sin reproducir) de
+// play() evita gastar ese presupuesto de tiempo real antes de grabar.
+async function fevPrepararVideoInicial(clip, timeoutMs){
+  if (FEV_EXPORT_PLAYING_IDS.has(clip.id)) return;
+  FEV_EXPORT_PLAYING_IDS.add(clip.id);
+  FEV_EXPORT_PRIME_AT.set(clip.id, performance.now());
+  const vid = clip.elementoCargado;
+  await new Promise(resolve => {
+    const onSeeked = () => { vid.removeEventListener("seeked", onSeeked); resolve(); };
+    vid.addEventListener("seeked", onSeeked);
+    setTimeout(() => { vid.removeEventListener("seeked", onSeeked); resolve(); }, timeoutMs); // tope de seguridad — no colgar la exportación
+    vid.currentTime = clip.trimInMs / 1000;
+  });
+  FEV_EXPORT_SEEK_READY.add(clip.id);
+  FEV_EXPORT_SEEK_PROMISES.set(clip.id, Promise.resolve());
+  vid.play().catch(() => {}); // recién ahora — no antes, no durante la espera
+}
+
+// `timeoutMs` es el tope de seguridad de ESTA llamada (default
+// FEV_VIDEO_SEEK_TIMEOUT_MS, el presupuesto por fotograma dentro del loop
+// de exportación). El llamador ANTES de recorder.start() (ver más abajo,
+// mismo punto donde ya se espera img.decode() de las fotos) pasa un tope
+// mucho más generoso — porque ahí es una espera única antes de empezar, no
+// un presupuesto que se descuenta de cada fotograma.
+function fevIniciarVideoParaExport(clip, timeoutMs){
   if (FEV_EXPORT_PLAYING_IDS.has(clip.id)) return;
   FEV_EXPORT_PLAYING_IDS.add(clip.id);
   FEV_EXPORT_PRIME_AT.set(clip.id, performance.now());
@@ -26684,7 +26720,7 @@ function fevIniciarVideoParaExport(clip){
       vid.removeEventListener("seeked", onSeeked);
       FEV_EXPORT_SEEK_READY.add(clip.id); // tope de seguridad — no colgar la exportación si 'seeked' nunca dispara
       resolve();
-    }, FEV_VIDEO_SEEK_TIMEOUT_MS);
+    }, timeoutMs || FEV_VIDEO_SEEK_TIMEOUT_MS);
   });
   FEV_EXPORT_SEEK_PROMISES.set(clip.id, promesa);
   vid.currentTime = clip.trimInMs / 1000;
@@ -26711,12 +26747,18 @@ function fevPrecargarVideosProximos(timeline, tMs, marginMs){
 
 // Justo antes de dibujar CADA fotograma durante exportación: si el/los
 // clip(s) de video que le tocan a este tMs todavía no confirmaron 'seeked'
-// (la precarga no alcanzó a tiempo, o el clip entró sin ventana de precarga
-// previa — p.ej. el primer clip del timeline es un video), se espera antes
-// de llamar a renderFrameEnTiempo, acotado por el mismo tope de seguridad
-// que ya protege fevIniciarVideoParaExport, para que el frame capturado sea
-// el real y no el viejo/congelado. No modifica renderFrameEnTiempo ni
-// calcularClipActivo — solo decide cuándo llamarlos.
+// (la precarga de 60ms no alcanzó a tiempo), se espera antes de llamar a
+// renderFrameEnTiempo, acotado por FEV_VIDEO_SEEK_TIMEOUT_MS (200ms), para
+// que el frame capturado sea el real y no el viejo/congelado. Ese tope de
+// 200ms alcanza sobrado para un clip a mitad de timeline (ya viene
+// "calentando" en segundo plano desde hace rato, con todo el tiempo real
+// del/los clip(s) anteriores de margen). NO alcanza para el clip que ocupa
+// tMs=0: arranca en frío exactamente cuando recorder.start() también
+// arranca en frío, sin ningún tiempo previo — por eso ese caso se resuelve
+// aparte, con un margen mucho mayor, antes de llamar a recorder.start()
+// (ver más abajo, mismo punto donde ya se espera img.decode() de las
+// fotos). No modifica renderFrameEnTiempo ni calcularClipActivo — solo
+// decide cuándo llamarlos.
 async function fevEsperarVideosListosParaFrame(timeline, tMs){
   const activo = calcularClipActivo(timeline, tMs);
   if (!activo) return;
@@ -29018,6 +29060,27 @@ async function fevExportar(){
     .filter(c => c.tipo === "foto" && c.elementoCargado)
     .map(c => c.elementoCargado);
   await Promise.all(fotosPendientes.map((img) => fevEsperarImagenLista(img, 5000)));
+
+  // Mismo tratamiento que las fotos, para el/los clip(s) de VIDEO que
+  // ocupan tMs=0 (confirmado con evidencia real: un video en esa posición
+  // arranca en frío al mismo tiempo que recorder.start()/captureStream
+  // también arrancan en frío, sin el colchón de tiempo real que sí tiene
+  // un video a mitad de timeline — el tope de 200ms por fotograma del loop
+  // no alcanza para eso, y una vez se cumple marca el clip "listo" para
+  // siempre aunque el decoder real siga sin producir contenido, dejando
+  // una ráfaga larga de fotogramas congelados). Se espera su seek real
+  // (fevPrepararVideoInicial — seek SIN play todavía, ver esa función)
+  // con un margen generoso (5000ms, igual que las fotos) y recién
+  // entonces se llama play(), lo más pegado posible a recorder.start() —
+  // no depende del mecanismo de precarga-por-margen ni del tope corto del
+  // loop.
+  const activoInicial = calcularClipActivo(FEV.timeline, 0);
+  if (activoInicial){
+    const videosIniciales = [activoInicial.clipA, activoInicial.clipB]
+      .filter(c => c && c.tipo === "video" && c.elementoCargado);
+    await Promise.all(videosIniciales.map(c => fevPrepararVideoInicial(c, 5000)));
+  }
+
   if (btn) btn.textContent = "Exportando… 0%";
 
   recorder.start();
