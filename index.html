@@ -4145,6 +4145,7 @@ body.in-plantrabajo #app{
               <button class="fev-add-btn" id="fev-btn-intro" style="display:none;" onclick="fevAgregarIntro()">+ Agregar intro de marca</button>
               <button class="fev-add-btn" id="fev-btn-outro" style="display:none;" onclick="fevAgregarOutro()">+ Agregar cierre</button>
               <button class="fev-add-btn" onclick="fevAgregarTexto()">+ Agregar texto</button>
+              <button class="fev-add-btn" onclick="fevAgregarGancho()" title="Texto grande que aparece desde el primer fotograma, sin esperar el fundido de entrada">+ Agregar Gancho</button>
               <button class="fev-add-btn" onclick="fevAgregarLogo()">+ Agregar logo</button>
               <button class="fev-add-btn" onclick="fevAgregarBadge()">+ Agregar badge</button>
               <button class="fev-add-btn" onclick="document.getElementById('fev-file-input-2').click()">+ Agregar clip</button>
@@ -26461,7 +26462,33 @@ function fevDibujarOverlayTexto(ctx, marca, overlay){
 }
 
 function fevDibujarOverlaysDeTexto(ctx, timeline, tMs){
-  fevOverlaysVisiblesEn(timeline, tMs).forEach(t => fevDibujarOverlayTexto(ctx, timeline.marca, t));
+  // Los "gancho" (t.esGancho) se excluyen de este paso — se dibujan aparte,
+  // DESPUÉS del fundido global de entrada/salida en renderFrameEnTiempo,
+  // para que no queden atenuados por él (ver fevDibujarGancho).
+  fevOverlaysVisiblesEn(timeline, tMs).filter(t => !t.esGancho).forEach(t => fevDibujarOverlayTexto(ctx, timeline.marca, t));
+}
+
+// Gancho — overlay de texto grande pensado para aparecer YA, desde el
+// fotograma 0, sin esperar el fundido global de entrada (400ms) que sí
+// afecta al resto del contenido, con una animación de entrada rápida
+// (<200ms, slide-in desde arriba + scale-in con ease-out). Reutiliza
+// fevDibujarOverlayTexto tal cual para el dibujo real del texto (misma
+// fuente/wrap/sombra que cualquier overlay) — la animación es solo una
+// transformación de canvas alrededor de esa llamada, pura función de
+// tLocalMs (sin acumuladores), mismo criterio que fevKenBurns.
+const FEV_GANCHO_ANIM_MS = 180;
+function fevDibujarGancho(ctx, marca, overlay, tLocalMs){
+  const p = Math.min(1, Math.max(0, tLocalMs / FEV_GANCHO_ANIM_MS));
+  const eased = 1 - Math.pow(1 - p, 3); // ease-out cúbico: arranca rápido, se asienta suave
+  const box = fevBBoxOverlay(ctx, marca, overlay);
+  const escala = 0.75 + 0.25 * eased; // scale-in: 75% -> 100%
+  const desplazamientoY = (1 - eased) * -50; // slide-in desde arriba: -50px -> 0px
+  ctx.save();
+  ctx.translate(box.cx, box.cy + desplazamientoY);
+  ctx.scale(escala, escala);
+  ctx.translate(-box.cx, -box.cy);
+  fevDibujarOverlayTexto(ctx, marca, overlay);
+  ctx.restore();
 }
 
 // ── Logo / Badges (Fase 4) ───────────────────────────────────────
@@ -27045,6 +27072,13 @@ function renderFrameEnTiempo(ctx, timeline, tMs){
       ctx.restore();
     }
   }
+
+  // Ganchos — DESPUÉS del fundido de arriba, a propósito: deben verse
+  // desde el fotograma 0 sin quedar atenuados por él (fevDibujarOverlaysDeTexto
+  // ya los excluyó de su paso, más arriba). No cambia el cálculo de tiempo
+  // efectivo ni nada de lo anterior en esta función — solo agrega este
+  // último paso de dibujo.
+  fevOverlaysVisiblesEn(timeline, tMs).filter(t => t.esGancho).forEach(t => fevDibujarGancho(ctx, timeline.marca, t, tMs - t.inicioMs));
 }
 
 function fevDetenerTodosLosVideos(){
@@ -27961,6 +27995,38 @@ function fevAgregarTexto(){
   fevRenderPreviewAt(FEV_PLAYHEAD_MS);
 }
 
+// Gancho — mismo objeto/array que un texto normal (timeline.textos), con
+// esGancho:true para que renderFrameEnTiempo/fevDibujarOverlaysDeTexto lo
+// dibujen aparte (ver fevDibujarGancho). inicioMs queda fijo en 0 (debe
+// verse desde el primer fotograma) — el campo de "Inicio" del panel de
+// edición se oculta para un gancho, ver fevRenderEditorTexto. Arranca con
+// el preset "Título"/primero de FEV_ESTILOS_TEXTO[marca] (headline de esa
+// marca) y un tamaño mayor al de un texto normal, coherente con ser un
+// texto grande pensado para ocupar buena parte del ancho.
+function fevAgregarGancho(){
+  if (!FEV) return;
+  fevAsegurarTimeline(FEV.timeline);
+  const marca = FEV.timeline.marca;
+  const presetTitulo = (FEV_ESTILOS_TEXTO[marca] || [])[0] || null;
+  const overlay = {
+    id: FEV_NEXT_TEXTO_ID++,
+    texto: "Mira la transformación",
+    esGancho: true,
+    inicioMs: 0,
+    duracionMs: 2000,
+    x: 0.5, y: 0.24,
+    tamano: Math.round(FEV_W * 0.085),
+    color: presetTitulo ? presetTitulo.color : null,
+    estilo: presetTitulo ? presetTitulo.id : null,
+    fontFamily: presetTitulo ? presetTitulo.fontFamily : null,
+    fontWeight: presetTitulo ? presetTitulo.fontWeight : null,
+    italic: presetTitulo ? presetTitulo.italic : false,
+  };
+  FEV.timeline.textos.push(overlay);
+  fevSeleccionarTexto(overlay.id);
+  fevRenderPreviewAt(FEV_PLAYHEAD_MS);
+}
+
 function fevSeleccionarTexto(textoId){
   FEV_SELECTED_TEXTO_ID = textoId;
   FEV_SELECTED_CLIP_ID = null;
@@ -28329,7 +28395,8 @@ function fevRenderEditorTexto(wrap){
   wrap.style.display = "flex";
   const presets = FEV_ESTILOS_TEXTO[FEV.timeline.marca] || [];
   wrap.innerHTML = `
-    <div class="fev-panel-heading">Editar texto</div>
+    <div class="fev-panel-heading">${t.esGancho ? "Editar Gancho" : "Editar texto"}</div>
+    ${t.esGancho ? `<div class="fev-hint" style="padding:0 0 8px;">Aparece desde el inicio del video, sin esperar el fundido de entrada.</div>` : ""}
     <div class="fev-ctrl-group">
       <label class="fev-ctrl-label">Texto</label>
       <input type="text" class="fev-input" value="${escapeHtml(t.texto || "")}" oninput="fevSetTextoOverlay(${t.id}, this.value)">
@@ -28349,9 +28416,9 @@ function fevRenderEditorTexto(wrap){
       </select>
     </div>` : ""}
     <div class="fev-ctrl-group">
-      <label class="fev-ctrl-label">Inicio (segundos) / Duración (segundos)</label>
+      <label class="fev-ctrl-label">${t.esGancho ? "Duración (segundos) — inicio fijo en 0s" : "Inicio (segundos) / Duración (segundos)"}</label>
       <div style="display:flex;gap:8px;">
-        <input type="number" class="fev-input" step="0.1" min="0" value="${(t.inicioMs / 1000).toFixed(1)}" onchange="fevSetTiempoTexto(${t.id}, Math.round(parseFloat(this.value)*1000)||0, undefined)">
+        ${t.esGancho ? "" : `<input type="number" class="fev-input" step="0.1" min="0" value="${(t.inicioMs / 1000).toFixed(1)}" onchange="fevSetTiempoTexto(${t.id}, Math.round(parseFloat(this.value)*1000)||0, undefined)">`}
         <input type="number" class="fev-input" step="0.1" min="0.2" value="${(t.duracionMs / 1000).toFixed(1)}" onchange="fevSetTiempoTexto(${t.id}, undefined, Math.round(parseFloat(this.value)*1000)||200)">
       </div>
     </div>
