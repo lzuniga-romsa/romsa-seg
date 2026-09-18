@@ -26146,12 +26146,22 @@ function fevIconoTransicion(tipo){
   if (tipo === "deslizar"){
     return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>';
   }
+  if (tipo === "zoom-blur"){
+    return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"></circle><circle cx="12" cy="12" r="7" stroke-dasharray="2 2"></circle><circle cx="12" cy="12" r="10.5" stroke-dasharray="1 3"></circle></svg>';
+  }
+  if (tipo === "cortina-marca"){
+    return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="7" height="16" fill="currentColor" stroke="none"></rect><polyline points="14 8 19 12 14 16"></polyline></svg>';
+  }
   // "corte" (tijeras) — default
   return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"></circle><circle cx="6" cy="18" r="3"></circle><line x1="20" y1="4" x2="8.12" y2="15.88"></line><line x1="14.47" y1="14.48" x2="20" y2="20"></line><line x1="8.12" y1="8.12" x2="12" y2="12"></line></svg>';
 }
 
 function fevNombreTransicion(tipo){
-  return tipo === "fundido" ? "Fundido" : (tipo === "deslizar" ? "Deslizar" : "Corte");
+  if (tipo === "fundido") return "Fundido";
+  if (tipo === "deslizar") return "Deslizar";
+  if (tipo === "zoom-blur") return "Zoom Blur";
+  if (tipo === "cortina-marca") return "Cortina de Marca";
+  return "Corte";
 }
 
 // ── Estado ────────────────────────────────────────────────────
@@ -26999,6 +27009,72 @@ function fevDibujarCapaClip(ctx, clip, tLocalMs, opts, marca){
   ctx.restore();
 }
 
+// Transiciones nuevas (2) — igual patrón que las 3 existentes: funciones
+// puras de progresoTransicion (p, 0→1) ya calculado por calcularClipActivo
+// (sin tocar esa función ni el cálculo de tiempo efectivo), llamadas desde
+// el mismo dispatch de renderFrameEnTiempo que ya despachaba "deslizar"/
+// "fundido" — solo se agregan más ramas al if/else, no se cambia la lógica
+// de timing/solape que ya existía.
+
+// "Zoom Blur" — el saliente se desenfoca y crece de escala levemente
+// mientras se va; el entrante arranca desenfocado y se asienta (blur baja
+// a 0) mientras aparece — con cross-fade de alpha (igual que "fundido")
+// para que ambas capas se mezclen. En p=0.5 ambas capas tienen blur
+// simultáneo (mitad de su rango cada una), que es justo lo que oculta el
+// corte en el punto medio.
+const FEV_ZOOM_BLUR_MAX_PX = 18;
+const FEV_ZOOM_BLUR_ESCALA_EXTRA = 0.08;
+function fevDibujarTransicionZoomBlur(ctx, clipA, tLocalA, clipB, tLocalB, p, marca){
+  ctx.save();
+  ctx.globalAlpha = 1 - p;
+  ctx.filter = `blur(${(p * FEV_ZOOM_BLUR_MAX_PX).toFixed(2)}px)`;
+  ctx.translate(FEV_W / 2, FEV_H / 2);
+  ctx.scale(1 + p * FEV_ZOOM_BLUR_ESCALA_EXTRA, 1 + p * FEV_ZOOM_BLUR_ESCALA_EXTRA);
+  ctx.translate(-FEV_W / 2, -FEV_H / 2);
+  fevDibujarCapaClip(ctx, clipA, tLocalA, null, marca);
+  ctx.restore();
+
+  ctx.save();
+  ctx.globalAlpha = p;
+  ctx.filter = `blur(${((1 - p) * FEV_ZOOM_BLUR_MAX_PX).toFixed(2)}px)`;
+  fevDibujarCapaClip(ctx, clipB, tLocalB, null, marca);
+  ctx.restore();
+}
+
+// "Cortina de Marca" — una cortina sólida del color de acento de la marca
+// (FEV_BRANDS[marca].accent) se desliza cubriendo la ventana de contenido
+// (938x1240 con esquinas redondeadas para HOME; canvas completo para el
+// resto, mismo criterio que fevDibujarAntesDespuesEnVentana) hasta cubrirla
+// del todo en p=0.5; de ahí en adelante sigue deslizándose en la MISMA
+// dirección, revelando el clip entrante, que viaja pegado al borde trasero
+// de la cortina (mismo desplazamiento relativo) — por eso aparece
+// "deslizándose debajo de la cortina" en vez de solo destaparse de golpe.
+function fevDibujarTransicionCortinaMarca(ctx, clipA, tLocalA, clipB, tLocalB, p, marca){
+  let areaX = 0, areaY = 0, areaW = FEV_W, areaH = FEV_H, radio = 0;
+  if (marca === "home"){
+    const v = fevVentanaHome();
+    areaX = v.x; areaY = v.y; areaW = v.w; areaH = v.h;
+    radio = FEV_HOME_MARCO.radioEsquina;
+  }
+  // Cortina: areaW (fuera, a la derecha) -> 0 (cubre exacto en p=0.5) -> -areaW (fuera, a la izquierda).
+  const desplazCortina = areaW * (1 - 2 * p);
+  // clipB: su borde izquierdo coincide siempre con el borde derecho de la
+  // cortina (desplazCortina + areaW) — confirmado por construcción:
+  // 2*areaW*(1-p) === desplazCortina + areaW para todo p.
+  const desplazClipB = 2 * areaW * (1 - p);
+
+  fevDibujarCapaClip(ctx, clipA, tLocalA, null, marca);
+  fevDibujarCapaClip(ctx, clipB, tLocalB, { offsetXpx: desplazClipB }, marca);
+
+  ctx.save();
+  if (radio){ fehRoundRect(ctx, areaX, areaY, areaW, areaH, radio); ctx.clip(); }
+  else { ctx.beginPath(); ctx.rect(areaX, areaY, areaW, areaH); ctx.clip(); }
+  const b = FEV_BRANDS[marca] || FEV_BRANDS.romsa;
+  ctx.fillStyle = b.accent;
+  ctx.fillRect(areaX + desplazCortina, areaY, areaW, areaH);
+  ctx.restore();
+}
+
 // Motor de renderizado por tiempo — de esta función dependen scrubbing Y
 // exportación. Fase 2 lo extiende para mezclar clipA/clipB cuando
 // calcularClipActivo devuelve una transición activa; Fase 3 agrega, al
@@ -27033,6 +27109,10 @@ function renderFrameEnTiempo(ctx, timeline, tMs){
   } else if (clipB.transicionEntrada === "deslizar"){
     fevDibujarCapaClip(ctx, clipA, tLocalA, { offsetXpx: -progresoTransicion * FEV_W }, timeline.marca);
     fevDibujarCapaClip(ctx, clipB, tLocalB, { offsetXpx: (1 - progresoTransicion) * FEV_W }, timeline.marca);
+  } else if (clipB.transicionEntrada === "zoom-blur"){
+    fevDibujarTransicionZoomBlur(ctx, clipA, tLocalA, clipB, tLocalB, progresoTransicion, timeline.marca);
+  } else if (clipB.transicionEntrada === "cortina-marca"){
+    fevDibujarTransicionCortinaMarca(ctx, clipA, tLocalA, clipB, tLocalB, progresoTransicion, timeline.marca);
   } else {
     // "fundido" (y cualquier valor no reconocido, por seguridad — nunca
     // debería llegar "corte" aquí porque calcularClipActivo no abre una
@@ -27463,7 +27543,7 @@ function fevAgregarArchivo(file){
           tipo: "foto",
           archivo: file.name,
           elementoCargado: img,
-          duracionMs: 3000,
+          duracionMs: 2000,
           transicionEntrada: fevTransicionDefault(),
           duracionTransicionMs: 400,
         };
@@ -28328,7 +28408,7 @@ function fevRenderEditorClip(wrap, clip){
       <div class="fev-ctrl-group">
         <label class="fev-ctrl-label">Transición de entrada</label>
         <div class="fev-transicion-segmentado">
-          ${["corte", "fundido", "deslizar"].map(op => `
+          ${["corte", "fundido", "deslizar", "zoom-blur", "cortina-marca"].map(op => `
             <button type="button" class="fev-transicion-opcion${op === tipoActivo ? " activa" : ""}" onclick="fevSetTransicion(${clip.id}, '${op}', undefined)">
               ${fevIconoTransicion(op)}
               <span>${fevNombreTransicion(op)}</span>
