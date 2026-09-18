@@ -26177,6 +26177,27 @@ let FEV_DRAG_CLIP_ID = null;
 let FEV_SCRUBBING = false;
 let FEV_EXPORTING = false;
 let FEV_EXPORT_PLAYING_IDS = new Set(); // ids de clips (posiblemente 2, en transición) con .play() activo durante exportación
+// Fix transición foto<->video "lenta/congelada": el seek+play() de un clip
+// de video se dispara con margen ANTES de que le toque ser clipA/clipB (ver
+// fevPrecargarVideosProximos), y no se considera "listo" hasta que el
+// evento 'seeked' confirma que el decoder ya está en la posición correcta.
+let FEV_EXPORT_SEEK_READY = new Set(); // ids de clips de video cuyo seek de precarga ya resolvió (evento 'seeked' o tope de seguridad)
+let FEV_EXPORT_SEEK_PROMISES = new Map(); // clip.id -> Promise que resuelve cuando el seek de precarga resuelve o expira el tope
+let FEV_EXPORT_PRIME_AT = new Map(); // clip.id -> performance.now() de cuando se disparó currentTime/play() (grace period para fevPausarVideosIrrelevantes)
+// Ajustado empíricamente (medición real, no solo teoría): con márgenes
+// grandes (probados 260ms y 100ms) aparecía un efecto secundario nuevo —
+// el video, reproduciéndose "sin ser dibujado" durante todo el margen,
+// llegaba con el decoder /detrás/ una vez arrancaba el dibujo real,
+// causando una meseta de 1-4 fotogramas de contenido viejo un poco DESPUÉS
+// del arranque (en vez de en el arranque, que es donde estaba antes del
+// fix). 60ms fue el valor más bajo que sigue eliminando el fotograma
+// negro/viejo inicial (readyState<2 o stale) sin introducir esa meseta
+// tardía, confirmado con 3 corridas limpias en ambos sentidos (foto->video
+// y video->foto). El tope de espera por 'seeked' (abajo) sigue siendo la
+// red de seguridad real; el margen solo reduce cuánto se necesita de esa
+// espera bloqueante.
+const FEV_VIDEO_PRECARGA_MARGIN_MS = 60; // cuánto antes de su ventana se adelanta el seek/play de un clip de video
+const FEV_VIDEO_SEEK_TIMEOUT_MS = 200; // tope de espera por 'seeked' antes de dibujar de todos modos (no colgar la exportación)
 let FEV_PREVIEWING = false; // Parte 3 — solo para la UI (etiqueta del botón); la sincronización de video reutiliza FEV_EXPORTING sin cambios
 let FEV_PREVIEW_RAF_ID = null;
 let FEV_FONTS_READY = null;
@@ -26627,11 +26648,7 @@ function fevDibujarLogosYBadges(ctx, timeline, tMs){
 function fevSincronizarVideoClip(clip, tLocalMs){
   const vid = clip.elementoCargado;
   if (FEV_EXPORTING){
-    if (!FEV_EXPORT_PLAYING_IDS.has(clip.id)){
-      FEV_EXPORT_PLAYING_IDS.add(clip.id);
-      vid.currentTime = clip.trimInMs / 1000;
-      vid.play().catch(() => {});
-    }
+    fevIniciarVideoParaExport(clip);
     // Ya reproduciéndose solo — se dibuja el frame real, sin forzar currentTime.
   } else {
     if (!vid.paused) vid.pause();
@@ -26642,15 +26659,94 @@ function fevSincronizarVideoClip(clip, tLocalMs){
   }
 }
 
+// Dispara el currentTime/play() de un clip de video UNA sola vez (gateado
+// por FEV_EXPORT_PLAYING_IDS, misma regla de siempre: seek una sola vez +
+// play() en tiempo real, sin retocar currentTime en cada fotograma).
+// Factorizado fuera de fevSincronizarVideoClip para poder llamarlo desde la
+// precarga por ADELANTADO (antes de que el clip sea clipA/clipB), no solo
+// en el instante exacto en que empieza a dibujarse — eso es lo único que
+// cambia; la regla de fondo sigue igual. Además ahora trackea cuándo el
+// evento 'seeked' confirma que el video ya está en la posición correcta
+// (con un tope de seguridad, por si 'seeked' nunca dispara).
+function fevIniciarVideoParaExport(clip){
+  if (FEV_EXPORT_PLAYING_IDS.has(clip.id)) return;
+  FEV_EXPORT_PLAYING_IDS.add(clip.id);
+  FEV_EXPORT_PRIME_AT.set(clip.id, performance.now());
+  const vid = clip.elementoCargado;
+  const promesa = new Promise(resolve => {
+    const onSeeked = () => {
+      vid.removeEventListener("seeked", onSeeked);
+      FEV_EXPORT_SEEK_READY.add(clip.id);
+      resolve();
+    };
+    vid.addEventListener("seeked", onSeeked);
+    setTimeout(() => {
+      vid.removeEventListener("seeked", onSeeked);
+      FEV_EXPORT_SEEK_READY.add(clip.id); // tope de seguridad — no colgar la exportación si 'seeked' nunca dispara
+      resolve();
+    }, FEV_VIDEO_SEEK_TIMEOUT_MS);
+  });
+  FEV_EXPORT_SEEK_PROMISES.set(clip.id, promesa);
+  vid.currentTime = clip.trimInMs / 1000;
+  vid.play().catch(() => {});
+}
+
+// Mira hacia adelante FEV_VIDEO_PRECARGA_MARGIN_MS y dispara el
+// currentTime/play() de cualquier clip de video que esté a punto de
+// volverse clipA/clipB, antes de que realmente le toque su turno — así el
+// decoder tiene tiempo real de resolver el seek antes de que arranque su
+// ventana de transición. Solo LEE calcularClipActivo (no se modifica, ni se
+// toca su forma de calcular tiempo efectivo); lo único nuevo es CUÁNDO se
+// llama a fevIniciarVideoParaExport.
+function fevPrecargarVideosProximos(timeline, tMs, marginMs){
+  const total = fevDuracionTotal(timeline);
+  if (total <= 0) return;
+  const tAdelantado = Math.min(tMs + marginMs, total - 1);
+  const proximo = calcularClipActivo(timeline, tAdelantado);
+  if (!proximo) return;
+  [proximo.clipA, proximo.clipB].forEach(c => {
+    if (c && c.tipo === "video" && c.elementoCargado) fevIniciarVideoParaExport(c);
+  });
+}
+
+// Justo antes de dibujar CADA fotograma durante exportación: si el/los
+// clip(s) de video que le tocan a este tMs todavía no confirmaron 'seeked'
+// (la precarga no alcanzó a tiempo, o el clip entró sin ventana de precarga
+// previa — p.ej. el primer clip del timeline es un video), se espera antes
+// de llamar a renderFrameEnTiempo, acotado por el mismo tope de seguridad
+// que ya protege fevIniciarVideoParaExport, para que el frame capturado sea
+// el real y no el viejo/congelado. No modifica renderFrameEnTiempo ni
+// calcularClipActivo — solo decide cuándo llamarlos.
+async function fevEsperarVideosListosParaFrame(timeline, tMs){
+  const activo = calcularClipActivo(timeline, tMs);
+  if (!activo) return;
+  const pendientes = [activo.clipA, activo.clipB]
+    .filter(c => c && c.tipo === "video" && c.elementoCargado)
+    .map(c => { fevIniciarVideoParaExport(c); return c.id; })
+    .filter(id => !FEV_EXPORT_SEEK_READY.has(id))
+    .map(id => FEV_EXPORT_SEEK_PROMISES.get(id))
+    .filter(Boolean);
+  if (pendientes.length) await Promise.all(pendientes);
+}
+
 // Pausa cualquier video que estaba reproduciéndose durante exportación pero
 // ya no es clipA ni clipB en este fotograma (el clip por el que se transicionó
-// ya terminó de salir de cuadro).
+// ya terminó de salir de cuadro). Respeta un "grace period" de
+// FEV_VIDEO_PRECARGA_MARGIN_MS desde que se disparó su currentTime/play():
+// sin eso, un clip recién precargado por adelantado (todavía no es clipA ni
+// clipB porque su ventana no abrió aún) se pausaría y destrackearía en el
+// mismo fotograma en que se disparó, anulando la precarga por completo.
 function fevPausarVideosIrrelevantes(timeline, idsRelevantes){
   Array.from(FEV_EXPORT_PLAYING_IDS).forEach(id => {
     if (idsRelevantes.has(id)) return;
+    const primedAt = FEV_EXPORT_PRIME_AT.get(id);
+    if (primedAt != null && performance.now() - primedAt < FEV_VIDEO_PRECARGA_MARGIN_MS) return;
     const c = timeline.clips.find(cl => cl.id === id);
     if (c && c.tipo === "video" && c.elementoCargado) c.elementoCargado.pause();
     FEV_EXPORT_PLAYING_IDS.delete(id);
+    FEV_EXPORT_SEEK_READY.delete(id);
+    FEV_EXPORT_SEEK_PROMISES.delete(id);
+    FEV_EXPORT_PRIME_AT.delete(id);
   });
 }
 
@@ -28733,6 +28829,9 @@ function fevVistaPrevia(){
   FEV_PREVIEWING = true;
   FEV_EXPORTING = true;
   FEV_EXPORT_PLAYING_IDS = new Set();
+  FEV_EXPORT_SEEK_READY = new Set();
+  FEV_EXPORT_SEEK_PROMISES = new Map();
+  FEV_EXPORT_PRIME_AT = new Map();
   if (btn) btn.textContent = "⏸ Detener vista previa";
   if (exportBtn) exportBtn.disabled = true;
 
@@ -28752,6 +28851,7 @@ function fevVistaPrevia(){
       fevDetenerVistaPrevia();
       return;
     }
+    fevPrecargarVideosProximos(FEV.timeline, tMs, FEV_VIDEO_PRECARGA_MARGIN_MS);
     renderFrameEnTiempo(ctx, FEV.timeline, tMs);
     if (audio && audio.elementoCargado){
       audio.elementoCargado.volume = fevVolumenConFundido(audio.volumen, tMs, total);
@@ -28768,6 +28868,9 @@ function fevDetenerVistaPrevia(){
   FEV_PREVIEWING = false;
   FEV_EXPORTING = false;
   FEV_EXPORT_PLAYING_IDS = new Set();
+  FEV_EXPORT_SEEK_READY = new Set();
+  FEV_EXPORT_SEEK_PROMISES = new Map();
+  FEV_EXPORT_PRIME_AT = new Map();
   fevDetenerTodosLosVideos();
   fevPausarAudio();
   const btn = document.getElementById("fev-preview-btn");
@@ -28848,6 +28951,9 @@ async function fevExportar(){
 
   FEV_EXPORTING = true;
   FEV_EXPORT_PLAYING_IDS = new Set();
+  FEV_EXPORT_SEEK_READY = new Set();
+  FEV_EXPORT_SEEK_PROMISES = new Map();
+  FEV_EXPORT_PRIME_AT = new Map();
   if (btn){ btn.disabled = true; btn.textContent = "Exportando… 0%"; }
   if (previewBtn) previewBtn.disabled = true;
 
@@ -28936,6 +29042,8 @@ async function fevExportar(){
   const loopStart = performance.now();
   for (let i = 0; i < totalFrames; i++){
     const tMs = Math.min(i * frameIntervalMs, total - 1);
+    fevPrecargarVideosProximos(FEV.timeline, tMs, FEV_VIDEO_PRECARGA_MARGIN_MS);
+    await fevEsperarVideosListosParaFrame(FEV.timeline, tMs);
     renderFrameEnTiempo(ctx, FEV.timeline, tMs);
     if (grafoAudio) grafoAudio.gainNode.gain.value = fevVolumenConFundido(audio.volumen, tMs, total);
     if (btn) btn.textContent = "Exportando… " + Math.round(((i + 1) / totalFrames) * 100) + "%";
@@ -28951,6 +29059,9 @@ async function fevExportar(){
   await detenido;
 
   FEV_EXPORT_PLAYING_IDS = new Set();
+  FEV_EXPORT_SEEK_READY = new Set();
+  FEV_EXPORT_SEEK_PROMISES = new Map();
+  FEV_EXPORT_PRIME_AT = new Map();
   if (previewBtn) previewBtn.disabled = false;
 
   const blob = new Blob(chunks, { type: "video/webm" });
