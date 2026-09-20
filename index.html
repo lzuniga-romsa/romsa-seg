@@ -26801,6 +26801,26 @@ async function fevEsperarVideosListosParaFrame(timeline, tMs){
 // no un seek por fotograma — así el costo (~50ms medido) solo se paga
 // cuando realmente hace falta, sin desalinear el pacing de audio en el
 // caso normal. No modifica renderFrameEnTiempo ni calcularClipActivo.
+// Instrumentación de diagnóstico (Fase — investigación del fix de drift
+// que en producción no mostró mejora medible, a diferencia de lo simulado
+// en sandbox): activable con `window.FEV_DEBUG_DRIFT = true` desde la
+// consola ANTES de exportar. Solo hace console.log/push a un array en
+// memoria — no cambia ninguna decisión de fevCorregirDriftVideoSiNecesario
+// ni de ninguna otra función. Con la bandera en false/undefined (default),
+// este bloque no hace nada, cero costo en producción.
+function fevLogDriftSiActivo(tMs, clip, real, esperado, corregido){
+  if (!window.FEV_DEBUG_DRIFT) return;
+  if (!window.FEV_DRIFT_LOG) window.FEV_DRIFT_LOG = [];
+  window.FEV_DRIFT_LOG.push({
+    tMs: Math.round(tMs),
+    clipId: clip.id,
+    realMs: Math.round(real * 1000),
+    esperadoMs: Math.round(esperado * 1000),
+    driftMs: Math.round((real - esperado) * 1000),
+    corregido: !!corregido,
+  });
+}
+
 async function fevCorregirDriftVideoSiNecesario(timeline, tMs){
   const activo = calcularClipActivo(timeline, tMs);
   if (!activo) return;
@@ -26810,7 +26830,10 @@ async function fevCorregirDriftVideoSiNecesario(timeline, tMs){
     if (primedAt == null) continue; // todavía no arrancó su play() (p.ej. recién precargado este mismo fotograma) — nada que corregir
     const vid = clip.elementoCargado;
     const esperado = clip.trimInMs / 1000 + (performance.now() - primedAt) / 1000;
-    if (Math.abs(vid.currentTime - esperado) > FEV_VIDEO_DRIFT_TOLERANCIA_SEC){
+    const real = vid.currentTime;
+    const necesitaCorreccion = Math.abs(real - esperado) > FEV_VIDEO_DRIFT_TOLERANCIA_SEC;
+    fevLogDriftSiActivo(tMs, clip, real, esperado, necesitaCorreccion);
+    if (necesitaCorreccion){
       await new Promise(resolve => {
         const onSeeked = () => { vid.removeEventListener("seeked", onSeeked); resolve(); };
         vid.addEventListener("seeked", onSeeked);
@@ -29046,6 +29069,7 @@ async function fevExportar(){
   FEV_EXPORT_SEEK_READY = new Set();
   FEV_EXPORT_SEEK_PROMISES = new Map();
   FEV_EXPORT_PRIME_AT = new Map();
+  if (window.FEV_DEBUG_DRIFT) window.FEV_DRIFT_LOG = [];
   if (btn){ btn.disabled = true; btn.textContent = "Exportando… 0%"; }
   if (previewBtn) previewBtn.disabled = true;
 
@@ -29171,6 +29195,18 @@ async function fevExportar(){
   fevDetenerTodosLosVideos();
   fevPausarAudio();
   await detenido;
+
+  if (window.FEV_DEBUG_DRIFT && window.FEV_DRIFT_LOG){
+    const log = window.FEV_DRIFT_LOG;
+    const corregidos = log.filter(r => r.corregido).length;
+    const drifts = log.map(r => Math.abs(r.driftMs));
+    const maxDrift = drifts.length ? Math.max(...drifts) : 0;
+    const promedioDrift = drifts.length ? (drifts.reduce((a, b) => a + b, 0) / drifts.length) : 0;
+    console.log(`[FEV_DEBUG_DRIFT] ${log.length} muestras, ${corregidos} correcciones disparadas, drift promedio=${promedioDrift.toFixed(0)}ms, drift máximo=${maxDrift}ms`);
+    console.log("===FEV_DRIFT_LOG_START===");
+    console.log(JSON.stringify(log));
+    console.log("===FEV_DRIFT_LOG_END===");
+  }
 
   FEV_EXPORT_PLAYING_IDS = new Set();
   FEV_EXPORT_SEEK_READY = new Set();
