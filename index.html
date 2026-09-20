@@ -26198,6 +26198,15 @@ let FEV_EXPORT_PRIME_AT = new Map(); // clip.id -> performance.now() de cuando s
 // espera bloqueante.
 const FEV_VIDEO_PRECARGA_MARGIN_MS = 60; // cuánto antes de su ventana se adelanta el seek/play de un clip de video
 const FEV_VIDEO_SEEK_TIMEOUT_MS = 200; // tope de espera por 'seeked' antes de dibujar de todos modos (no colgar la exportación)
+// Corrección de drift bajo demanda (sin volver el video determinista):
+// .play() sigue corriendo libre, pero si el decoder se atrasa respecto al
+// tiempo real transcurrido desde que arrancó, se corrige con UN seek
+// puntual — no uno por fotograma. 150ms de tolerancia: por encima de la
+// jitter normal de reporte de currentTime durante reproducción en vivo
+// (unos pocos ms), pero bastante por debajo de las ráfagas de 6-8
+// fotogramas (200-267ms) medidas en producción, para corregir antes de
+// que la ráfaga corra su curso completo.
+const FEV_VIDEO_DRIFT_TOLERANCIA_SEC = 0.15;
 let FEV_PREVIEWING = false; // Parte 3 — solo para la UI (etiqueta del botón); la sincronización de video reutiliza FEV_EXPORTING sin cambios
 let FEV_PREVIEW_RAF_ID = null;
 let FEV_FONTS_READY = null;
@@ -26685,7 +26694,6 @@ function fevSincronizarVideoClip(clip, tLocalMs){
 async function fevPrepararVideoInicial(clip, timeoutMs){
   if (FEV_EXPORT_PLAYING_IDS.has(clip.id)) return;
   FEV_EXPORT_PLAYING_IDS.add(clip.id);
-  FEV_EXPORT_PRIME_AT.set(clip.id, performance.now());
   const vid = clip.elementoCargado;
   await new Promise(resolve => {
     const onSeeked = () => { vid.removeEventListener("seeked", onSeeked); resolve(); };
@@ -26696,6 +26704,13 @@ async function fevPrepararVideoInicial(clip, timeoutMs){
   FEV_EXPORT_SEEK_READY.add(clip.id);
   FEV_EXPORT_SEEK_PROMISES.set(clip.id, Promise.resolve());
   vid.play().catch(() => {}); // recién ahora — no antes, no durante la espera
+  // FEV_EXPORT_PRIME_AT se ancla AQUÍ (justo cuando play() realmente
+  // arranca), no al entrar a la función — de lo contrario, para este
+  // clip en particular (que puede esperar hasta timeoutMs antes de
+  // llegar aquí), fevCorregirDriftVideoSiNecesario calcularía mal cuánto
+  // tiempo real lleva reproduciéndose y dispararía correcciones de drift
+  // falsas desde el primer fotograma.
+  FEV_EXPORT_PRIME_AT.set(clip.id, performance.now());
 }
 
 // `timeoutMs` es el tope de seguridad de ESTA llamada (default
@@ -26769,6 +26784,41 @@ async function fevEsperarVideosListosParaFrame(timeline, tMs){
     .map(id => FEV_EXPORT_SEEK_PROMISES.get(id))
     .filter(Boolean);
   if (pendientes.length) await Promise.all(pendientes);
+}
+
+// Corrección de drift bajo demanda (medido con evidencia real: ráfagas de
+// 6-8 fotogramas duplicados repartidas por todo el clip, más un
+// congelamiento largo cerca del final — el video sigue reproduciéndose
+// libre en tiempo real, y el decoder ocasionalmente se atrasa/bufferea
+// bajo carga sostenida). NO vuelve el video determinista — .play() sigue
+// corriendo solo, sin seek por fotograma. Se compara, para cada clip de
+// video activo, dónde DEBERÍA estar `currentTime` si hubiera avanzado a
+// tiempo real perfecto desde que arrancó su play() (FEV_EXPORT_PRIME_AT)
+// contra dónde está REALMENTE — si el decoder se atrasó más de
+// FEV_VIDEO_DRIFT_TOLERANCIA_SEC, se dispara UN seek puntual hacia la
+// posición esperada (mismo patrón que ya usa el scrubbing: `if
+// (Math.abs(currentTime - target) > tolerancia) currentTime = target`),
+// no un seek por fotograma — así el costo (~50ms medido) solo se paga
+// cuando realmente hace falta, sin desalinear el pacing de audio en el
+// caso normal. No modifica renderFrameEnTiempo ni calcularClipActivo.
+async function fevCorregirDriftVideoSiNecesario(timeline, tMs){
+  const activo = calcularClipActivo(timeline, tMs);
+  if (!activo) return;
+  const clips = [activo.clipA, activo.clipB].filter(c => c && c.tipo === "video" && c.elementoCargado);
+  for (const clip of clips){
+    const primedAt = FEV_EXPORT_PRIME_AT.get(clip.id);
+    if (primedAt == null) continue; // todavía no arrancó su play() (p.ej. recién precargado este mismo fotograma) — nada que corregir
+    const vid = clip.elementoCargado;
+    const esperado = clip.trimInMs / 1000 + (performance.now() - primedAt) / 1000;
+    if (Math.abs(vid.currentTime - esperado) > FEV_VIDEO_DRIFT_TOLERANCIA_SEC){
+      await new Promise(resolve => {
+        const onSeeked = () => { vid.removeEventListener("seeked", onSeeked); resolve(); };
+        vid.addEventListener("seeked", onSeeked);
+        setTimeout(() => { vid.removeEventListener("seeked", onSeeked); resolve(); }, FEV_VIDEO_SEEK_TIMEOUT_MS);
+        vid.currentTime = esperado;
+      });
+    }
+  }
 }
 
 // Pausa cualquier video que estaba reproduciéndose durante exportación pero
@@ -29107,6 +29157,7 @@ async function fevExportar(){
     const tMs = Math.min(i * frameIntervalMs, total - 1);
     fevPrecargarVideosProximos(FEV.timeline, tMs, FEV_VIDEO_PRECARGA_MARGIN_MS);
     await fevEsperarVideosListosParaFrame(FEV.timeline, tMs);
+    await fevCorregirDriftVideoSiNecesario(FEV.timeline, tMs);
     renderFrameEnTiempo(ctx, FEV.timeline, tMs);
     if (grafoAudio) grafoAudio.gainNode.gain.value = fevVolumenConFundido(audio.volumen, tMs, total);
     if (btn) btn.textContent = "Exportando… " + Math.round(((i + 1) / totalFrames) * 100) + "%";
