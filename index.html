@@ -29133,6 +29133,13 @@ async function fevExportar(){
   // de esta sesión: MediaRecorder necesita que el audio fluya en tiempo
   // real), así que se mantiene la Opción B sin cambios.
   FEV_EXPORT_VIDEO_DETERMINISTA = !(FEV.timeline.audio && FEV.timeline.audio.elementoCargado);
+  // Log siempre visible (no depende de ninguna bandera de debug) — para
+  // que quede sin ambigüedad, en la consola de cualquier exportación real,
+  // qué modo corrió efectivamente. Motivado por un caso donde el usuario
+  // reportó el comportamiento viejo después de un fix ya mergeado a main;
+  // esto permite confirmar de un vistazo si de verdad corrió el código
+  // nuevo con el modo esperado, sin tener que inspeccionar el bundle.
+  console.log("[FEV] Modo de exportación de video: " + (FEV_EXPORT_VIDEO_DETERMINISTA ? "DETERMINISTA" : "TIEMPO REAL (con audio o legacy)"));
   if (window.FEV_DEBUG_DRIFT) window.FEV_DRIFT_LOG = [];
   if (btn){ btn.disabled = true; btn.textContent = "Exportando… 0%"; }
   if (previewBtn) previewBtn.disabled = true;
