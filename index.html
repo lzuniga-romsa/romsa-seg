@@ -26207,6 +26207,12 @@ const FEV_VIDEO_SEEK_TIMEOUT_MS = 200; // tope de espera por 'seeked' antes de d
 // fotogramas (200-267ms) medidas en producción, para corregir antes de
 // que la ráfaga corra su curso completo.
 const FEV_VIDEO_DRIFT_TOLERANCIA_SEC = 0.15;
+// Opción A: cuando el timeline no tiene música de fondo, el video hace
+// seek exacto por fotograma (igual que las fotos) en vez de .play() libre
+// — ver fevSeekDeterministaVideoSiNecesario. Decidido una vez por corrida
+// de fevExportar; SIEMPRE false durante fevVistaPrevia (la vista previa
+// es tiempo real por naturaleza, nunca determinista).
+let FEV_EXPORT_VIDEO_DETERMINISTA = false;
 let FEV_PREVIEWING = false; // Parte 3 — solo para la UI (etiqueta del botón); la sincronización de video reutiliza FEV_EXPORTING sin cambios
 let FEV_PREVIEW_RAF_ID = null;
 let FEV_FONTS_READY = null;
@@ -26649,14 +26655,22 @@ function fevDibujarLogosYBadges(ctx, timeline, tMs){
 
 // ── Sincronización de video (Fase 1, Parte 4 — sin cambios de regla en Fase 2) ──
 // (a) scrubbing: todo pausado, se hace seek manual a trimInMs+tLocalMs.
-// (b) exportación: el video se reproduce en tiempo real (.play()), y se
-//     dibuja el frame que el video ya está mostrando por su cuenta — no se
-//     toca currentTime en cada frame (eso se ve entrecortado). Con
+// (b) exportación SIN música de fondo (FEV_EXPORT_VIDEO_DETERMINISTA):
+//     el seek exacto por fotograma ya se hizo ANTES de renderFrameEnTiempo
+//     (fevSeekDeterministaVideoSiNecesario, en el loop de exportación) —
+//     acá no hace falta nada más.
+// (c) exportación CON música de fondo: el video se reproduce en tiempo
+//     real (.play()), y se dibuja el frame que el video ya está mostrando
+//     por su cuenta — no se toca currentTime en cada frame (eso
+//     desincronizaría el audio de fondo, que sí necesita tiempo real). Con
 //     transiciones puede haber DOS clips de video relevantes a la vez; cada
 //     uno se sincroniza de forma independiente la primera vez que aparece.
 function fevSincronizarVideoClip(clip, tLocalMs){
   const vid = clip.elementoCargado;
   if (FEV_EXPORTING){
+    if (FEV_EXPORT_VIDEO_DETERMINISTA){
+      return; // ya posicionado exacto para este fotograma, ver arriba
+    }
     fevIniciarVideoParaExport(clip);
     // Ya reproduciéndose solo — se dibuja el frame real, sin forzar currentTime.
   } else {
@@ -26841,6 +26855,43 @@ async function fevCorregirDriftVideoSiNecesario(timeline, tMs){
         vid.currentTime = esperado;
       });
     }
+  }
+}
+
+// Opción A — determinismo total (solo cuando FEV_EXPORT_VIDEO_DETERMINISTA
+// está activo, es decir, cuando el timeline NO tiene música de fondo).
+// Confirmado con datos reales de producción: el drift de un video en
+// exportación se mantiene en una banda ESTABLE (-42/-52ms) durante todo el
+// clip, sin crecer ni cruzar el umbral de corrección de la Opción B — eso
+// significa que el navegador no logra sostener decodificación+dibujo de
+// video cada 33ms de forma constante, no que haya una desincronización de
+// reloj progresiva que un seek ocasional pueda arreglar. La única forma de
+// garantizar el fotograma correcto en CADA captura es, igual que ya se
+// hace con las fotos, forzar la posición exacta y esperar 'seeked' antes
+// de dibujar — sin importar el costo (~50ms medido), porque no hay música
+// de fondo cuyo tiempo real se pueda desincronizar. .play() NUNCA se llama
+// aquí: el video se mantiene pausado y se posiciona a mano, igual que en
+// scrubbing, pero en cada fotograma en vez de solo cuando el usuario
+// arrastra el playhead. No modifica renderFrameEnTiempo ni
+// calcularClipActivo — solo LEE su resultado (tLocalA/tLocalB) para saber
+// la posición exacta de cada clip de video activo en este tMs.
+async function fevSeekDeterministaVideoSiNecesario(timeline, tMs){
+  const activo = calcularClipActivo(timeline, tMs);
+  if (!activo) return;
+  const pares = [
+    [activo.clipA, activo.tLocalA],
+    [activo.clipB, activo.tLocalB],
+  ].filter(([c]) => c && c.tipo === "video" && c.elementoCargado);
+  for (const [clip, tLocal] of pares){
+    const vid = clip.elementoCargado;
+    if (!vid.paused) vid.pause();
+    const target = clip.trimInMs / 1000 + tLocal / 1000;
+    await new Promise(resolve => {
+      const onSeeked = () => { vid.removeEventListener("seeked", onSeeked); resolve(); };
+      vid.addEventListener("seeked", onSeeked);
+      setTimeout(() => { vid.removeEventListener("seeked", onSeeked); resolve(); }, FEV_VIDEO_SEEK_TIMEOUT_MS); // tope de seguridad — no colgar la exportación
+      vid.currentTime = target;
+    });
   }
 }
 
@@ -28947,6 +28998,7 @@ function fevVistaPrevia(){
   FEV_EXPORT_SEEK_READY = new Set();
   FEV_EXPORT_SEEK_PROMISES = new Map();
   FEV_EXPORT_PRIME_AT = new Map();
+  FEV_EXPORT_VIDEO_DETERMINISTA = false; // la vista previa es tiempo real por naturaleza, nunca determinista
   if (btn) btn.textContent = "⏸ Detener vista previa";
   if (exportBtn) exportBtn.disabled = true;
 
@@ -29069,6 +29121,18 @@ async function fevExportar(){
   FEV_EXPORT_SEEK_READY = new Set();
   FEV_EXPORT_SEEK_PROMISES = new Map();
   FEV_EXPORT_PRIME_AT = new Map();
+  // Opción A (determinismo total) vs Opción B (.play() libre + corrección
+  // de drift bajo demanda) — decidido UNA vez por corrida, según haya o
+  // no música de fondo. Confirmado con datos reales de producción: sin
+  // música, el drift medido es una banda estable de -42/-52ms que nunca
+  // crece (el navegador simplemente no sostiene decode+dibujo cada 33ms,
+  // no es un reloj que se desincroniza progresivamente) — un seek exacto
+  // por fotograma, igual que ya se hace con fotos, lo resuelve de raíz sin
+  // el riesgo de desincronizar un audio de fondo que en este caso no
+  // existe. Con música de fondo, ese riesgo SÍ es real (ver investigación
+  // de esta sesión: MediaRecorder necesita que el audio fluya en tiempo
+  // real), así que se mantiene la Opción B sin cambios.
+  FEV_EXPORT_VIDEO_DETERMINISTA = !(FEV.timeline.audio && FEV.timeline.audio.elementoCargado);
   if (window.FEV_DEBUG_DRIFT) window.FEV_DRIFT_LOG = [];
   if (btn){ btn.disabled = true; btn.textContent = "Exportando… 0%"; }
   if (previewBtn) previewBtn.disabled = true;
@@ -29147,12 +29211,17 @@ async function fevExportar(){
   // con un margen generoso (5000ms, igual que las fotos) y recién
   // entonces se llama play(), lo más pegado posible a recorder.start() —
   // no depende del mecanismo de precarga-por-margen ni del tope corto del
-  // loop.
-  const activoInicial = calcularClipActivo(FEV.timeline, 0);
-  if (activoInicial){
-    const videosIniciales = [activoInicial.clipA, activoInicial.clipB]
-      .filter(c => c && c.tipo === "video" && c.elementoCargado);
-    await Promise.all(videosIniciales.map(c => fevPrepararVideoInicial(c, 5000)));
+  // loop. Solo aplica en modo Opción B (con música de fondo): en modo
+  // determinista (FEV_EXPORT_VIDEO_DETERMINISTA) el video NUNCA hace
+  // play(), así que este paso no aplica — el primer fotograma se resuelve
+  // igual que cualquier otro, dentro del loop.
+  if (!FEV_EXPORT_VIDEO_DETERMINISTA){
+    const activoInicial = calcularClipActivo(FEV.timeline, 0);
+    if (activoInicial){
+      const videosIniciales = [activoInicial.clipA, activoInicial.clipB]
+        .filter(c => c && c.tipo === "video" && c.elementoCargado);
+      await Promise.all(videosIniciales.map(c => fevPrepararVideoInicial(c, 5000)));
+    }
   }
 
   if (btn) btn.textContent = "Exportando… 0%";
@@ -29179,9 +29248,13 @@ async function fevExportar(){
   const loopStart = performance.now();
   for (let i = 0; i < totalFrames; i++){
     const tMs = Math.min(i * frameIntervalMs, total - 1);
-    fevPrecargarVideosProximos(FEV.timeline, tMs, FEV_VIDEO_PRECARGA_MARGIN_MS);
-    await fevEsperarVideosListosParaFrame(FEV.timeline, tMs);
-    await fevCorregirDriftVideoSiNecesario(FEV.timeline, tMs);
+    if (FEV_EXPORT_VIDEO_DETERMINISTA){
+      await fevSeekDeterministaVideoSiNecesario(FEV.timeline, tMs);
+    } else {
+      fevPrecargarVideosProximos(FEV.timeline, tMs, FEV_VIDEO_PRECARGA_MARGIN_MS);
+      await fevEsperarVideosListosParaFrame(FEV.timeline, tMs);
+      await fevCorregirDriftVideoSiNecesario(FEV.timeline, tMs);
+    }
     renderFrameEnTiempo(ctx, FEV.timeline, tMs);
     if (grafoAudio) grafoAudio.gainNode.gain.value = fevVolumenConFundido(audio.volumen, tMs, total);
     if (btn) btn.textContent = "Exportando… " + Math.round(((i + 1) / totalFrames) * 100) + "%";
