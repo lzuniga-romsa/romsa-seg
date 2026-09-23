@@ -6687,6 +6687,32 @@ function descargarPdfPlanTrabajo(id){
   generarPdfPlanTrabajoEnVentana(plan, winRef, false);
 }
 
+// ── Registro de desuscripciones de listeners de Firestore en tiempo real ──
+// Ninguna de subscribeObras/subscribeCotizaciones/subscribeCosteo guardaba
+// el valor de retorno de .onSnapshot() (la función para desuscribirse) —
+// así que si la misma suscripción se disparaba más de una vez en la misma
+// pestaña (ej. cerrar sesión y volver a iniciar sesión sin recargar la
+// página), se apilaban listeners nuevos sobre los viejos sin límite, cada
+// uno reaccionando por su cuenta a cada cambio en Firestore. Este registro
+// central permite (a) desuscribir la anterior ANTES de crear una nueva con
+// el mismo nombre — corrige la fuga de raíz — y (b) pausar/reanudar todo
+// de un jalón (ver doLogout y fevPausarFirestoreParaExport/
+// fevReanudarFirestoreTrasExport, más abajo en el módulo de FEV).
+const FEV_FIRESTORE_UNSUBS = {};
+function fevRegistrarUnsubFirestore(nombre, unsub){
+  if (FEV_FIRESTORE_UNSUBS[nombre]) {
+    try { FEV_FIRESTORE_UNSUBS[nombre](); } catch (e) {}
+  }
+  FEV_FIRESTORE_UNSUBS[nombre] = unsub || null;
+}
+function fevDesuscribirTodoFirestore(){
+  Object.keys(FEV_FIRESTORE_UNSUBS).forEach((nombre) => {
+    const fn = FEV_FIRESTORE_UNSUBS[nombre];
+    if (fn) { try { fn(); } catch (e) {} }
+    FEV_FIRESTORE_UNSUBS[nombre] = null;
+  });
+}
+
 function subscribeObras(){
   if(!obrasRef){
     document.getElementById("lista-obras").innerHTML="<div class='empty'><div class='empty-ico'>⚠️</div><div class='empty-ttl'>Sin conexión a Firebase</div><div class='empty-sub'>Verifica tu conexión a internet</div></div>";
@@ -6696,7 +6722,7 @@ function subscribeObras(){
     console.error("Firebase error:",err);
     document.getElementById("lista-obras").innerHTML="<div class='empty'><div class='empty-ico'>🔴</div><div class='empty-ttl'>Error al cargar obras</div><div class='empty-sub'>"+err.message+"<br><br><button onclick='subscribeObras()' style='background:#1E6FD9;color:#fff;border:none;padding:8px 18px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;'>&#8635; Reintentar</button></div></div>";
   });
-  obrasRef.orderBy("ts","desc").onSnapshot(snap=>{
+  fevRegistrarUnsubFirestore("obras", obrasRef.orderBy("ts","desc").onSnapshot(snap=>{
     if(_savingBA) return;
     // Preservar updates cargados antes de reemplazar obras[]
     const _prevUpdatesMap={};
@@ -6732,7 +6758,7 @@ function subscribeObras(){
     if(el && err.code==="permission-denied"){
       el.innerHTML="<div class='empty'><div class='empty-ico'>🔒</div><div class='empty-ttl'>Acceso denegado</div><div class='empty-sub'>Las reglas de Firestore no permiten leer. Renueva las reglas en Firebase Console.<br><br><button onclick='subscribeObras()' style='background:#1E6FD9;color:#fff;border:none;padding:8px 18px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;'>&#8635; Reintentar</button></div></div>";
     }
-  });
+  }));
 }
 
 // ─── NAVIGATION ──────────────────────────────────
@@ -9777,13 +9803,13 @@ function subscribeCotizaciones(){
   var q = isAdmin
     ? cotRef.orderBy("ts","desc")
     : cotRef.where("creadoPorUid","==",currentUser.uid).orderBy("ts","desc");
-  q.onSnapshot(function(snap){
+  fevRegistrarUnsubFirestore("cotizaciones", q.onSnapshot(function(snap){
     cotizaciones=snap.docs.map(function(d){return d.data();});
     if(document.getElementById("screen-cotizaciones")?.classList.contains("active"))
       renderListaCot();
     if(typeof _actualizarBadgesMenu === "function") _actualizarBadgesMenu();
     if(typeof _actualizarHeroSelector === "function") _actualizarHeroSelector();
-  });
+  }));
 }
 
 // Mapa de los IDs estándar de cláusulas con sus textos default y títulos
@@ -16563,7 +16589,7 @@ function subscribeCosteo(){
   }
 
   // Materiales
-  costeoMaterialesRef.onSnapshot(snap=>{
+  fevRegistrarUnsubFirestore("costeoMateriales", costeoMaterialesRef.onSnapshot(snap=>{
     if(snap.empty){
       seedCosteoMateriales();
       return;
@@ -16571,36 +16597,36 @@ function subscribeCosteo(){
     _costeoMateriales = snap.docs.map(d=>d.data());
     renderMateriales();
     renderKPIsCosteo();
-  }, err=>console.error("Costeo materiales:", err));
+  }, err=>console.error("Costeo materiales:", err)));
 
   // Mano de Obra
-  costeoMoRef.onSnapshot(snap=>{
+  fevRegistrarUnsubFirestore("costeoMO", costeoMoRef.onSnapshot(snap=>{
     if(snap.empty){
       seedCosteoMO();
       return;
     }
     _costeoMO = snap.docs.map(d=>d.data());
     renderMO();
-  }, err=>console.error("Costeo MO:", err));
+  }, err=>console.error("Costeo MO:", err)));
 
   // Indirectos (documento único)
-  costeoIndirectosRef.doc("default").onSnapshot(snap=>{
+  fevRegistrarUnsubFirestore("costeoIndirectos", costeoIndirectosRef.doc("default").onSnapshot(snap=>{
     if(!snap.exists){
       costeoIndirectosRef.doc("default").set(COSTEO_SEED_INDIRECTOS);
       return;
     }
     _costeoIndirectos = snap.data();
     renderIndirectos();
-  }, err=>console.error("Costeo indirectos:", err));
+  }, err=>console.error("Costeo indirectos:", err)));
 
   // Costeos guardados (para el dashboard)
-  costeoCosteosRef.orderBy("ts","desc").onSnapshot(snap=>{
+  fevRegistrarUnsubFirestore("costeoCosteos", costeoCosteosRef.orderBy("ts","desc").onSnapshot(snap=>{
     _costeoCosteos = snap.docs.map(d=>d.data());
     renderKPIsCosteo();
     renderListaCosteos();
     if(typeof _actualizarBadgesMenu === "function") _actualizarBadgesMenu();
     if(typeof _actualizarHeroSelector === "function") _actualizarHeroSelector();
-  }, err=>console.error("Costeos:", err));
+  }, err=>console.error("Costeos:", err)));
 }
 
 async function seedCosteoMateriales(){
@@ -19564,6 +19590,7 @@ document.getElementById("login-email")?.addEventListener("keydown", e=>{ if(e.ke
 async function doLogout(){
   if(!confirm("¿Cerrar sesión?")) return;
   await auth.signOut();
+  fevDesuscribirTodoFirestore(); // sin esto, volver a iniciar sesión en la misma pestaña apilaba listeners nuevos sobre estos (ver registro más arriba)
   obras = [];
   showToast("👋 Sesión cerrada");
 }
@@ -29105,6 +29132,30 @@ function fevEsperarImagenLista(img, timeoutMs){
   return Promise.race([listo, limite]);
 }
 
+// Pausa temporalmente los listeners de Firestore en tiempo real
+// (obras/cotizaciones/costeo) mientras dura fevExportar() — confirmado con
+// evidencia real que compiten por CPU/hilo principal justo durante la
+// exportación (errores de WebChannel/QUIC en consola exactamente mientras
+// se graba). Solo registra qué estaba activo ANTES de pausar, para no
+// reactivar algo que el usuario nunca tenía (ej. sin acceso a Costeo).
+let FEV_FIRESTORE_ESTADO_ANTES_DE_EXPORT = null;
+function fevPausarFirestoreParaExport(){
+  FEV_FIRESTORE_ESTADO_ANTES_DE_EXPORT = {
+    obras: !!FEV_FIRESTORE_UNSUBS.obras,
+    cotizaciones: !!FEV_FIRESTORE_UNSUBS.cotizaciones,
+    costeo: !!(FEV_FIRESTORE_UNSUBS.costeoMateriales || FEV_FIRESTORE_UNSUBS.costeoMO || FEV_FIRESTORE_UNSUBS.costeoIndirectos || FEV_FIRESTORE_UNSUBS.costeoCosteos),
+  };
+  fevDesuscribirTodoFirestore();
+}
+function fevReanudarFirestoreTrasExport(){
+  const estado = FEV_FIRESTORE_ESTADO_ANTES_DE_EXPORT;
+  FEV_FIRESTORE_ESTADO_ANTES_DE_EXPORT = null;
+  if (!estado) return;
+  if (estado.obras && typeof subscribeObras === "function") subscribeObras();
+  if (estado.cotizaciones && typeof subscribeCotizaciones === "function") subscribeCotizaciones();
+  if (estado.costeo && typeof subscribeCosteo === "function") subscribeCosteo();
+}
+
 async function fevExportar(){
   if (FEV_EXPORTING || !FEV) return;
   if (!FEV.timeline.clips.length){ showToast("Agrega al menos un clip antes de exportar"); return; }
@@ -29121,6 +29172,12 @@ async function fevExportar(){
   FEV_EXPORT_SEEK_READY = new Set();
   FEV_EXPORT_SEEK_PROMISES = new Map();
   FEV_EXPORT_PRIME_AT = new Map();
+  // Pausa Firestore ANTES de cualquier otro paso, y garantiza con
+  // try/finally que se reanude sin importar cómo termine la exportación
+  // (éxito, un error a mitad de camino, o cualquier excepción) — nunca
+  // debe quedar pausado para siempre.
+  fevPausarFirestoreParaExport();
+  try {
   // Opción A (determinismo total) vs Opción B (.play() libre + corrección
   // de drift bajo demanda) — decidido UNA vez por corrida, según haya o
   // no música de fondo. Confirmado con datos reales de producción: sin
@@ -29312,6 +29369,9 @@ async function fevExportar(){
 
   // Vuelve a modo scrubbing normal en el mismo punto del playhead.
   fevSetPlayhead(FEV_PLAYHEAD_MS);
+  } finally {
+    fevReanudarFirestoreTrasExport();
+  }
 }
 
 // Sube el .webm recién exportado a Storage (mismo patrón de
