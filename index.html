@@ -17339,14 +17339,130 @@ function nuevoCosteo(){
 // costeo en borrador que el usuario siempre revisa/edita antes de guardar
 // — el parser es un punto de partida, no un cálculo final automático.
 const _CA_SISTEMA_KEYWORDS = [
-  { match: function(t){ return /epox/i.test(t) && /poliuretano/i.test(t); }, nombre: "Epóxico con acabado de poliuretano" },
-  { match: function(t){ return /epox/i.test(t) && !/poliuretano/i.test(t); }, nombre: "Epóxico 100% sólidos" },
+  { match: function(t){ return /ep[oó]x/i.test(t) && /poliuretano/i.test(t); }, nombre: "Epóxico con acabado de poliuretano" },
+  { match: function(t){ return /ep[oó]x/i.test(t) && !/poliuretano/i.test(t); }, nombre: "Epóxico 100% sólidos" },
   { match: function(t){ return /mortero|uretano cement|flowfresh/i.test(t); }, nombre: "Mortero uretano cementicio" },
   { match: function(t){ return /sello|sikaflex|juntas?\b/i.test(t) && /grieta|junta/i.test(t); }, nombre: "Sello de juntas y grietas" },
   { match: function(t){ return /pulido|desbaste|\bdpa\b/i.test(t); }, nombre: "Desbaste y pulido de concreto" },
   { match: function(t){ return /reparaci[oó]n de losa/i.test(t); }, nombre: "Reparación de losa" },
   { match: function(t){ return /pintura industrial/i.test(t); }, nombre: "Pintura industrial" }
 ];
+
+// Líneas automáticas del Costeo Automático. Siguen el mismo patrón que el
+// resto del módulo: se calculan solas mientras el usuario no las toque; en
+// cuanto edita la cantidad (cantManual) o, en consumibles, el costo
+// (costoManual), dejan de recalcularse y conservan su valor en las
+// siguientes cargas.
+const CA_CONSUMIBLES_PCT = 5;          // % sobre el costo de materiales + MO del sistema
+const CA_ARENA_KG_POR_M2 = 1;
+const CA_ARENA_KG_POR_SACO = 45;
+const CA_ARENA_PRECIO_SACO = 500;
+const CA_SUPERVISION_COSTO_DIA = 1500;
+
+// Mismo criterio que las cubetas: solo sacos enteros, siempre hacia arriba.
+function _caSacosArena(areaM2){
+  if(!areaM2 || areaM2 <= 0) return 0;
+  return Math.ceil((areaM2 * CA_ARENA_KG_POR_M2) / CA_ARENA_KG_POR_SACO);
+}
+
+function _caMencionaArena(texto){
+  return /\barena\b/i.test(texto);  // \b evita "arenado" (preparación de superficie, no riego)
+}
+
+// Preparación siempre cuenta 1 día; primario y capa intermedia comparten 1
+// día aunque aparezcan las dos; el sello suma 1 día más.
+function _caSupervision(texto){
+  const capas = ["preparación"];
+  if(/primari[oa]|capa\s+intermedia/i.test(texto)) capas.push("primario/intermedia");
+  if(/\bsellos?\b/i.test(texto)) capas.push("sello");
+  return { dias: capas.length, capas: capas };
+}
+
+const _CA_MATERIALES_MILS = [
+  { re: /poliuretano/gi, nombre: "poliuretano" },
+  { re: /ep[oó]x/gi, nombre: "epóxico" },
+  { re: /mortero|uretano\s+cement|flowfresh/gi, nombre: "mortero uretano" }
+];
+
+function _caUltimoMaterialEn(str){
+  let mejor = null, mejorIdx = -1;
+  _CA_MATERIALES_MILS.forEach(function(m){
+    m.re.lastIndex = 0;
+    let r;
+    while((r = m.re.exec(str))){ if(r.index > mejorIdx){ mejorIdx = r.index; mejor = m.nombre; } }
+  });
+  return mejor;
+}
+
+function _caPrimerMaterialEn(str){
+  let mejor = null, mejorIdx = Infinity;
+  _CA_MATERIALES_MILS.forEach(function(m){
+    m.re.lastIndex = 0;
+    const r = m.re.exec(str);
+    if(r && r.index < mejorIdx){ mejorIdx = r.index; mejor = m.nombre; }
+  });
+  return mejor;
+}
+
+// Solo informativo: suma los mils de todas las capas de un mismo material.
+// Cada "N mils" se asigna al material mencionado justo antes en su tramo,
+// si no al mencionado después ("10 mils de primario epóxico"), y si el tramo
+// no nombra ninguno, al último material visto ("capa intermedia 10 mils").
+function _caResumenMils(texto){
+  const tramos = texto.split(/[,;\n]+|\s+y\s+|\s+\+\s+/i);
+  const porMaterial = {};
+  const orden = [];
+  let ultimo = null;
+  tramos.forEach(function(tramo){
+    const re = /(\d+(?:\.\d+)?)\s*mils?\b/gi;
+    let m;
+    while((m = re.exec(tramo))){
+      const material = _caUltimoMaterialEn(tramo.slice(0, m.index))
+        || _caPrimerMaterialEn(tramo.slice(m.index + m[0].length))
+        || ultimo;
+      if(!material) continue;
+      if(!porMaterial[material]){ porMaterial[material] = { material: material, mils: 0, capas: 0 }; orden.push(material); }
+      porMaterial[material].mils += parseFloat(m[1]);
+      porMaterial[material].capas += 1;
+    }
+    ultimo = _caUltimoMaterialEn(tramo) || ultimo;
+  });
+  return orden.map(function(k){ return porMaterial[k]; });
+}
+
+function _caCostoMatMO(s){
+  return (s.partidas||[]).reduce(function(acc, p){
+    return (p.tipo==="material" || p.tipo==="mo") ? acc + (p.cantidad||0)*(p.costoUnit||0) : acc;
+  }, 0);
+}
+
+// Recalcula la línea de consumibles de un sistema si sigue en automático.
+// Conserva el % de utilidad que el usuario le haya puesto al precio.
+// Devuelve los índices de partidas que cambiaron (para refrescar inputs).
+function _caRecalcConsumibles(s){
+  const cambiados = [];
+  if(!s) return cambiados;
+  (s.partidas||[]).forEach(function(p, pIdx){
+    if(!p.autoConsumibles || p.cantManual || p.costoManual) return;
+    const costo = Math.round(_caCostoMatMO(s) * CA_CONSUMIBLES_PCT) / 100;
+    if(p.costoUnit === costo) return;
+    p.costoUnit = costo;
+    p.precioUnit = Math.round(costo * (1 + (p.utilPct||0)/100) * 100) / 100;
+    cambiados.push(pIdx);
+  });
+  return cambiados;
+}
+
+function _caPartidaIndirecta(descripcion, cantidad, costoUnit, extra){
+  return Object.assign({
+    tipo: "indirecto",
+    descripcion: descripcion,
+    cantidad: cantidad,
+    costoUnit: costoUnit,
+    precioUnit: costoUnit,  // indirectos al costo por default
+    utilPct: 0
+  }, extra || {});
+}
 
 function abrirCosteoAutomatico(){
   const ov = document.createElement("div");
@@ -17424,6 +17540,42 @@ function _procesarCosteoAutomatico(){
       aplicarKit(idx, espesorDetectado);
     }
   });
+
+  // Líneas que aplican al proyecto completo (no por sistema) van solo en el
+  // primer sistema, para no duplicar supervisión/viáticos entre sistemas.
+  const s0 = _ceCosteo.sistemas[0];
+  if(_caMencionaArena(texto)){
+    const idxPrimerNoMaterial = s0.partidas.findIndex(function(p){ return p.tipo!=="material"; });
+    const arena = {
+      tipo: "material",
+      descripcion: "Arena — riego (saco "+CA_ARENA_KG_POR_SACO+" kg, "+CA_ARENA_KG_POR_M2+" kg/m²)",
+      cantidad: _caSacosArena(s0.cantidad),
+      costoUnit: CA_ARENA_PRECIO_SACO,
+      precioUnit: CA_ARENA_PRECIO_SACO * 1.5,  // mismo 50% default que el resto de materiales
+      utilPct: 50,
+      autoCalc: true,
+      autoArena: true
+    };
+    if(idxPrimerNoMaterial < 0) s0.partidas.push(arena);
+    else s0.partidas.splice(idxPrimerNoMaterial, 0, arena);
+  }
+  const sup = _caSupervision(texto);
+  s0.partidas.push(_caPartidaIndirecta(
+    "Supervisión de obra ("+sup.capas.join(" + ")+")", sup.dias, CA_SUPERVISION_COSTO_DIA
+  ));
+  s0.partidas.push(_caPartidaIndirecta("Flete / Transporte", 1, 0));
+  s0.partidas.push(_caPartidaIndirecta("Gasolina", 1, 0));
+  s0.partidas.push(_caPartidaIndirecta("Casetas", 1, 0));
+  // Consumibles sí va en cada sistema: 5% de SU material+MO, así la suma
+  // es el 5% del costeo completo y el precio por m² de cada sistema no
+  // depende de los demás.
+  _ceCosteo.sistemas.forEach(function(s){
+    s.partidas.push(_caPartidaIndirecta("Consumibles", 1, 0, { autoConsumibles: true }));
+    _caRecalcConsumibles(s);
+  });
+
+  _ceCosteo.descripcionAuto = texto;
+  _ceCosteo.resumenMils = _caResumenMils(texto);
 
   _renderSistemas();
   _actualizarResumenGlobal();
@@ -17523,8 +17675,25 @@ function _renderSistemas(){
     return;
   }
 
-  wrap.innerHTML = _ceCosteo.sistemas.map((s,idx)=>_htmlSistema(s,idx)).join("");
+  _ceCosteo.sistemas.forEach(s=>_caRecalcConsumibles(s));
+  wrap.innerHTML = _htmlResumenMils(_ceCosteo.resumenMils)
+    + _ceCosteo.sistemas.map((s,idx)=>_htmlSistema(s,idx)).join("");
   _actualizarResumenGlobal();
+}
+
+// Resumen informativo de espesor total por material (Costeo Automático) —
+// no interviene en ningún cálculo; el rendimiento sigue siendo por capa.
+function _htmlResumenMils(resumen){
+  if(!resumen || !resumen.length) return "";
+  return '<div style="background:#F5F3FF;border:1px solid #DDD6FE;border-radius:10px;padding:10px 12px;margin-bottom:12px;font-size:11px;color:#5B21B6;">'
+    +'<div style="font-size:8.5px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:4px;opacity:.75;">Espesor total por material (informativo)</div>'
+    +resumen.map(r=>'<div><strong>Total '+escapeHtml(r.material)+': '+_fmtMils(r.mils)+' mils</strong>'
+      +(r.capas>1?' <span style="opacity:.75;">('+r.capas+' capas)</span>':'')+'</div>').join("")
+  +'</div>';
+}
+
+function _fmtMils(n){
+  return Number.isInteger(n) ? String(n) : String(Math.round(n*100)/100);
 }
 
 function _htmlSistema(s, idx){
@@ -17606,6 +17775,9 @@ function _htmlPartida(sIdx, pIdx, p){
 
   // Nombre editable inline + rendimiento clickable + badge custom
   const badgeCustom = p.custom ? '<span style="display:inline-block;font-size:7.5px;font-weight:700;padding:1px 5px;border-radius:3px;letter-spacing:.4px;text-transform:uppercase;margin-left:4px;background:#FEF3C7;color:#78350F;">CUSTOM</span>' : '';
+  const badgeAuto = (p.autoConsumibles && !p.cantManual && !p.costoManual)
+    ? '<span title="Se recalcula solo: '+CA_CONSUMIBLES_PCT+'% del costo de materiales + MO. Si editas el costo o la cantidad, queda fijo a mano." style="display:inline-block;font-size:7.5px;font-weight:700;padding:1px 5px;border-radius:3px;letter-spacing:.4px;text-transform:uppercase;margin-left:4px;background:#DBEAFE;color:#1E40AF;">AUTO '+CA_CONSUMIBLES_PCT+'%</span>'
+    : '';
   let rendBadge = '';
   if(p.rendNota){
     // Si es material con múltiples rendimientos en catálogo, hacer click-to-change
@@ -17625,7 +17797,7 @@ function _htmlPartida(sIdx, pIdx, p){
     +'<div><input type="text" inputmode="decimal" value="'+(p.cantidad||0)+'" data-sidx="'+sIdx+'" data-pidx="'+pIdx+'" data-campo="cantidad" class="cos-part-input" onchange="updPartida('+sIdx+','+pIdx+',\'cantidad\',_parseFormulaOValor(this.value,this))" onfocus="_highlightFormula(this)"></div>'
     +'<div class="cos-partida-name">'+tag
       +'<span class="cos-partida-desc" onclick="_editarNombrePartida('+sIdx+','+pIdx+',this)" title="Click para editar" style="cursor:text;padding:2px 3px;border-radius:3px;transition:background .15s;">'+escapeHtml(p.descripcion||"")+'</span>'
-      +rendBadge+badgeCustom+saveBtn
+      +rendBadge+badgeCustom+badgeAuto+saveBtn
     +'</div>'
     +'<div class="cos-input-money"><span class="cos-input-money-sym">$</span><input type="text" inputmode="decimal" value="'+(p.costoUnit||0)+'" data-sidx="'+sIdx+'" data-pidx="'+pIdx+'" data-campo="costoUnit" class="cos-part-input" onchange="updPartida('+sIdx+','+pIdx+',\'costoUnit\',_parseFormulaOValor(this.value,this))" onfocus="_highlightFormula(this)"></div>'
     +'<div class="cos-input-money" style="position:relative;"><span class="cos-input-money-sym">$</span><input type="text" inputmode="decimal" value="'+(p.precioUnit||0)+'" data-sidx="'+sIdx+'" data-pidx="'+pIdx+'" data-campo="precioUnit" class="cos-part-input" onchange="onPrecioUnitChange('+sIdx+','+pIdx+',_parseFormulaOValor(this.value,this))" onfocus="_highlightFormula(this)">'
@@ -17989,6 +18161,7 @@ function updPartida(sIdx, pIdx, campo, valor){
   if(!s || !s.partidas[pIdx]) return;
   s.partidas[pIdx][campo] = valor;
   if(campo==="cantidad") s.partidas[pIdx].cantManual = true;
+  if(campo==="costoUnit" && s.partidas[pIdx].autoConsumibles) s.partidas[pIdx].costoManual = true;
   _ceSnapshot();  // debounced (permite tipear sin crear 10 snapshots)
   _actualizarTotalesSistema(sIdx);
   _actualizarResumenGlobal();
@@ -18083,6 +18256,13 @@ function _highlightFormula(input){
 function _actualizarTotalesSistema(sIdx){
   const s = _ceCosteo.sistemas[sIdx];
   if(!s) return;
+  _caRecalcConsumibles(s).forEach(pIdx=>{
+    const p = s.partidas[pIdx];
+    ["costoUnit","precioUnit"].forEach(campo=>{
+      const inp = document.querySelector('input[data-sidx="'+sIdx+'"][data-pidx="'+pIdx+'"][data-campo="'+campo+'"]');
+      if(inp && inp !== document.activeElement) inp.value = p[campo];
+    });
+  });
   const tot = _calcSistema(s);
   const margenPct = tot.precio>0 ? (tot.utilidad/tot.precio*100) : 0;
 
@@ -18631,7 +18811,10 @@ function _recalcAutoPartidas(sIdx){
   if(!s) return;
   s.partidas.forEach(p=>{
     if(!p.autoCalc || p.cantManual) return;
-    if(p.tipo==="mo"){
+    if(p.autoArena){
+      p.cantidad = _caSacosArena(s.cantidad);
+    }
+    else if(p.tipo==="mo"){
       p.cantidad = s.cantidad;
     }
     else if(p.tipo==="material" && p.rendIdx>=0){
