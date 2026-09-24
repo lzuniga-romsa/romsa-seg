@@ -3251,6 +3251,8 @@ body.in-plantrabajo #app{
           <button onclick="nuevoMaterial()" style="background:#1E6FD9;color:#fff;border:none;padding:6px 12px;border-radius:7px;font-size:10px;font-weight:700;cursor:pointer;font-family:var(--font);">+ Material</button>
         </div>
         <div id="lista-materiales"></div>
+        <div style="font-size:11px;color:var(--tx2);margin:18px 0 10px;">Mano de obra a destajo por sistema ($/m²) — la usa el Costeo Automático (área × tarifa).</div>
+        <div id="lista-tarifa-mo-sistema"></div>
       </div>
 
       <!-- Cat: Mano de Obra -->
@@ -16572,14 +16574,38 @@ const COSTEO_SEED_MO = [
   {id:"mo_dpa",             nombre:"DPA — Desbaste, Pulido y Abrillantado",       costoPorUnidad:180, unidad:"m²",     utilSug:75}
 ];
 
+// Tarifa inicial de mano de obra a destajo ($/m²) — placeholder parejo
+// para todos los sistemas; cada uno se ajusta después desde Catálogos.
+const COSTEO_TARIFA_MO_DEFAULT = 200;
+
 const COSTEO_SEED_INDIRECTOS = {
   supervisorDia:     1500,
   consumiblesPct:    7,     /* % sugerido sobre costo material+MO */
   fleteDefault:      1800,
   comidasSug:        750,
   casetasSug:        1200,
-  gasolinaSug:       2000
+  gasolinaSug:       2000,
+  // Mano de obra a destajo por sistema ($/m²), la usa el Costeo Automático.
+  tarifaMOSistema: {
+    "Epóxico con acabado de poliuretano": COSTEO_TARIFA_MO_DEFAULT,
+    "Epóxico 100% sólidos":               COSTEO_TARIFA_MO_DEFAULT,
+    "Mortero uretano cementicio":         COSTEO_TARIFA_MO_DEFAULT,
+    "Sello de juntas y grietas":          COSTEO_TARIFA_MO_DEFAULT,
+    "Desbaste y pulido de concreto":      COSTEO_TARIFA_MO_DEFAULT,
+    "Reparación de losa":                 COSTEO_TARIFA_MO_DEFAULT,
+    "Pintura industrial":                 COSTEO_TARIFA_MO_DEFAULT
+  }
 };
+
+// Tarifa de MO por sistema: la guardada en el catálogo (Firestore) si existe;
+// si ese sistema todavía no tiene una guardada (ej. el documento de
+// indirectos se creó antes de que existiera este campo), la inicial.
+function _tarifaMOSistema(nombreSistema){
+  const guardadas = (_costeoIndirectos && _costeoIndirectos.tarifaMOSistema) || {};
+  if(typeof guardadas[nombreSistema] === "number") return guardadas[nombreSistema];
+  const seed = COSTEO_SEED_INDIRECTOS.tarifaMOSistema[nombreSistema];
+  return typeof seed === "number" ? seed : COSTEO_TARIFA_MO_DEFAULT;
+}
 
 // ── Subscribe: cargar catálogos y poblar si están vacíos ──────
 function subscribeCosteo(){
@@ -16617,6 +16643,7 @@ function subscribeCosteo(){
     }
     _costeoIndirectos = snap.data();
     renderIndirectos();
+    renderTarifasMOSistema();
   }, err=>console.error("Costeo indirectos:", err)));
 
   // Costeos guardados (para el dashboard)
@@ -16833,6 +16860,31 @@ async function updIndirecto(campo, valor){
   _costeoIndirectos[campo] = valor;
   try{ await costeoIndirectosRef.doc("default").set(_costeoIndirectos); }catch(e){ showToast("⚠️ "+e.message); }
 }
+
+// ── Render: TARIFA DE MANO DE OBRA POR SISTEMA (destajo $/m²) ─
+// Vive en el mismo documento de indirectos (tarifaMOSistema), así que se
+// repinta cada vez que llega ese documento — igual que renderIndirectos.
+function renderTarifasMOSistema(){
+  const wrap = document.getElementById("lista-tarifa-mo-sistema");
+  if(!wrap || !_costeoIndirectos) return;
+  wrap.innerHTML = '<div class="cos-card">'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">'
+    +COSTEO_SISTEMAS_PREDEF.map(nombre=>
+      '<div><div class="cos-label">'+escapeHtml(nombre)+'</div>'
+        +'<input class="cos-input" type="number" step="0.01" min="0" value="'+_tarifaMOSistema(nombre)+'"'
+        +' data-tarifa-sistema="'+escapeHtml(nombre)+'" onchange="updTarifaMOSistema(this.dataset.tarifaSistema,parseFloat(this.value)||0)">'
+      +'</div>'
+    ).join("")
+    +'</div>'
+  +'</div>';
+}
+
+async function updTarifaMOSistema(nombreSistema, valor){
+  if(!_costeoIndirectos) return;  // aún no carga el documento: no sobreescribirlo con uno vacío
+  _costeoIndirectos.tarifaMOSistema = Object.assign({}, _costeoIndirectos.tarifaMOSistema || {}, { [nombreSistema]: valor });
+  try{ await costeoIndirectosRef.doc("default").set(_costeoIndirectos); }catch(e){ showToast("⚠️ "+e.message); }
+}
+window.updTarifaMOSistema = updTarifaMOSistema;
 
 // ── Render: KPIs del dashboard ───────────────────────────────
 function renderKPIsCosteo(){
@@ -17512,15 +17564,28 @@ function _procesarCosteoAutomatico(){
     return;
   }
 
-  // Espesor: buscar el primer número seguido de "mils" que aparezca ANTES
-  // de la palabra "poliuretano" (si existe) — así el espesor detectado
-  // corresponde a la capa base de epóxico, no al acabado (que siempre usa
-  // su propio rendimiento fijo de 4 mils).
-  let espesorDetectado = null;
+  // Espesor del sistema = SUMA de todas las capas de su material base
+  // ("10 mils de primario epóxico" + "10 mils de capa intermedia epóxico"
+  // = un solo cálculo de material a 20 mils, no dos de 10). Las etiquetas
+  // de capa (primario/intermedia/sello) solo alimentan los días de
+  // supervisión. El poliuretano de acabado no entra aquí: el kit ya le fija
+  // su propio rendimiento de 4 mils.
+  const resumenMils = _caResumenMils(texto);
+  // Respaldo si ninguna capa quedó ligada a un material (ej. "sistema 20
+  // mils en 80 m2"): primer "N mils" antes de "poliuretano", como antes.
+  let espesorSinMaterial = null;
   const idxPoliuretano = texto.search(/poliuretano/i);
   const textoParaEspesor = idxPoliuretano>=0 ? texto.slice(0, idxPoliuretano) : texto;
   const espesorMatch = textoParaEspesor.match(/(\d+(?:\.\d+)?)\s*mils?/i);
-  if(espesorMatch) espesorDetectado = espesorMatch[1]+" mils";
+  if(espesorMatch) espesorSinMaterial = espesorMatch[1]+" mils";
+
+  function espesorParaSistema(nombreSistema){
+    const familia = /ep[oó]x/i.test(nombreSistema) ? "epóxico"
+                  : /mortero/i.test(nombreSistema) ? "mortero uretano"
+                  : null;
+    const r = familia && resumenMils.find(function(x){ return x.material===familia; });
+    return (r && r.mils > 0) ? _fmtMils(r.mils)+" mils" : espesorSinMaterial;
+  }
 
   document.querySelector(".cos-modal-ov")?.remove();
 
@@ -17528,6 +17593,7 @@ function _procesarCosteoAutomatico(){
   nuevoCosteo();
   _ceCosteo.sistemas = [];
 
+  const avisosEspesor = [];
   sistemasDetectados.forEach(function(nombreSistema){
     const idx = _ceCosteo.sistemas.length;
     _ceCosteo.sistemas.push({
@@ -17536,9 +17602,35 @@ function _procesarCosteoAutomatico(){
       unidad: "m²",
       partidas: []
     });
-    if(COSTEO_KITS[nombreSistema]){
-      aplicarKit(idx, espesorDetectado);
+    const s = _ceCosteo.sistemas[idx];
+    const kit = COSTEO_KITS[nombreSistema];
+    let utilMO = 80;
+    if(kit){
+      const espesor = espesorParaSistema(nombreSistema);
+      aplicarKit(idx, espesor);
+      s.partidas.forEach(function(p){
+        const fijo = kit.materiales.some(function(k){ return k.matId===p.matId && k.rendOverride; });
+        if(espesor && p.tipo==="material" && !fijo && /mils/i.test(p.rendNota||"") && p.rendNota!==espesor){
+          avisosEspesor.push(p.descripcion+": "+espesor+" no está en el catálogo, se usó "+p.rendNota);
+        }
+      });
+      // La MO del kit (tarifa por tipo de trabajo) se reemplaza por la de
+      // destajo por sistema — si se dejaran las dos, se cobraría doble.
+      const moKit = s.partidas.find(function(p){ return p.tipo==="mo"; });
+      if(moKit) utilMO = moKit.utilPct;
+      s.partidas = s.partidas.filter(function(p){ return p.tipo!=="mo"; });
     }
+    const tarifa = _tarifaMOSistema(nombreSistema);
+    s.partidas.push({
+      tipo: "mo",
+      descripcion: "Mano de obra",
+      cantidad: s.cantidad,
+      costoUnit: tarifa,
+      precioUnit: Math.round(tarifa * (1 + utilMO/100) * 100) / 100,
+      utilPct: utilMO,
+      autoCalc: true,        // sigue al área del sistema hasta que se edite a mano (cantManual)
+      autoMOSistema: true
+    });
   });
 
   // Líneas que aplican al proyecto completo (no por sistema) van solo en el
@@ -17575,11 +17667,13 @@ function _procesarCosteoAutomatico(){
   });
 
   _ceCosteo.descripcionAuto = texto;
-  _ceCosteo.resumenMils = _caResumenMils(texto);
+  _ceCosteo.resumenMils = resumenMils;
 
   _renderSistemas();
   _actualizarResumenGlobal();
-  showToast("✨ Borrador generado — revisa espesores, área y materiales antes de guardar");
+  showToast(avisosEspesor.length
+    ? "⚠️ Borrador generado — "+avisosEspesor.join(" · ")
+    : "✨ Borrador generado — revisa espesores, área y materiales antes de guardar");
 }
 window._procesarCosteoAutomatico = _procesarCosteoAutomatico;
 
@@ -18750,9 +18844,7 @@ function aplicarKit(sIdx, espesorOverride){
         rendIdx = mat.rendimientos.findIndex(r=>r.espesor===km.rendOverride);
         if(rendIdx<0) rendIdx = 0;
       } else if(espesorOverride){
-        rendIdx = mat.rendimientos.findIndex(r=>r.espesor===espesorOverride);
-        if(rendIdx<0) rendIdx = mat.rendimientos.findIndex(r=>r.espesor==="30 mils");
-        if(rendIdx<0) rendIdx = 0;
+        rendIdx = _rendIdxParaEspesor(mat.rendimientos, espesorOverride);
       } else {
         // Para kits, usar 30 mils por default si existe
         rendIdx = mat.rendimientos.findIndex(r=>r.espesor==="30 mils");
@@ -18799,6 +18891,28 @@ function aplicarKit(sIdx, espesorOverride){
 
   showToast("⚡ Kit aplicado — "+kit.materiales.length+" materiales + MO");
   _renderSistemas();
+}
+
+// Rendimiento del catálogo para el espesor total del sistema (que puede ser
+// la suma de varias capas). Si ese espesor exacto no está registrado, usa el
+// siguiente MÁS GRUESO (nunca se queda corto de material); si el total
+// supera a todos, el más grueso disponible. No interpola ni suma capas:
+// no se asume que el rendimiento escale lineal con el espesor.
+function _rendIdxParaEspesor(rendimientos, espesor){
+  const exacto = rendimientos.findIndex(r=>r.espesor===espesor);
+  if(exacto>=0) return exacto;
+  const objetivo = parseFloat(espesor);
+  const conMils = rendimientos
+    .map((r,i)=>({ i, mils: /mils?/i.test(r.espesor||"") ? parseFloat(r.espesor) : NaN }))
+    .filter(x=>!isNaN(x.mils));
+  if(isNaN(objetivo) || !conMils.length){
+    // Material sin rendimientos en mils (ej. sello por ancho de junta): como antes.
+    const i30 = rendimientos.findIndex(r=>r.espesor==="30 mils");
+    return i30>=0 ? i30 : 0;
+  }
+  const masGruesos = conMils.filter(x=>x.mils>=objetivo).sort((a,b)=>a.mils-b.mils);
+  if(masGruesos.length) return masGruesos[0].i;
+  return conMils.sort((a,b)=>b.mils-a.mils)[0].i;
 }
 
 function _sumProporciones(arr){
