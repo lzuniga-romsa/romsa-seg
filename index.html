@@ -915,6 +915,43 @@ body.in-plantrabajo #app{
   .feh-form-wrap{width:400px;flex-shrink:0;overflow-y:auto;padding:24px;border-left:1px solid #E7DFD5;}
 }
 
+/* ── Plantillas multimarca (dentro de Editor de Fotos) — mismo overlay y
+   mismas clases .feh-* que HOME/TAURINA; solo agrega lo que no existía:
+   el gesto de arrastre/zoom sobre la vista previa y la miniatura 16:9. ── */
+#fmm-root{position:fixed;inset:0;background:#F4F6FA;z-index:500;display:none;flex-direction:column;overflow-y:auto;}
+#fmm-canvas{touch-action:none;cursor:grab;}
+#fmm-canvas.fmm-arrastrando{cursor:grabbing;}
+.feh-picker-thumb.fmm-thumb-land{aspect-ratio:16/9;}
+#fmm-picker-grid{align-items:start;}
+.fmm-icon-picker{margin-top:8px;border:1px solid #E1E6EF;border-radius:10px;background:#fff;}
+.fmm-icon-picker summary{display:flex;align-items:center;gap:10px;padding:6px 10px 6px 6px;cursor:pointer;list-style:none;font-size:12px;}
+.fmm-icon-picker summary::-webkit-details-marker{display:none;}
+.fmm-icon-actual{width:38px;height:38px;border-radius:8px;background:var(--fmm-oscuro,#0B1F3A);color:var(--fmm-acento,#C36F4A);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.fmm-icon-actual svg{width:62%;height:62%;}
+.fmm-icono-propio-mini{max-width:70%;max-height:70%;object-fit:contain;}
+.fmm-icon-nombre{flex:1;font-weight:600;color:#1B2433;}
+.fmm-icon-cambiar{color:#5A6576;font-weight:600;}
+.fmm-icon-picker[open] .fmm-icon-cambiar{visibility:hidden;}
+.fmm-icon-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(40px,1fr));gap:6px;padding:4px 10px 10px;max-height:236px;overflow-y:auto;}
+.fmm-icon-btn{aspect-ratio:1;border-radius:8px;border:2px solid transparent;background:var(--fmm-oscuro,#0B1F3A);color:var(--fmm-acento,#C36F4A);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;}
+.fmm-icon-btn svg{width:62%;height:62%;}
+.fmm-icon-btn:hover{border-color:rgba(255,255,255,.35);}
+.fmm-icon-btn.active{border-color:var(--fmm-acento,#C36F4A);box-shadow:inset 0 0 0 2px #fff;}
+.fmm-icono-propio-row{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;margin-top:6px;}
+.fmm-btn-mini{padding:6px 10px;font-size:11px;flex:1 1 100%;width:100%;}
+.fmm-icono-propio-mask{display:block;width:62%;height:62%;background:var(--fmm-acento,#C36F4A);-webkit-mask-size:contain;mask-size:contain;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;-webkit-mask-position:center;mask-position:center;}
+.fmm-check{display:flex;align-items:center;gap:6px;font-size:12px;color:#1B2433;cursor:pointer;}
+.fmm-link{background:none;border:none;color:#B3261E;font-size:12px;font-weight:600;cursor:pointer;padding:0;}
+.fmm-ben{padding:10px 0 14px;border-bottom:1px solid #E1E6EF;}
+.fmm-ben:last-of-type{border-bottom:none;}
+.fmm-ben-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;}
+.fmm-ben-head .feh-ctrl-label{margin:0;}
+#fmm-agregar-ben{width:100%;margin-top:6px;}
+.fmm-preset-acciones{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+.fmm-btn-mini2{padding:7px 12px;font-size:12px;width:auto;flex:0 0 auto;}
+.fmm-btn-peligro{color:#B3261E;}
+.fmm-preset-nombre{margin-top:8px;padding:10px;border:1px dashed #C9D1DE;border-radius:10px;background:#fff;}
+
 /* ── Generador de Video (Fase 1) — chrome neutro; el color/tipografía de
    marca se aplica SOLO al texto dibujado dentro del canvas, no a esta UI ── */
 #fev-root{position:fixed;inset:0;background:#fff;z-index:500;display:none;flex-direction:column;overflow:hidden;}
@@ -3844,6 +3881,7 @@ body.in-plantrabajo #app{
       <div class="fe-title" id="fe-title">Motor de Marca ROMSA</div>
       <button class="fe-home-btn" onclick="fehAbrir()" title="HOME by ROMSA — Plantillas sociales">🏠 HOME</button>
       <button class="fe-home-btn" onclick="fevAbrir()" title="Generador de Video">🎬 Video</button>
+      <button class="fe-home-btn" onclick="fmmAbrir()" title="Plantillas multimarca — HOME, ROMSA, RACKLINE y TAURINA">🧩 Plantillas</button>
       <button class="fe-cal-btn" onclick="bceAbrirCalendario()" title="Calendario de publicaciones">📅</button>
       <div class="fe-step-dots" id="fe-step-dots"><span class="dot active"></span><span class="dot"></span></div>
     </div>
@@ -4085,6 +4123,31 @@ body.in-plantrabajo #app{
           </div>
           <button type="button" class="feh-btn feh-btn-ghost" id="feh-guardar-borrador-btn" style="display:none;width:100%;margin-top:8px;" onclick="fehGuardarBorrador()">💾 Guardar borrador en esta fecha</button>
         </div>
+      </div>
+    </div>
+
+    <!-- ══ PLANTILLAS MULTIMARCA · HOME / ROMSA / RACKLINE / TAURINA (área independiente) ══ -->
+    <div id="fmm-root">
+      <div class="feh-topbar">
+        <button class="feh-back" id="fmm-back-btn" onclick="fmmAtras()">← Atrás</button>
+        <div class="feh-title">Plantillas · Multimarca</div>
+        <span style="width:60px;"></span>
+      </div>
+
+      <div id="fmm-step-picker" class="feh-step active">
+        <div class="feh-hint" style="margin:14px 16px 0;">Elige la plantilla en el formato que necesitas. La marca (HOME, ROMSA, RACKLINE o TAURINA) se elige dentro del editor.</div>
+        <div class="feh-picker-section">
+          <div class="feh-picker-section-title">Presentación de Servicio</div>
+          <div class="feh-picker-section-sub">Foto protagonista · título, descripción y 3 beneficios</div>
+        </div>
+        <div class="feh-picker-grid" id="fmm-picker-grid"></div>
+      </div>
+
+      <div id="fmm-step-editor" class="feh-step feh-step-editor">
+        <div class="feh-canvas-area">
+          <canvas id="fmm-canvas"></canvas>
+        </div>
+        <div class="feh-form-wrap" id="fmm-form"></div>
       </div>
     </div>
 
@@ -26298,6 +26361,1370 @@ window.taurinaSetOffset = taurinaSetOffset;
 window.taurinaCargarFoto = taurinaCargarFoto;
 window.taurinaSugerirAleatorio = taurinaSugerirAleatorio;
 window.taurinaDescargar = taurinaDescargar;
+
+// ══════════════════════════════════════════════════════════════
+// PLANTILLAS MULTIMARCA — área independiente dentro de Editor de Fotos
+// (#fmm-root). Misma mecánica que HOME y TAURINA (picker → editor con
+// vista previa en vivo → PNG al doble de resolución, mismas clases
+// .feh-*), pero la marca se elige dentro del editor entre las 4.
+// Colores, tipografía de títulos y logos NO se definen aquí: salen de la
+// configuración de marcas del Generador de Video (FEV_BRANDS,
+// FEV_ESTILOS_TEXTO, fevObtenerLogoImg), la única que ya cubre las 4.
+// ══════════════════════════════════════════════════════════════
+const FMM_MARCAS = [
+  { id:"home",     etiqueta:"HOME" },
+  { id:"romsa",    etiqueta:"ROMSA Industrial" },
+  { id:"rackline", etiqueta:"RACKLINE" },
+  { id:"taurina",  etiqueta:"TAURINA" },
+];
+
+// Formatos: los que el editor ya usa para plantillas sociales (Feed 4:5 e
+// Historia 9:16) + el 16:9 de "Website Hero" de BCE, que es donde vive el
+// diseño original con degradado lateral.
+const FMM_TEMPLATES = [
+  { id:"servicio-feed",  formato:"feed",  w:1080, h:1350, label:"Presentación de Servicio · Feed" },
+  { id:"servicio-story", formato:"story", w:1080, h:1920, label:"Presentación de Servicio · Historia" },
+  { id:"servicio-land",  formato:"land",  w:1920, h:1080, label:"Presentación de Servicio · Horizontal" },
+];
+
+const FMM_DEFAULTS = {
+  textoLogo: "Renueva tu espacio",
+  titulo1: "Renueva tu",
+  titulo2: "espacio hoy",
+  descripcion: "Soluciones a la medida con materiales de primera y un acabado impecable, listo en días.",
+};
+// Texto junto al logo por marca: HOME usa su tagline oficial; el resto
+// conserva el default general.
+const FMM_TEXTO_LOGO_POR_MARCA = { home: "Todo para pisos" };
+function fmmTextoLogoDefault(marca){ return FMM_TEXTO_LOGO_POR_MARCA[marca] || FMM_DEFAULTS.textoLogo; }
+
+const FMM_MIN_BENEFICIOS = 2;
+const FMM_MAX_BENEFICIOS = 4;
+const FMM_BENEFICIOS_DEFAULT = [
+  { texto:"Materiales premium",   icono:"medal" },
+  { texto:"Diseño personalizado", icono:"pencil-ruler" },
+  { texto:"Garantía asegurada",   icono:"shield-check" },
+];
+
+// Presets de fábrica por servicio. Solo contenido (títulos, descripción,
+// beneficios e íconos): nada de colores, tipografías, encabezado ni texto
+// junto al logo, para que funcionen igual con cualquier marca activa.
+const FMM_PRESETS_FABRICA = [
+  { id:"pisos", nombre:"Pisos y recubrimientos",
+    titulo1:"Pisos que", titulo2:"duran años",
+    descripcion:"Instalamos y renovamos pisos epóxicos, pulidos y recubrimientos que resisten el tráfico diario con un acabado impecable.",
+    beneficios:[
+      { texto:"Alta resistencia al desgaste", icono:"shield-check" },
+      { texto:"Acabado brillante", icono:"sparkle" },
+      { texto:"Listo en pocos días", icono:"clock" },
+      { texto:"Garantía por escrito", icono:"certificate" },
+    ] },
+  { id:"pergolas", nombre:"Pérgolas",
+    titulo1:"Tu terraza,", titulo2:"lista para disfrutar",
+    descripcion:"Diseñamos e instalamos pérgolas a la medida que dan sombra, estilo y más valor a tu espacio exterior.",
+    beneficios:[
+      { texto:"Diseño a la medida", icono:"pencil-ruler" },
+      { texto:"Sombra todo el año", icono:"sun" },
+      { texto:"Resiste la intemperie", icono:"shield-check" },
+    ] },
+  { id:"cocinas", nombre:"Cocinas",
+    titulo1:"Cocinas que", titulo2:"inspiran",
+    descripcion:"Remodelamos tu cocina con cubiertas, gabinetes y acabados funcionales, pensados para tu forma de cocinar.",
+    beneficios:[
+      { texto:"Diseño funcional", icono:"ruler" },
+      { texto:"Acabados premium", icono:"medal" },
+      { texto:"Instalación limpia", icono:"broom" },
+      { texto:"Entrega en la fecha acordada", icono:"calendar-check" },
+    ] },
+  { id:"racks", nombre:"Racks industriales",
+    titulo1:"Almacenamiento", titulo2:"que rinde más",
+    descripcion:"Suministramos e instalamos racks industriales que aprovechan cada metro de tu bodega con seguridad y orden.",
+    beneficios:[
+      { texto:"Más capacidad por m²", icono:"warehouse" },
+      { texto:"Carga segura", icono:"shield-check" },
+      { texto:"Instalación certificada", icono:"hard-hat" },
+      { texto:"Asesoría técnica", icono:"chat-circle-dots" },
+    ] },
+  { id:"impermeabilizacion", nombre:"Impermeabilización",
+    titulo1:"Techos sin", titulo2:"goteras",
+    descripcion:"Impermeabilizamos azoteas y losas con sistemas de alta durabilidad que protegen tu inversión de la lluvia y el sol.",
+    beneficios:[
+      { texto:"100% impermeable", icono:"drop" },
+      { texto:"Larga duración", icono:"certificate" },
+      { texto:"Aplicación profesional", icono:"paint-roller" },
+    ] },
+];
+
+const FMM_ENCABEZADOS = [
+  { id:"logo",   etiqueta:"Logo sobre foto" },
+  { id:"franja", etiqueta:"Franja de marca" },
+];
+
+// Presets propios: compartidos por todo el equipo en
+// crm_config/fmm_presets_servicio — el mismo documento de configuración
+// compartida que ya usa el calendario del Editor de Fotos
+// (crm_config/bce_calendario), abierto en firestore.rules a cualquier
+// cuenta con sesión, "editor_fotos" incluido (una colección nueva quedaría
+// bloqueada para ese rol por la regla general). Cada preset es un campo
+// del mapa "presets"; las escrituras son set({merge:true}) de UN solo
+// preset, así dos personas guardando a la vez no se pisan.
+const FMM_PRESETS_DOC = "fmm_presets_servicio";
+let _fmmPresetsPropios = {};
+let _fmmPresetModoNombre = null;   // null | "nuevo" | "renombrar"
+
+function _fmmPresetsRef(){
+  return (typeof db !== "undefined" && db) ? db.collection("crm_config").doc(FMM_PRESETS_DOC) : null;
+}
+
+async function fmmCargarPresetsPropios(){
+  const ref = _fmmPresetsRef();
+  if(!ref) return;
+  try {
+    const snap = await ref.get();
+    const data = (snap && snap.exists && snap.data()) || {};
+    _fmmPresetsPropios = data.presets || {};
+  } catch(e){ console.warn("No se pudieron cargar los presets de servicio:", e); }
+  fmmRenderPresets();
+}
+
+async function _fmmPresetsEscribir(parcial){
+  const ref = _fmmPresetsRef();
+  if(!ref) throw new Error("Sin conexión a la base de datos");
+  await ref.set({ presets: parcial }, { merge:true });
+}
+
+// Íconos de beneficios: Phosphor Icons v2.1.1 (paquete @phosphor-icons/core,
+// https://phosphoricons.com). Rutas SVG copiadas tal cual de
+// assets/{bold,fill,duotone}/<nombre>-<peso>.svg (viewBox 0 0 256 256) y
+// dibujadas con Path2D — sin CDN ni build. Por ícono:
+//   b = bold    → estilo "Línea"
+//   f = fill    → estilo "Sólido"
+//   d = duotone → estilo "Duotono" ([ruta, opacidad] = capa de relleno al 20%)
+//
+// MIT License
+//
+// Copyright (c) 2023 Phosphor Icons
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+const FMM_ICONOS = [
+  {"id":"cube","n":"Materiales","b":["M225.6,62.64l-88-48.17a19.91,19.91,0,0,0-19.2,0l-88,48.17A20,20,0,0,0,20,80.19v95.62a20,20,0,0,0,10.4,17.55l88,48.17a19.89,19.89,0,0,0,19.2,0l88-48.17A20,20,0,0,0,236,175.81V80.19A20,20,0,0,0,225.6,62.64ZM128,36.57,200,76,128,115.4,56,76ZM44,96.79l72,39.4v76.67L44,173.44Zm96,116.07V136.19l72-39.4v76.65Z"],"f":["M223.68,66.15,135.68,18a15.88,15.88,0,0,0-15.36,0l-88,48.17a16,16,0,0,0-8.32,14v95.64a16,16,0,0,0,8.32,14l88,48.17a15.88,15.88,0,0,0,15.36,0l88-48.17a16,16,0,0,0,8.32-14V80.18A16,16,0,0,0,223.68,66.15ZM128,120,47.65,76,128,32l80.35,44Zm8,99.64V133.83l80-43.78v85.76Z"],"d":[["M128,129.09V232a8,8,0,0,1-3.84-1l-88-48.16a8,8,0,0,1-4.16-7V80.2a8,8,0,0,1,.7-3.27Z",0.2],"M223.68,66.15,135.68,18h0a15.88,15.88,0,0,0-15.36,0l-88,48.17a16,16,0,0,0-8.32,14v95.64a16,16,0,0,0,8.32,14l88,48.17a15.88,15.88,0,0,0,15.36,0l88-48.17a16,16,0,0,0,8.32-14V80.18A16,16,0,0,0,223.68,66.15ZM128,32h0l80.34,44L128,120,47.66,76ZM40,90l80,43.78v85.79L40,175.82Zm96,129.57V133.82L216,90v85.78Z"]},
+  {"id":"stack","n":"Capas / sistema","b":["M234.36,170A12,12,0,0,1,230,186.37l-96,56a12,12,0,0,1-12.1,0l-96-56a12,12,0,0,1,12.09-20.74l90,52.48L218,165.63A12,12,0,0,1,234.36,170ZM218,117.63,128,170.11,38.05,117.63A12,12,0,0,0,26,138.37l96,56a12,12,0,0,0,12.1,0l96-56A12,12,0,0,0,218,117.63ZM20,80a12,12,0,0,1,6-10.37l96-56a12.06,12.06,0,0,1,12.1,0l96,56a12,12,0,0,1,0,20.74l-96,56a12,12,0,0,1-12.1,0l-96-56A12,12,0,0,1,20,80Zm35.82,0L128,122.11,200.18,80,128,37.89Z"],"f":["M220,169.09l-92,53.65L36,169.09A8,8,0,0,0,28,182.91l96,56a8,8,0,0,0,8.06,0l96-56A8,8,0,1,0,220,169.09Z","M220,121.09l-92,53.65L36,121.09A8,8,0,0,0,28,134.91l96,56a8,8,0,0,0,8.06,0l96-56A8,8,0,1,0,220,121.09Z","M28,86.91l96,56a8,8,0,0,0,8.06,0l96-56a8,8,0,0,0,0-13.82l-96-56a8,8,0,0,0-8.06,0l-96,56a8,8,0,0,0,0,13.82Z"],"d":[["M224,80l-96,56L32,80l96-56Z",0.2],"M230.91,172A8,8,0,0,1,228,182.91l-96,56a8,8,0,0,1-8.06,0l-96-56A8,8,0,0,1,36,169.09l92,53.65,92-53.65A8,8,0,0,1,230.91,172ZM220,121.09l-92,53.65L36,121.09A8,8,0,0,0,28,134.91l96,56a8,8,0,0,0,8.06,0l96-56A8,8,0,1,0,220,121.09ZM24,80a8,8,0,0,1,4-6.91l96-56a8,8,0,0,1,8.06,0l96,56a8,8,0,0,1,0,13.82l-96,56a8,8,0,0,1-8.06,0l-96-56A8,8,0,0,1,24,80Zm23.88,0L128,126.74,208.12,80,128,33.26Z"]},
+  {"id":"package","n":"Suministro","b":["M225.6,62.64l-88-48.17a19.91,19.91,0,0,0-19.2,0l-88,48.17A20,20,0,0,0,20,80.19v95.62a20,20,0,0,0,10.4,17.55l88,48.17a19.89,19.89,0,0,0,19.2,0l88-48.17A20,20,0,0,0,236,175.81V80.19A20,20,0,0,0,225.6,62.64ZM128,36.57,200,76,178.57,87.73l-72-39.42Zm0,78.83L56,76,81.56,62l72,39.41ZM44,96.79l72,39.4v76.67L44,173.44Zm96,116.07V136.19l24-13.13V152a12,12,0,0,0,24,0V109.92l24-13.13v76.65Z"],"f":["M223.68,66.15,135.68,18a15.88,15.88,0,0,0-15.36,0l-88,48.17a16,16,0,0,0-8.32,14v95.64a16,16,0,0,0,8.32,14l88,48.17a15.88,15.88,0,0,0,15.36,0l88-48.17a16,16,0,0,0,8.32-14V80.18A16,16,0,0,0,223.68,66.15ZM128,32l80.35,44L178.57,92.29l-80.35-44Zm0,88L47.65,76,81.56,57.43l80.35,44Zm88,55.85h0l-80,43.79V133.83l32-17.51V152a8,8,0,0,0,16,0V107.56l32-17.51v85.76Z"],"d":[["M128,129.09V232a8,8,0,0,1-3.84-1l-88-48.18a8,8,0,0,1-4.16-7V80.18a8,8,0,0,1,.7-3.25Z",0.2],"M223.68,66.15,135.68,18a15.88,15.88,0,0,0-15.36,0l-88,48.17a16,16,0,0,0-8.32,14v95.64a16,16,0,0,0,8.32,14l88,48.17a15.88,15.88,0,0,0,15.36,0l88-48.17a16,16,0,0,0,8.32-14V80.18A16,16,0,0,0,223.68,66.15ZM128,32l80.34,44-29.77,16.3-80.35-44ZM128,120,47.66,76l33.9-18.56,80.34,44ZM40,90l80,43.78v85.79L40,175.82Zm176,85.78h0l-80,43.79V133.82l32-17.51V152a8,8,0,0,0,16,0V107.55L216,90v85.77Z"]},
+  {"id":"wall","n":"Muro","b":["M224,44H32A12,12,0,0,0,20,56V200a12,12,0,0,0,12,12H224a12,12,0,0,0,12-12V56A12,12,0,0,0,224,44ZM92,140V116h72v24Zm-48,0V116H68v24Zm144-24h24v24H188Zm24-24H140V68h72ZM116,68V92H44V68ZM44,164h72v24H44Zm96,24V164h72v24Z"],"f":["M232,56V88a4,4,0,0,1-4,4H136V52a4,4,0,0,1,4-4h84A8,8,0,0,1,232,56Zm-4,52H184v44h44a4,4,0,0,0,4-4V112A4,4,0,0,0,228,108ZM88,152h80V108H88Zm-60,0H72V108H28a4,4,0,0,0-4,4v36A4,4,0,0,0,28,152Zm200,16H136v36a4,4,0,0,0,4,4h84a8,8,0,0,0,8-8V172A4,4,0,0,0,228,168ZM28,92h92V52a4,4,0,0,0-4-4H32a8,8,0,0,0-8,8V88A4,4,0,0,0,28,92Zm-4,80v28a8,8,0,0,0,8,8h84a4,4,0,0,0,4-4V168H28A4,4,0,0,0,24,172Z"],"d":[["M128,104H32V56h96Zm48,0v48H128v48h96V104Z",0.2],"M224,48H32a8,8,0,0,0-8,8V200a8,8,0,0,0,8,8H224a8,8,0,0,0,8-8V56A8,8,0,0,0,224,48ZM88,144V112h80v32Zm-48,0V112H72v32Zm144-32h32v32H184Zm32-16H136V64h80ZM120,64V96H40V64ZM40,160h80v32H40Zm96,32V160h80v32Z"]},
+  {"id":"squares-four","n":"Pisos / azulejo","b":["M100,36H56A20,20,0,0,0,36,56v44a20,20,0,0,0,20,20h44a20,20,0,0,0,20-20V56A20,20,0,0,0,100,36ZM96,96H60V60H96ZM200,36H156a20,20,0,0,0-20,20v44a20,20,0,0,0,20,20h44a20,20,0,0,0,20-20V56A20,20,0,0,0,200,36Zm-4,60H160V60h36Zm-96,40H56a20,20,0,0,0-20,20v44a20,20,0,0,0,20,20h44a20,20,0,0,0,20-20V156A20,20,0,0,0,100,136Zm-4,60H60V160H96Zm104-60H156a20,20,0,0,0-20,20v44a20,20,0,0,0,20,20h44a20,20,0,0,0,20-20V156A20,20,0,0,0,200,136Zm-4,60H160V160h36Z"],"f":["M120,56v48a16,16,0,0,1-16,16H56a16,16,0,0,1-16-16V56A16,16,0,0,1,56,40h48A16,16,0,0,1,120,56Zm80-16H152a16,16,0,0,0-16,16v48a16,16,0,0,0,16,16h48a16,16,0,0,0,16-16V56A16,16,0,0,0,200,40Zm-96,96H56a16,16,0,0,0-16,16v48a16,16,0,0,0,16,16h48a16,16,0,0,0,16-16V152A16,16,0,0,0,104,136Zm96,0H152a16,16,0,0,0-16,16v48a16,16,0,0,0,16,16h48a16,16,0,0,0,16-16V152A16,16,0,0,0,200,136Z"],"d":[["M112,56v48a8,8,0,0,1-8,8H56a8,8,0,0,1-8-8V56a8,8,0,0,1,8-8h48A8,8,0,0,1,112,56Zm88-8H152a8,8,0,0,0-8,8v48a8,8,0,0,0,8,8h48a8,8,0,0,0,8-8V56A8,8,0,0,0,200,48Zm-96,96H56a8,8,0,0,0-8,8v48a8,8,0,0,0,8,8h48a8,8,0,0,0,8-8V152A8,8,0,0,0,104,144Zm96,0H152a8,8,0,0,0-8,8v48a8,8,0,0,0,8,8h48a8,8,0,0,0,8-8V152A8,8,0,0,0,200,144Z",0.2],"M200,136H152a16,16,0,0,0-16,16v48a16,16,0,0,0,16,16h48a16,16,0,0,0,16-16V152A16,16,0,0,0,200,136Zm0,64H152V152h48v48ZM104,40H56A16,16,0,0,0,40,56v48a16,16,0,0,0,16,16h48a16,16,0,0,0,16-16V56A16,16,0,0,0,104,40Zm0,64H56V56h48v48Zm96-64H152a16,16,0,0,0-16,16v48a16,16,0,0,0,16,16h48a16,16,0,0,0,16-16V56A16,16,0,0,0,200,40Zm0,64H152V56h48v48Zm-96,32H56a16,16,0,0,0-16,16v48a16,16,0,0,0,16,16h48a16,16,0,0,0,16-16V152A16,16,0,0,0,104,136Zm0,64H56V152h48v48Z"]},
+  {"id":"paint-roller","n":"Rodillo de pintura","b":["M232,84H212V64a20,20,0,0,0-20-20H52A20,20,0,0,0,32,64V84H16a12,12,0,0,0,0,24H32v20a20,20,0,0,0,20,20H192a20,20,0,0,0,20-20V108h16V155L130.5,182.8A20.09,20.09,0,0,0,116,202v30a12,12,0,0,0,24,0V205.05l97.5-27.85A20.09,20.09,0,0,0,252,158V104A20,20,0,0,0,232,84Zm-44,40H56V68H188Z"],"f":["M248,104v50a16.07,16.07,0,0,1-11.6,15.38L136,198v34a8,8,0,0,1-16,0V198a16.07,16.07,0,0,1,11.6-15.38L232,154V104H216v24a16,16,0,0,1-16,16H48a16,16,0,0,1-16-16V104H16a8,8,0,0,1,0-16H32V64A16,16,0,0,1,48,48H200a16,16,0,0,1,16,16V88h16A16,16,0,0,1,248,104Z"],"d":[["M208,64v64a8,8,0,0,1-8,8H48a8,8,0,0,1-8-8V64a8,8,0,0,1,8-8H200A8,8,0,0,1,208,64Z",0.2],"M232,88H216V64a16,16,0,0,0-16-16H48A16,16,0,0,0,32,64V88H16a8,8,0,0,0,0,16H32v24a16,16,0,0,0,16,16H200a16,16,0,0,0,16-16V104h16v50L131.6,182.65A16.07,16.07,0,0,0,120,198v34a8,8,0,0,0,16,0V198l100.4-28.68A16.07,16.07,0,0,0,248,154V104A16,16,0,0,0,232,88Zm-32,40H48V64H200v64Z"]},
+  {"id":"paint-brush-broad","n":"Brocha","b":["M216,20H72A44.05,44.05,0,0,0,28,64v72a28,28,0,0,0,28,28H95.64L92,207c0,.33,0,.67,0,1a36,36,0,0,0,72,0c0-.33,0-.67,0-1l-3.6-43H200a28,28,0,0,0,28-28V32A12,12,0,0,0,216,20ZM72,44h88V68a12,12,0,0,0,24,0V44h20V96H52V64A20,20,0,0,1,72,44Zm128,96H156a20,20,0,0,0-19.85,22.4l3.84,46a12,12,0,0,1-24,0l3.84-46A20,20,0,0,0,100,140H56a4,4,0,0,1-4-4V120H204v16A4,4,0,0,1,200,140Z"],"f":["M216,24H72A40,40,0,0,0,32,64v72a24,24,0,0,0,24,24h48l-7.89,46.67A8.42,8.42,0,0,0,96,208a32,32,0,0,0,64,0,8.42,8.42,0,0,0-.11-1.33L152,160h48a24,24,0,0,0,24-24V32A8,8,0,0,0,216,24ZM72,40H176V80a8,8,0,0,0,16,0V40h16v72H48V64A24,24,0,0,1,72,40Z"],"d":[["M216,112v24a16,16,0,0,1-16,16H152a8,8,0,0,0-7.92,9.13L152,208a24,24,0,0,1-48,0l7.92-46.87A8,8,0,0,0,104,152H56a16,16,0,0,1-16-16V112Z",0.2],"M216,24H72A40,40,0,0,0,32,64v72a24,24,0,0,0,24,24h48l-7.89,46.67A8.42,8.42,0,0,0,96,208a32,32,0,0,0,64,0,8.42,8.42,0,0,0-.11-1.33L152,160h48a24,24,0,0,0,24-24V32A8,8,0,0,0,216,24ZM72,40H176V80a8,8,0,0,0,16,0V40h16v64H48V64A24,24,0,0,1,72,40ZM200,144H152a16,16,0,0,0-15.84,18.26l0,.2L144,208.6a16,16,0,0,1-32,0l7.8-46.14,0-.2A16,16,0,0,0,104,144H56a8,8,0,0,1-8-8V120H208v16A8,8,0,0,1,200,144Z"]},
+  {"id":"paint-bucket","n":"Cubeta de pintura","b":["M235.79,142.88a12,12,0,0,0,4.7-19.87L125,7.52a12,12,0,0,0-17,0L70.25,45.29,48.48,23.52a12,12,0,0,0-17,17L53.28,62.26,12.2,103.35a28,28,0,0,0,0,39.6l84.86,84.86a28,28,0,0,0,39.6,0L214.48,150Zm-31.58-14.77a12,12,0,0,0-4.7,2.9l-79.82,79.83a4,4,0,0,1-5.66,0L29.17,126a4,4,0,0,1,0-5.66L70.25,79.24l24.29,24.29a32,32,0,0,0,52.09,35.11h0a32,32,0,0,0-35.12-52.08L87.23,62.26,116.52,33l93.27,93.28Zm-85.87-17.75,0,0a8,8,0,1,1-.06.06ZM256,208a24,24,0,0,1-48,0c0-19.44,12.93-37.23,14.4-39.2a12,12,0,0,1,19.2,0C243.07,170.78,256,188.57,256,208Z"],"f":["M256,208a24,24,0,0,1-48,0c0-17.91,15.57-41.77,17.34-44.44a8,8,0,0,1,13.32,0C240.43,166.23,256,190.09,256,208ZM132.49,124.49a12,12,0,0,0-17-17l0,0s0,0,0,0a12,12,0,0,0,17,16.94ZM37.65,18.34A8,8,0,0,0,26.34,29.66l32.6,32.6L70.25,51ZM234.53,139.07a8,8,0,0,0,3.13-13.24L122.17,10.34a8,8,0,0,0-11.31,0L70.25,51l40.43,40.42a28,28,0,1,1-11.31,11.32L58.94,62.26,15,106.17a24,24,0,0,0,0,33.94L99.89,225a24,24,0,0,0,33.94,0l78.49-78.49Z"],"d":[["M248,208a16,16,0,0,1-32,0c0-16,16-40,16-40S248,192,248,208Zm-16-76.52-24,8-79.83,79.83a16,16,0,0,1-22.63,0L20.69,134.46a16,16,0,0,1,0-22.63L116.52,16Zm-93.86-29.62a20,20,0,1,0,0,28.28A20,20,0,0,0,138.14,101.86Z",0.2],"M238.66,163.56a8,8,0,0,0-13.32,0C223.57,166.23,208,190.09,208,208a24,24,0,0,0,48,0C256,190.09,240.43,166.23,238.66,163.56ZM232,216a8,8,0,0,1-8-8c0-6.8,4-16.32,8-24.08,4,7.76,8,17.34,8,24.08A8,8,0,0,1,232,216Zm2.53-76.93a8,8,0,0,0,3.13-13.24L122.17,10.34a8,8,0,0,0-11.31,0L70.25,51,45.65,26.34A8,8,0,0,0,34.34,37.66l24.6,24.6L15,106.17a24,24,0,0,0,0,33.94L99.89,225a24,24,0,0,0,33.94,0l78.49-78.49Zm-32.19-5.24-79.83,79.83a8,8,0,0,1-11.31,0L26.34,128.8a8,8,0,0,1,0-11.31L70.25,73.57l29.12,29.12a28,28,0,1,0,11.31-11.32L81.57,62.26l35-34.95L217.19,128l-11.72,3.9A8.09,8.09,0,0,0,202.34,133.83Zm-86.83-26.31,0,0a13.26,13.26,0,1,1-.05.06S115.51,107.53,115.51,107.52Z"]},
+  {"id":"drop","n":"Impermeable","b":["M134.88,6.17a12,12,0,0,0-13.76,0,259,259,0,0,0-42.18,39C50.85,77.43,36,111.62,36,144a92,92,0,0,0,184,0C220,66.64,138.36,8.6,134.88,6.17ZM128,212a68.07,68.07,0,0,1-68-68c0-33.31,20-63.37,36.7-82.71A249.35,249.35,0,0,1,128,31.11a249.35,249.35,0,0,1,31.3,30.18C176,80.63,196,110.69,196,144A68.07,68.07,0,0,1,128,212Zm49.62-52.4a52,52,0,0,1-34,34,12.2,12.2,0,0,1-3.6.55,12,12,0,0,1-3.6-23.45,28,28,0,0,0,18.32-18.32,12,12,0,0,1,22.9,7.2Z"],"f":["M174,47.75a254.19,254.19,0,0,0-41.45-38.3,8,8,0,0,0-9.18,0A254.19,254.19,0,0,0,82,47.75C54.51,79.32,40,112.6,40,144a88,88,0,0,0,176,0C216,112.6,201.49,79.32,174,47.75Zm9.85,105.59a57.6,57.6,0,0,1-46.56,46.55A8.75,8.75,0,0,1,136,200a8,8,0,0,1-1.32-15.89c16.57-2.79,30.63-16.85,33.44-33.45a8,8,0,0,1,15.78,2.68Z"],"d":[["M208,144a80,80,0,0,1-160,0c0-72,80-128,80-128S208,72,208,144Z",0.2],"M174,47.75a254.19,254.19,0,0,0-41.45-38.3,8,8,0,0,0-9.18,0A254.19,254.19,0,0,0,82,47.75C54.51,79.32,40,112.6,40,144a88,88,0,0,0,176,0C216,112.6,201.49,79.32,174,47.75ZM128,216a72.08,72.08,0,0,1-72-72c0-57.23,55.47-105,72-118,16.53,13,72,60.75,72,118A72.08,72.08,0,0,1,128,216Zm55.89-62.66a57.6,57.6,0,0,1-46.56,46.55A8.75,8.75,0,0,1,136,200a8,8,0,0,1-1.32-15.89c16.57-2.79,30.63-16.85,33.44-33.45a8,8,0,0,1,15.78,2.68Z"]},
+  {"id":"ruler","n":"Regla / medición","b":["M238.15,70.54,185.46,17.86a20,20,0,0,0-28.29,0L17.85,157.17a20,20,0,0,0,0,28.29l52.69,52.68a20,20,0,0,0,28.29,0L238.15,98.83A20,20,0,0,0,238.15,70.54ZM84.68,218.34l-47-47L64,145l23.52,23.52a12,12,0,0,0,17-17L81,128l15-15,23.51,23.52a12,12,0,0,0,17-17L113,96l15-15,23.52,23.52a12,12,0,0,0,17-17L145,64l26.35-26.34,47,47Z"],"f":["M235.32,96,96,235.31a16,16,0,0,1-22.63,0L20.68,182.63a16,16,0,0,1,0-22.63l29.17-29.17a4,4,0,0,1,5.66,0l34.83,34.83a8,8,0,0,0,11.71-.43,8.18,8.18,0,0,0-.6-11.09L66.82,119.51a4,4,0,0,1,0-5.65l15-15a4,4,0,0,1,5.66,0l34.83,34.83a8,8,0,0,0,11.71-.43,8.18,8.18,0,0,0-.6-11.09L98.83,87.51a4,4,0,0,1,0-5.65l15-15a4,4,0,0,1,5.65,0l34.83,34.83a8,8,0,0,0,11.72-.43,8.18,8.18,0,0,0-.61-11.09L130.83,55.51a4,4,0,0,1,0-5.65L160,20.69a16,16,0,0,1,22.63,0l52.69,52.68A16,16,0,0,1,235.32,96Z"],"d":[["M229.66,90.34,90.34,229.66a8,8,0,0,1-11.31,0L26.34,177a8,8,0,0,1,0-11.31L165.66,26.34a8,8,0,0,1,11.31,0L229.66,79A8,8,0,0,1,229.66,90.34Z",0.2],"M235.32,73.37,182.63,20.69a16,16,0,0,0-22.63,0L20.68,160a16,16,0,0,0,0,22.63l52.69,52.68a16,16,0,0,0,22.63,0L235.32,96A16,16,0,0,0,235.32,73.37ZM84.68,224,32,171.31l32-32,26.34,26.35a8,8,0,0,0,11.32-11.32L75.31,128,96,107.31l26.34,26.35a8,8,0,0,0,11.32-11.32L107.31,96,128,75.31l26.34,26.35a8,8,0,0,0,11.32-11.32L139.31,64l32-32L224,84.69Z"]},
+  {"id":"pencil-ruler","n":"Diseño","b":["M208,28H160a20,20,0,0,0-20,20V208a20,20,0,0,0,20,20h48a20,20,0,0,0,20-20V48A20,20,0,0,0,208,28Zm-4,176H164V180h16a12,12,0,0,0,0-24H164V140h16a12,12,0,0,0,0-24H164V100h16a12,12,0,0,0,0-24H164V52h40ZM80.49,23.51a12,12,0,0,0-17,0l-32,32A12,12,0,0,0,28,64V208a20,20,0,0,0,20,20H96a20,20,0,0,0,20-20V64a12,12,0,0,0-3.51-8.49ZM52,92H92v72H52ZM72,49,91,68H53ZM52,204V188H92v16Z"],"f":["M224,48V208a16,16,0,0,1-16,16H160a16,16,0,0,1-16-16V180a4,4,0,0,1,4-4h36a8,8,0,0,0,8-8.53,8.18,8.18,0,0,0-8.25-7.47H148a4,4,0,0,1-4-4V140a4,4,0,0,1,4-4h36a8,8,0,0,0,8-8.53,8.18,8.18,0,0,0-8.25-7.47H148a4,4,0,0,1-4-4V100a4,4,0,0,1,4-4h36a8,8,0,0,0,8-8.53A8.18,8.18,0,0,0,183.73,80H148a4,4,0,0,1-4-4V48a16,16,0,0,1,16-16h48A16,16,0,0,1,224,48ZM109.66,58.34A8,8,0,0,1,112,64V208a16,16,0,0,1-16,16H48a16,16,0,0,1-16-16V64a8,8,0,0,1,2.34-5.66l32-32a8,8,0,0,1,11.32,0ZM48,80V184H64V80Zm32,0V184H96V80ZM51.31,64H92.69L72,43.31Z"],"d":[["M40,184h64v24a8,8,0,0,1-8,8H48a8,8,0,0,1-8-8ZM208,40H160a8,8,0,0,0-8,8V208a8,8,0,0,0,8,8h48a8,8,0,0,0,8-8V48A8,8,0,0,0,208,40Z",0.2],"M208,32H160a16,16,0,0,0-16,16V208a16,16,0,0,0,16,16h48a16,16,0,0,0,16-16V48A16,16,0,0,0,208,32Zm0,176H160V176h24a8,8,0,0,0,0-16H160V136h24a8,8,0,0,0,0-16H160V96h24a8,8,0,0,0,0-16H160V48h48V208ZM77.66,26.34a8,8,0,0,0-11.32,0l-32,32A8,8,0,0,0,32,64V208a16,16,0,0,0,16,16H96a16,16,0,0,0,16-16V64a8,8,0,0,0-2.34-5.66ZM48,176V80H64v96ZM80,80H96v96H80ZM72,43.31,92.69,64H51.31ZM48,208V192H96v16Z"]},
+  {"id":"blueprint","n":"Planos","b":["M232,48H76V40A12,12,0,0,0,64,28H48A36,36,0,0,0,12,64V176a36,36,0,0,0,36,36H232a12,12,0,0,0,12-12V60A12,12,0,0,0,232,48ZM36,64A12,12,0,0,1,48,52h4v88H48a35.59,35.59,0,0,0-12,2.06ZM220,188H48a12,12,0,0,1,0-24H64a12,12,0,0,0,12-12V72H220ZM104,136a12,12,0,0,0,0,24h12v4a12,12,0,0,0,24,0v-4h16v4a12,12,0,0,0,24,0v-4h12a12,12,0,0,0,0-24H180V124h12a12,12,0,0,0,0-24H180V96a12,12,0,0,0-24,0v4H140V96a12,12,0,0,0-24,0v4H104a12,12,0,0,0,0,24h12v12Zm36-12h16v12H140Z"],"f":["M136,120h24v16H136ZM240,64V200a8,8,0,0,1-8,8H48a32,32,0,0,1-32-32V64A32,32,0,0,1,48,32H64a8,8,0,0,1,8,8V56H232A8,8,0,0,1,240,64ZM56,48H48A16,16,0,0,0,32,64v84.29A31.82,31.82,0,0,1,48,144h8Zm120,88V120h16a8,8,0,0,0,0-16H176V96a8,8,0,0,0-16,0v8H136V96a8,8,0,0,0-16,0v8H104a8,8,0,0,0,0,16h16v16H104a8,8,0,0,0,0,16h16v8a8,8,0,0,0,16,0v-8h24v8a8,8,0,0,0,16,0v-8h16a8,8,0,0,0,0-16Z"],"d":[["M232,64V200H48a24,24,0,0,1,0-48H64V64Z",0.2],"M232,56H72V40a8,8,0,0,0-8-8H48A32,32,0,0,0,16,64V176a32,32,0,0,0,32,32H232a8,8,0,0,0,8-8V64A8,8,0,0,0,232,56ZM32,64A16,16,0,0,1,48,48h8v96H48a31.82,31.82,0,0,0-16,4.29ZM224,192H48a16,16,0,0,1,0-32H64a8,8,0,0,0,8-8V72H224ZM104,136a8,8,0,0,0,0,16h16v8a8,8,0,0,0,16,0v-8h24v8a8,8,0,0,0,16,0v-8h16a8,8,0,0,0,0-16H176V120h16a8,8,0,0,0,0-16H176V96a8,8,0,0,0-16,0v8H136V96a8,8,0,0,0-16,0v8H104a8,8,0,0,0,0,16h16v16Zm32-16h24v16H136Z"]},
+  {"id":"hammer","n":"Martillo","b":["M250.18,105.17,186.71,41.25a100.11,100.11,0,0,0-141.43,0l-.13.14L31.37,55.61a12,12,0,1,0,17.24,16.7L62.32,58.16A75.68,75.68,0,0,1,77.49,46.43L119,88,25.85,181.16a20,20,0,0,0,0,28.29l20.69,20.69a20,20,0,0,0,28.28,0L168,137l1.51,1.51h0l23.65,23.66a20,20,0,0,0,28.29,0l28.69-28.7A20,20,0,0,0,250.18,105.17ZM60.68,210.34l-15-15L108,133l15,15ZM140,131l-15-15,19.51-19.51a12,12,0,0,0,0-17L102.24,37.24a75.94,75.94,0,0,1,67.47,20.95l31.44,31.67L178,113l-1.51-1.51a12,12,0,0,0-17,0Zm67.32,11.31L195,130l23.09-23.09,12.3,12.39Z"],"f":["M251.34,112,183.88,44.08a96.1,96.1,0,0,0-135.77,0l-.09.09L34.25,58.4A8,8,0,0,0,45.74,69.53L59.47,55.35a79.92,79.92,0,0,1,18.71-13.9L124.68,88l-96,96a16,16,0,0,0,0,22.63l20.69,20.69a16,16,0,0,0,22.63,0l96-96,32,32a16,16,0,0,0,22.63,0l28.69-28.69A16,16,0,0,0,251.34,112Zm-89,2.33L140,136.67,119.31,116l22.35-22.35a8,8,0,0,0,0-11.32L94.32,35a80,80,0,0,1,78.23,20.41l44.22,44.51L188,128.66l-14.34-14.34A8,8,0,0,0,162.34,114.32Zm49,37.66-12-12L228,111.25l12,12Z"],"d":[["M245.66,129,217,157.66a8,8,0,0,1-11.3,0L168.1,120l-28,28-32-32,28-28L80,31.78a87.81,87.81,0,0,1,98.31,18l67.35,67.89A8,8,0,0,1,245.66,129Z",0.2],"M251.34,112,183.88,44.08a96.1,96.1,0,0,0-135.77,0l-.09.09L34.25,58.4A8,8,0,0,0,45.74,69.53L59.47,55.35a79.92,79.92,0,0,1,18.71-13.9L124.68,88l-96,96a16,16,0,0,0,0,22.63l20.69,20.69a16,16,0,0,0,22.63,0l96-96,14.34,14.34h0L200,163.3a16,16,0,0,0,22.63,0l28.69-28.69A16,16,0,0,0,251.34,112ZM60.68,216,40,195.31l68-68L128.68,148ZM162.34,114.32,140,136.67,119.31,116l22.35-22.35a8,8,0,0,0,0-11.32L94.32,35a80,80,0,0,1,78.23,20.41l44.22,44.51L188,128.66l-14.34-14.34A8,8,0,0,0,162.34,114.32Zm49,37.66-12-12L228,111.25l12,12Z"]},
+  {"id":"wrench","n":"Llave","b":["M230.47,67.5a12,12,0,0,0-19.26-4.32L172.43,99l-12.68-2.72L157,83.57l35.79-38.78a12,12,0,0,0-4.32-19.26A76.07,76.07,0,0,0,88.41,121.64L30.92,174.18a4.68,4.68,0,0,0-.39.38,36,36,0,0,0,50.91,50.91l.38-.39,52.54-57.49A76.05,76.05,0,0,0,230.47,67.5ZM160,148a51.5,51.5,0,0,1-23.35-5.52,12,12,0,0,0-14.26,2.62L64.31,208.66a12,12,0,0,1-17-17l63.55-58.07a12,12,0,0,0,2.62-14.26A51.5,51.5,0,0,1,108,96a52.06,52.06,0,0,1,52-52h.89L135.17,71.87a12,12,0,0,0-2.91,10.65l5.66,26.35a12,12,0,0,0,9.21,9.21l26.35,5.66a12,12,0,0,0,10.65-2.91L212,95.12c0,.3,0,.59,0,.89A52.06,52.06,0,0,1,160,148Z"],"f":["M232,96a72,72,0,0,1-100.94,66L79,222.22c-.12.14-.26.29-.39.42a32,32,0,0,1-45.26-45.26c.14-.13.28-.27.43-.39L94,124.94a72.07,72.07,0,0,1,83.54-98.78,8,8,0,0,1,3.93,13.19L144,80l5.66,26.35L176,112l40.65-37.52a8,8,0,0,1,13.19,3.93A72.6,72.6,0,0,1,232,96Z"],"d":[["M224,96a64,64,0,0,1-94.94,56L73,217A24,24,0,0,1,39,183L104,126.94a64,64,0,0,1,80-90.29L144,80l5.66,26.34L176,112l43.35-40A63.8,63.8,0,0,1,224,96Z",0.2],"M226.76,69a8,8,0,0,0-12.84-2.88l-40.3,37.19-17.23-3.7-3.7-17.23,37.19-40.3A8,8,0,0,0,187,29.24,72,72,0,0,0,88,96,72.34,72.34,0,0,0,94,124.94L33.79,177c-.15.12-.29.26-.43.39a32,32,0,0,0,45.26,45.26c.13-.13.27-.28.39-.42L131.06,162A72,72,0,0,0,232,96,71.56,71.56,0,0,0,226.76,69ZM160,152a56.14,56.14,0,0,1-27.07-7,8,8,0,0,0-9.92,1.77L67.11,211.51a16,16,0,0,1-22.62-22.62L109.18,133a8,8,0,0,0,1.77-9.93,56,56,0,0,1,58.36-82.31l-31.2,33.81a8,8,0,0,0-1.94,7.1L141.83,108a8,8,0,0,0,6.14,6.14l26.35,5.66a8,8,0,0,0,7.1-1.94l33.81-31.2A56.06,56.06,0,0,1,160,152Z"]},
+  {"id":"toolbox","n":"Caja de herramientas","b":["M224,64H180V56a28,28,0,0,0-28-28H104A28,28,0,0,0,76,56v8H32A20,20,0,0,0,12,84V192a20,20,0,0,0,20,20H224a20,20,0,0,0,20-20V84A20,20,0,0,0,224,64ZM100,56a4,4,0,0,1,4-4h48a4,4,0,0,1,4,4v8H100ZM220,88v32H196v-4a12,12,0,0,0-24,0v4H84v-4a12,12,0,0,0-24,0v4H36V88ZM36,188V144H60v4a12,12,0,0,0,24,0v-4h88v4a12,12,0,0,0,24,0v-4h24v44Z"],"f":["M224,64H176V56a24,24,0,0,0-24-24H104A24,24,0,0,0,80,56v8H32A16,16,0,0,0,16,80v28a4,4,0,0,0,4,4H64V96.27A8.17,8.17,0,0,1,71.47,88,8,8,0,0,1,80,96v16h96V96.27A8.17,8.17,0,0,1,183.47,88,8,8,0,0,1,192,96v16h44a4,4,0,0,0,4-4V80A16,16,0,0,0,224,64Zm-64,0H96V56a8,8,0,0,1,8-8h48a8,8,0,0,1,8,8Zm80,68v60a16,16,0,0,1-16,16H32a16,16,0,0,1-16-16V132a4,4,0,0,1,4-4H64v16a8,8,0,0,0,8.53,8A8.17,8.17,0,0,0,80,143.73V128h96v16a8,8,0,0,0,8.53,8,8.17,8.17,0,0,0,7.47-8.25V128h44A4,4,0,0,1,240,132Z"],"d":[["M232,120v72a8,8,0,0,1-8,8H32a8,8,0,0,1-8-8V120Z",0.2],"M224,64H176V56a24,24,0,0,0-24-24H104A24,24,0,0,0,80,56v8H32A16,16,0,0,0,16,80V192a16,16,0,0,0,16,16H224a16,16,0,0,0,16-16V80A16,16,0,0,0,224,64ZM96,56a8,8,0,0,1,8-8h48a8,8,0,0,1,8,8v8H96ZM32,80H224v32H192v-8a8,8,0,0,0-16,0v8H80v-8a8,8,0,0,0-16,0v8H32ZM224,192H32V128H64v8a8,8,0,0,0,16,0v-8h96v8a8,8,0,0,0,16,0v-8h32v64Z"]},
+  {"id":"hard-hat","n":"Casco / seguridad","b":["M228,148.4V136a100.41,100.41,0,0,0-64-93.3V40a20,20,0,0,0-20-20H112A20,20,0,0,0,92,40v2.7A100.41,100.41,0,0,0,28,136v12.4A20,20,0,0,0,12,168v24a20,20,0,0,0,20,20H224a20,20,0,0,0,20-20V168A20,20,0,0,0,228,148.4ZM204,136v12H164V69.07A76.35,76.35,0,0,1,204,136ZM140,44V148H116V44ZM92,69.07V148H52V136A76.35,76.35,0,0,1,92,69.07ZM220,188H36V172H220Z"],"f":["M152,152H104V40a16,16,0,0,1,16-16h16a16,16,0,0,1,16,16Zm72,16H32a16,16,0,0,0-16,16v8a16,16,0,0,0,16,16H224a16,16,0,0,0,16-16v-8A16,16,0,0,0,224,168Zm0-20V136a96.44,96.44,0,0,0-50.11-84.31A4,4,0,0,0,168,55.22V152h52A4,4,0,0,0,224,148ZM36,152H88V55.22a4,4,0,0,0-5.89-3.53A96.44,96.44,0,0,0,32,136v12A4,4,0,0,0,36,152Z"],"d":[["M104,51.31V160H40V136A88,88,0,0,1,104,51.31Zm48,0V160h64V136A88,88,0,0,0,152,51.31Z",0.2],"M224,152V136a96.37,96.37,0,0,0-64-90.51V40a16,16,0,0,0-16-16H112A16,16,0,0,0,96,40v5.49A96.37,96.37,0,0,0,32,136v16a16,16,0,0,0-16,16v24a16,16,0,0,0,16,16H224a16,16,0,0,0,16-16V168A16,16,0,0,0,224,152Zm-16-16v16H160V62.67A80.36,80.36,0,0,1,208,136ZM144,40V152H112V40ZM48,136A80.36,80.36,0,0,1,96,62.67V152H48Zm176,56H32V168H224v24Z"]},
+  {"id":"crane-tower","n":"Grúa","b":["M240,76H111.42L90.73,34.63A12,12,0,0,0,80,28H48A12,12,0,0,0,36,40V76H24a12,12,0,0,0,0,24H36V204H24a12,12,0,0,0,0,24H128a12,12,0,0,0,0-24H116V100h88v80H192v-4a12,12,0,0,0-24,0v8a20,20,0,0,0,20,20h20a20,20,0,0,0,20-20V100h12a12,12,0,0,0,0-24ZM60,52H72.58l12,24H60Zm0,152V164H92v40Zm32-64H60V100H92Z"],"f":["M127.73,208H112V164a4,4,0,0,0-4-4H44a4,4,0,0,0-4,4v44H24.27A8.17,8.17,0,0,0,16,215.47,8,8,0,0,0,24,224H128a8,8,0,0,0,8-8.53A8.17,8.17,0,0,0,127.73,208Z","M239.73,80H108.94L87.16,36.42A8,8,0,0,0,80,32H48a8,8,0,0,0-8,8V80H24.27A8.17,8.17,0,0,0,16,87.47,8,8,0,0,0,24,96H40v44a4,4,0,0,0,4,4h64a4,4,0,0,0,4-4V96h96v88H192v-7.73a8.18,8.18,0,0,0-7.47-8.25,8,8,0,0,0-8.53,8v8a16,16,0,0,0,16,16h16a16,16,0,0,0,16-16V96h16a8,8,0,0,0,8-8.53A8.17,8.17,0,0,0,239.73,80ZM56,80V48H75.06l16,32Z"],"d":[["M104,88V216H48V40H80Z",0.2],"M240,80H108.94L87.16,36.42A8,8,0,0,0,80,32H48a8,8,0,0,0-8,8V80H24a8,8,0,0,0,0,16H40V208H24a8,8,0,0,0,0,16H128a8,8,0,0,0,0-16H112V96h96v88H192v-8a8,8,0,0,0-16,0v8a16,16,0,0,0,16,16h16a16,16,0,0,0,16-16V96h16a8,8,0,0,0,0-16ZM56,48H75.06l16,32H56Zm0,160V160H96v48Zm40-64H56V96H96Z"]},
+  {"id":"shovel","n":"Pala","b":["M248.49,55.51l-48-48a12,12,0,0,0-17,17L199,40l-65.37,65.37L102.14,73.86a20,20,0,0,0-28.28,0l-56,56A19.9,19.9,0,0,0,12,144v80a20,20,0,0,0,20,20h80a19.86,19.86,0,0,0,14.14-5.86l56-56a20,20,0,0,0,0-28.28l-31.51-31.52L216,57l15.51,15.52a12,12,0,1,0,17-17ZM162.34,168l-52,52H36V145.66l52-52,28.69,28.68L79.51,159.51a12,12,0,0,0,17,17l37.17-37.18Z"],"f":["M245.66,69.66a8,8,0,0,1-11.32,0L216,51.31l-71,71L133.66,111l71-71L186.34,21.66a8,8,0,0,1,11.32-11.32l48,48A8,8,0,0,1,245.66,69.66ZM88,176a8,8,0,0,1-5.66-13.66L133.66,111,99.31,76.68a16,16,0,0,0-22.62,0l-56,56A15.89,15.89,0,0,0,16,144v80a16,16,0,0,0,16,16h80a15.86,15.86,0,0,0,11.31-4.69l56-56a16,16,0,0,0,0-22.62L145,122.34,93.66,173.66A8,8,0,0,1,88,176Z"],"d":[["M173.66,173.66l-56,56A8,8,0,0,1,112,232H32a8,8,0,0,1-8-8V144a8,8,0,0,1,2.34-5.66l56-56a8,8,0,0,1,11.32,0l80,80A8,8,0,0,1,173.66,173.66Z",0.2],"M245.66,58.34l-48-48a8,8,0,0,0-11.32,11.32L204.69,40l-71,71L99.31,76.68a16,16,0,0,0-22.62,0l-56,56A15.89,15.89,0,0,0,16,144v80a16,16,0,0,0,16,16h80a15.86,15.86,0,0,0,11.31-4.69l56-56a16,16,0,0,0,0-22.62L145,122.34l71-71,18.34,18.35a8,8,0,0,0,11.32-11.32ZM168,168l-56,56H32V144L88,88l34.34,34.34-40,40a8,8,0,0,0,11.32,11.32l40-40Z"]},
+  {"id":"broom","n":"Limpieza","b":["M237.24,213.21C216.12,203,204,180.64,204,152V134.73a19.94,19.94,0,0,0-12.62-18.59l-24.86-9.81a4,4,0,0,1-2.26-5.14l21.33-53A32,32,0,0,0,167.17,6,32.13,32.13,0,0,0,126.25,24.2l-.07.18-21,53.09a3.94,3.94,0,0,1-2.14,2.2,3.89,3.89,0,0,1-3,.06L74.6,69.43A19.89,19.89,0,0,0,52.87,74C31.06,96.43,20,122.68,20,152a115.46,115.46,0,0,0,32.29,80.3A12,12,0,0,0,61,236H232a12,12,0,0,0,5.24-22.79ZM68.19,92.73,91.06,102A28,28,0,0,0,127.5,86.31l20.95-53a8.32,8.32,0,0,1,10.33-4.81,8,8,0,0,1,4.61,10.57,1.17,1.17,0,0,0,0,.11L142,92.29a28.05,28.05,0,0,0,15.68,36.33L180,137.45V152c0,1,0,2.07.05,3.1l-122.44-49A101.91,101.91,0,0,1,68.19,92.73ZM116.74,212a83.73,83.73,0,0,1-22.09-39,12,12,0,0,0-23.25,6,110.27,110.27,0,0,0,14.49,33H66.25A91.53,91.53,0,0,1,44,152a84,84,0,0,1,3.41-24.11l136.67,54.66A86.58,86.58,0,0,0,198.66,212Z"],"f":["M235.29,216.7C212.86,205.69,200,182.12,200,152V134.69a15.94,15.94,0,0,0-10.09-14.87l-28.65-11.46A8,8,0,0,1,156.79,98l22.32-56.67C184,28.79,178,14.21,165.34,9.51a24,24,0,0,0-30.7,13.71L112.25,80.08a8,8,0,0,1-10.41,4.5L73.11,73.08a15.91,15.91,0,0,0-17.38,3.66C34.68,98.4,24,123.71,24,152a111.53,111.53,0,0,0,31.15,77.53A8.06,8.06,0,0,0,61,232H232a8,8,0,0,0,8-7.51A8.21,8.21,0,0,0,235.29,216.7ZM115.11,216a87.52,87.52,0,0,1-24.26-41.71,8.21,8.21,0,0,0-9.25-6.18A8,8,0,0,0,75.28,178a105.33,105.33,0,0,0,18.36,38H64.44A95.62,95.62,0,0,1,40,152a85.92,85.92,0,0,1,7.73-36.3l137.8,55.13c3,18.06,10.55,33.5,21.89,45.19Z"],"d":[["M192.8,165.12,43.93,105.57A110.88,110.88,0,0,1,61.47,82.38a8,8,0,0,1,8.67-1.81L95.52,90.85a16,16,0,0,0,20.82-9l21-53.1c4.15-10,15.47-15.33,25.63-11.53a20,20,0,0,1,11.51,26.39L153.13,96.71a16,16,0,0,0,8.93,20.75L187,127.3a8,8,0,0,1,5,7.43V152A104.58,104.58,0,0,0,192.8,165.12Z",0.2],"M235.5,216.81c-22.56-11-35.5-34.58-35.5-64.8V134.73a15.94,15.94,0,0,0-10.09-14.87L165,110a8,8,0,0,1-4.48-10.34l21.32-53a28,28,0,0,0-16.1-37,28.14,28.14,0,0,0-35.82,16,.61.61,0,0,0,0,.12L108.9,79a8,8,0,0,1-10.37,4.49L73.11,73.14A15.89,15.89,0,0,0,55.74,76.8C34.68,98.45,24,123.75,24,152a111.45,111.45,0,0,0,31.18,77.53A8,8,0,0,0,61,232H232a8,8,0,0,0,3.5-15.19ZM67.14,88l25.41,10.3a24,24,0,0,0,31.23-13.45l21-53c2.56-6.11,9.47-9.27,15.43-7a12,12,0,0,1,6.88,15.92L145.69,93.76a24,24,0,0,0,13.43,31.14L184,134.73V152c0,.33,0,.66,0,1L55.77,101.71A108.84,108.84,0,0,1,67.14,88Zm48,128a87.53,87.53,0,0,1-24.34-42,8,8,0,0,0-15.49,4,105.16,105.16,0,0,0,18.36,38H64.44A95.54,95.54,0,0,1,40,152a85.9,85.9,0,0,1,7.73-36.29l137.8,55.12c3,18,10.56,33.48,21.89,45.16Z"]},
+  {"id":"house","n":"Casa","b":["M222.14,105.85l-80-80a20,20,0,0,0-28.28,0l-80,80A19.86,19.86,0,0,0,28,120v96a12,12,0,0,0,12,12h64a12,12,0,0,0,12-12V164h24v52a12,12,0,0,0,12,12h64a12,12,0,0,0,12-12V120A19.86,19.86,0,0,0,222.14,105.85ZM204,204H164V152a12,12,0,0,0-12-12H104a12,12,0,0,0-12,12v52H52V121.65l76-76,76,76Z"],"f":["M224,120v96a8,8,0,0,1-8,8H160a8,8,0,0,1-8-8V164a4,4,0,0,0-4-4H108a4,4,0,0,0-4,4v52a8,8,0,0,1-8,8H40a8,8,0,0,1-8-8V120a16,16,0,0,1,4.69-11.31l80-80a16,16,0,0,1,22.62,0l80,80A16,16,0,0,1,224,120Z"],"d":[["M216,120v96H152V152H104v64H40V120a8,8,0,0,1,2.34-5.66l80-80a8,8,0,0,1,11.32,0l80,80A8,8,0,0,1,216,120Z",0.2],"M219.31,108.68l-80-80a16,16,0,0,0-22.62,0l-80,80A15.87,15.87,0,0,0,32,120v96a8,8,0,0,0,8,8h64a8,8,0,0,0,8-8V160h32v56a8,8,0,0,0,8,8h64a8,8,0,0,0,8-8V120A15.87,15.87,0,0,0,219.31,108.68ZM208,208H160V152a8,8,0,0,0-8-8H104a8,8,0,0,0-8,8v56H48V120l80-80,80,80Z"]},
+  {"id":"buildings","n":"Edificios","b":["M240,204H228V96a20,20,0,0,0-20-20H172V32a20,20,0,0,0-28.45-18.12l-104,48.54A20.06,20.06,0,0,0,28,80.55V204H16a12,12,0,0,0,0,24H240a12,12,0,0,0,0-24ZM204,100V204H172V100ZM52,83.09,148,38.3V204H52ZM132,112v12a12,12,0,0,1-24,0V112a12,12,0,0,1,24,0Zm-40,0v12a12,12,0,0,1-24,0V112a12,12,0,0,1,24,0Zm0,52v12a12,12,0,0,1-24,0V164a12,12,0,0,1,24,0Zm40,0v12a12,12,0,0,1-24,0V164a12,12,0,0,1,24,0Z"],"f":["M239.73,208H224V96a16,16,0,0,0-16-16H164a4,4,0,0,0-4,4V208H144V32.41a16.43,16.43,0,0,0-6.16-13,16,16,0,0,0-18.72-.69L39.12,72A16,16,0,0,0,32,85.34V208H16.27A8.18,8.18,0,0,0,8,215.47,8,8,0,0,0,16,224H240a8,8,0,0,0,8-8.53A8.18,8.18,0,0,0,239.73,208ZM76,184a8,8,0,0,1-8.53,8A8.18,8.18,0,0,1,60,183.72V168.27A8.19,8.19,0,0,1,67.47,160,8,8,0,0,1,76,168Zm0-56a8,8,0,0,1-8.53,8A8.19,8.19,0,0,1,60,127.72V112.27A8.19,8.19,0,0,1,67.47,104,8,8,0,0,1,76,112Zm40,56a8,8,0,0,1-8.53,8,8.18,8.18,0,0,1-7.47-8.26V168.27a8.19,8.19,0,0,1,7.47-8.26,8,8,0,0,1,8.53,8Zm0-56a8,8,0,0,1-8.53,8,8.19,8.19,0,0,1-7.47-8.26V112.27a8.19,8.19,0,0,1,7.47-8.26,8,8,0,0,1,8.53,8Z"],"d":[["M136,32V216H40V85.35a8,8,0,0,1,3.56-6.66l80-53.33A8,8,0,0,1,136,32Z",0.2],"M240,208H224V96a16,16,0,0,0-16-16H144V32a16,16,0,0,0-24.88-13.32L39.12,72A16,16,0,0,0,32,85.34V208H16a8,8,0,0,0,0,16H240a8,8,0,0,0,0-16ZM208,96V208H144V96ZM48,85.34,128,32V208H48ZM112,112v16a8,8,0,0,1-16,0V112a8,8,0,1,1,16,0Zm-32,0v16a8,8,0,0,1-16,0V112a8,8,0,1,1,16,0Zm0,56v16a8,8,0,0,1-16,0V168a8,8,0,0,1,16,0Zm32,0v16a8,8,0,0,1-16,0V168a8,8,0,0,1,16,0Z"]},
+  {"id":"factory","n":"Industria","b":["M120,176a12,12,0,0,1-12,12H80a12,12,0,0,1,0-24h28A12,12,0,0,1,120,176Zm56-12H148a12,12,0,0,0,0,24h28a12,12,0,0,0,0-24Zm68,52a12,12,0,0,1-12,12H24a12,12,0,0,1,0-24h4V88a12,12,0,0,1,19.2-9.6L92,112V88a12,12,0,0,1,19.2-9.6l33.33,25,10.61-74.23A20.1,20.1,0,0,1,174.94,12h18.12a20.1,20.1,0,0,1,19.8,17.17l15,105.13c0,.1.12,1.34.12,1.7v68h4A12,12,0,0,1,244,216Zm-77.57-96.17L172,124h30.16L189.59,36H178.41ZM52,204H204V148H168a12,12,0,0,1-7.2-2.4l-14.38-10.78-.06,0L116,112v24a12,12,0,0,1-19.2,9.6L52,112Z"],"f":["M232,208h-8V136c0-.05,0-.09,0-.14s0-.29,0-.43,0-.28,0-.41a.76.76,0,0,0,0-.15l-15-105.13A16.08,16.08,0,0,0,193.06,16H174.94A16.08,16.08,0,0,0,159.1,29.74l-11.56,80.91L108.8,81.6A8,8,0,0,0,96,88v32L44.8,81.6A8,8,0,0,0,32,88V208H24a8,8,0,0,0,0,16H232a8,8,0,0,0,0-16ZM108,184H80a8,8,0,0,1,0-16h28a8,8,0,0,1,0,16Zm68,0H148a8,8,0,0,1,0-16h28a8,8,0,0,1,0,16Zm-5.33-56-8.53-6.4L174.94,32h18.12l13.72,96Z"],"d":[["M216,136v80H40V88l64,48V88l64,48Z",0.2],"M116,176a8,8,0,0,1-8,8H80a8,8,0,0,1,0-16h28A8,8,0,0,1,116,176Zm60-8H148a8,8,0,0,0,0,16h28a8,8,0,0,0,0-16Zm64,48a8,8,0,0,1-8,8H24a8,8,0,0,1,0-16h8V88a8,8,0,0,1,12.8-6.4L96,120V88a8,8,0,0,1,12.8-6.4l38.74,29.05L159.1,29.74A16.08,16.08,0,0,1,174.94,16h18.12A16.08,16.08,0,0,1,208.9,29.74l15,105.13s.08.78.08,1.13v72h8A8,8,0,0,1,240,216Zm-77.86-94.4,8.53,6.4h36.11L193.06,32H174.94ZM48,208H208V144H168a8,8,0,0,1-4.8-1.6l-14.4-10.8,0,0L112,104v32a8,8,0,0,1-12.8,6.4L48,104Z"]},
+  {"id":"warehouse","n":"Bodega","b":["M240,180h-4V61.13l6.51-1.39a12,12,0,1,0-5-23.47l-224,48A12,12,0,0,0,16,108a12.21,12.21,0,0,0,2.53-.26l1.48-.32V180H16a12,12,0,0,0,0,24H240a12,12,0,0,0,0-24ZM44,102.27l168-36V180H192V120a12,12,0,0,0-12-12H76a12,12,0,0,0-12,12v60H44ZM168,144H88V132h80ZM88,168h80v12H88Z"],"f":["M240,184h-8V57.9l9.67-2.08a8,8,0,1,0-3.35-15.64l-224,48A8,8,0,0,0,16,104a8.16,8.16,0,0,0,1.69-.18L24,102.47V184H16a8,8,0,0,0,0,16H240a8,8,0,0,0,0-16Zm-56,0H72V168H184Zm0-32H72V136H184Z"],"d":[["M184,128v64H72V128Z",0.2],"M240,184h-8V57.9l9.67-2.08a8,8,0,1,0-3.35-15.64l-224,48A8,8,0,0,0,16,104a8.16,8.16,0,0,0,1.69-.18L24,102.47V184H16a8,8,0,0,0,0,16H240a8,8,0,0,0,0-16ZM40,99,216,61.33V184H192V128a8,8,0,0,0-8-8H72a8,8,0,0,0-8,8v56H40Zm136,53H80V136h96ZM80,168h96v16H80Z"]},
+  {"id":"door-open","n":"Puerta","b":["M232,212H212V40a20,20,0,0,0-20-20H64A20,20,0,0,0,44,40V212H24a12,12,0,0,0,0,24H232a12,12,0,0,0,0-24Zm-44,0H172V44h16ZM68,44h80V212H68Zm68,84a16,16,0,1,1-16-16A16,16,0,0,1,136,128Z"],"f":["M232,216H208V40a16,16,0,0,0-16-16H64A16,16,0,0,0,48,40V216H24a8,8,0,0,0,0,16H232a8,8,0,0,0,0-16Zm-64,0H64V40H168Zm-40-84a12,12,0,1,1,12,12A12,12,0,0,1,128,132Z"],"d":[["M200,40V224H168V32h24A8,8,0,0,1,200,40Z",0.2],"M232,216H208V40a16,16,0,0,0-16-16H64A16,16,0,0,0,48,40V216H24a8,8,0,0,0,0,16H232a8,8,0,0,0,0-16Zm-40,0H176V40h16ZM64,40h96V216H64Zm80,92a12,12,0,1,1-12-12A12,12,0,0,1,144,132Z"]},
+  {"id":"bathtub","n":"Baño","b":["M240,92H211.3A12,12,0,0,0,200,84H136a12,12,0,0,0-11.3,8H68V52a8,8,0,0,1,8-8,8.5,8.5,0,0,1,8.24,6.39,12,12,0,0,0,23.52-4.78A32.22,32.22,0,0,0,44,52V92H16A12,12,0,0,0,4,104v40a60.07,60.07,0,0,0,56,59.85V216a12,12,0,0,0,24,0V204h88v12a12,12,0,0,0,24,0V203.85A60.07,60.07,0,0,0,252,144V104A12,12,0,0,0,240,92Zm-92,16h40v24H148Zm80,36a36,36,0,0,1-36,36H64a36,36,0,0,1-36-36V116h96v28a12,12,0,0,0,12,12h64a12,12,0,0,0,12-12V116h16Z"],"f":["M240,96H216a8,8,0,0,0-8-8H136a8,8,0,0,0-8,8H64V52A12,12,0,0,1,76,40a12.44,12.44,0,0,1,12.16,9.59,8,8,0,0,0,15.68-3.18A28.32,28.32,0,0,0,76,24,28,28,0,0,0,48,52V96H16a8,8,0,0,0-8,8v40a56.06,56.06,0,0,0,56,56v16a8,8,0,0,0,16,0V200h96v16a8,8,0,0,0,16,0V200a56.06,56.06,0,0,0,56-56V104A8,8,0,0,0,240,96Zm-40,8v40H144V104Z"],"d":[["M240,104v40a48,48,0,0,1-48,48H64a48,48,0,0,1-48-48V104H136v40h64V104Z",0.2],"M240,96H208a8,8,0,0,0-8-8H136a8,8,0,0,0-8,8H64V52A12,12,0,0,1,76,40a12.44,12.44,0,0,1,12.16,9.59,8,8,0,0,0,15.68-3.18A28.32,28.32,0,0,0,76,24,28,28,0,0,0,48,52V96H16a8,8,0,0,0-8,8v40a56.06,56.06,0,0,0,56,56v16a8,8,0,0,0,16,0V200h96v16a8,8,0,0,0,16,0V200a56.06,56.06,0,0,0,56-56V104A8,8,0,0,0,240,96Zm-48,8v32H144V104Zm40,40a40,40,0,0,1-40,40H64a40,40,0,0,1-40-40V112H128v32a8,8,0,0,0,8,8h64a8,8,0,0,0,8-8V112h24Z"]},
+  {"id":"armchair","n":"Interiores","b":["M220,78.53V72a44.05,44.05,0,0,0-44-44H80A44.05,44.05,0,0,0,36,72v6.53a52,52,0,0,0,0,99V200a20,20,0,0,0,20,20H200a20,20,0,0,0,20-20V177.51a52,52,0,0,0,0-99ZM80,52h96a20,20,0,0,1,20,20v4.62A52.09,52.09,0,0,0,152.17,124H103.83A52.09,52.09,0,0,0,60,76.62V72A20,20,0,0,1,80,52ZM206.81,155.86A12,12,0,0,0,196,167.8V196H60V167.8a12,12,0,0,0-10.81-11.94A28,28,0,1,1,80,128v36a12,12,0,0,0,24,0V148h48v16a12,12,0,0,0,24,0V128a28,28,0,1,1,30.81,27.86Z"],"f":["M240,132a28,28,0,0,1-24,27.71V200a16,16,0,0,1-16,16H56a16,16,0,0,1-16-16V159.71A28,28,0,1,1,72,132v36a8,8,0,0,0,16,0V144h80v24a8,8,0,0,0,16,0V132a28,28,0,0,1,56,0ZM44,88a44.06,44.06,0,0,1,43.81,40h80.38A44.06,44.06,0,0,1,212,88a4,4,0,0,0,4-4V72a40,40,0,0,0-40-40H80A40,40,0,0,0,40,72V84A4,4,0,0,0,44,88Z"],"d":[["M240,128a32,32,0,0,1-32,32v40a8,8,0,0,1-8,8H56a8,8,0,0,1-8-8V160a32,32,0,0,1,0-64V72A32,32,0,0,1,80,40h96a32,32,0,0,1,32,32V96A32,32,0,0,1,240,128Z",0.2],"M216,88.8V72a40,40,0,0,0-40-40H80A40,40,0,0,0,40,72V88.8a40,40,0,0,0,0,78.4V200a16,16,0,0,0,16,16H200a16,16,0,0,0,16-16V167.2a40,40,0,0,0,0-78.4ZM80,48h96a24,24,0,0,1,24,24V88.8A40.07,40.07,0,0,0,168,128H88A40.07,40.07,0,0,0,56,88.8V72A24,24,0,0,1,80,48ZM208.39,152H208a8,8,0,0,0-8,8v40H56V160a8,8,0,0,0-8-8h-.39A24,24,0,1,1,72,128v40a8,8,0,0,0,16,0V144h80v24a8,8,0,0,0,16,0V128a24,24,0,1,1,24.39,24Z"]},
+  {"id":"lamp","n":"Iluminación","b":["M251,147.27l-48-112A12,12,0,0,0,192,28H64a12,12,0,0,0-11,7.27l-48,112A12,12,0,0,0,16,164H116v40H96a12,12,0,0,0,0,24h64a12,12,0,0,0,0-24H140V164h48v28a12,12,0,0,0,24,0V164h28a12,12,0,0,0,11-16.73ZM34.2,140,71.91,52H184.09l37.71,88Z"],"f":["M246.68,156.4A8,8,0,0,1,240,160H208v32a8,8,0,0,1-16,0V160H136v48h24a8,8,0,0,1,0,16H96a8,8,0,0,1,0-16h24V160H16a8,8,0,0,1-7.35-11.15l48-112A8,8,0,0,1,64,32H192a8,8,0,0,1,7.35,4.85l48,112A8,8,0,0,1,246.68,156.4Z"],"d":[["M240,152H16L64,40H192Z",0.2],"M247.35,148.85l-48-112A8,8,0,0,0,192,32H64a8,8,0,0,0-7.35,4.85l-48,112A8,8,0,0,0,16,160H120v48H96a8,8,0,0,0,0,16h64a8,8,0,0,0,0-16H136V160h56v32a8,8,0,0,0,16,0V160h32a8,8,0,0,0,7.35-11.15ZM28.13,144,69.28,48H186.72l41.15,96Z"]},
+  {"id":"shield-check","n":"Garantía","b":["M208,36H48A20,20,0,0,0,28,56v56c0,54.29,26.32,87.22,48.4,105.29,23.71,19.39,47.44,26,48.44,26.29a12.1,12.1,0,0,0,6.32,0c1-.28,24.73-6.9,48.44-26.29,22.08-18.07,48.4-51,48.4-105.29V56A20,20,0,0,0,208,36Zm-4,76c0,35.71-13.09,64.69-38.91,86.15A126.28,126.28,0,0,1,128,219.38a126.14,126.14,0,0,1-37.09-21.23C65.09,176.69,52,147.71,52,112V60H204ZM79.51,144.49a12,12,0,1,1,17-17L112,143l47.51-47.52a12,12,0,0,1,17,17l-56,56a12,12,0,0,1-17,0Z"],"f":["M208,40H48A16,16,0,0,0,32,56v56c0,52.72,25.52,84.67,46.93,102.19,23.06,18.86,46,25.26,47,25.53a8,8,0,0,0,4.2,0c1-.27,23.91-6.67,47-25.53C198.48,196.67,224,164.72,224,112V56A16,16,0,0,0,208,40Zm-34.32,69.66-56,56a8,8,0,0,1-11.32,0l-24-24a8,8,0,0,1,11.32-11.32L112,148.69l50.34-50.35a8,8,0,0,1,11.32,11.32Z"],"d":[["M216,56v56c0,96-88,120-88,120S40,208,40,112V56a8,8,0,0,1,8-8H208A8,8,0,0,1,216,56Z",0.2],"M208,40H48A16,16,0,0,0,32,56v56c0,52.72,25.52,84.67,46.93,102.19,23.06,18.86,46,25.26,47,25.53a8,8,0,0,0,4.2,0c1-.27,23.91-6.67,47-25.53C198.48,196.67,224,164.72,224,112V56A16,16,0,0,0,208,40Zm0,72c0,37.07-13.66,67.16-40.6,89.42A129.3,129.3,0,0,1,128,223.62a128.25,128.25,0,0,1-38.92-21.81C61.82,179.51,48,149.3,48,112l0-56,160,0ZM82.34,141.66a8,8,0,0,1,11.32-11.32L112,148.69l50.34-50.35a8,8,0,0,1,11.32,11.32l-56,56a8,8,0,0,1-11.32,0Z"]},
+  {"id":"seal-check","n":"Verificado","b":["M228.75,100.05c-3.52-3.67-7.15-7.46-8.34-10.33-1.06-2.56-1.14-7.83-1.21-12.47-.15-10-.34-22.44-9.18-31.27s-21.27-9-31.27-9.18c-4.64-.07-9.91-.15-12.47-1.21-2.87-1.19-6.66-4.82-10.33-8.34C148.87,20.46,140.05,12,128,12s-20.87,8.46-27.95,15.25c-3.67,3.52-7.46,7.15-10.33,8.34-2.56,1.06-7.83,1.14-12.47,1.21C67.25,37,54.81,37.14,46,46S37,67.25,36.8,77.25c-.07,4.64-.15,9.91-1.21,12.47-1.19,2.87-4.82,6.66-8.34,10.33C20.46,107.13,12,116,12,128S20.46,148.87,27.25,156c3.52,3.67,7.15,7.46,8.34,10.33,1.06,2.56,1.14,7.83,1.21,12.47.15,10,.34,22.44,9.18,31.27s21.27,9,31.27,9.18c4.64.07,9.91.15,12.47,1.21,2.87,1.19,6.66,4.82,10.33,8.34C107.13,235.54,116,244,128,244s20.87-8.46,27.95-15.25c3.67-3.52,7.46-7.15,10.33-8.34,2.56-1.06,7.83-1.14,12.47-1.21,10-.15,22.44-.34,31.27-9.18s9-21.27,9.18-31.27c.07-4.64.15-9.91,1.21-12.47,1.19-2.87,4.82-6.66,8.34-10.33C235.54,148.87,244,140.05,244,128S235.54,107.13,228.75,100.05Zm-17.32,39.29c-4.82,5-10.28,10.72-13.19,17.76-2.82,6.8-2.93,14.16-3,21.29-.08,5.36-.19,12.71-2.15,14.66s-9.3,2.07-14.66,2.15c-7.13.11-14.49.22-21.29,3-7,2.91-12.73,8.37-17.76,13.19C135.78,214.84,130.4,220,128,220s-7.78-5.16-11.34-8.57c-5-4.82-10.72-10.28-17.76-13.19-6.8-2.82-14.16-2.93-21.29-3-5.36-.08-12.71-.19-14.66-2.15s-2.07-9.3-2.15-14.66c-.11-7.13-.22-14.49-3-21.29-2.91-7-8.37-12.73-13.19-17.76C41.16,135.78,36,130.4,36,128s5.16-7.78,8.57-11.34c4.82-5,10.28-10.72,13.19-17.76,2.82-6.8,2.93-14.16,3-21.29C60.88,72.25,61,64.9,63,63s9.3-2.07,14.66-2.15c7.13-.11,14.49-.22,21.29-3,7-2.91,12.73-8.37,17.76-13.19C120.22,41.16,125.6,36,128,36s7.78,5.16,11.34,8.57c5,4.82,10.72,10.28,17.76,13.19,6.8,2.82,14.16,2.93,21.29,3,5.36.08,12.71.19,14.66,2.15s2.07,9.3,2.15,14.66c.11,7.13.22,14.49,3,21.29,2.91,7,8.37,12.73,13.19,17.76,3.41,3.56,8.57,8.94,8.57,11.34S214.84,135.78,211.43,139.34ZM176.49,95.51a12,12,0,0,1,0,17l-56,56a12,12,0,0,1-17,0l-24-24a12,12,0,1,1,17-17L112,143l47.51-47.52A12,12,0,0,1,176.49,95.51Z"],"f":["M225.86,102.82c-3.77-3.94-7.67-8-9.14-11.57-1.36-3.27-1.44-8.69-1.52-13.94-.15-9.76-.31-20.82-8-28.51s-18.75-7.85-28.51-8c-5.25-.08-10.67-.16-13.94-1.52-3.56-1.47-7.63-5.37-11.57-9.14C146.28,23.51,138.44,16,128,16s-18.27,7.51-25.18,14.14c-3.94,3.77-8,7.67-11.57,9.14C88,40.64,82.56,40.72,77.31,40.8c-9.76.15-20.82.31-28.51,8S41,67.55,40.8,77.31c-.08,5.25-.16,10.67-1.52,13.94-1.47,3.56-5.37,7.63-9.14,11.57C23.51,109.72,16,117.56,16,128s7.51,18.27,14.14,25.18c3.77,3.94,7.67,8,9.14,11.57,1.36,3.27,1.44,8.69,1.52,13.94.15,9.76.31,20.82,8,28.51s18.75,7.85,28.51,8c5.25.08,10.67.16,13.94,1.52,3.56,1.47,7.63,5.37,11.57,9.14C109.72,232.49,117.56,240,128,240s18.27-7.51,25.18-14.14c3.94-3.77,8-7.67,11.57-9.14,3.27-1.36,8.69-1.44,13.94-1.52,9.76-.15,20.82-.31,28.51-8s7.85-18.75,8-28.51c.08-5.25.16-10.67,1.52-13.94,1.47-3.56,5.37-7.63,9.14-11.57C232.49,146.28,240,138.44,240,128S232.49,109.73,225.86,102.82Zm-52.2,6.84-56,56a8,8,0,0,1-11.32,0l-24-24a8,8,0,0,1,11.32-11.32L112,148.69l50.34-50.35a8,8,0,0,1,11.32,11.32Z"],"d":[["M232,128c0,12.51-17.82,21.95-22.68,33.69-4.68,11.32,1.42,30.65-7.78,39.85s-28.53,3.1-39.85,7.78C150,214.18,140.5,232,128,232s-22-17.82-33.69-22.68c-11.32-4.68-30.65,1.42-39.85-7.78s-3.1-28.53-7.78-39.85C41.82,150,24,140.5,24,128s17.82-22,22.68-33.69C51.36,83,45.26,63.66,54.46,54.46S83,51.36,94.31,46.68C106.05,41.82,115.5,24,128,24S150,41.82,161.69,46.68c11.32,4.68,30.65-1.42,39.85,7.78s3.1,28.53,7.78,39.85C214.18,106.05,232,115.5,232,128Z",0.2],"M225.86,102.82c-3.77-3.94-7.67-8-9.14-11.57-1.36-3.27-1.44-8.69-1.52-13.94-.15-9.76-.31-20.82-8-28.51s-18.75-7.85-28.51-8c-5.25-.08-10.67-.16-13.94-1.52-3.56-1.47-7.63-5.37-11.57-9.14C146.28,23.51,138.44,16,128,16s-18.27,7.51-25.18,14.14c-3.94,3.77-8,7.67-11.57,9.14C88,40.64,82.56,40.72,77.31,40.8c-9.76.15-20.82.31-28.51,8S41,67.55,40.8,77.31c-.08,5.25-.16,10.67-1.52,13.94-1.47,3.56-5.37,7.63-9.14,11.57C23.51,109.72,16,117.56,16,128s7.51,18.27,14.14,25.18c3.77,3.94,7.67,8,9.14,11.57,1.36,3.27,1.44,8.69,1.52,13.94.15,9.76.31,20.82,8,28.51s18.75,7.85,28.51,8c5.25.08,10.67.16,13.94,1.52,3.56,1.47,7.63,5.37,11.57,9.14C109.72,232.49,117.56,240,128,240s18.27-7.51,25.18-14.14c3.94-3.77,8-7.67,11.57-9.14,3.27-1.36,8.69-1.44,13.94-1.52,9.76-.15,20.82-.31,28.51-8s7.85-18.75,8-28.51c.08-5.25.16-10.67,1.52-13.94,1.47-3.56,5.37-7.63,9.14-11.57C232.49,146.28,240,138.44,240,128S232.49,109.73,225.86,102.82Zm-11.55,39.29c-4.79,5-9.75,10.17-12.38,16.52-2.52,6.1-2.63,13.07-2.73,19.82-.1,7-.21,14.33-3.32,17.43s-10.39,3.22-17.43,3.32c-6.75.1-13.72.21-19.82,2.73-6.35,2.63-11.52,7.59-16.52,12.38S132,224,128,224s-9.15-4.92-14.11-9.69-10.17-9.75-16.52-12.38c-6.1-2.52-13.07-2.63-19.82-2.73-7-.1-14.33-.21-17.43-3.32s-3.22-10.39-3.32-17.43c-.1-6.75-.21-13.72-2.73-19.82-2.63-6.35-7.59-11.52-12.38-16.52S32,132,32,128s4.92-9.15,9.69-14.11,9.75-10.17,12.38-16.52c2.52-6.1,2.63-13.07,2.73-19.82.1-7,.21-14.33,3.32-17.43S70.51,56.9,77.55,56.8c6.75-.1,13.72-.21,19.82-2.73,6.35-2.63,11.52-7.59,16.52-12.38S124,32,128,32s9.15,4.92,14.11,9.69,10.17,9.75,16.52,12.38c6.1,2.52,13.07,2.63,19.82,2.73,7,.1,14.33.21,17.43,3.32s3.22,10.39,3.32,17.43c.1,6.75.21,13.72,2.73,19.82,2.63,6.35,7.59,11.52,12.38,16.52S224,124,224,128,219.08,137.15,214.31,142.11ZM173.66,98.34a8,8,0,0,1,0,11.32l-56,56a8,8,0,0,1-11.32,0l-24-24a8,8,0,0,1,11.32-11.32L112,148.69l50.34-50.35A8,8,0,0,1,173.66,98.34Z"]},
+  {"id":"certificate","n":"Certificado","b":["M128,140a12,12,0,0,1-12,12H72a12,12,0,0,1,0-24h44A12,12,0,0,1,128,140ZM116,88H72a12,12,0,0,0,0,24h44a12,12,0,0,0,0-24Zm120,79.14V228a12,12,0,0,1-17.95,10.42L196,225.82,174,238.42A12,12,0,0,1,156,228V204H40a20,20,0,0,1-20-20V56A20,20,0,0,1,40,36H216a20,20,0,0,1,20,20V88.86a55.87,55.87,0,0,1,0,78.28ZM196,160a32,32,0,1,0-32-32A32,32,0,0,0,196,160Zm-40,20V167.14a56,56,0,0,1,56-92.8V60H44V180Zm56,27.32V181.66a55.87,55.87,0,0,1-32,0v25.66l10.05-5.74a12,12,0,0,1,11.9,0Z"],"f":["M232,86.53V56a16,16,0,0,0-16-16H40A16,16,0,0,0,24,56V184a16,16,0,0,0,16,16H160v24A8,8,0,0,0,172,231l24-13.74L220,231A8,8,0,0,0,232,224V161.47a51.88,51.88,0,0,0,0-74.94ZM128,144H72a8,8,0,0,1,0-16h56a8,8,0,0,1,0,16Zm0-32H72a8,8,0,0,1,0-16h56a8,8,0,0,1,0,16Zm88,98.21-16-9.16a8,8,0,0,0-7.94,0l-16,9.16V172a51.88,51.88,0,0,0,40,0ZM196,160a36,36,0,1,1,36-36A36,36,0,0,1,196,160Z"],"d":[["M224,56V90.06h0a44,44,0,1,0-56,67.88h0V192H40a8,8,0,0,1-8-8V56a8,8,0,0,1,8-8H216A8,8,0,0,1,224,56Z",0.2],"M128,136a8,8,0,0,1-8,8H72a8,8,0,0,1,0-16h48A8,8,0,0,1,128,136Zm-8-40H72a8,8,0,0,0,0,16h48a8,8,0,0,0,0-16Zm112,65.47V224A8,8,0,0,1,220,231l-24-13.74L172,231A8,8,0,0,1,160,224V200H40a16,16,0,0,1-16-16V56A16,16,0,0,1,40,40H216a16,16,0,0,1,16,16V86.53a51.88,51.88,0,0,1,0,74.94ZM160,184V161.47A52,52,0,0,1,216,76V56H40V184Zm56-12a51.88,51.88,0,0,1-40,0v38.22l16-9.16a8,8,0,0,1,7.94,0l16,9.16Zm16-48a36,36,0,1,0-36,36A36,36,0,0,0,232,124Z"]},
+  {"id":"medal","n":"Medalla","b":["M220,96A92,92,0,1,0,68,165.69V240a12,12,0,0,0,17.37,10.73L128,229.42l42.64,21.31A12,12,0,0,0,188,240V165.69A91.86,91.86,0,0,0,220,96ZM60,96a68,68,0,1,1,68,68A68.07,68.07,0,0,1,60,96ZM164,220.59l-30.64-15.32a12,12,0,0,0-10.74,0L92,220.58V180.66a92,92,0,0,0,72,0ZM128,148A52,52,0,1,0,76,96,52.06,52.06,0,0,0,128,148Zm0-80a28,28,0,1,1-28,28A28,28,0,0,1,128,68Z"],"f":["M216,96A88,88,0,1,0,72,163.83V240a8,8,0,0,0,11.58,7.16L128,225l44.43,22.21A8.07,8.07,0,0,0,176,248a8,8,0,0,0,8-8V163.83A87.85,87.85,0,0,0,216,96ZM56,96a72,72,0,1,1,72,72A72.08,72.08,0,0,1,56,96Zm16,0a56,56,0,1,1,56,56A56.06,56.06,0,0,1,72,96Z"],"d":[["M176,96a48,48,0,1,1-48-48A48,48,0,0,1,176,96Z",0.2],"M216,96A88,88,0,1,0,72,163.83V240a8,8,0,0,0,11.58,7.16L128,225l44.43,22.21A8.07,8.07,0,0,0,176,248a8,8,0,0,0,8-8V163.83A87.85,87.85,0,0,0,216,96ZM56,96a72,72,0,1,1,72,72A72.08,72.08,0,0,1,56,96ZM168,227.06l-36.43-18.21a8,8,0,0,0-7.16,0L88,227.06V174.37a87.89,87.89,0,0,0,80,0ZM128,152A56,56,0,1,0,72,96,56.06,56.06,0,0,0,128,152Zm0-96A40,40,0,1,1,88,96,40,40,0,0,1,128,56Z"]},
+  {"id":"trophy","n":"Trofeo","b":["M232,60H212V48a12,12,0,0,0-12-12H56A12,12,0,0,0,44,48V60H24A20,20,0,0,0,4,80V96a44.05,44.05,0,0,0,44,44h.77A84.18,84.18,0,0,0,116,195.15V212H96a12,12,0,0,0,0,24h64a12,12,0,0,0,0-24H140V195.11c30.94-4.51,56.53-26.2,67-55.11h1a44.05,44.05,0,0,0,44-44V80A20,20,0,0,0,232,60ZM28,96V84H44v28c0,1.21,0,2.41.09,3.61A20,20,0,0,1,28,96Zm160,15.1c0,33.33-26.71,60.65-59.54,60.9A60,60,0,0,1,68,112V60H188ZM228,96a20,20,0,0,1-16.12,19.62c.08-1.5.12-3,.12-4.52V84h16Z"],"f":["M232,64H208V48a8,8,0,0,0-8-8H56a8,8,0,0,0-8,8V64H24A16,16,0,0,0,8,80V96a40,40,0,0,0,40,40h3.65A80.13,80.13,0,0,0,120,191.61V216H96a8,8,0,0,0,0,16h64a8,8,0,0,0,0-16H136V191.58c31.94-3.23,58.44-25.64,68.08-55.58H208a40,40,0,0,0,40-40V80A16,16,0,0,0,232,64ZM48,120A24,24,0,0,1,24,96V80H48v32q0,4,.39,8ZM232,96a24,24,0,0,1-24,24h-.5a81.81,81.81,0,0,0,.5-8.9V80h24Z"],"d":[["M200,48v63.1c0,39.7-31.75,72.6-71.45,72.9A72,72,0,0,1,56,112V48Z",0.2],"M232,64H208V48a8,8,0,0,0-8-8H56a8,8,0,0,0-8,8V64H24A16,16,0,0,0,8,80V96a40,40,0,0,0,40,40h3.65A80.13,80.13,0,0,0,120,191.61V216H96a8,8,0,0,0,0,16h64a8,8,0,0,0,0-16H136V191.58c31.94-3.23,58.44-25.64,68.08-55.58H208a40,40,0,0,0,40-40V80A16,16,0,0,0,232,64ZM48,120A24,24,0,0,1,24,96V80H48v32q0,4,.39,8Zm144-8.9c0,35.52-29,64.64-64,64.9a64,64,0,0,1-64-64V56H192ZM232,96a24,24,0,0,1-24,24h-.5a81.81,81.81,0,0,0,.5-8.9V80h24Z"]},
+  {"id":"star","n":"Estrella","b":["M243,96a20.33,20.33,0,0,0-17.74-14l-56.59-4.57L146.83,24.62a20.36,20.36,0,0,0-37.66,0L87.35,77.44,30.76,82A20.45,20.45,0,0,0,19.1,117.88l43.18,37.24-13.2,55.7A20.37,20.37,0,0,0,79.57,233L128,203.19,176.43,233a20.39,20.39,0,0,0,30.49-22.15l-13.2-55.7,43.18-37.24A20.43,20.43,0,0,0,243,96ZM172.53,141.7a12,12,0,0,0-3.84,11.86L181.58,208l-47.29-29.08a12,12,0,0,0-12.58,0L74.42,208l12.89-54.4a12,12,0,0,0-3.84-11.86L41.2,105.24l55.4-4.47a12,12,0,0,0,10.13-7.38L128,41.89l21.27,51.5a12,12,0,0,0,10.13,7.38l55.4,4.47Z"],"f":["M234.29,114.85l-45,38.83L203,211.75a16.4,16.4,0,0,1-24.5,17.82L128,198.49,77.47,229.57A16.4,16.4,0,0,1,53,211.75l13.76-58.07-45-38.83A16.46,16.46,0,0,1,31.08,86l59-4.76,22.76-55.08a16.36,16.36,0,0,1,30.27,0l22.75,55.08,59,4.76a16.46,16.46,0,0,1,9.37,28.86Z"],"d":[["M229.06,108.79l-48.7,42,14.88,62.79a8.4,8.4,0,0,1-12.52,9.17L128,189.09,73.28,222.74a8.4,8.4,0,0,1-12.52-9.17l14.88-62.79-48.7-42A8.46,8.46,0,0,1,31.73,94L95.64,88.8l24.62-59.6a8.36,8.36,0,0,1,15.48,0l24.62,59.6L224.27,94A8.46,8.46,0,0,1,229.06,108.79Z",0.2],"M239.18,97.26A16.38,16.38,0,0,0,224.92,86l-59-4.76L143.14,26.15a16.36,16.36,0,0,0-30.27,0L90.11,81.23,31.08,86a16.46,16.46,0,0,0-9.37,28.86l45,38.83L53,211.75a16.38,16.38,0,0,0,24.5,17.82L128,198.49l50.53,31.08A16.4,16.4,0,0,0,203,211.75l-13.76-58.07,45-38.83A16.43,16.43,0,0,0,239.18,97.26Zm-15.34,5.47-48.7,42a8,8,0,0,0-2.56,7.91l14.88,62.8a.37.37,0,0,1-.17.48c-.18.14-.23.11-.38,0l-54.72-33.65a8,8,0,0,0-8.38,0L69.09,215.94c-.15.09-.19.12-.38,0a.37.37,0,0,1-.17-.48l14.88-62.8a8,8,0,0,0-2.56-7.91l-48.7-42c-.12-.1-.23-.19-.13-.5s.18-.27.33-.29l63.92-5.16A8,8,0,0,0,103,91.86l24.62-59.61c.08-.17.11-.25.35-.25s.27.08.35.25L153,91.86a8,8,0,0,0,6.75,4.92l63.92,5.16c.15,0,.24,0,.33.29S224,102.63,223.84,102.73Z"]},
+  {"id":"sparkle","n":"Destellos / acabado","b":["M199,125.31l-49.88-18.39L130.69,57a19.92,19.92,0,0,0-37.38,0L74.92,106.92,25,125.31a19.92,19.92,0,0,0,0,37.38l49.88,18.39L93.31,231a19.92,19.92,0,0,0,37.38,0l18.39-49.88L199,162.69a19.92,19.92,0,0,0,0-37.38Zm-63.38,35.16a12,12,0,0,0-7.11,7.11L112,212.28l-16.47-44.7a12,12,0,0,0-7.11-7.11L43.72,144l44.7-16.47a12,12,0,0,0,7.11-7.11L112,75.72l16.47,44.7a12,12,0,0,0,7.11,7.11L180.28,144ZM140,40a12,12,0,0,1,12-12h12V16a12,12,0,0,1,24,0V28h12a12,12,0,0,1,0,24H188V64a12,12,0,0,1-24,0V52H152A12,12,0,0,1,140,40ZM252,88a12,12,0,0,1-12,12h-4v4a12,12,0,0,1-24,0v-4h-4a12,12,0,0,1,0-24h4V72a12,12,0,0,1,24,0v4h4A12,12,0,0,1,252,88Z"],"f":["M208,144a15.78,15.78,0,0,1-10.42,14.94L146,178l-19,51.62a15.92,15.92,0,0,1-29.88,0L78,178l-51.62-19a15.92,15.92,0,0,1,0-29.88L78,110l19-51.62a15.92,15.92,0,0,1,29.88,0L146,110l51.62,19A15.78,15.78,0,0,1,208,144ZM152,48h16V64a8,8,0,0,0,16,0V48h16a8,8,0,0,0,0-16H184V16a8,8,0,0,0-16,0V32H152a8,8,0,0,0,0,16Zm88,32h-8V72a8,8,0,0,0-16,0v8h-8a8,8,0,0,0,0,16h8v8a8,8,0,0,0,16,0V96h8a8,8,0,0,0,0-16Z"],"d":[["M194.82,151.43l-55.09,20.3-20.3,55.09a7.92,7.92,0,0,1-14.86,0l-20.3-55.09-55.09-20.3a7.92,7.92,0,0,1,0-14.86l55.09-20.3,20.3-55.09a7.92,7.92,0,0,1,14.86,0l20.3,55.09,55.09,20.3A7.92,7.92,0,0,1,194.82,151.43Z",0.2],"M197.58,129.06,146,110l-19-51.62a15.92,15.92,0,0,0-29.88,0L78,110l-51.62,19a15.92,15.92,0,0,0,0,29.88L78,178l19,51.62a15.92,15.92,0,0,0,29.88,0L146,178l51.62-19a15.92,15.92,0,0,0,0-29.88ZM137,164.22a8,8,0,0,0-4.74,4.74L112,223.85,91.78,169A8,8,0,0,0,87,164.22L32.15,144,87,123.78A8,8,0,0,0,91.78,119L112,64.15,132.22,119a8,8,0,0,0,4.74,4.74L191.85,144ZM144,40a8,8,0,0,1,8-8h16V16a8,8,0,0,1,16,0V32h16a8,8,0,0,1,0,16H184V64a8,8,0,0,1-16,0V48H152A8,8,0,0,1,144,40ZM248,88a8,8,0,0,1-8,8h-8v8a8,8,0,0,1-16,0V96h-8a8,8,0,0,1,0-16h8V72a8,8,0,0,1,16,0v8h8A8,8,0,0,1,248,88Z"]},
+  {"id":"crown","n":"Premium","b":["M252,80a32,32,0,1,0-60,15.45l-20.86,25.66L150.82,74.4a32,32,0,1,0-45.64,0L84.87,121.11,64,95.45a32,32,0,1,0-35,15.78l14,84.06A19.94,19.94,0,0,0,62.78,212H193.22A19.94,19.94,0,0,0,213,195.29l14-84.06A32.05,32.05,0,0,0,252,80Zm-32-8a8,8,0,1,1-8,8A8,8,0,0,1,220,72ZM128,44a8,8,0,1,1-8,8A8,8,0,0,1,128,44ZM36,72a8,8,0,1,1-8,8A8,8,0,0,1,36,72ZM189.83,188H66.17L55.29,122.78l23.4,28.79A12,12,0,0,0,88,156a12.87,12.87,0,0,0,1.63-.11,12,12,0,0,0,9.37-7.1L127.18,84l.82,0,.82,0L157,148.79a12,12,0,0,0,9.37,7.1A12.87,12.87,0,0,0,168,156a12,12,0,0,0,9.31-4.43l23.4-28.79Z"],"f":["M248,80a28,28,0,1,0-51.12,15.77l-26.79,33L146,73.4a28,28,0,1,0-36.06,0L85.91,128.74l-26.79-33a28,28,0,1,0-26.6,12L47,194.63A16,16,0,0,0,62.78,208H193.22A16,16,0,0,0,209,194.63l14.47-86.85A28,28,0,0,0,248,80ZM128,40a12,12,0,1,1-12,12A12,12,0,0,1,128,40ZM24,80A12,12,0,1,1,36,92,12,12,0,0,1,24,80ZM220,92a12,12,0,1,1,12-12A12,12,0,0,1,220,92Z"],"d":[["M216.71,99.73l-15.6,93.59a8,8,0,0,1-7.89,6.68H62.78a8,8,0,0,1-7.89-6.68L39.29,99.73l.08,0a19.82,19.82,0,0,0,9.22-4.16h0L88,144l32-73.65h0a20,20,0,0,0,15.92,0h0L168,144l39.39-48.48h0a19.82,19.82,0,0,0,9.22,4.16Z",0.2],"M248,80a28,28,0,1,0-51.12,15.77l-26.79,33L146,73.4a28,28,0,1,0-36.06,0L85.91,128.74l-26.79-33a28,28,0,1,0-26.6,12L47,194.63A16,16,0,0,0,62.78,208H193.22A16,16,0,0,0,209,194.63l14.47-86.85A28,28,0,0,0,248,80ZM128,40a12,12,0,1,1-12,12A12,12,0,0,1,128,40ZM24,80A12,12,0,1,1,36,92,12,12,0,0,1,24,80ZM193.22,192H62.78L48.86,108.52,81.79,149A8,8,0,0,0,88,152a7.83,7.83,0,0,0,1.08-.07,8,8,0,0,0,6.26-4.74l29.3-67.4a27,27,0,0,0,6.72,0l29.3,67.4a8,8,0,0,0,6.26,4.74A7.83,7.83,0,0,0,168,152a8,8,0,0,0,6.21-3l32.93-40.52ZM220,92a12,12,0,1,1,12-12A12,12,0,0,1,220,92Z"]},
+  {"id":"check-circle","n":"Palomita","b":["M176.49,95.51a12,12,0,0,1,0,17l-56,56a12,12,0,0,1-17,0l-24-24a12,12,0,1,1,17-17L112,143l47.51-47.52A12,12,0,0,1,176.49,95.51ZM236,128A108,108,0,1,1,128,20,108.12,108.12,0,0,1,236,128Zm-24,0a84,84,0,1,0-84,84A84.09,84.09,0,0,0,212,128Z"],"f":["M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm45.66,85.66-56,56a8,8,0,0,1-11.32,0l-24-24a8,8,0,0,1,11.32-11.32L112,148.69l50.34-50.35a8,8,0,0,1,11.32,11.32Z"],"d":[["M224,128a96,96,0,1,1-96-96A96,96,0,0,1,224,128Z",0.2],"M173.66,98.34a8,8,0,0,1,0,11.32l-56,56a8,8,0,0,1-11.32,0l-24-24a8,8,0,0,1,11.32-11.32L112,148.69l50.34-50.35A8,8,0,0,1,173.66,98.34ZM232,128A104,104,0,1,1,128,24,104.11,104.11,0,0,1,232,128Zm-16,0a88,88,0,1,0-88,88A88.1,88.1,0,0,0,216,128Z"]},
+  {"id":"thumbs-up","n":"Satisfacción","b":["M237,77.47A28,28,0,0,0,216,68H164V56a44.05,44.05,0,0,0-44-44,12,12,0,0,0-10.73,6.63L72.58,92H32a20,20,0,0,0-20,20v88a20,20,0,0,0,20,20H204a28,28,0,0,0,27.78-24.53l12-96A28,28,0,0,0,237,77.47ZM36,116H68v80H36ZM220,96.5l-12,96a4,4,0,0,1-4,3.5H92V106.83L126.82,37.2A20,20,0,0,1,140,56V80a12,12,0,0,0,12,12h64a4,4,0,0,1,4,4.5Z"],"f":["M234,80.12A24,24,0,0,0,216,72H160V56a40,40,0,0,0-40-40,8,8,0,0,0-7.16,4.42L75.06,96H32a16,16,0,0,0-16,16v88a16,16,0,0,0,16,16H204a24,24,0,0,0,23.82-21l12-96A24,24,0,0,0,234,80.12ZM32,112H72v88H32Z"],"d":[["M80,104V208H32a8,8,0,0,1-8-8V112a8,8,0,0,1,8-8Z",0.2],"M234,80.12A24,24,0,0,0,216,72H160V56a40,40,0,0,0-40-40,8,8,0,0,0-7.16,4.42L75.06,96H32a16,16,0,0,0-16,16v88a16,16,0,0,0,16,16H204a24,24,0,0,0,23.82-21l12-96A24,24,0,0,0,234,80.12ZM32,112H72v88H32ZM223.94,97l-12,96a8,8,0,0,1-7.94,7H88V105.89l36.71-73.43A24,24,0,0,1,144,56V80a8,8,0,0,0,8,8h64a8,8,0,0,1,7.94,9Z"]},
+  {"id":"clock","n":"Puntualidad","b":["M128,20A108,108,0,1,0,236,128,108.12,108.12,0,0,0,128,20Zm0,192a84,84,0,1,1,84-84A84.09,84.09,0,0,1,128,212Zm68-84a12,12,0,0,1-12,12H128a12,12,0,0,1-12-12V72a12,12,0,0,1,24,0v44h44A12,12,0,0,1,196,128Z"],"f":["M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm56,112H128a8,8,0,0,1-8-8V72a8,8,0,0,1,16,0v48h48a8,8,0,0,1,0,16Z"],"d":[["M224,128a96,96,0,1,1-96-96A96,96,0,0,1,224,128Z",0.2],"M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,192a88,88,0,1,1,88-88A88.1,88.1,0,0,1,128,216Zm64-88a8,8,0,0,1-8,8H128a8,8,0,0,1-8-8V72a8,8,0,0,1,16,0v48h48A8,8,0,0,1,192,128Z"]},
+  {"id":"calendar-check","n":"Agenda","b":["M208,28H188V24a12,12,0,0,0-24,0v4H92V24a12,12,0,0,0-24,0v4H48A20,20,0,0,0,28,48V208a20,20,0,0,0,20,20H208a20,20,0,0,0,20-20V48A20,20,0,0,0,208,28ZM68,52a12,12,0,0,0,24,0h72a12,12,0,0,0,24,0h16V76H52V52ZM52,204V100H204V204Zm120.49-84.49a12,12,0,0,1,0,17l-48,48a12,12,0,0,1-17,0l-24-24a12,12,0,0,1,17-17L116,159l39.51-39.52A12,12,0,0,1,172.49,119.51Z"],"f":["M208,32H184V24a8,8,0,0,0-16,0v8H88V24a8,8,0,0,0-16,0v8H48A16,16,0,0,0,32,48V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V48A16,16,0,0,0,208,32ZM169.66,133.66l-48,48a8,8,0,0,1-11.32,0l-24-24a8,8,0,0,1,11.32-11.32L116,164.69l42.34-42.35a8,8,0,0,1,11.32,11.32ZM48,80V48H72v8a8,8,0,0,0,16,0V48h80v8a8,8,0,0,0,16,0V48h24V80Z"],"d":[["M216,48V88H40V48a8,8,0,0,1,8-8H208A8,8,0,0,1,216,48Z",0.2],"M208,32H184V24a8,8,0,0,0-16,0v8H88V24a8,8,0,0,0-16,0v8H48A16,16,0,0,0,32,48V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V48A16,16,0,0,0,208,32ZM72,48v8a8,8,0,0,0,16,0V48h80v8a8,8,0,0,0,16,0V48h24V80H48V48ZM208,208H48V96H208V208Zm-38.34-85.66a8,8,0,0,1,0,11.32l-48,48a8,8,0,0,1-11.32,0l-24-24a8,8,0,0,1,11.32-11.32L116,164.69l42.34-42.35A8,8,0,0,1,169.66,122.34Z"]},
+  {"id":"lightning","n":"Rapidez","b":["M219.71,117.38a12,12,0,0,0-7.25-8.52L161.28,88.39l10.59-70.61a12,12,0,0,0-20.64-10l-112,120a12,12,0,0,0,4.31,19.33l51.18,20.47L84.13,238.22a12,12,0,0,0,20.64,10l112-120A12,12,0,0,0,219.71,117.38ZM113.6,203.55l6.27-41.77a12,12,0,0,0-7.41-12.92L68.74,131.37,142.4,52.45l-6.27,41.77a12,12,0,0,0,7.41,12.92l43.72,17.49Z"],"f":["M213.85,125.46l-112,120a8,8,0,0,1-13.69-7l14.66-73.33L45.19,143.49a8,8,0,0,1-3-13l112-120a8,8,0,0,1,13.69,7L153.18,90.9l57.63,21.61a8,8,0,0,1,3,12.95Z"],"d":[["M96,240l16-80L48,136,160,16,144,96l64,24Z",0.2],"M215.79,118.17a8,8,0,0,0-5-5.66L153.18,90.9l14.66-73.33a8,8,0,0,0-13.69-7l-112,120a8,8,0,0,0,3,13l57.63,21.61L88.16,238.43a8,8,0,0,0,13.69,7l112-120A8,8,0,0,0,215.79,118.17ZM109.37,214l10.47-52.38a8,8,0,0,0-5-9.06L62,132.71l84.62-90.66L136.16,94.43a8,8,0,0,0,5,9.06l52.8,19.8Z"]},
+  {"id":"truck","n":"Entrega","b":["M255.14,115.54l-14-35A19.89,19.89,0,0,0,222.58,68H196V64a12,12,0,0,0-12-12H32A20,20,0,0,0,12,72V184a20,20,0,0,0,20,20H46.06a36,36,0,0,0,67.88,0h44.12a36,36,0,0,0,67.88,0H236a20,20,0,0,0,20-20V120A21.7,21.7,0,0,0,255.14,115.54ZM196,92h23.88l6.4,16H196ZM80,204a12,12,0,1,1,12-12A12,12,0,0,1,80,204Zm92-41.92A36.32,36.32,0,0,0,158.06,180H113.94a36,36,0,0,0-67.88,0H36V140H172ZM172,116H36V76H172Zm20,88a12,12,0,1,1,12-12A12,12,0,0,1,192,204Zm40-24h-6.06A36.09,36.09,0,0,0,196,156.23V132h36Z"],"f":["M255.43,117l-14-35A15.93,15.93,0,0,0,226.58,72H192V64a8,8,0,0,0-8-8H32A16,16,0,0,0,16,72V184a16,16,0,0,0,16,16H49a32,32,0,0,0,62,0h50a32,32,0,0,0,62,0h17a16,16,0,0,0,16-16V120A8.13,8.13,0,0,0,255.43,117ZM80,208a16,16,0,1,1,16-16A16,16,0,0,1,80,208ZM32,136V72H176v64Zm160,72a16,16,0,1,1,16-16A16,16,0,0,1,192,208Zm0-96V88h34.58l9.6,24Z"],"d":[["M248,120v64a8,8,0,0,1-8,8H216a24,24,0,0,0-48,0H104a24,24,0,0,0-48,0H32a8,8,0,0,1-8-8V144H184V120Z",0.2],"M255.42,117l-14-35A15.93,15.93,0,0,0,226.58,72H192V64a8,8,0,0,0-8-8H32A16,16,0,0,0,16,72V184a16,16,0,0,0,16,16H49a32,32,0,0,0,62,0h50a32,32,0,0,0,62,0h17a16,16,0,0,0,16-16V120A7.94,7.94,0,0,0,255.42,117ZM192,88h34.58l9.6,24H192ZM32,72H176v64H32ZM80,208a16,16,0,1,1,16-16A16,16,0,0,1,80,208Zm81-24H111a32,32,0,0,0-62,0H32V152H176v12.31A32.11,32.11,0,0,0,161,184Zm31,24a16,16,0,1,1,16-16A16,16,0,0,1,192,208Zm48-24H223a32.06,32.06,0,0,0-31-24V128h48Z"]},
+  {"id":"handshake","n":"Confianza","b":["M253.88,108.11l-25.53-51a20,20,0,0,0-26.83-9L178.34,59.7,131.7,44.58a12.14,12.14,0,0,0-7.4,0L77.66,59.7,54.48,48.11a20,20,0,0,0-26.83,9L2.12,108.11a20,20,0,0,0,9,26.83l26.67,13.34,51.18,37.41A12.15,12.15,0,0,0,93,187.62l62,16a12.27,12.27,0,0,0,3,.38,12,12,0,0,0,8.48-3.52l52.62-52.62,25.83-12.92a20,20,0,0,0,8.95-26.83Zm-58.12,29.15-27.52-26a12,12,0,0,0-16.76.26c-9.66,9.74-25.06,16.81-40.81,9.55l38.19-37h22.72l25.81,51.63ZM47.32,71.37,60.59,78l-22,43.9-13.27-6.63Zm107,107.3L101.23,165l-42-30.66L85.17,82.5,128,68.61l1.69.55L90,107.68l-.13.12a20,20,0,0,0,3.4,31c20.95,13.39,46,12.07,66.33-2.73l19.2,18.15Zm63-56.77-22-43.9,13.27-6.63,21.95,43.9ZM118.55,219a12,12,0,0,1-14.62,8.62l-26.6-6.87a12,12,0,0,1-4.08-1.93L48.92,201a12,12,0,0,1,14.16-19.37l22.47,16.42,24.38,6.29A12,12,0,0,1,118.55,219Z"],"f":["M254.3,107.91,228.78,56.85a16,16,0,0,0-21.47-7.15L182.44,62.13,130.05,48.27a8.14,8.14,0,0,0-4.1,0L73.56,62.13,48.69,49.7a16,16,0,0,0-21.47,7.15L1.7,107.9a16,16,0,0,0,7.15,21.47l27,13.51,55.49,39.63a8.06,8.06,0,0,0,2.71,1.25l64,16a8,8,0,0,0,7.6-2.1l40-40,15.08-15.08,26.42-13.21a16,16,0,0,0,7.15-21.46Zm-54.89,33.37L165,113.72a8,8,0,0,0-10.68.61C136.51,132.27,116.66,130,104,122L147.24,80h31.81l27.21,54.41Zm-41.87,41.86L99.42,168.61l-49.2-35.14,28-56L128,64.28l9.8,2.59-45,43.68-.08.09a16,16,0,0,0,2.72,24.81c20.56,13.13,45.37,11,64.91-5L188,152.66Zm-25.72,34.8a8,8,0,0,1-7.75,6.06,8.13,8.13,0,0,1-1.95-.24L80.41,213.33a7.89,7.89,0,0,1-2.71-1.25L51.35,193.26a8,8,0,0,1,9.3-13l25.11,17.94L126,208.24A8,8,0,0,1,131.82,217.94Z"],"d":[["M200,152l-40,40L96,176,40,136,72.68,70.63,128,56l55.32,14.63L183.6,72H144L98.34,116.29a8,8,0,0,0,1.38,12.42C117.23,139.9,141,139.13,160,120Z",0.2],"M254.3,107.91,228.78,56.85a16,16,0,0,0-21.47-7.15L182.44,62.13,130.05,48.27a8.14,8.14,0,0,0-4.1,0L73.56,62.13,48.69,49.7a16,16,0,0,0-21.47,7.15L1.7,107.9a16,16,0,0,0,7.15,21.47l27,13.51,55.49,39.63a8.06,8.06,0,0,0,2.71,1.25l64,16a8,8,0,0,0,7.6-2.1l55.07-55.08,26.42-13.21a16,16,0,0,0,7.15-21.46Zm-54.89,33.37L165,113.72a8,8,0,0,0-10.68.61C136.51,132.27,116.66,130,104,122L147.24,80h31.81l27.21,54.41ZM41.53,64,62,74.22,36.43,125.27,16,115.06Zm116,119.13L99.42,168.61l-49.2-35.14,28-56L128,64.28l9.8,2.59-45,43.68-.08.09a16,16,0,0,0,2.72,24.81c20.56,13.13,45.37,11,64.91-5L188,152.66Zm62-57.87-25.52-51L214.47,64,240,115.06Zm-87.75,92.67a8,8,0,0,1-7.75,6.06,8.13,8.13,0,0,1-1.95-.24L80.41,213.33a7.89,7.89,0,0,1-2.71-1.25L51.35,193.26a8,8,0,0,1,9.3-13l25.11,17.94L126,208.24A8,8,0,0,1,131.82,217.94Z"]},
+  {"id":"phone","n":"Teléfono","b":["M224,154.8l-47.09-21.11-.18-.08a19.94,19.94,0,0,0-19,1.75,13.08,13.08,0,0,0-1.12.84l-22.31,19c-13-7.05-26.43-20.37-33.49-33.21l19.06-22.66a11.76,11.76,0,0,0,.85-1.15,20,20,0,0,0,1.66-18.83,1.42,1.42,0,0,1-.08-.18L101.2,32A20.06,20.06,0,0,0,80.42,20.15,60.27,60.27,0,0,0,28,80c0,81.61,66.39,148,148,148a60.27,60.27,0,0,0,59.85-52.42A20.06,20.06,0,0,0,224,154.8ZM176,204A124.15,124.15,0,0,1,52,80,36.29,36.29,0,0,1,80.48,44.46l18.82,42L80.14,109.28a12,12,0,0,0-.86,1.16A20,20,0,0,0,78,130.08c9.42,19.28,28.83,38.56,48.31,48A20,20,0,0,0,146,176.63a11.63,11.63,0,0,0,1.11-.85l22.43-19.07,42,18.81A36.29,36.29,0,0,1,176,204Z"],"f":["M231.88,175.08A56.26,56.26,0,0,1,176,224C96.6,224,32,159.4,32,80A56.26,56.26,0,0,1,80.92,24.12a16,16,0,0,1,16.62,9.52l21.12,47.15,0,.12A16,16,0,0,1,117.39,96c-.18.27-.37.52-.57.77L96,121.45c7.49,15.22,23.41,31,38.83,38.51l24.34-20.71a8.12,8.12,0,0,1,.75-.56,16,16,0,0,1,15.17-1.4l.13.06,47.11,21.11A16,16,0,0,1,231.88,175.08Z"],"d":[["M223.94,174.08A48.33,48.33,0,0,1,176,216,136,136,0,0,1,40,80,48.33,48.33,0,0,1,81.92,32.06a8,8,0,0,1,8.3,4.8l21.13,47.2a8,8,0,0,1-.66,7.53L89.32,117a7.93,7.93,0,0,0-.54,7.81c8.27,16.93,25.77,34.22,42.75,42.41a7.92,7.92,0,0,0,7.83-.59l25-21.3a8,8,0,0,1,7.59-.69l47.16,21.13A8,8,0,0,1,223.94,174.08Z",0.2],"M222.37,158.46l-47.11-21.11-.13-.06a16,16,0,0,0-15.17,1.4,8.12,8.12,0,0,0-.75.56L134.87,160c-15.42-7.49-31.34-23.29-38.83-38.51l20.78-24.71c.2-.25.39-.5.57-.77a16,16,0,0,0,1.32-15.06l0-.12L97.54,33.64a16,16,0,0,0-16.62-9.52A56.26,56.26,0,0,0,32,80c0,79.4,64.6,144,144,144a56.26,56.26,0,0,0,55.88-48.92A16,16,0,0,0,222.37,158.46ZM176,208A128.14,128.14,0,0,1,48,80,40.2,40.2,0,0,1,82.87,40a.61.61,0,0,0,0,.12l21,47L83.2,111.86a6.13,6.13,0,0,0-.57.77,16,16,0,0,0-1,15.7c9.06,18.53,27.73,37.06,46.46,46.11a16,16,0,0,0,15.75-1.14,8.44,8.44,0,0,0,.74-.56L168.89,152l47,21.05h0s.08,0,.11,0A40.21,40.21,0,0,1,176,208Z"]},
+  {"id":"chat-circle-dots","n":"Asesoría","b":["M120,128a16,16,0,1,1-16-16A16,16,0,0,1,120,128Zm32-16a16,16,0,1,0,16,16A16,16,0,0,0,152,112Zm84,16A108,108,0,0,1,78.77,224.15L46.34,235A20,20,0,0,1,21,209.66l10.81-32.43A108,108,0,1,1,236,128Zm-24,0A84,84,0,1,0,55.27,170.06a12,12,0,0,1,1,9.81l-9.93,29.79,29.79-9.93a12.1,12.1,0,0,1,3.8-.62,12,12,0,0,1,6,1.62A84,84,0,0,0,212,128Z"],"f":["M128,24A104,104,0,0,0,36.18,176.88L24.83,210.93a16,16,0,0,0,20.24,20.24l34.05-11.35A104,104,0,1,0,128,24ZM84,140a12,12,0,1,1,12-12A12,12,0,0,1,84,140Zm44,0a12,12,0,1,1,12-12A12,12,0,0,1,128,140Zm44,0a12,12,0,1,1,12-12A12,12,0,0,1,172,140Z"],"d":[["M224,128A96,96,0,0,1,79.93,211.11h0L42.54,223.58a8,8,0,0,1-10.12-10.12l12.47-37.39h0A96,96,0,1,1,224,128Z",0.2],"M128,24A104,104,0,0,0,36.18,176.88L24.83,210.93a16,16,0,0,0,20.24,20.24l34.05-11.35A104,104,0,1,0,128,24Zm0,192a87.87,87.87,0,0,1-44.06-11.81,8,8,0,0,0-4-1.08,7.85,7.85,0,0,0-2.53.42L40,216,52.47,178.6a8,8,0,0,0-.66-6.54A88,88,0,1,1,128,216Zm12-88a12,12,0,1,1-12-12A12,12,0,0,1,140,128Zm-44,0a12,12,0,1,1-12-12A12,12,0,0,1,96,128Zm88,0a12,12,0,1,1-12-12A12,12,0,0,1,184,128Z"]},
+  {"id":"currency-dollar","n":"Precio","b":["M152,116H140V60h4a28,28,0,0,1,28,28,12,12,0,0,0,24,0,52.06,52.06,0,0,0-52-52h-4V24a12,12,0,0,0-24,0V36h-4a52,52,0,0,0,0,104h4v56H104a28,28,0,0,1-28-28,12,12,0,0,0-24,0,52.06,52.06,0,0,0,52,52h12v12a12,12,0,0,0,24,0V220h12a52,52,0,0,0,0-104Zm-40,0a28,28,0,0,1,0-56h4v56Zm40,80H140V140h12a28,28,0,0,1,0,56Z"],"f":["M160,152a16,16,0,0,1-16,16h-8V136h8A16,16,0,0,1,160,152Zm72-24A104,104,0,1,1,128,24,104.11,104.11,0,0,1,232,128Zm-56,24a32,32,0,0,0-32-32h-8V88h4a16,16,0,0,1,16,16,8,8,0,0,0,16,0,32,32,0,0,0-32-32h-4V64a8,8,0,0,0-16,0v8h-4a32,32,0,0,0,0,64h4v32h-8a16,16,0,0,1-16-16,8,8,0,0,0-16,0,32,32,0,0,0,32,32h8v8a8,8,0,0,0,16,0v-8h8A32,32,0,0,0,176,152Zm-76-48a16,16,0,0,0,16,16h4V88h-4A16,16,0,0,0,100,104Z"],"d":[["M192,168a40,40,0,0,1-40,40H128V128h24A40,40,0,0,1,192,168ZM112,48a40,40,0,0,0,0,80h16V48Z",0.2],"M152,120H136V56h8a32,32,0,0,1,32,32,8,8,0,0,0,16,0,48.05,48.05,0,0,0-48-48h-8V24a8,8,0,0,0-16,0V40h-8a48,48,0,0,0,0,96h8v64H104a32,32,0,0,1-32-32,8,8,0,0,0-16,0,48.05,48.05,0,0,0,48,48h16v16a8,8,0,0,0,16,0V216h16a48,48,0,0,0,0-96Zm-40,0a32,32,0,0,1,0-64h8v64Zm40,80H136V136h16a32,32,0,0,1,0,64Z"]},
+  {"id":"tag","n":"Oferta","b":["M246.15,133.18,146.83,33.86A19.85,19.85,0,0,0,132.69,28H40A12,12,0,0,0,28,40v92.69a19.85,19.85,0,0,0,5.86,14.14l99.32,99.32a20,20,0,0,0,28.28,0l84.69-84.69A20,20,0,0,0,246.15,133.18Zm-98.83,93.17L52,131V52h79l95.32,95.32ZM104,88A16,16,0,1,1,88,72,16,16,0,0,1,104,88Z"],"f":["M243.31,136,144,36.69A15.86,15.86,0,0,0,132.69,32H40a8,8,0,0,0-8,8v92.69A15.86,15.86,0,0,0,36.69,144L136,243.31a16,16,0,0,0,22.63,0l84.68-84.68a16,16,0,0,0,0-22.63ZM84,96A12,12,0,1,1,96,84,12,12,0,0,1,84,96Z"],"d":[["M237.66,153,153,237.66a8,8,0,0,1-11.31,0L42.34,138.34A8,8,0,0,1,40,132.69V40h92.69a8,8,0,0,1,5.65,2.34l99.32,99.32A8,8,0,0,1,237.66,153Z",0.2],"M243.31,136,144,36.69A15.86,15.86,0,0,0,132.69,32H40a8,8,0,0,0-8,8v92.69A15.86,15.86,0,0,0,36.69,144L136,243.31a16,16,0,0,0,22.63,0l84.68-84.68a16,16,0,0,0,0-22.63Zm-96,96L48,132.69V48h84.69L232,147.31ZM96,84A12,12,0,1,1,84,72,12,12,0,0,1,96,84Z"]},
+  {"id":"users-three","n":"Equipo","b":["M164.38,181.1a52,52,0,1,0-72.76,0,75.89,75.89,0,0,0-30,28.89,12,12,0,0,0,20.78,12,53,53,0,0,1,91.22,0,12,12,0,1,0,20.78-12A75.89,75.89,0,0,0,164.38,181.1ZM100,144a28,28,0,1,1,28,28A28,28,0,0,1,100,144Zm147.21,9.59a12,12,0,0,1-16.81-2.39c-8.33-11.09-19.85-19.59-29.33-21.64a12,12,0,0,1-1.82-22.91,20,20,0,1,0-24.78-28.3,12,12,0,1,1-21-11.6,44,44,0,1,1,73.28,48.35,92.18,92.18,0,0,1,22.85,21.69A12,12,0,0,1,247.21,153.59Zm-192.28-24c-9.48,2.05-21,10.55-29.33,21.65A12,12,0,0,1,6.41,136.79,92.37,92.37,0,0,1,29.26,115.1a44,44,0,1,1,73.28-48.35,12,12,0,1,1-21,11.6,20,20,0,1,0-24.78,28.3,12,12,0,0,1-1.82,22.91Z"],"f":["M64.12,147.8a4,4,0,0,1-4,4.2H16a8,8,0,0,1-7.8-6.17,8.35,8.35,0,0,1,1.62-6.93A67.79,67.79,0,0,1,37,117.51a40,40,0,1,1,66.46-35.8,3.94,3.94,0,0,1-2.27,4.18A64.08,64.08,0,0,0,64,144C64,145.28,64,146.54,64.12,147.8Zm182-8.91A67.76,67.76,0,0,0,219,117.51a40,40,0,1,0-66.46-35.8,3.94,3.94,0,0,0,2.27,4.18A64.08,64.08,0,0,1,192,144c0,1.28,0,2.54-.12,3.8a4,4,0,0,0,4,4.2H240a8,8,0,0,0,7.8-6.17A8.33,8.33,0,0,0,246.17,138.89Zm-89,43.18a48,48,0,1,0-58.37,0A72.13,72.13,0,0,0,65.07,212,8,8,0,0,0,72,224H184a8,8,0,0,0,6.93-12A72.15,72.15,0,0,0,157.19,182.07Z"],"d":[["M168,144a40,40,0,1,1-40-40A40,40,0,0,1,168,144ZM64,56A32,32,0,1,0,96,88,32,32,0,0,0,64,56Zm128,0a32,32,0,1,0,32,32A32,32,0,0,0,192,56Z",0.2],"M244.8,150.4a8,8,0,0,1-11.2-1.6A51.6,51.6,0,0,0,192,128a8,8,0,0,1,0-16,24,24,0,1,0-23.24-30,8,8,0,1,1-15.5-4A40,40,0,1,1,219,117.51a67.94,67.94,0,0,1,27.43,21.68A8,8,0,0,1,244.8,150.4ZM190.92,212a8,8,0,1,1-13.85,8,57,57,0,0,0-98.15,0,8,8,0,1,1-13.84-8,72.06,72.06,0,0,1,33.74-29.92,48,48,0,1,1,58.36,0A72.06,72.06,0,0,1,190.92,212ZM128,176a32,32,0,1,0-32-32A32,32,0,0,0,128,176ZM72,120a8,8,0,0,0-8-8A24,24,0,1,1,87.24,82a8,8,0,1,0,15.5-4A40,40,0,1,0,37,117.51,67.94,67.94,0,0,0,9.6,139.19a8,8,0,1,0,12.8,9.61A51.6,51.6,0,0,1,64,128,8,8,0,0,0,72,120Z"]},
+  {"id":"leaf","n":"Ecológico","b":["M227.42,39.86a12,12,0,0,0-11.28-11.28c-39.6-2.33-74.59,2.34-104,13.87C84,53.48,62.31,70.58,49.39,91.9c-17.62,29.11-17.66,64.45-.45,98.19L31.51,207.52a12,12,0,0,0,17,17l17.43-17.43c16.74,8.54,33.88,12.85,50.45,12.85a91.31,91.31,0,0,0,47.74-13.3c21.32-12.92,38.42-34.62,49.45-62.75C225.08,114.46,229.75,79.46,227.42,39.86ZM151.66,186.08C131.57,198.25,108,199.17,83.94,189l84.54-84.54a12,12,0,1,0-17-17L67,172.06c-10.14-24-9.22-47.63,3-67.72,20.91-34.53,70.54-53.72,134-52.25C205.38,115.53,186.19,165.17,151.66,186.08Z"],"f":["M223.45,40.07a8,8,0,0,0-7.52-7.52C139.8,28.08,78.82,51,52.82,94a87.09,87.09,0,0,0-12.76,49A101.72,101.72,0,0,0,46.7,175.2a4,4,0,0,0,6.61,1.43l85-86.3a8,8,0,0,1,11.32,11.32L56.74,195.94,42.55,210.13a8.2,8.2,0,0,0-.6,11.1,8,8,0,0,0,11.71.43l16.79-16.79c14.14,6.84,28.41,10.57,42.56,11.07q1.67.06,3.33.06A86.93,86.93,0,0,0,162,203.18C205,177.18,227.93,116.21,223.45,40.07Z"],"d":[["M63.81,192.19c-47.89-79.81,16-159.62,151.64-151.64C223.43,176.23,143.62,240.08,63.81,192.19Z",0.2],"M223.45,40.07a8,8,0,0,0-7.52-7.52C139.8,28.08,78.82,51,52.82,94a87.09,87.09,0,0,0-12.76,49c.57,15.92,5.21,32,13.79,47.85l-19.51,19.5a8,8,0,0,0,11.32,11.32l19.5-19.51C81,210.73,97.09,215.37,113,215.94q1.67.06,3.33.06A86.93,86.93,0,0,0,162,203.18C205,177.18,227.93,116.21,223.45,40.07ZM153.75,189.5c-22.75,13.78-49.68,14-76.71.77l88.63-88.62a8,8,0,0,0-11.32-11.32L65.73,179c-13.19-27-13-54,.77-76.71,22.09-36.47,74.6-56.44,141.31-54.06C210.2,114.89,190.22,167.41,153.75,189.5Z"]},
+  {"id":"sun","n":"Sol / sombra","b":["M116,36V20a12,12,0,0,1,24,0V36a12,12,0,0,1-24,0Zm80,92a68,68,0,1,1-68-68A68.07,68.07,0,0,1,196,128Zm-24,0a44,44,0,1,0-44,44A44.05,44.05,0,0,0,172,128ZM51.51,68.49a12,12,0,1,0,17-17l-12-12a12,12,0,0,0-17,17Zm0,119-12,12a12,12,0,0,0,17,17l12-12a12,12,0,1,0-17-17ZM196,72a12,12,0,0,0,8.49-3.51l12-12a12,12,0,0,0-17-17l-12,12A12,12,0,0,0,196,72Zm8.49,115.51a12,12,0,0,0-17,17l12,12a12,12,0,0,0,17-17ZM48,128a12,12,0,0,0-12-12H20a12,12,0,0,0,0,24H36A12,12,0,0,0,48,128Zm80,80a12,12,0,0,0-12,12v16a12,12,0,0,0,24,0V220A12,12,0,0,0,128,208Zm108-92H220a12,12,0,0,0,0,24h16a12,12,0,0,0,0-24Z"],"f":["M120,40V16a8,8,0,0,1,16,0V40a8,8,0,0,1-16,0Zm8,24a64,64,0,1,0,64,64A64.07,64.07,0,0,0,128,64ZM58.34,69.66A8,8,0,0,0,69.66,58.34l-16-16A8,8,0,0,0,42.34,53.66Zm0,116.68-16,16a8,8,0,0,0,11.32,11.32l16-16a8,8,0,0,0-11.32-11.32ZM192,72a8,8,0,0,0,5.66-2.34l16-16a8,8,0,0,0-11.32-11.32l-16,16A8,8,0,0,0,192,72Zm5.66,114.34a8,8,0,0,0-11.32,11.32l16,16a8,8,0,0,0,11.32-11.32ZM48,128a8,8,0,0,0-8-8H16a8,8,0,0,0,0,16H40A8,8,0,0,0,48,128Zm80,80a8,8,0,0,0-8,8v24a8,8,0,0,0,16,0V216A8,8,0,0,0,128,208Zm112-88H216a8,8,0,0,0,0,16h24a8,8,0,0,0,0-16Z"],"d":[["M184,128a56,56,0,1,1-56-56A56,56,0,0,1,184,128Z",0.2],"M120,40V16a8,8,0,0,1,16,0V40a8,8,0,0,1-16,0Zm72,88a64,64,0,1,1-64-64A64.07,64.07,0,0,1,192,128Zm-16,0a48,48,0,1,0-48,48A48.05,48.05,0,0,0,176,128ZM58.34,69.66A8,8,0,0,0,69.66,58.34l-16-16A8,8,0,0,0,42.34,53.66Zm0,116.68-16,16a8,8,0,0,0,11.32,11.32l16-16a8,8,0,0,0-11.32-11.32ZM192,72a8,8,0,0,0,5.66-2.34l16-16a8,8,0,0,0-11.32-11.32l-16,16A8,8,0,0,0,192,72Zm5.66,114.34a8,8,0,0,0-11.32,11.32l16,16a8,8,0,0,0,11.32-11.32ZM48,128a8,8,0,0,0-8-8H16a8,8,0,0,0,0,16H40A8,8,0,0,0,48,128Zm80,80a8,8,0,0,0-8,8v24a8,8,0,0,0,16,0V216A8,8,0,0,0,128,208Zm112-88H216a8,8,0,0,0,0,16h24a8,8,0,0,0,0-16Z"]},
+];
+
+let FMM = null;
+let _fmmInited = false;
+let _fmmFontsReady = null;
+
+// Paleta de la marca activa, leída de la configuración existente:
+//  - oscuro: fondoFallback (navy en HOME/ROMSA/RACKLINE, negro en TAURINA)
+//  - acento: el estilo "acento" de la marca (terracota / azul / naranja / dorado)
+//  - claro:  crema en HOME (su color de texto de marca); en el resto, el
+//    blanco de su estilo de título. (TAURINA usa dorado como texto en
+//    video, pero aquí el dorado es el acento de la segunda línea.)
+function fmmPaleta(marca){
+  const b = FEV_BRANDS[marca] || FEV_BRANDS.romsa;
+  const estilos = FEV_ESTILOS_TEXTO[marca] || FEV_ESTILOS_TEXTO.romsa;
+  const titulo = estilos[0];
+  const acento = estilos.find(e => e.id === "acento") || estilos[1];
+  return {
+    oscuro: b.fondoFallback,
+    acento: acento.color,
+    claro: marca === "home" ? b.color : titulo.color,
+    // Norwester (TAURINA) no trae letras acentuadas ni ñ: sin respaldo el
+    // navegador las pinta en serif. Oswald, la tipografía secundaria que
+    // ya usa el módulo TAURINA, cubre esos caracteres.
+    familiaTitulo: marca === "taurina" ? titulo.fontFamily + ', "Oswald", sans-serif' : titulo.fontFamily,
+    pesoTitulo: titulo.fontWeight,
+  };
+}
+
+function fmmRgba(hex, a){
+  const c = bceHexToRgb(hex);
+  return "rgba("+c.r+","+c.g+","+c.b+","+Math.max(0, Math.min(1, a))+")";
+}
+
+// Recorte "cover" con encuadre del usuario: zoom >= 1 sobre el cover
+// exacto; x/y en -1..1 recorren todo el sobrante (0 = centrado).
+function fmmRectFoto(img, W, H, enc){
+  enc = enc || {};
+  const zoom = Math.max(1, enc.zoom || 1);
+  const s = Math.max(W / img.naturalWidth, H / img.naturalHeight) * zoom;
+  const dw = img.naturalWidth * s, dh = img.naturalHeight * s;
+  const ox = (dw - W) / 2, oy = (dh - H) / 2;
+  return { dx: -ox + (enc.x || 0) * ox, dy: -oy + (enc.y || 0) * oy, dw, dh, ox, oy };
+}
+
+function fmmFuenteQueCabe(ctx, texto, peso, familia, tamMax, tamMin, maxW){
+  let t = tamMax;
+  ctx.font = peso+" "+t+"px "+familia;
+  while(t > tamMin && ctx.measureText(texto).width > maxW){
+    t -= 2;
+    ctx.font = peso+" "+t+"px "+familia;
+  }
+  return t;
+}
+
+function fmmEnvolver(ctx, texto, maxW, maxLineas){
+  const palabras = String(texto || "").split(/\s+/).filter(Boolean);
+  const lineas = [];
+  let cur = "";
+  palabras.forEach(p => {
+    const prueba = cur ? cur + " " + p : p;
+    if(!cur || ctx.measureText(prueba).width <= maxW) cur = prueba;
+    else { lineas.push(cur); cur = p; }
+  });
+  if(cur) lineas.push(cur);
+  if(lineas.length <= maxLineas) return lineas;
+  const recorte = lineas.slice(0, maxLineas);
+  let ult = recorte[maxLineas - 1];
+  while(ult.length && ctx.measureText(ult + "…").width > maxW) ult = ult.slice(0, -1).trimEnd();
+  recorte[maxLineas - 1] = ult + "…";
+  return recorte;
+}
+
+const FMM_ESTILOS_ICONO = [
+  { id:"duotono", etiqueta:"Duotono" },
+  { id:"solido",  etiqueta:"Sólido" },
+  { id:"linea",   etiqueta:"Línea" },
+];
+const FMM_CONTENEDORES = [
+  { id:"ninguno", etiqueta:"Sin contenedor" },
+  { id:"circulo", etiqueta:"Círculo" },
+  { id:"cuadro",  etiqueta:"Cuadro redondeado" },
+];
+const FMM_LAYOUTS_BEN = [
+  { id:"izquierda", etiqueta:"Ícono a la izquierda" },
+  { id:"arriba",    etiqueta:"Ícono arriba" },
+];
+
+function fmmIconoPorId(id){ return FMM_ICONOS.find(i => i.id === id) || FMM_ICONOS[0]; }
+
+// Capas de un ícono en el estilo pedido: [{ d, alpha }]
+// La capa de relleno del duotono viene al 20% en Phosphor; sobre el
+// degradado oscuro casi no se nota, así que se sube a 35% (equivale al
+// prop duotoneOpacity de las librerías oficiales de Phosphor).
+const FMM_DUOTONO_OPACIDAD = 0.35;
+function fmmIconoCapas(icono, estilo){
+  const src = estilo === "solido" ? icono.f : estilo === "linea" ? icono.b : icono.d;
+  return src.map(p => Array.isArray(p) ? { d:p[0], alpha:FMM_DUOTONO_OPACIDAD } : { d:p, alpha:1 });
+}
+
+const _fmmPath2D = new Map();
+function fmmPath(d){
+  let p = _fmmPath2D.get(d);
+  if(!p){ p = new Path2D(d); _fmmPath2D.set(d, p); }
+  return p;
+}
+
+// Ícono de la librería centrado en (cx, cy), lado s. Al ser rutas
+// vectoriales, sale nítido a cualquier escala de exportación.
+function fmmDibujarIcono(ctx, id, cx, cy, s, color, estilo){
+  const capas = fmmIconoCapas(fmmIconoPorId(id), estilo || "duotono");
+  ctx.save();
+  ctx.translate(cx - s/2, cy - s/2);
+  ctx.scale(s/256, s/256);
+  ctx.fillStyle = color;
+  const a0 = ctx.globalAlpha;
+  capas.forEach(c => { ctx.globalAlpha = a0 * c.alpha; ctx.fill(fmmPath(c.d)); });
+  ctx.restore();
+}
+
+// SVG para la cuadrícula del formulario (mismas rutas que el canvas).
+function fmmSvgIcono(id, estilo){
+  return '<svg viewBox="0 0 256 256" aria-hidden="true">'
+    + fmmIconoCapas(fmmIconoPorId(id), estilo || "duotono").map(c => '<path fill="currentColor"'+(c.alpha < 1 ? ' opacity="'+c.alpha+'"' : '')+' d="'+c.d+'"/>').join("")
+  + '</svg>';
+}
+
+// Ícono subido por el usuario, encajado (contain) en un cuadro de lado s.
+// Monocromático → se tiñe con el acento: se dibuja en un canvas fuera de
+// pantalla y se rellena con "source-in" (conserva solo la silueta, con su
+// antialias). El canvas se crea al tamaño real en pixeles del destino (lee
+// la escala de la transformación actual), así la exportación 2x no sale
+// borrosa. A color → se dibuja tal cual.
+function fmmDibujarIconoPropio(ctx, propio, cx, cy, s, color){
+  const img = propio.img;
+  const iw = img.naturalWidth || img.width, ih = img.naturalHeight || img.height;
+  if(!iw || !ih) return;
+  const k = Math.min(s / iw, s / ih), w = iw * k, h = ih * k;
+  if(!propio.tenir){ ctx.drawImage(img, cx - w/2, cy - h/2, w, h); return; }
+  const t = ctx.getTransform ? ctx.getTransform() : { a:1, b:0 };
+  const escala = Math.max(1, Math.hypot(t.a, t.b));
+  const pw = Math.max(1, Math.round(w * escala)), ph = Math.max(1, Math.round(h * escala));
+  const clave = color + "|" + pw + "x" + ph;
+  if(propio._tinteClave !== clave){
+    const off = document.createElement("canvas");
+    off.width = pw; off.height = ph;
+    const o = off.getContext("2d");
+    o.imageSmoothingEnabled = true;
+    o.imageSmoothingQuality = "high";
+    o.drawImage(img, 0, 0, pw, ph);
+    o.globalCompositeOperation = "source-in";
+    o.fillStyle = color;
+    o.fillRect(0, 0, pw, ph);
+    propio._tinte = off;
+    propio._tinteClave = clave;
+  }
+  ctx.drawImage(propio._tinte, cx - w/2, cy - h/2, w, h);
+}
+
+// ¿El ícono subido es de un solo color? Requiere transparencia (un PNG con
+// fondo sólido se respeta) y que ≥95% de los pixeles visibles estén cerca
+// de su color promedio. El usuario lo puede cambiar con la casilla "Teñir".
+function fmmAnalizarIconoPropio(img){
+  const n = 64;
+  const c = document.createElement("canvas");
+  c.width = n; c.height = n;
+  const x = c.getContext("2d");
+  const iw = img.naturalWidth || img.width || n, ih = img.naturalHeight || img.height || n;
+  const k = Math.min(n / iw, n / ih);
+  x.drawImage(img, (n - iw*k)/2, (n - ih*k)/2, iw*k, ih*k);
+  let d;
+  try { d = x.getImageData(0, 0, n, n).data; } catch(e){ return false; }
+  let transparentes = 0;
+  const px = [];
+  for(let i = 0; i < d.length; i += 4){
+    if(d[i+3] < 250) transparentes++;
+    if(d[i+3] >= 160) px.push([d[i], d[i+1], d[i+2]]);
+  }
+  if(!px.length) return true;
+  if(transparentes < n*n*0.02) return false;
+  const m = [0,1,2].map(j => px.reduce((a, p) => a + p[j], 0) / px.length);
+  const cerca = px.filter(p => Math.hypot(p[0]-m[0], p[1]-m[1], p[2]-m[2]) <= 60).length;
+  return cerca / px.length >= 0.95;
+}
+
+// Círculo o cuadro redondeado detrás del ícono: acento al 15% + borde fino.
+function fmmDibujarContenedor(ctx, tipo, cx, cy, s, color){
+  if(tipo !== "circulo" && tipo !== "cuadro") return;
+  const lw = Math.max(1.5, s * 0.028);
+  const r = s/2 - lw/2;
+  ctx.save();
+  ctx.beginPath();
+  if(tipo === "circulo"){
+    ctx.arc(cx, cy, r, 0, Math.PI*2);
+  } else {
+    const rr = s * 0.24, x = cx - r, y = cy - r, l = r*2;
+    ctx.moveTo(x + rr, y);
+    ctx.arcTo(x + l, y, x + l, y + l, rr);
+    ctx.arcTo(x + l, y + l, x, y + l, rr);
+    ctx.arcTo(x, y + l, x, y, rr);
+    ctx.arcTo(x, y, x + l, y, rr);
+    ctx.closePath();
+  }
+  ctx.fillStyle = fmmRgba(color, 0.15);
+  ctx.fill();
+  ctx.lineWidth = lw;
+  ctx.strokeStyle = color;
+  ctx.stroke();
+  ctx.restore();
+}
+
+// Ícono completo de un beneficio (contenedor opcional + ícono de la
+// librería o propio) dentro de un cuadro de lado s centrado en (cx, cy).
+function fmmDibujarIconoBeneficio(ctx, st, bf, cx, cy, s, color){
+  const cont = st.contenedor || "ninguno";
+  fmmDibujarContenedor(ctx, cont, cx, cy, s, color);
+  const glifo = cont === "ninguno" ? s : s * 0.56;
+  const propio = bf && bf.propio;
+  if(propio && propio.img) fmmDibujarIconoPropio(ctx, propio, cx, cy, cont === "ninguno" ? s * 0.86 : glifo, color);
+  else fmmDibujarIcono(ctx, (bf && bf.icono) || "check-circle", cx, cy, glifo, color, st.estiloIcono);
+}
+
+// Zona que la interfaz de Instagram tapa arriba y abajo en Historias
+// (250px de 1920 en cada extremo, a 1080 de ancho).
+function fmmZonaSeguraStory(W){ return Math.round(W * 250 / 1080); }
+
+// Área donde se dibuja la foto protagonista: siempre a sangre completa
+// (la "franja de marca" de HOME es un chip encima de la foto).
+function fmmAreaFoto(st, W, H){
+  return { x:0, y:0, w:W, h:H };
+}
+
+// Ícono blanco de la casa HOME — la misma imagen que usan los chips de las
+// plantillas de HOME (_fehLogoBlancoIcono). Normalmente la crea fehAbrir();
+// si todavía no se abrió HOME en esta sesión, se crea igual aquí.
+function fmmIconoHome(){
+  if(!_fehLogoBlancoIcono){
+    _fehLogoBlancoIcono = new Image();
+    _fehLogoBlancoIcono.src = (typeof window !== "undefined" && (window._homeLogoBlancoIcono || window._homeLogoBlanco)) || "";
+  }
+  return _fehLogoBlancoIcono;
+}
+
+// "Franja de marca" de HOME: el chip navy de las publicaciones de HOME
+// (mismo relleno rgba(11,31,58,.92) y mismo ícono vía fehDrawLogoLockup que
+// fehDrawFeedA/fehDrawStoryA…), arriba a la izquierda sobre la foto, con
+// las proporciones de la referencia (≈27% del ancho, casa a la izquierda).
+// El texto junto al logo, si hay, va dentro del chip a la derecha de la
+// casa, en Inter pequeña color crema. En Historia baja a la línea de la
+// zona segura de Instagram.
+function fmmGeomChipHome(W, H){
+  const lateral = W >= H;
+  const u = lateral ? H * 0.8 : W;          // ancho equivalente de un 4:5
+  const zona = (!lateral && H / W > 1.6) ? fmmZonaSeguraStory(W) : 0;
+  return {
+    x: lateral ? W * 0.045 : W * 0.07,
+    y: zona || Math.round(u * 0.055),
+    h: Math.round(u * 0.06),
+    wMin: Math.round(u * 0.268),
+  };
+}
+
+function fmmDibujarChipHome(ctx, W, H, texto){
+  const g = fmmGeomChipHome(W, H);
+  const icono = fmmIconoHome();
+  const listo = !!(icono && icono.complete && icono.naturalWidth);
+  if(icono && !icono.complete && !icono._fmmEscuchando){
+    icono._fmmEscuchando = true;
+    icono.addEventListener("load", () => { if(FMM) fmmRenderPreview(); }, { once:true });
+  }
+  const iconH = g.h * 0.78, pad = g.h * 0.28, gap = g.h * 0.3;
+  const iconW = listo ? iconH * icono.naturalWidth / icono.naturalHeight : iconH;
+  const txt = (texto || "").trim();
+  const tamTxt = Math.round(g.h * 0.34);
+  ctx.font = '500 '+tamTxt+'px "Inter", sans-serif';
+  const linea = txt ? (fmmEnvolver(ctx, txt, W * 0.55, 1)[0] || "") : "";
+  const w = Math.max(g.wMin, pad + iconW + (linea ? gap + ctx.measureText(linea).width : 0) + pad);
+  ctx.fillStyle = "rgba(11,31,58,.92)";
+  ctx.fillRect(g.x, g.y, w, g.h);
+  if(listo) fehDrawLogoLockup(ctx, g.x + pad, g.y + (g.h - iconH) / 2, iconH, false);
+  if(linea){
+    ctx.fillStyle = HOME_BRAND.crema;
+    ctx.textAlign = "left"; ctx.textBaseline = "middle";
+    ctx.fillText(linea, g.x + pad + iconW + gap, g.y + g.h / 2);
+  }
+  return { x: g.x, y: g.y, w, h: g.h };
+}
+
+// Dibuja la plantilla "Presentación de Servicio". En formatos horizontales
+// (ancho >= alto) el degradado va desde la izquierda y el texto a la
+// izquierda; en verticales (Feed 4:5, Historia 9:16) un degradado lateral
+// al 60% dejaría la columna de texto de ~650px sobre la parte más clara de
+// la foto, así que se cambia por un degradado desde abajo con todo el
+// texto en la mitad inferior (más una viñeta corta arriba para el logo).
+function fmmDrawPresentacionServicio(ctx, W, H, st){
+  const marca = st.marca || "home";
+  const pal = fmmPaleta(marca);
+  const v = st.values || {};
+  const k = st.intensidad == null ? 0.85 : st.intensidad;
+  const lateral = W >= H;
+  const chipHome = marca === "home" && st.encabezado === "franja";
+  // Historia: Instagram tapa ~250px arriba (progreso y perfil) y ~250px
+  // abajo (caja de respuesta). Logo sobre foto y bloque inferior se
+  // mantienen fuera de esas zonas.
+  const zonaStory = (!lateral && H / W > 1.6) ? fmmZonaSeguraStory(W) : 0;
+  const area = fmmAreaFoto(st, W, H);
+  const M = lateral ? W*0.045 : W*0.07;
+  const yLogo = Math.max(M, zonaStory);
+  const margenInf = Math.max(M, zonaStory);
+  const maxTextoW = lateral ? W*0.46 : W - 2*M;
+
+  // ── Medidas (antes de pintar: el degradado vertical se ajusta a dónde
+  // empieza realmente el bloque de texto) ──
+
+  // Logo sobre foto
+  let logoH = lateral ? H*0.075 : W*0.085, logoW = 0;
+  const logo = fevObtenerLogoImg(marca, "blanco");
+  const logoListo = !!(logo && logo.complete && logo.naturalWidth);
+  if(logoListo){
+    logoW = logoH * logo.naturalWidth / logo.naturalHeight;
+    const maxLogoW = lateral ? W*0.17 : W*0.32;
+    if(logoW > maxLogoW){ logoW = maxLogoW; logoH = logoW * logo.naturalHeight / logo.naturalWidth; }
+  }
+
+  // Beneficios: de 2 a 4. Compactos a propósito para que no compitan con
+  // el título: por defecto ícono a la izquierda y etiqueta de 1–2 líneas
+  // a la derecha; "arriba" apila ícono y etiqueta. En horizontal van
+  // todos en una fila (2, 3 o 4 columnas); en vertical, 4 se acomodan en 2×2.
+  const izq = (st.layoutBen || "izquierda") !== "arriba";
+  const base = lateral ? H : W;
+  const beneficios = (st.beneficios || []).slice(0, FMM_MAX_BENEFICIOS);
+  const n = beneficios.length;
+  const cols = lateral ? Math.max(1, n) : (n === 4 ? 2 : Math.max(1, n));
+  const filas = n ? Math.ceil(n / cols) : 0;
+  const anchoBen = lateral ? W * ({ 2:0.42, 3:0.55, 4:0.66 }[n] || 0.55) : W - 2*M;
+  const colW = anchoBen / cols;
+  const tamIcono = base * (izq ? 0.056 : 0.064);
+  const gapIcono = base * 0.016;
+  const maxEtiqueta = izq ? colW*0.88 - tamIcono - gapIcono : colW*0.88;
+  // Un solo tamaño de etiqueta para todos, reducido si alguna palabra
+  // suelta no cabe en su columna (p. ej. "personalizado").
+  let tamEtiqueta = Math.round(base * (izq ? 0.023 : 0.025));
+  const tamMinEtiqueta = Math.round(tamEtiqueta * 0.8);
+  const palabraMasAncha = () => Math.max(0, ...beneficios.map(b => b.texto || "").join(" ").split(/\s+/).filter(Boolean).map(p => ctx.measureText(p).width));
+  ctx.font = '600 '+tamEtiqueta+'px "Inter", sans-serif';
+  while(tamEtiqueta > tamMinEtiqueta && palabraMasAncha() > maxEtiqueta){
+    tamEtiqueta--;
+    ctx.font = '600 '+tamEtiqueta+'px "Inter", sans-serif';
+  }
+  const lhEt = tamEtiqueta * 1.25;
+  const altoFila = izq ? Math.max(tamIcono, lhEt*2) : tamIcono + tamEtiqueta*0.7 + lhEt*2;
+  const gapFila = base * 0.03;
+  const altoBen = filas ? filas*altoFila + (filas - 1)*gapFila : 0;
+  const benTop = H - margenInf - altoBen;
+
+  // Título (2 líneas), divisor y descripción
+  const tamMax = Math.round(lateral ? H*0.095 : W*0.105);
+  const fam = pal.familiaTitulo, peso = pal.pesoTitulo;
+  // TAURINA: títulos en mayúsculas, igual que su módulo (Norwester es una
+  // tipografía de titulares en mayúsculas).
+  const mayus = t => marca === "taurina" ? t.toLocaleUpperCase("es-MX") : t;
+  const t1 = mayus(v.titulo1 || ""), t2 = mayus(v.titulo2 || "");
+  const tam = Math.min(
+    fmmFuenteQueCabe(ctx, t1, peso, fam, tamMax, Math.round(tamMax*0.55), maxTextoW),
+    fmmFuenteQueCabe(ctx, t2, peso, fam, tamMax, Math.round(tamMax*0.55), maxTextoW)
+  );
+  const lhTitulo = tam * 1.08;
+  const tamDesc = Math.round(lateral ? H*0.034 : W*0.037);
+  ctx.font = '400 '+tamDesc+'px "Inter", sans-serif';
+  const lineasDesc = fmmEnvolver(ctx, v.descripcion || "", maxTextoW, 3);
+  const lhDesc = tamDesc * 1.4;
+  const gDiv = tam * 0.35, grosorDiv = Math.max(4, Math.round((lateral ? H : W)*0.006));
+  const altoBloque = lhTitulo*2 + gDiv + grosorDiv + gDiv + lineasDesc.length*lhDesc;
+  let yTexto;
+  if(lateral){
+    const topeEncabezado = chipHome ? (() => { const g = fmmGeomChipHome(W, H); return g.y + g.h; })() : M + logoH;
+    const arriba = topeEncabezado + M*0.8, abajo = benTop - M*0.9;
+    yTexto = arriba + Math.max(0, (abajo - arriba - altoBloque) / 2);
+  } else {
+    yTexto = benTop - M*0.9 - altoBloque;
+  }
+
+  // ── Pintado ──
+
+  // 1. Foto a sangre
+  if(st.foto && st.foto.naturalWidth){
+    const r = fmmRectFoto(st.foto, area.w, area.h, st.encuadre);
+    ctx.save();
+    ctx.beginPath(); ctx.rect(area.x, area.y, area.w, area.h); ctx.clip();
+    ctx.drawImage(st.foto, area.x + r.dx, area.y + r.dy, r.dw, r.dh);
+    ctx.restore();
+  } else {
+    fehDrawPhoto(ctx, null, area.x, area.y, area.w, area.h, "foto protagonista");
+  }
+
+  // 2. Degradado del color oscuro de la marca
+  if(lateral){
+    const g = ctx.createLinearGradient(0, 0, W*0.6, 0);
+    g.addColorStop(0, fmmRgba(pal.oscuro, k));
+    g.addColorStop(0.5, fmmRgba(pal.oscuro, k*0.7));
+    g.addColorStop(1, fmmRgba(pal.oscuro, 0));
+    ctx.fillStyle = g;
+    ctx.fillRect(0, area.y, W*0.6, area.h);
+    // Los beneficios se extienden un poco más allá del 60%: banda inferior suave.
+    const gb = ctx.createLinearGradient(0, H, 0, H*0.7);
+    gb.addColorStop(0, fmmRgba(pal.oscuro, k*0.75));
+    gb.addColorStop(1, fmmRgba(pal.oscuro, 0));
+    ctx.fillStyle = gb;
+    ctx.fillRect(0, H*0.7, W, H*0.3);
+  } else {
+    // Desde abajo hasta el 32% del alto, o más arriba si el bloque de
+    // texto empieza antes (4 beneficios apilados, descripción larga…),
+    // para que el título nunca quede sobre la parte clara de la foto.
+    const tope = Math.max(area.y, Math.min(H * 0.32, yTexto - H * 0.23));
+    const g = ctx.createLinearGradient(0, H, 0, tope);
+    g.addColorStop(0, fmmRgba(pal.oscuro, k));
+    g.addColorStop(0.45, fmmRgba(pal.oscuro, k*0.85));
+    g.addColorStop(1, fmmRgba(pal.oscuro, 0));
+    ctx.fillStyle = g;
+    ctx.fillRect(0, tope, W, H - tope);
+    // Viñeta superior solo cuando el logo va directo sobre la foto (el
+    // chip de HOME ya trae su propio fondo navy).
+    if(!chipHome){
+      const altoViñeta = zonaStory ? zonaStory + W*0.2 : H*0.16;
+      const gt = ctx.createLinearGradient(0, 0, 0, altoViñeta);
+      gt.addColorStop(0, fmmRgba(pal.oscuro, k*0.55));
+      gt.addColorStop(1, fmmRgba(pal.oscuro, 0));
+      ctx.fillStyle = gt;
+      ctx.fillRect(0, 0, W, altoViñeta);
+    }
+  }
+
+  // 3. Encabezado: chip de marca (HOME, "Franja de marca") o logo arriba a
+  // la izquierda + texto corto opcional sobre la foto.
+  if(chipHome){
+    fmmDibujarChipHome(ctx, W, H, v.textoLogo);
+  } else if(logoListo){
+    ctx.drawImage(logo, M, yLogo, logoW, logoH);
+    const txt = (v.textoLogo || "").trim();
+    if(txt){
+      // Tamaño fijo por formato (no atado al alto del logo: los logos
+      // anchos como el de ROMSA se reducen y el texto quedaría ilegible).
+      const tamTxt = Math.round(lateral ? H*0.024 : W*0.026);
+      const sep = tamTxt * 0.9, x = M + logoW + sep;
+      ctx.fillStyle = pal.acento;
+      ctx.fillRect(x, yLogo + logoH/2 - tamTxt*0.9, Math.max(2, tamTxt*0.1), tamTxt*1.8);
+      ctx.font = '600 '+tamTxt+'px "Inter", sans-serif';
+      ctx.fillStyle = pal.claro;
+      ctx.textAlign = "left"; ctx.textBaseline = "middle";
+      const lin = fmmEnvolver(ctx, txt, (lateral ? W*0.5 : W - M) - (x + sep), 1);
+      ctx.fillText(lin[0] || "", x + sep, yLogo + logoH/2);
+    }
+  }
+  if(logo && !logo.complete && !logo._fmmEscuchando){
+    // Mismo hueco que resolvió fevCrearImagenLogo para el video: el data
+    // URI puede no haber terminado de decodificar en el primer dibujado.
+    logo._fmmEscuchando = true;
+    logo.addEventListener("load", () => { if(FMM) fmmRenderPreview(); }, { once:true });
+  }
+
+  // 4. Beneficios
+  beneficios.forEach((bf, i) => {
+    const col = i % cols, fila = Math.floor(i / cols);
+    const x0 = M + col*colW, y0 = benTop + fila*(altoFila + gapFila);
+    if(col > 0){
+      ctx.fillStyle = fmmRgba(pal.claro, 0.25);
+      ctx.fillRect(x0 - colW*0.06, y0, Math.max(1, base*0.0015), altoFila);
+    }
+    const cy = izq ? y0 + altoFila/2 : y0 + tamIcono/2;
+    fmmDibujarIconoBeneficio(ctx, st, bf, x0 + tamIcono/2, cy, tamIcono, pal.acento);
+    ctx.font = '600 '+tamEtiqueta+'px "Inter", sans-serif';
+    ctx.fillStyle = pal.claro;
+    ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
+    const lineas = fmmEnvolver(ctx, bf.texto || "", maxEtiqueta, 2);
+    if(izq){
+      const tx = x0 + tamIcono + gapIcono;
+      const yl = cy - (lineas.length - 1) * lhEt / 2 + tamEtiqueta * 0.36;
+      lineas.forEach((l, j) => ctx.fillText(l, tx, yl + j*lhEt));
+    } else {
+      lineas.forEach((l, j) => ctx.fillText(l, x0, y0 + tamIcono + tamEtiqueta*0.7 + tamEtiqueta + j*lhEt));
+    }
+  });
+
+  // 5. Título, divisor y descripción
+  let y = yTexto;
+  ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
+  ctx.font = peso+" "+tam+"px "+fam;
+  ctx.fillStyle = pal.claro;
+  ctx.fillText(t1, M, y + tam);
+  ctx.fillStyle = pal.acento;
+  ctx.fillText(t2, M, y + lhTitulo + tam);
+  y += lhTitulo*2 + gDiv;
+  ctx.fillStyle = pal.acento;
+  ctx.fillRect(M, y, lateral ? W*0.06 : W*0.12, grosorDiv);
+  y += grosorDiv + gDiv;
+  ctx.font = '400 '+tamDesc+'px "Inter", sans-serif';
+  ctx.fillStyle = fmmRgba(pal.claro, 0.92);
+  lineasDesc.forEach((l, j) => ctx.fillText(l, M, y + tamDesc + j*lhDesc));
+}
+
+function fmmAbrir(){
+  if(!_fmmInited){
+    _fmmInited = true;
+    _fmmFontsReady = (document.fonts && document.fonts.load) ? Promise.all([
+      document.fonts.load('700 60px "Playfair Display"'),
+      document.fonts.load('400 60px "Norwester"'),
+      document.fonts.load('400 60px "Oswald"'),
+      document.fonts.load('800 60px "Inter"'),
+      document.fonts.load('800 60px "Manrope"'),
+      document.fonts.load('400 30px "Inter"'),
+      document.fonts.load('600 30px "Inter"'),
+    ]).catch(()=>{}) : Promise.resolve();
+    fmmRenderPicker();
+    fmmInicializarGesto();
+  }
+  document.getElementById("fmm-root").style.display = "flex";
+  fmmVolverPicker();
+  fmmCargarPresetsPropios();
+}
+
+function fmmAtras(){
+  document.getElementById("fmm-root").style.display = "none";
+}
+
+function fmmEstadoInicial(){
+  return {
+    tplId: null,
+    marca: "home",
+    foto: null,
+    encuadre: { x:0, y:0, zoom:1.15 },
+    intensidad: 0.85,
+    values: Object.assign({}, FMM_DEFAULTS, { textoLogo: fmmTextoLogoDefault("home") }),
+    beneficios: FMM_BENEFICIOS_DEFAULT.map(b => ({ texto:b.texto, icono:b.icono, propio:null })),
+    estiloIcono: "duotono",
+    contenedor: "ninguno",
+    layoutBen: "izquierda",
+    encabezado: "logo",
+    presetId: "",
+  };
+}
+
+function fmmRenderPicker(){
+  const grid = document.getElementById("fmm-picker-grid");
+  grid.innerHTML = FMM_TEMPLATES.map(t => {
+    const cls = t.formato === "story" ? " feh-thumb-story" : t.formato === "land" ? " fmm-thumb-land" : "";
+    return '<button type="button" class="feh-picker-card" onclick="fmmElegirPlantilla(\''+t.id+'\')">'
+      +'<canvas class="feh-picker-thumb'+cls+'" data-fmm-thumb="'+t.id+'"></canvas>'
+      +'<div class="feh-picker-label"><div class="feh-picker-name">'+escapeHtml(t.label)+'</div><div class="feh-picker-dims">'+t.w+' × '+t.h+' px</div></div>'
+    +'</button>';
+  }).join("");
+  // Las miniaturas esperan también al logo (data URI) para no salir sin él.
+  const logo = fevObtenerLogoImg("home", "blanco");
+  const logoListo = (logo && !logo.complete)
+    ? new Promise(r => { logo.addEventListener("load", r, { once:true }); logo.addEventListener("error", r, { once:true }); })
+    : Promise.resolve();
+  Promise.all([_fmmFontsReady || Promise.resolve(), logoListo]).then(() => {
+    FMM_TEMPLATES.forEach(t => {
+      const cvs = document.querySelector('canvas[data-fmm-thumb="'+t.id+'"]');
+      if(!cvs) return;
+      const scale = 440 / t.w;
+      cvs.width = Math.round(t.w * scale); cvs.height = Math.round(t.h * scale);
+      const ctx = cvs.getContext("2d");
+      ctx.save(); ctx.scale(scale, scale);
+      fmmDrawPresentacionServicio(ctx, t.w, t.h, fmmEstadoInicial());
+      ctx.restore();
+    });
+  });
+}
+
+function fmmVolverPicker(){
+  document.getElementById("fmm-step-picker").classList.add("active");
+  document.getElementById("fmm-step-editor").classList.remove("active");
+  document.getElementById("fmm-back-btn").onclick = fmmAtras;
+}
+
+// Cambiar de formato conserva marca, foto y textos (para sacar Feed e
+// Historia de la misma pieza sin volver a capturar); solo el encuadre se
+// reinicia, porque el recorte cambia con la proporción.
+function fmmElegirPlantilla(id){
+  const t = FMM_TEMPLATES.find(x => x.id === id);
+  if(!t) return;
+  if(!FMM) FMM = fmmEstadoInicial();
+  FMM.tplId = id;
+  FMM.encuadre = { x:0, y:0, zoom:1.15 };
+  document.getElementById("fmm-step-picker").classList.remove("active");
+  document.getElementById("fmm-step-editor").classList.add("active");
+  document.getElementById("fmm-back-btn").onclick = fmmVolverPicker;
+  fmmRenderForm();
+  (_fmmFontsReady || Promise.resolve()).then(fmmRenderPreview);
+}
+
+function fmmCampo(key, label, multilinea){
+  const val = escapeHtml(FMM.values[key] || "");
+  return '<div class="feh-ctrl-group"><label class="feh-ctrl-label">'+escapeHtml(label)+'</label>'
+    +(multilinea
+      ? '<textarea class="feh-input" rows="3" data-fmm-campo="'+key+'" oninput="fmmSetValor(\''+key+'\',this.value)">'+val+'</textarea>'
+      : '<input type="text" class="feh-input" data-fmm-campo="'+key+'" value="'+val+'" oninput="fmmSetValor(\''+key+'\',this.value)">')
+  +'</div>';
+}
+
+function fmmPills(grupo, opciones, actual, fn){
+  return '<div class="fe-pill-row">'
+    + opciones.map(o => '<button type="button" class="fe-tpl-btn'+(o.id===actual?" active":"")+'" data-fmm-'+grupo+'="'+o.id+'" onclick="'+fn+'(\''+o.id+'\')">'+escapeHtml(o.etiqueta)+'</button>').join("")
+  + '</div>';
+}
+function fmmActivarPill(grupo, id){
+  document.querySelectorAll('#fmm-form [data-fmm-'+grupo+']').forEach(b => b.classList.toggle("active", b.getAttribute('data-fmm-'+grupo) === id));
+}
+
+// Bloque de ícono de un beneficio: cuadrícula visual (dentro de <details>
+// para no alargar el formulario) + subir PNG/SVG propio.
+function fmmHtmlIconoBeneficio(i, abierto){
+  const bf = FMM.beneficios[i];
+  const propio = bf.propio;
+  const sel = bf.icono;
+  const actual = propio
+    ? (propio.tenir
+        // Teñido: la silueta del archivo como máscara sobre el acento (igual que en el lienzo)
+        ? '<span class="fmm-icono-propio-mini fmm-icono-propio-mask" style="-webkit-mask-image:url(\''+propio.src+'\');mask-image:url(\''+propio.src+'\');"></span>'
+        : '<img class="fmm-icono-propio-mini" src="'+propio.src+'" alt="">')
+    : fmmSvgIcono(sel, FMM.estiloIcono);
+  const nombre = propio ? "Ícono propio" : fmmIconoPorId(sel).n;
+  return '<details class="fmm-icon-picker" data-fmm-picker="'+i+'"'+(abierto?" open":"")+'>'
+      +'<summary><span class="fmm-icon-actual">'+actual+'</span><span class="fmm-icon-nombre">'+escapeHtml(nombre)+'</span><span class="fmm-icon-cambiar">Cambiar ícono</span></summary>'
+      +'<div class="fmm-icon-grid" role="listbox" aria-label="Íconos del beneficio '+(i+1)+'">'
+        + FMM_ICONOS.map(ic => '<button type="button" class="fmm-icon-btn'+(!propio && ic.id===sel?" active":"")+'" data-fmm-icono-btn="'+ic.id+'" title="'+escapeHtml(ic.n)+'" aria-label="'+escapeHtml(ic.n)+'" onclick="fmmSetIcono('+i+',\''+ic.id+'\')">'+fmmSvgIcono(ic.id, FMM.estiloIcono)+'</button>').join("")
+      +'</div>'
+    +'</details>'
+    +'<div class="fmm-icono-propio-row">'
+      +'<button type="button" class="feh-btn feh-btn-ghost fmm-btn-mini" onclick="document.getElementById(\'fmm-file-icono-'+i+'\').click()">⬆ '+(propio?"Cambiar ícono propio":"Subir ícono propio (PNG/SVG)")+'</button>'
+      +'<input type="file" accept="image/png,image/svg+xml,.png,.svg" id="fmm-file-icono-'+i+'" style="display:none;" onchange="fmmCargarIconoPropio('+i+',event)">'
+      +(propio
+        ? '<label class="fmm-check"><input type="checkbox" data-fmm-tenir="'+i+'"'+(propio.tenir?" checked":"")+' onchange="fmmSetTenirPropio('+i+',this.checked)"> Teñir con el color de la marca</label>'
+          +'<button type="button" class="fmm-link" onclick="fmmQuitarIconoPropio('+i+')">Quitar</button>'
+        : '')
+    +'</div>';
+}
+
+function fmmRenderIconoBeneficio(i){
+  const cont = document.getElementById("fmm-ben-icono-"+i);
+  if(!cont) return;
+  const det = cont.querySelector("details");
+  cont.innerHTML = fmmHtmlIconoBeneficio(i, det ? det.open : false);
+}
+
+// Lista de beneficios (2 a 4): texto + ícono + "Quitar", y el botón
+// "+ Agregar beneficio" al final.
+function fmmRenderBeneficios(){
+  const cont = document.getElementById("fmm-beneficios");
+  if(!cont) return;
+  const n = FMM.beneficios.length;
+  cont.innerHTML = FMM.beneficios.map((bf, i) =>
+    '<div class="fmm-ben" data-fmm-ben="'+i+'">'
+      +'<div class="fmm-ben-head"><span class="feh-ctrl-label">Beneficio '+(i+1)+'</span>'
+        +(n > FMM_MIN_BENEFICIOS ? '<button type="button" class="fmm-link" data-fmm-quitar-ben="'+i+'" onclick="fmmQuitarBeneficio('+i+')">Quitar</button>' : '')
+      +'</div>'
+      +'<input type="text" class="feh-input" data-fmm-ben-texto="'+i+'" maxlength="60" value="'+escapeHtml(bf.texto||"")+'" oninput="fmmSetTextoBeneficio('+i+',this.value)">'
+      +'<div class="fmm-ben-icono" id="fmm-ben-icono-'+i+'">'+fmmHtmlIconoBeneficio(i, false)+'</div>'
+    +'</div>'
+  ).join("")
+  +(n < FMM_MAX_BENEFICIOS ? '<button type="button" class="feh-btn feh-btn-ghost" id="fmm-agregar-ben" onclick="fmmAgregarBeneficio()">+ Agregar beneficio</button>' : '');
+}
+
+function fmmHtmlPresets(){
+  const propios = Object.entries(_fmmPresetsPropios).filter(([, p]) => p && p.nombre)
+    .sort((a, b) => a[1].nombre.localeCompare(b[1].nombre, "es"));
+  const sel = FMM.presetId || "";
+  const esPropio = sel.startsWith("usr:") && !!_fmmPresetsPropios[sel.slice(4)];
+  const opcion = (valor, nombre) => '<option value="'+escapeHtml(valor)+'"'+(valor===sel?" selected":"")+'>'+escapeHtml(nombre)+'</option>';
+  return '<select class="feh-input" id="fmm-preset-select" onchange="fmmAplicarPreset(this.value)">'
+      +'<option value="">— Elige un servicio —</option>'
+      +'<optgroup label="De fábrica">'+FMM_PRESETS_FABRICA.map(p => opcion("fab:"+p.id, p.nombre)).join("")+'</optgroup>'
+      +(propios.length ? '<optgroup label="Guardados por el equipo">'+propios.map(([id, p]) => opcion("usr:"+id, p.nombre)).join("")+'</optgroup>' : '')
+    +'</select>'
+    +'<div class="fmm-preset-acciones">'
+      +'<button type="button" class="feh-btn feh-btn-ghost fmm-btn-mini2" id="fmm-preset-guardar" onclick="fmmPresetPedirNombre(\'nuevo\')">💾 Guardar como preset</button>'
+      +(esPropio
+        ? '<button type="button" class="feh-btn feh-btn-ghost fmm-btn-mini2" id="fmm-preset-renombrar" onclick="fmmPresetPedirNombre(\'renombrar\')">✎ Renombrar</button>'
+          +'<button type="button" class="feh-btn feh-btn-ghost fmm-btn-mini2 fmm-btn-peligro" id="fmm-preset-eliminar" onclick="fmmEliminarPreset()">🗑 Eliminar</button>'
+        : '')
+    +'</div>'
+    +'<div class="fmm-preset-nombre" id="fmm-preset-nombre"'+(_fmmPresetModoNombre?"":' style="display:none;"')+'>'
+      +'<input type="text" class="feh-input" id="fmm-preset-nombre-input" maxlength="60" placeholder="Nombre del preset" onkeydown="if(event.key===\'Enter\')fmmPresetConfirmarNombre();if(event.key===\'Escape\')fmmPresetCancelarNombre();">'
+      +'<div class="fmm-preset-acciones">'
+        +'<button type="button" class="feh-btn feh-btn-primary fmm-btn-mini2" id="fmm-preset-nombre-ok" onclick="fmmPresetConfirmarNombre()">Guardar</button>'
+        +'<button type="button" class="feh-btn feh-btn-ghost fmm-btn-mini2" onclick="fmmPresetCancelarNombre()">Cancelar</button>'
+      +'</div>'
+    +'</div>'
+    +'<div class="feh-hint" style="margin-top:8px;">Un preset guarda título, descripción y beneficios con sus íconos de la librería — no la foto, los colores, el encabezado ni el texto junto al logo — así sirve con cualquier marca. Los que guardes se comparten con todo el equipo.</div>';
+}
+
+function fmmRenderPresets(){
+  const cont = document.getElementById("fmm-presets");
+  if(!cont || !FMM) return;
+  const valorNombre = document.getElementById("fmm-preset-nombre-input");
+  const previo = valorNombre ? valorNombre.value : "";
+  cont.innerHTML = fmmHtmlPresets();
+  if(_fmmPresetModoNombre) document.getElementById("fmm-preset-nombre-input").value = previo;
+}
+
+function fmmAplicarVarsMarca(){
+  const f = document.getElementById("fmm-form");
+  if(!f || !FMM) return;
+  const pal = fmmPaleta(FMM.marca);
+  f.style.setProperty("--fmm-acento", pal.acento);
+  f.style.setProperty("--fmm-oscuro", pal.oscuro);
+  const enc = document.getElementById("fmm-encabezado-grupo");
+  if(enc) enc.style.display = FMM.marca === "home" ? "" : "none";
+}
+
+function fmmRenderForm(){
+  document.getElementById("fmm-form").innerHTML =
+    '<div class="feh-ctrl-group"><label class="feh-ctrl-label">Marca</label>'
+      +fmmPills("marca", FMM_MARCAS.map(m => ({ id:m.id, etiqueta:m.etiqueta })), FMM.marca, "fmmSetMarca")
+    +'</div>'
+    +'<div class="feh-ctrl-group" id="fmm-encabezado-grupo"><label class="feh-ctrl-label">Encabezado</label>'
+      +fmmPills("encabezado", FMM_ENCABEZADOS, FMM.encabezado, "fmmSetEncabezado")
+    +'</div>'
+    +'<div class="feh-ctrl-group"><label class="feh-ctrl-label">Foto protagonista</label>'
+      +'<div class="feh-photoslot'+(FMM.foto?" feh-filled":"")+'" id="fmm-slot" onclick="document.getElementById(\'fmm-file\').click()">'+(FMM.foto?"✓ Foto cargada — toca para cambiar":"📷 Toca para subir")+'</div>'
+      +'<input type="file" accept="image/*" id="fmm-file" style="display:none;" onchange="fmmCargarFoto(event)">'
+      +'<div class="feh-pan-ctrl" id="fmm-encuadre-ctrl" style="display:'+(FMM.foto?"flex":"none")+';">'
+        +'<div class="feh-hint" style="margin-top:8px;">Arrastra la foto sobre la vista previa para moverla. Zoom: pellizca con dos dedos, usa la rueda del mouse o el control de abajo.</div>'
+        +'<label class="feh-ctrl-label" style="margin-top:8px;">Zoom</label>'
+        +'<input type="range" class="feh-range" id="fmm-zoom" min="100" max="300" value="'+Math.round(FMM.encuadre.zoom*100)+'" oninput="fmmSetZoom(this.value/100)">'
+        +'<button type="button" class="feh-btn feh-btn-ghost" style="margin-top:6px;" onclick="fmmCentrarFoto()">Centrar foto</button>'
+      +'</div>'
+    +'</div>'
+    +'<div class="feh-ctrl-group"><label class="feh-ctrl-label">Intensidad del degradado</label>'
+      +'<input type="range" class="feh-range" id="fmm-intensidad" min="0" max="100" value="'+Math.round(FMM.intensidad*100)+'" oninput="fmmSetIntensidad(this.value/100)">'
+    +'</div>'
+    +fmmCampo("textoLogo", "Texto junto al logo (opcional)")
+    +'<div class="feh-ctrl-group"><label class="feh-ctrl-label">Servicio</label><div id="fmm-presets">'+fmmHtmlPresets()+'</div></div>'
+    +fmmCampo("titulo1", "Título — línea 1")
+    +fmmCampo("titulo2", "Título — línea 2 (color de acento)")
+    +fmmCampo("descripcion", "Descripción (2 a 3 líneas)", true)
+    +'<div class="feh-ctrl-group"><label class="feh-ctrl-label">Estilo de ícono</label>'
+      +fmmPills("estilo-icono", FMM_ESTILOS_ICONO, FMM.estiloIcono, "fmmSetEstiloIcono")
+    +'</div>'
+    +'<div class="feh-ctrl-group"><label class="feh-ctrl-label">Contenedor del ícono</label>'
+      +fmmPills("contenedor", FMM_CONTENEDORES, FMM.contenedor, "fmmSetContenedor")
+    +'</div>'
+    +'<div class="feh-ctrl-group"><label class="feh-ctrl-label">Disposición de beneficios</label>'
+      +fmmPills("layout-ben", FMM_LAYOUTS_BEN, FMM.layoutBen, "fmmSetLayoutBen")
+    +'</div>'
+    +'<div class="feh-ctrl-group"><label class="feh-ctrl-label">Beneficios (2 a 4)</label><div id="fmm-beneficios"></div></div>'
+    +'<div class="feh-actions">'
+      +'<button class="feh-btn feh-btn-ghost" onclick="fmmVolverPicker()">‹ Otro formato</button>'
+      +'<button class="feh-btn feh-btn-primary" id="fmm-download-btn" onclick="fmmDescargar()"'+(FMM.foto?"":" disabled title=\"Sube la foto primero\"")+'>⬇ Descargar PNG</button>'
+    +'</div>';
+  fmmRenderBeneficios();
+  fmmAplicarVarsMarca();
+}
+
+// Cambiar de marca: si el texto junto al logo sigue siendo el default de
+// la marca anterior (no lo editó el usuario), pasa al default de la nueva
+// ("Todo para pisos" en HOME). Si lo editó o lo dejó vacío, se respeta.
+function fmmSetMarca(marca){
+  const anterior = FMM.marca;
+  FMM.marca = marca;
+  if(FMM.values.textoLogo === fmmTextoLogoDefault(anterior)){
+    FMM.values.textoLogo = fmmTextoLogoDefault(marca);
+    const inp = document.querySelector('#fmm-form [data-fmm-campo="textoLogo"]');
+    if(inp) inp.value = FMM.values.textoLogo;
+  }
+  fmmActivarPill("marca", marca);
+  fmmAplicarVarsMarca();
+  fmmRenderPreview();
+}
+function fmmSetEncabezado(enc){
+  FMM.encabezado = enc === "franja" ? "franja" : "logo";
+  fmmActivarPill("encabezado", FMM.encabezado);
+  fmmRenderPreview();
+}
+function fmmSetValor(key, val){ FMM.values[key] = val; fmmRenderPreview(); }
+function fmmSetTextoBeneficio(i, val){
+  if(!FMM.beneficios[i]) return;
+  FMM.beneficios[i].texto = val;
+  fmmRenderPreview();
+}
+function fmmAgregarBeneficio(){
+  if(FMM.beneficios.length >= FMM_MAX_BENEFICIOS) return;
+  // Primer ícono del catálogo que no se esté usando ya.
+  const usados = FMM.beneficios.map(b => b.icono);
+  const libre = ["check-circle", "star", "handshake", "clock", "truck"].find(id => !usados.includes(id)) || "check-circle";
+  FMM.beneficios.push({ texto:"Nuevo beneficio", icono:libre, propio:null });
+  fmmRenderBeneficios();
+  fmmRenderPreview();
+  const inp = document.querySelector('[data-fmm-ben-texto="'+(FMM.beneficios.length - 1)+'"]');
+  if(inp){ inp.focus(); inp.select(); }
+}
+function fmmQuitarBeneficio(i){
+  if(FMM.beneficios.length <= FMM_MIN_BENEFICIOS) return;
+  FMM.beneficios.splice(i, 1);
+  fmmRenderBeneficios();
+  fmmRenderPreview();
+}
+// Elegir un ícono de la librería reemplaza el ícono propio de ese beneficio.
+function fmmSetIcono(i, id){
+  if(!FMM.beneficios[i]) return;
+  FMM.beneficios[i].icono = id;
+  FMM.beneficios[i].propio = null;
+  fmmRenderIconoBeneficio(i);
+  fmmRenderPreview();
+}
+function fmmSetEstiloIcono(estilo){
+  FMM.estiloIcono = estilo;
+  fmmActivarPill("estilo-icono", estilo);
+  FMM.beneficios.forEach((b, i) => fmmRenderIconoBeneficio(i));
+  fmmRenderPreview();
+}
+function fmmSetContenedor(tipo){
+  FMM.contenedor = tipo;
+  fmmActivarPill("contenedor", tipo);
+  fmmRenderPreview();
+}
+function fmmSetLayoutBen(layout){
+  FMM.layoutBen = layout;
+  fmmActivarPill("layout-ben", layout);
+  fmmRenderPreview();
+}
+function fmmSetTenirPropio(i, tenir){
+  const p = FMM.beneficios[i] && FMM.beneficios[i].propio;
+  if(!p) return;
+  p.tenir = !!tenir;
+  fmmRenderIconoBeneficio(i);
+  fmmRenderPreview();
+}
+function fmmQuitarIconoPropio(i){
+  if(!FMM.beneficios[i]) return;
+  FMM.beneficios[i].propio = null;
+  fmmRenderIconoBeneficio(i);
+  fmmRenderPreview();
+}
+
+// ── Presets de servicio ──
+function fmmBuscarPreset(valor){
+  if(!valor) return null;
+  if(valor.startsWith("fab:")) return FMM_PRESETS_FABRICA.find(p => "fab:" + p.id === valor) || null;
+  if(valor.startsWith("usr:")) return _fmmPresetsPropios[valor.slice(4)] || null;
+  return null;
+}
+
+// Aplica solo contenido: títulos, descripción y beneficios con íconos.
+// No toca marca, foto, encabezado, texto junto al logo ni estilos; todo
+// queda editable después.
+function fmmAplicarPreset(valor){
+  const p = fmmBuscarPreset(valor);
+  FMM.presetId = p ? valor : "";
+  if(p){
+    FMM.values.titulo1 = String(p.titulo1 || "");
+    FMM.values.titulo2 = String(p.titulo2 || "");
+    FMM.values.descripcion = String(p.descripcion || "");
+    const bens = (Array.isArray(p.beneficios) ? p.beneficios : []).filter(Boolean).slice(0, FMM_MAX_BENEFICIOS)
+      .map(b => ({ texto:String(b.texto || ""), icono: FMM_ICONOS.some(ic => ic.id === b.icono) ? b.icono : "check-circle", propio:null }));
+    while(bens.length < FMM_MIN_BENEFICIOS) bens.push({ texto:"", icono:"check-circle", propio:null });
+    FMM.beneficios = bens;
+    ["titulo1", "titulo2", "descripcion"].forEach(k => {
+      const el = document.querySelector('#fmm-form [data-fmm-campo="'+k+'"]');
+      if(el) el.value = FMM.values[k];
+    });
+    fmmRenderBeneficios();
+  }
+  _fmmPresetModoNombre = null;
+  fmmRenderPresets();
+  fmmRenderPreview();
+}
+
+// Contenido que se guarda en un preset (sin foto, colores, encabezado ni
+// texto junto al logo). Un ícono propio no se guarda (es una imagen
+// subida, no cabe en un documento compartido): queda el de la librería
+// que tenía el beneficio antes de subirlo.
+function fmmContenidoPreset(){
+  return {
+    titulo1: FMM.values.titulo1 || "",
+    titulo2: FMM.values.titulo2 || "",
+    descripcion: FMM.values.descripcion || "",
+    beneficios: FMM.beneficios.map(b => ({ texto: b.texto || "", icono: b.icono })),
+  };
+}
+
+function fmmPresetPedirNombre(modo){
+  _fmmPresetModoNombre = modo;
+  fmmRenderPresets();
+  const inp = document.getElementById("fmm-preset-nombre-input");
+  const actual = fmmBuscarPreset(FMM.presetId);
+  inp.value = modo === "renombrar" && actual ? actual.nombre
+    : [FMM.values.titulo1, FMM.values.titulo2].filter(Boolean).join(" ").trim().slice(0, 60);
+  inp.focus();
+  inp.select();
+}
+function fmmPresetCancelarNombre(){
+  _fmmPresetModoNombre = null;
+  fmmRenderPresets();
+}
+
+async function fmmPresetConfirmarNombre(){
+  const inp = document.getElementById("fmm-preset-nombre-input");
+  const nombre = (inp ? inp.value : "").trim().slice(0, 60);
+  if(!nombre){ showToast("⚠️ Escribe un nombre para el preset"); if(inp) inp.focus(); return; }
+  const modo = _fmmPresetModoNombre;
+  const perfil = (typeof currentUserProfile !== "undefined" && currentUserProfile) || {};
+  const autor = perfil.nombre || (typeof currentUser !== "undefined" && currentUser && currentUser.email) || "";
+  try {
+    if(modo === "renombrar"){
+      const id = (FMM.presetId || "").slice(4);
+      if(!_fmmPresetsPropios[id]) return;
+      await _fmmPresetsEscribir({ [id]: { nombre, actualizado: Date.now(), actualizadoPor: autor } });
+      _fmmPresetsPropios[id] = Object.assign({}, _fmmPresetsPropios[id], { nombre });
+      showToast("✓ Preset renombrado");
+    } else {
+      const id = "p" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+      const datos = Object.assign({ nombre }, fmmContenidoPreset(), { autor, actualizado: Date.now() });
+      await _fmmPresetsEscribir({ [id]: datos });
+      _fmmPresetsPropios[id] = datos;
+      FMM.presetId = "usr:" + id;
+      showToast(FMM.beneficios.some(b => b.propio)
+        ? "✓ Preset guardado — los íconos propios no se guardan, se usa el de la librería"
+        : "✓ Preset guardado para todo el equipo");
+    }
+  } catch(e){
+    console.warn("No se pudo guardar el preset:", e);
+    showToast("⚠️ No se pudo guardar el preset (sin conexión)");
+    return;
+  }
+  _fmmPresetModoNombre = null;
+  fmmRenderPresets();
+}
+
+async function fmmEliminarPreset(){
+  const valor = FMM.presetId || "";
+  const id = valor.slice(4);
+  const p = valor.startsWith("usr:") ? _fmmPresetsPropios[id] : null;
+  if(!p) return;
+  if(!confirm("¿Eliminar el preset \"" + p.nombre + "\"?\nSe borra para todo el equipo.")) return;
+  try {
+    const fv = typeof firebase !== "undefined" && firebase.firestore && firebase.firestore.FieldValue;
+    if(!fv) throw new Error("FieldValue no disponible");
+    await _fmmPresetsEscribir({ [id]: fv.delete() });
+  } catch(e){
+    console.warn("No se pudo eliminar el preset:", e);
+    showToast("⚠️ No se pudo eliminar el preset (sin conexión)");
+    return;
+  }
+  delete _fmmPresetsPropios[id];
+  FMM.presetId = "";
+  _fmmPresetModoNombre = null;
+  fmmRenderPresets();
+  showToast("🗑 Preset eliminado");
+}
+
+// PNG o SVG propio. Un SVG sin width/height no tiene tamaño intrínseco y
+// algunos navegadores lo dibujan en 0×0 o 300×150, así que se le ponen a
+// partir del viewBox antes de cargarlo como imagen.
+function fmmCargarIconoPropio(i, e){
+  const file = e.target.files && e.target.files[0];
+  e.target.value = "";
+  if(!file || !FMM.beneficios[i]) return;
+  const esSvg = file.type === "image/svg+xml" || /\.svg$/i.test(file.name);
+  const esPng = file.type === "image/png" || /\.png$/i.test(file.name);
+  if(!esSvg && !esPng){ showToast("⚠️ Sube un ícono PNG o SVG"); return; }
+  const bf = FMM.beneficios[i];
+  const cargar = src => {
+    const img = new Image();
+    img.onload = () => {
+      const mono = fmmAnalizarIconoPropio(img);
+      bf.propio = { img, src, tenir: mono, esSvg };
+      const idx = FMM.beneficios.indexOf(bf);
+      if(idx >= 0) fmmRenderIconoBeneficio(idx);
+      fmmRenderPreview();
+      showToast(mono ? "Ícono de un solo color: se tiñe con el color de la marca" : "Ícono a color: se respetan sus colores");
+    };
+    img.onerror = () => showToast("⚠️ No se pudo leer el ícono");
+    img.src = src;
+  };
+  const reader = new FileReader();
+  if(esSvg){
+    reader.onload = ev => {
+      let txt = String(ev.target.result || "");
+      try {
+        const doc = new DOMParser().parseFromString(txt, "image/svg+xml");
+        const svg = doc.documentElement;
+        if(svg && svg.nodeName.toLowerCase() === "svg"){
+          if(!svg.getAttribute("xmlns")) svg.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+          const vb = (svg.getAttribute("viewBox") || "").trim().split(/[\s,]+/).map(Number);
+          const w = parseFloat(svg.getAttribute("width")), h = parseFloat(svg.getAttribute("height"));
+          const ancho = vb.length === 4 && vb[2] > 0 ? vb[2] : 256, alto = vb.length === 4 && vb[3] > 0 ? vb[3] : 256;
+          if(!(w > 0) || !(h > 0) || /%$/.test(svg.getAttribute("width") || "")){
+            const k = 512 / Math.max(ancho, alto);
+            svg.setAttribute("width", Math.round(ancho * k));
+            svg.setAttribute("height", Math.round(alto * k));
+          }
+          txt = new XMLSerializer().serializeToString(svg);
+        }
+      } catch(err){}
+      // encodeURIComponent deja ' ( ) sin escapar; se escapan para poder
+      // usar el data URI dentro de url('…') en la miniatura del formulario.
+      cargar("data:image/svg+xml;charset=utf-8," + encodeURIComponent(txt).replace(/'/g, "%27").replace(/\(/g, "%28").replace(/\)/g, "%29"));
+    };
+    reader.readAsText(file);
+  } else {
+    reader.onload = ev => cargar(ev.target.result);
+    reader.readAsDataURL(file);
+  }
+}
+
+function fmmSetIntensidad(k){ FMM.intensidad = Math.max(0, Math.min(1, k)); fmmRenderPreview(); }
+function fmmSetZoom(z){
+  FMM.encuadre.zoom = Math.max(1, Math.min(3, z));
+  const r = document.getElementById("fmm-zoom");
+  if(r && document.activeElement !== r) r.value = Math.round(FMM.encuadre.zoom*100);
+  fmmRenderPreview();
+}
+function fmmCentrarFoto(){ FMM.encuadre.x = 0; FMM.encuadre.y = 0; fmmRenderPreview(); }
+
+function fmmCargarFoto(e){
+  const file = e.target.files && e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const img = new Image();
+    img.onload = () => {
+      FMM.foto = img;
+      FMM.encuadre = { x:0, y:0, zoom:1.15 };
+      fmmRenderForm();
+      fmmRenderPreview();
+    };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+  e.target.value = "";
+}
+
+function fmmRenderPreview(){
+  if(!FMM) return;
+  const t = FMM_TEMPLATES.find(x => x.id === FMM.tplId);
+  if(!t) return;
+  const canvas = document.getElementById("fmm-canvas");
+  if(canvas.width !== t.w) canvas.width = t.w;
+  if(canvas.height !== t.h) canvas.height = t.h;
+  const ctx = canvas.getContext("2d");
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
+  ctx.clearRect(0, 0, t.w, t.h);
+  fmmDrawPresentacionServicio(ctx, t.w, t.h, FMM);
+}
+
+// Gesto sobre la vista previa: arrastrar con un dedo/mouse mueve la foto;
+// pellizcar con dos dedos o la rueda del mouse hacen zoom. Pointer Events
+// (mouse y touch con el mismo código), igual que el arrastre de overlays
+// del Generador de Video.
+function fmmInicializarGesto(){
+  const canvas = document.getElementById("fmm-canvas");
+  const punteros = new Map();
+  let distAnterior = 0;
+  const escala = () => { const r = canvas.getBoundingClientRect(); return r.width ? canvas.width / r.width : 1; };
+  canvas.addEventListener("pointerdown", e => {
+    if(!FMM || !FMM.foto) return;
+    canvas.setPointerCapture(e.pointerId);
+    punteros.set(e.pointerId, { x:e.clientX, y:e.clientY });
+    canvas.classList.add("fmm-arrastrando");
+    if(punteros.size === 2){
+      const [a, b] = [...punteros.values()];
+      distAnterior = Math.hypot(a.x - b.x, a.y - b.y);
+    }
+  });
+  canvas.addEventListener("pointermove", e => {
+    if(!FMM || !FMM.foto || !punteros.has(e.pointerId)) return;
+    const prev = punteros.get(e.pointerId);
+    punteros.set(e.pointerId, { x:e.clientX, y:e.clientY });
+    if(punteros.size >= 2){
+      const [a, b] = [...punteros.values()];
+      const dist = Math.hypot(a.x - b.x, a.y - b.y);
+      if(distAnterior > 0) fmmSetZoom(FMM.encuadre.zoom * dist / distAnterior);
+      distAnterior = dist;
+      return;
+    }
+    const s = escala();
+    const area = fmmAreaFoto(FMM, canvas.width, canvas.height);
+    const r = fmmRectFoto(FMM.foto, area.w, area.h, FMM.encuadre);
+    if(r.ox > 0) FMM.encuadre.x = Math.max(-1, Math.min(1, FMM.encuadre.x + (e.clientX - prev.x) * s / r.ox));
+    if(r.oy > 0) FMM.encuadre.y = Math.max(-1, Math.min(1, FMM.encuadre.y + (e.clientY - prev.y) * s / r.oy));
+    fmmRenderPreview();
+  });
+  const soltar = e => {
+    punteros.delete(e.pointerId);
+    if(punteros.size < 2) distAnterior = 0;
+    if(!punteros.size) canvas.classList.remove("fmm-arrastrando");
+  };
+  canvas.addEventListener("pointerup", soltar);
+  canvas.addEventListener("pointercancel", soltar);
+  canvas.addEventListener("wheel", e => {
+    if(!FMM || !FMM.foto) return;
+    e.preventDefault();
+    fmmSetZoom(FMM.encuadre.zoom * Math.exp(-e.deltaY * 0.0015));
+  }, { passive:false });
+}
+
+const FMM_EXPORT_SCALE = 2;
+async function fmmDescargar(){
+  const t = FMM && FMM_TEMPLATES.find(x => x.id === FMM.tplId);
+  if(!t) return;
+  if(!FMM.foto){ showToast("⚠️ Sube la foto primero"); return; }
+  if(_fmmFontsReady) await _fmmFontsReady;
+  const canvas = document.createElement("canvas");
+  canvas.width = t.w * FMM_EXPORT_SCALE; canvas.height = t.h * FMM_EXPORT_SCALE;
+  const ctx = canvas.getContext("2d");
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
+  ctx.scale(FMM_EXPORT_SCALE, FMM_EXPORT_SCALE);
+  fmmDrawPresentacionServicio(ctx, t.w, t.h, FMM);
+  const marca = (FMM_MARCAS.find(m => m.id === FMM.marca) || FMM_MARCAS[0]).etiqueta.split(" ")[0].toUpperCase();
+  canvas.toBlob(blob => {
+    if(!blob){ showToast("⚠️ No se pudo generar la imagen"); return; }
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = marca+"_"+t.id+"_"+Date.now()+".png";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+    showToast("⬇ Descargada en alta resolución ("+canvas.width+"×"+canvas.height+"px)");
+  }, "image/png", 1.0);
+}
+
+window.fmmAbrir = fmmAbrir;
+window.fmmAtras = fmmAtras;
+window.fmmVolverPicker = fmmVolverPicker;
+window.fmmElegirPlantilla = fmmElegirPlantilla;
+window.fmmSetMarca = fmmSetMarca;
+window.fmmSetValor = fmmSetValor;
+window.fmmSetIcono = fmmSetIcono;
+window.fmmSetEstiloIcono = fmmSetEstiloIcono;
+window.fmmSetEncabezado = fmmSetEncabezado;
+window.fmmSetTextoBeneficio = fmmSetTextoBeneficio;
+window.fmmAgregarBeneficio = fmmAgregarBeneficio;
+window.fmmQuitarBeneficio = fmmQuitarBeneficio;
+window.fmmAplicarPreset = fmmAplicarPreset;
+window.fmmPresetPedirNombre = fmmPresetPedirNombre;
+window.fmmPresetCancelarNombre = fmmPresetCancelarNombre;
+window.fmmPresetConfirmarNombre = fmmPresetConfirmarNombre;
+window.fmmEliminarPreset = fmmEliminarPreset;
+window.fmmSetContenedor = fmmSetContenedor;
+window.fmmSetLayoutBen = fmmSetLayoutBen;
+window.fmmSetTenirPropio = fmmSetTenirPropio;
+window.fmmQuitarIconoPropio = fmmQuitarIconoPropio;
+window.fmmCargarIconoPropio = fmmCargarIconoPropio;
+window.fmmSetIntensidad = fmmSetIntensidad;
+window.fmmSetZoom = fmmSetZoom;
+window.fmmCentrarFoto = fmmCentrarFoto;
+window.fmmCargarFoto = fmmCargarFoto;
+window.fmmDescargar = fmmDescargar;
 
 // ══════════════════════════════════════════════════════════════
 // GENERADOR DE VIDEO — Fase 1 de 5 (motor base con timeline)
