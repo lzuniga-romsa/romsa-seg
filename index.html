@@ -26820,15 +26820,14 @@ function fmmIconoHome(){
 // fehDrawFeedA/fehDrawStoryA…), arriba a la izquierda sobre la foto, con
 // las proporciones de la referencia (≈27% del ancho, casa a la izquierda).
 // El texto junto al logo, si hay, va dentro del chip a la derecha de la
-// casa, en Inter pequeña color crema. En Historia baja a la línea de la
-// zona segura de Instagram.
+// casa, en Inter pequeña color crema. Misma altura en todos los formatos
+// (en Historia también arriba, como en las plantillas de HOME).
 function fmmGeomChipHome(W, H){
   const lateral = W >= H;
   const u = lateral ? H * 0.8 : W;          // ancho equivalente de un 4:5
-  const zona = (!lateral && H / W > 1.6) ? fmmZonaSeguraStory(W) : 0;
   return {
     x: lateral ? W * 0.045 : W * 0.07,
-    y: zona || Math.round(u * 0.055),
+    y: Math.round(u * 0.055),
     h: Math.round(u * 0.06),
     wMin: Math.round(u * 0.268),
   };
@@ -26873,13 +26872,13 @@ function fmmDrawPresentacionServicio(ctx, W, H, st){
   const k = st.intensidad == null ? 0.85 : st.intensidad;
   const lateral = W >= H;
   const chipHome = marca === "home" && st.encabezado === "franja";
-  // Historia: Instagram tapa ~250px arriba (progreso y perfil) y ~250px
-  // abajo (caja de respuesta). Logo sobre foto y bloque inferior se
-  // mantienen fuera de esas zonas.
+  // Historia: Instagram tapa ~250px abajo (caja de respuesta); el bloque
+  // inferior se mantiene fuera de esa zona. El logo sí va arriba, a la
+  // misma altura que en Feed (como en las plantillas de HOME).
   const zonaStory = (!lateral && H / W > 1.6) ? fmmZonaSeguraStory(W) : 0;
   const area = fmmAreaFoto(st, W, H);
   const M = lateral ? W*0.045 : W*0.07;
-  const yLogo = Math.max(M, zonaStory);
+  const yLogo = M;
   const margenInf = Math.max(M, zonaStory);
   const maxTextoW = lateral ? W*0.46 : W - 2*M;
 
@@ -26995,7 +26994,7 @@ function fmmDrawPresentacionServicio(ctx, W, H, st){
     // Viñeta superior solo cuando el logo va directo sobre la foto (el
     // chip de HOME ya trae su propio fondo navy).
     if(!chipHome){
-      const altoViñeta = zonaStory ? zonaStory + W*0.2 : H*0.16;
+      const altoViñeta = H*0.16;
       const gt = ctx.createLinearGradient(0, 0, 0, altoViñeta);
       gt.addColorStop(0, fmmRgba(pal.oscuro, k*0.55));
       gt.addColorStop(1, fmmRgba(pal.oscuro, 0));
