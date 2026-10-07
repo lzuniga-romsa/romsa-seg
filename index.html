@@ -4130,7 +4130,7 @@ body.in-plantrabajo #app{
     <div id="fmm-root">
       <div class="feh-topbar">
         <button class="feh-back" id="fmm-back-btn" onclick="fmmAtras()">← Atrás</button>
-        <div class="feh-title">Plantillas · Multimarca</div>
+        <div class="feh-title" id="fmm-titulo">Plantillas · Multimarca</div>
         <span style="width:60px;"></span>
       </div>
 
@@ -25008,6 +25008,70 @@ const HOME_TEMPLATES = [
     draw: fehDrawStoryC },
 ];
 
+// ── ADS · SERVICIO (Meta Ads) — 4 servicios × Feed / Historia ─────────
+// Formato "Servicio" de la sección Anuncios. No tiene dibujo ni editor
+// propios: usa el motor de la plantilla "Presentación de Servicio"
+// (Plantillas · Multimarca, funciones fmm*) en modo anuncio — mismo
+// degradado con intensidad, mismos íconos con estilos y contenedor, mismo
+// arrastre/zoom de la foto, mismos beneficios de 2 a 4 — más el sello
+// "Cotización sin costo" y el botón "Cotiza por WhatsApp" de los Hero.
+// Aquí solo vive el contenido de fábrica de cada servicio (todo editable).
+// Títulos y descripciones salen de los Hero de cada servicio, en 2 líneas
+// con la palabra clave en la línea 2 (la que va en itálica terracota).
+const FEH_ADS_SERVICIOS = [
+  { id:"colados", nombre:"Colados", foto:"Foto: colado terminado",
+    titulo1:"Colado de", titulo2:"banquetas",
+    descripcion:"Renovamos tus banquetas, patios y andadores con concreto de gran calidad.",
+    beneficios:[
+      { texto:"Personal profesional y capacitado", icono:"users-three" },
+      { texto:"Garantía por escrito", icono:"certificate" },
+      { texto:"Listo en pocos días", icono:"clock" },
+      { texto:"Concreto de excelente resistencia y calidad", icono:"shield-check" },
+    ] },
+  { id:"epoxico", nombre:"Epóxico", foto:"Foto: piso epóxico terminado",
+    titulo1:"Un piso que", titulo2:"brilla como nuevo",
+    descripcion:"Piso epóxico para cocheras, oficinas y locales comerciales en Mexicali, B.C.",
+    beneficios:[
+      { texto:"Acabado brillante y fácil de limpiar", icono:"sparkle" },
+      { texto:"Resiste aceite, manchas y humedad", icono:"drop" },
+      { texto:"Aplicación rápida, sin obra pesada", icono:"lightning" },
+      { texto:"Garantía por escrito", icono:"certificate" },
+    ] },
+  { id:"estampado", nombre:"Estampado", foto:"Foto: piso estampado terminado",
+    titulo1:"El patio que", titulo2:"siempre quisiste",
+    descripcion:"Piso estampado para patios, cocheras y andadores en Mexicali, B.C.",
+    beneficios:[
+      { texto:"Diseños y colores a tu gusto", icono:"paint-roller" },
+      { texto:"Concreto resistente al tráfico", icono:"shield-check" },
+      { texto:"Sellado contra agua y sol", icono:"sun" },
+      { texto:"Garantía por escrito", icono:"certificate" },
+    ] },
+  { id:"loseta", nombre:"Loseta", foto:"Foto: loseta instalada",
+    titulo1:"Loseta nueva,", titulo2:"lista para vivirse",
+    descripcion:"Instalación de loseta en cocinas, baños y exteriores en Mexicali, B.C.",
+    beneficios:[
+      { texto:"Instalación nivelada y precisa", icono:"ruler" },
+      { texto:"Cortes y juntas perfectas", icono:"squares-four" },
+      { texto:"Te asesoramos para elegir", icono:"chat-circle-dots" },
+      { texto:"Garantía por escrito", icono:"certificate" },
+    ] },
+];
+// Las 8 tarjetas se insertan después del último Antes/Después de cada
+// formato (Feed e Historia), sin tocar las existentes. editor:"fmm" hace
+// que fehElegirPlantilla abra el editor de Presentación de Servicio.
+[["", 1350, "Feed", "ads-loseta-antes-despues"], ["-story", 1920, "Historia", "ads-loseta-antes-despues-story"]].forEach(([suf, h, formato, despuesDe]) => {
+  const nuevas = FEH_ADS_SERVICIOS.map(sv => ({
+    id:"ads-"+sv.id+"-servicio"+suf, cat:"ads", w:1080, h, label:sv.nombre+" · Servicio ("+formato+")", hasPill:true,
+    photos:[{ key:"foto", label:sv.foto }], fields:[], servicio:sv.id, editor:"fmm", draw: fehDrawAdsServicio,
+  }));
+  HOME_TEMPLATES.splice(HOME_TEMPLATES.findIndex(t => t.id === despuesDe) + 1, 0, ...nuevas);
+});
+
+// Miniatura del picker: el mismo dibujo que el editor, con el contenido de fábrica.
+function fehDrawAdsServicio(ctx, W, H, st, t){
+  fmmDrawPresentacionServicio(ctx, W, H, fmmEstadoAnuncio(t));
+}
+
 let FEH = { tplId:null, photos:{}, values:{} };
 // Cuando no es null, el editor está preparando la publicación de una
 // fecha específica del calendario (ver bceCalGenerarPost): {iso, idx}
@@ -25031,6 +25095,11 @@ function fehAbrir(){
       _fehFontsReady = Promise.all([
         document.fonts.load('700 60px "Playfair Display"'),
         document.fonts.load('italic 700 60px "Playfair Display"'),
+        // Anuncios · Servicio (motor de Presentación de Servicio): titular
+        // en Playfair 500 / itálica 400 y descripción en Inter 300.
+        document.fonts.load('500 60px "Playfair Display"'),
+        document.fonts.load('italic 400 60px "Playfair Display"'),
+        document.fonts.load('300 30px "Inter"'),
         document.fonts.load('400 30px "Playfair Display"'),
         document.fonts.load('italic 400 30px "Playfair Display"'),
         document.fonts.load('400 20px "Inter"'),
@@ -25106,6 +25175,8 @@ function fehVolverPicker(){
 function fehElegirPlantilla(id){
   const t = HOME_TEMPLATES.find(x=>x.id===id);
   if(!t) return;
+  // Anuncios · Servicio: se editan con el editor de Presentación de Servicio.
+  if(t.editor === "fmm"){ fmmAbrirAnuncio(t.id); return; }
   _fehDraftCtx = null;
   FEH = { tplId:id, photos:{}, values:{}, photoOffsets:{}, showBadge:true, showAviso:false };
   t.fields.forEach(f=>{ FEH.values[f.key] = f.default; });
@@ -26868,10 +26939,11 @@ function fmmDibujarChipHome(ctx, W, H, texto, familia){
 // itálica 400 y tracking negativo; todo lo demás en Manrope (300 / 500 /
 // 600). El resto de las marcas conserva su tipografía de título (Inter,
 // Manrope, Norwester) y usa Inter para el texto, con las mismas medidas.
-function fmmTipografia(marca, pal){
+function fmmTipografia(marca, pal, anuncio){
   const home = marca === "home";
   return {
-    cuerpo: home ? '"Manrope", sans-serif' : '"Inter", sans-serif',
+    // Anuncios (Meta Ads de HOME): Inter para el cuerpo, como los Hero.
+    cuerpo: home && !anuncio ? '"Manrope", sans-serif' : '"Inter", sans-serif',
     familiaTitulo: pal.familiaTitulo,
     peso1: home ? 500 : pal.pesoTitulo,
     peso2: home ? 400 : pal.pesoTitulo,
@@ -26897,7 +26969,11 @@ function fmmOscurecer(hex, f){
 function fmmDrawPresentacionServicio(ctx, W, H, st){
   const marca = st.marca || "home";
   const pal = fmmPaleta(marca);
-  const tipo = fmmTipografia(marca, pal);
+  // Modo anuncio (Anuncios · Servicio de HOME): sello "Cotización sin
+  // costo", botón "Cotiza por WhatsApp", beneficios en 2 columnas y zonas
+  // seguras de Historia arriba y abajo.
+  const ad = st.anuncio || null;
+  const tipo = fmmTipografia(marca, pal, ad);
   const v = st.values || {};
   const k = st.intensidad == null ? 0.85 : st.intensidad;
   const lateral = W >= H;
@@ -26910,6 +26986,9 @@ function fmmDrawPresentacionServicio(ctx, W, H, st){
   const zonaStory = (!lateral && H / W > 1.6) ? fmmZonaSeguraStory(W) : 0;
   const area = fmmAreaFoto(st, W, H);
   const M = lateral ? W*0.045 : px(88);
+  // El logo (y en anuncios, el sello) va arriba a la misma altura en todos
+  // los formatos, Historia incluida. Abajo, en Historia, el bloque de texto
+  // y el botón del anuncio respetan los 250px que tapa Instagram.
   const yLogo = px(80);
   const margenInf = Math.max(M, zonaStory);
   const maxTextoW = lateral ? W*0.46 : W - 2*M;
@@ -26935,17 +27014,20 @@ function fmmDrawPresentacionServicio(ctx, W, H, st){
   const izq = (st.layoutBen || "izquierda") !== "arriba";
   const beneficios = (st.beneficios || []).slice(0, FMM_MAX_BENEFICIOS);
   const n = beneficios.length;
-  const cols = lateral ? Math.max(1, n) : (n === 4 ? 2 : Math.max(1, n));
+  const cols = lateral ? Math.max(1, n) : (ad ? Math.min(2, Math.max(1, n)) : (n === 4 ? 2 : Math.max(1, n)));
   const filas = n ? Math.ceil(n / cols) : 0;
   const anchoBen = lateral ? W * ({ 2:0.42, 3:0.55, 4:0.66 }[n] || 0.55) : W - 2*M;
   const gapCol = px(32);
   const colW = (anchoBen - gapCol * (cols - 1)) / cols;
-  const tamIcono = px(36) * ((st.contenedor || "ninguno") === "ninguno" ? 1 : 1.5);
+  // Anuncios: beneficios 1.25× más grandes, para que se lean en el teléfono
+  // junto al botón; Presentación de Servicio conserva las medidas del diseño.
+  const escalaBen = ad ? 1.25 : 1;
+  const tamIcono = px(36) * escalaBen * ((st.contenedor || "ninguno") === "ninguno" ? 1 : 1.5);
   const gapIcono = px(20);
   const maxEtiqueta = izq ? colW - tamIcono - gapIcono : colW;
   // Un solo tamaño de etiqueta para todos, reducido si alguna palabra
   // suelta no cabe en su columna (p. ej. "personalizado").
-  let tamEtiqueta = Math.round(px(19));
+  let tamEtiqueta = Math.round(px(19) * escalaBen);
   const tamMinEtiqueta = Math.round(tamEtiqueta * 0.85);
   const fuenteEt = t => '500 '+t+'px '+tipo.cuerpo;
   const palabraMasAncha = () => Math.max(0, ...beneficios.map(b => b.texto || "").join(" ").split(/\s+/).filter(Boolean).map(p => ctx.measureText(p).width));
@@ -26958,7 +27040,11 @@ function fmmDrawPresentacionServicio(ctx, W, H, st){
   const altoFila = izq ? Math.max(tamIcono, lhEt*2) : tamIcono + px(14) + lhEt*2;
   const gapFila = px(28);
   const altoBen = filas ? filas*altoFila + (filas - 1)*gapFila : 0;
-  const benTop = H - margenInf - altoBen;
+  // Anuncio: el botón CTA (92px, el mismo de los Hero) va al pie y el
+  // bloque de beneficios queda 48px arriba de él.
+  const conCta = !!(ad && ad.mostrarCta !== false);
+  const altoCta = conCta ? 92 + px(48) : 0;
+  const benTop = H - margenInf - altoCta - altoBen;
   const lineaBenY = benTop - px(36);   // línea fina sobre los beneficios
 
   // Subtítulo (la descripción): guion de acento 48×2 + texto Manrope 300 32px
@@ -27037,6 +27123,15 @@ function fmmDrawPresentacionServicio(ctx, W, H, st){
     ctx.fillRect(0, 0, W, H);
   }
 
+  // Sello "Cotización sin costo" (anuncios): la misma pastilla terracota de
+  // los Hero (fehDrawPill), arriba a la derecha y centrada con el logo.
+  const SELLO_TXT = "Cotización sin costo", SELLO_FONT = '700 22px "Inter"';
+  let anchoSello = 0;
+  if(ad && ad.mostrarSello !== false){
+    ctx.font = SELLO_FONT;
+    anchoSello = ctx.measureText(SELLO_TXT).width + 44;
+  }
+
   // 3. Encabezado: chip de marca (HOME, "Franja de marca") o logo (92px) +
   // divisor 1×48 de acento + texto corto en mayúsculas espaciadas (.24em).
   if(chipHome){
@@ -27053,7 +27148,7 @@ function fmmDrawPresentacionServicio(ctx, W, H, st){
       ctx.fillRect(divX, cy - px(24), Math.max(1, px(1)), px(48));
       ctx.font = '600 '+tamTxt+'px '+tipo.cuerpo;
       const x = divX + px(28);
-      const maxW = (lateral ? W*0.55 : W - M) - x;
+      const maxW = (lateral ? W*0.55 : W - M - anchoSello - (anchoSello ? px(24) : 0)) - x;
       let linea = txt;
       while(linea.length > 1 && fehTrackedWidth(ctx, linea, track) > maxW) linea = linea.slice(0, -1);
       if(linea !== txt) linea = linea.trimEnd().slice(0, -1) + "…";
@@ -27067,6 +27162,10 @@ function fmmDrawPresentacionServicio(ctx, W, H, st){
     // URI puede no haber terminado de decodificar en el primer dibujado.
     logo._fmmEscuchando = true;
     logo.addEventListener("load", () => { if(FMM) fmmRenderPreview(); }, { once:true });
+  }
+  if(anchoSello){
+    const centroLogo = yLogo + (logoListo ? logoH : px(92)) / 2;
+    fehDrawPill(ctx, SELLO_TXT, W - M, centroLogo - (22 + 24) / 2, { align:"right", bg:HOME_BRAND.terracota, color:HOME_BRAND.navy, font:SELLO_FONT, fontSize:22 });
   }
 
   // 4. Beneficios: línea fina arriba (claro al 20%) y columnas sin separadores
@@ -27092,6 +27191,9 @@ function fmmDrawPresentacionServicio(ctx, W, H, st){
     }
   });
 
+  // Botón CTA del anuncio (el mismo de los Hero: fehDrawCTAButton), al pie.
+  if(conCta) fehDrawCTAButton(ctx, M, H - margenInf, (ad.cta || "").trim() || "Cotiza por WhatsApp");
+
   // 5. Titular (2 líneas: claro / acento)
   ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
   ponerTit(1, tam);
@@ -27115,6 +27217,16 @@ function fmmDrawPresentacionServicio(ctx, W, H, st){
 }
 
 function fmmAbrir(){
+  if(_fmmModoAnuncio) fmmSalirModoAnuncio();
+  fmmInicializar();
+  document.getElementById("fmm-root").style.display = "flex";
+  fmmVolverPicker();
+  fmmCargarPresetsPropios();
+}
+
+// Fuentes, miniaturas del picker y gesto del lienzo: una sola vez, lo
+// mismo si se entra por "🧩 Plantillas" o por una tarjeta de Anuncios.
+function fmmInicializar(){
   if(!_fmmInited){
     _fmmInited = true;
     _fmmFontsReady = (document.fonts && document.fonts.load) ? Promise.all([
@@ -27136,13 +27248,80 @@ function fmmAbrir(){
     fmmRenderPicker();
     fmmInicializarGesto();
   }
-  document.getElementById("fmm-root").style.display = "flex";
-  fmmVolverPicker();
-  fmmCargarPresetsPropios();
 }
 
 function fmmAtras(){
+  if(_fmmModoAnuncio){ fmmCerrarAnuncio(); return; }
   document.getElementById("fmm-root").style.display = "none";
+}
+
+// ── Modo anuncio: Anuncios · Servicio (sección Anuncios de HOME) ──
+// Las 8 tarjetas viven en HOME_TEMPLATES (editor:"fmm"); al abrirlas se usa
+// este mismo editor sobre su propio estado. El trabajo que hubiera en
+// Plantillas · Multimarca se guarda aparte y se restaura al volver.
+let _fmmModoAnuncio = false;
+let _fmmEstadoMultimarca = null;
+
+// Plantilla por id: las de Plantillas · Multimarca o las de Anuncios · Servicio.
+function fmmPlantilla(id){
+  return FMM_TEMPLATES.find(x => x.id === id)
+    || HOME_TEMPLATES.find(x => x.id === id && x.editor === "fmm")
+    || null;
+}
+
+// Estado inicial de un anuncio: marca HOME, logo sobre foto con "Todo para
+// pisos", contenido de fábrica del servicio, íconos en círculo, sello y
+// botón visibles. Todo editable después.
+function fmmEstadoAnuncio(t){
+  const sv = FEH_ADS_SERVICIOS.find(x => x.id === (t && t.servicio)) || FEH_ADS_SERVICIOS[0];
+  const st = fmmEstadoInicial();
+  st.tplId = t ? t.id : null;
+  st.marca = "home";
+  st.encabezado = "logo";
+  st.contenedor = "circulo";
+  st.values = Object.assign({}, st.values, {
+    textoLogo: fmmTextoLogoDefault("home"),
+    titulo1: sv.titulo1, titulo2: sv.titulo2, descripcion: sv.descripcion,
+  });
+  st.beneficios = sv.beneficios.map(b => ({ texto:b.texto, icono:b.icono, propio:null }));
+  st.anuncio = { servicio: sv.id, cta: "Cotiza por WhatsApp", mostrarCta: true, mostrarSello: true };
+  return st;
+}
+
+function fmmAbrirAnuncio(id){
+  const t = fmmPlantilla(id);
+  if(!t || !t.editor) return;
+  fmmInicializar();
+  if(!_fmmModoAnuncio) _fmmEstadoMultimarca = FMM;
+  _fmmModoAnuncio = true;
+  FMM = fmmEstadoAnuncio(t);
+  document.getElementById("fmm-titulo").textContent = "Anuncios · " + t.label;
+  document.getElementById("fmm-root").style.display = "flex";
+  document.getElementById("fmm-step-picker").classList.remove("active");
+  document.getElementById("fmm-step-editor").classList.add("active");
+  document.getElementById("fmm-back-btn").onclick = fmmCerrarAnuncio;
+  fmmRenderForm();
+  (_fmmFontsReady || Promise.resolve()).then(fmmRenderPreview);
+}
+
+function fmmSalirModoAnuncio(){
+  _fmmModoAnuncio = false;
+  FMM = _fmmEstadoMultimarca;
+  _fmmEstadoMultimarca = null;
+  document.getElementById("fmm-titulo").textContent = "Plantillas · Multimarca";
+}
+
+// Volver a la sección Anuncios (el picker de HOME sigue abierto debajo).
+function fmmCerrarAnuncio(){
+  fmmSalirModoAnuncio();
+  document.getElementById("fmm-root").style.display = "none";
+  fmmVolverPicker();
+}
+
+function fmmSetAnuncio(clave, valor){
+  if(!FMM || !FMM.anuncio) return;
+  FMM.anuncio[clave] = valor;
+  fmmRenderPreview();
 }
 
 function fmmEstadoInicial(){
@@ -27332,13 +27511,17 @@ function fmmAplicarVarsMarca(){
 }
 
 function fmmRenderForm(){
+  // Anuncios · Servicio: la marca (HOME) y el encabezado (logo sobre foto)
+  // son fijos, sin presets; a cambio trae el sello y el botón del anuncio.
+  const ad = FMM.anuncio || null;
   document.getElementById("fmm-form").innerHTML =
+    (ad ? '' :
     '<div class="feh-ctrl-group"><label class="feh-ctrl-label">Marca</label>'
       +fmmPills("marca", FMM_MARCAS.map(m => ({ id:m.id, etiqueta:m.etiqueta })), FMM.marca, "fmmSetMarca")
     +'</div>'
     +'<div class="feh-ctrl-group" id="fmm-encabezado-grupo"><label class="feh-ctrl-label">Encabezado</label>'
       +fmmPills("encabezado", FMM_ENCABEZADOS, FMM.encabezado, "fmmSetEncabezado")
-    +'</div>'
+    +'</div>')
     +'<div class="feh-ctrl-group"><label class="feh-ctrl-label">Foto protagonista</label>'
       +'<div class="feh-photoslot'+(FMM.foto?" feh-filled":"")+'" id="fmm-slot" onclick="document.getElementById(\'fmm-file\').click()">'+(FMM.foto?"✓ Foto cargada — toca para cambiar":"📷 Toca para subir")+'</div>'
       +'<input type="file" accept="image/*" id="fmm-file" style="display:none;" onchange="fmmCargarFoto(event)">'
@@ -27353,7 +27536,14 @@ function fmmRenderForm(){
       +'<input type="range" class="feh-range" id="fmm-intensidad" min="0" max="100" value="'+Math.round(FMM.intensidad*100)+'" oninput="fmmSetIntensidad(this.value/100)">'
     +'</div>'
     +fmmCampo("textoLogo", "Texto junto al logo (opcional)")
-    +'<div class="feh-ctrl-group"><label class="feh-ctrl-label">Servicio</label><div id="fmm-presets">'+fmmHtmlPresets()+'</div></div>'
+    +(ad
+      ? '<div class="feh-ctrl-group"><label class="feh-ctrl-label">Sello y botón del anuncio</label>'
+          +'<label class="feh-check-row"><input type="checkbox" data-fmm-sello'+(ad.mostrarSello !== false ? " checked" : "")+' onchange="fmmSetAnuncio(\'mostrarSello\',this.checked)"> Mostrar sello "Cotización sin costo"</label>'
+          +'<label class="feh-check-row"><input type="checkbox" data-fmm-cta-mostrar'+(ad.mostrarCta !== false ? " checked" : "")+' onchange="fmmSetAnuncio(\'mostrarCta\',this.checked)"> Mostrar botón</label>'
+          +'<label class="feh-ctrl-label" style="margin-top:8px;">Texto del botón</label>'
+          +'<input type="text" class="feh-input" data-fmm-cta maxlength="40" value="'+escapeHtml(ad.cta || "")+'" oninput="fmmSetAnuncio(\'cta\',this.value)">'
+        +'</div>'
+      : '<div class="feh-ctrl-group"><label class="feh-ctrl-label">Servicio</label><div id="fmm-presets">'+fmmHtmlPresets()+'</div></div>')
     +fmmCampo("titulo1", "Título — línea 1")
     +fmmCampo("titulo2", "Título — línea 2 (color de acento)")
     +fmmCampo("descripcion", "Descripción (2 a 3 líneas)", true)
@@ -27368,7 +27558,9 @@ function fmmRenderForm(){
     +'</div>'
     +'<div class="feh-ctrl-group"><label class="feh-ctrl-label">Beneficios (2 a 4)</label><div id="fmm-beneficios"></div></div>'
     +'<div class="feh-actions">'
-      +'<button class="feh-btn feh-btn-ghost" onclick="fmmVolverPicker()">‹ Otro formato</button>'
+      +(ad
+        ? '<button class="feh-btn feh-btn-ghost" onclick="fmmCerrarAnuncio()">‹ Volver a Anuncios</button>'
+        : '<button class="feh-btn feh-btn-ghost" onclick="fmmVolverPicker()">‹ Otro formato</button>')
       +'<button class="feh-btn feh-btn-primary" id="fmm-download-btn" onclick="fmmDescargar()"'+(FMM.foto?"":" disabled title=\"Sube la foto primero\"")+'>⬇ Descargar PNG</button>'
     +'</div>';
   fmmRenderBeneficios();
@@ -27656,7 +27848,7 @@ function fmmCargarFoto(e){
 
 function fmmRenderPreview(){
   if(!FMM) return;
-  const t = FMM_TEMPLATES.find(x => x.id === FMM.tplId);
+  const t = fmmPlantilla(FMM.tplId);
   if(!t) return;
   const canvas = document.getElementById("fmm-canvas");
   if(canvas.width !== t.w) canvas.width = t.w;
@@ -27721,7 +27913,7 @@ function fmmInicializarGesto(){
 
 const FMM_EXPORT_SCALE = 2;
 async function fmmDescargar(){
-  const t = FMM && FMM_TEMPLATES.find(x => x.id === FMM.tplId);
+  const t = FMM && fmmPlantilla(FMM.tplId);
   if(!t) return;
   if(!FMM.foto){ showToast("⚠️ Sube la foto primero"); return; }
   if(_fmmFontsReady) await _fmmFontsReady;
@@ -27748,6 +27940,9 @@ async function fmmDescargar(){
 }
 
 window.fmmAbrir = fmmAbrir;
+window.fmmAbrirAnuncio = fmmAbrirAnuncio;
+window.fmmCerrarAnuncio = fmmCerrarAnuncio;
+window.fmmSetAnuncio = fmmSetAnuncio;
 window.fmmAtras = fmmAtras;
 window.fmmVolverPicker = fmmVolverPicker;
 window.fmmElegirPlantilla = fmmElegirPlantilla;
