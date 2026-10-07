@@ -26991,7 +26991,11 @@ function fmmDrawPresentacionServicio(ctx, W, H, st){
   // y el botón del anuncio respetan los 250px que tapa Instagram.
   const yLogo = px(80);
   const margenInf = Math.max(M, zonaStory);
-  const maxTextoW = lateral ? W*0.46 : W - 2*M;
+  // Degradado "Desde la izquierda" en Feed/Historia: el lado derecho de la
+  // foto queda limpio y todo el texto va en una columna a la izquierda
+  // (~62% del ancho), con los beneficios uno debajo de otro.
+  const gradIzq = !lateral && st.degradado === "izquierda";
+  const maxTextoW = lateral ? W*0.46 : (gradIzq ? W*0.62 : W - 2*M);
   const conTracking = "letterSpacing" in ctx;
 
   // ── Medidas (antes de pintar: el degradado se acomoda a dónde empieza
@@ -27014,9 +27018,9 @@ function fmmDrawPresentacionServicio(ctx, W, H, st){
   const izq = (st.layoutBen || "izquierda") !== "arriba";
   const beneficios = (st.beneficios || []).slice(0, FMM_MAX_BENEFICIOS);
   const n = beneficios.length;
-  const cols = lateral ? Math.max(1, n) : (ad ? Math.min(2, Math.max(1, n)) : (n === 4 ? 2 : Math.max(1, n)));
+  const cols = lateral ? Math.max(1, n) : gradIzq ? 1 : (ad ? Math.min(2, Math.max(1, n)) : (n === 4 ? 2 : Math.max(1, n)));
   const filas = n ? Math.ceil(n / cols) : 0;
-  const anchoBen = lateral ? W * ({ 2:0.42, 3:0.55, 4:0.66 }[n] || 0.55) : W - 2*M;
+  const anchoBen = lateral ? W * ({ 2:0.42, 3:0.55, 4:0.66 }[n] || 0.55) : gradIzq ? maxTextoW : W - 2*M;
   const gapCol = px(32);
   const colW = (anchoBen - gapCol * (cols - 1)) / cols;
   // Anuncios: beneficios 1.25× más grandes, para que se lean en el teléfono
@@ -27103,6 +27107,22 @@ function fmmDrawPresentacionServicio(ctx, W, H, st){
     gb.addColorStop(1, fmmRgba(pal.oscuro, 0));
     ctx.fillStyle = gb;
     ctx.fillRect(0, H*0.6, W, H*0.4);
+  } else if(gradIzq){
+    // Desde la izquierda: sólido en el borde, todavía ~60% al final de la
+    // columna de texto y transparente en el borde derecho; más una viñeta
+    // ligera arriba para el logo (como el perfil desde abajo).
+    const g = ctx.createLinearGradient(0, 0, W, 0);
+    g.addColorStop(0, fmmRgba(pal.oscuro, alfa(1)));
+    g.addColorStop(0.45, fmmRgba(pal.oscuro, alfa(0.92)));
+    g.addColorStop(0.75, fmmRgba(pal.oscuro, alfa(0.55)));
+    g.addColorStop(1, fmmRgba(pal.oscuro, 0));
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, H);
+    const gt = ctx.createLinearGradient(0, 0, 0, H * 0.18);
+    gt.addColorStop(0, fmmRgba(pal.oscuro, alfa(0.35)));
+    gt.addColorStop(1, fmmRgba(pal.oscuro, 0));
+    ctx.fillStyle = gt;
+    ctx.fillRect(0, 0, W, H * 0.18);
   } else {
     // Perfil del diseño en 4:5 (titular en ~58% del alto): 35% arriba →
     // limpio de 18% a 36% → 75% en 56% → sólido desde 68%. Si el bloque de
@@ -27337,6 +27357,7 @@ function fmmEstadoInicial(){
     contenedor: "ninguno",
     layoutBen: "izquierda",
     encabezado: "logo",
+    degradado: "abajo",
     presetId: "",
   };
 }
@@ -27532,6 +27553,11 @@ function fmmRenderForm(){
         +'<button type="button" class="feh-btn feh-btn-ghost" style="margin-top:6px;" onclick="fmmCentrarFoto()">Centrar foto</button>'
       +'</div>'
     +'</div>'
+    +(fmmEsVertical()
+      ? '<div class="feh-ctrl-group"><label class="feh-ctrl-label">Dirección del degradado</label>'
+          +fmmPills("degradado", FMM_DIRECCIONES_DEGRADADO, FMM.degradado || "abajo", "fmmSetDegradado")
+        +'</div>'
+      : '')
     +'<div class="feh-ctrl-group"><label class="feh-ctrl-label">Intensidad del degradado</label>'
       +'<input type="range" class="feh-range" id="fmm-intensidad" min="0" max="100" value="'+Math.round(FMM.intensidad*100)+'" oninput="fmmSetIntensidad(this.value/100)">'
     +'</div>'
@@ -27580,6 +27606,20 @@ function fmmSetMarca(marca){
   }
   fmmActivarPill("marca", marca);
   fmmAplicarVarsMarca();
+  fmmRenderPreview();
+}
+const FMM_DIRECCIONES_DEGRADADO = [
+  { id:"abajo",     etiqueta:"Desde abajo" },
+  { id:"izquierda", etiqueta:"Desde la izquierda" },
+];
+// El selector de dirección solo aplica a Feed e Historia (16:9 ya es lateral).
+function fmmEsVertical(){
+  const t = FMM && fmmPlantilla(FMM.tplId);
+  return !!(t && t.h > t.w);
+}
+function fmmSetDegradado(dir){
+  FMM.degradado = dir === "izquierda" ? "izquierda" : "abajo";
+  fmmActivarPill("degradado", FMM.degradado);
   fmmRenderPreview();
 }
 function fmmSetEncabezado(enc){
@@ -27951,6 +27991,7 @@ window.fmmSetValor = fmmSetValor;
 window.fmmSetIcono = fmmSetIcono;
 window.fmmSetEstiloIcono = fmmSetEstiloIcono;
 window.fmmSetEncabezado = fmmSetEncabezado;
+window.fmmSetDegradado = fmmSetDegradado;
 window.fmmSetTextoBeneficio = fmmSetTextoBeneficio;
 window.fmmAgregarBeneficio = fmmAgregarBeneficio;
 window.fmmQuitarBeneficio = fmmQuitarBeneficio;
