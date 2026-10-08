@@ -25067,6 +25067,16 @@ const FEH_ADS_SERVICIOS = [
   HOME_TEMPLATES.splice(HOME_TEMPLATES.findIndex(t => t.id === despuesDe) + 1, 0, ...nuevas);
 });
 
+// Antes / Después · Servicio: 1 tarjeta de Feed y 1 de Historia, después
+// de las de Servicio. Mismo motor, con dos fotos (ANTES y DESPUÉS).
+[[1350, "Feed", "ads-loseta-servicio", ""], [1920, "Historia", "ads-loseta-servicio-story", "-story"]].forEach(([h, formato, despuesDe, suf]) => {
+  HOME_TEMPLATES.splice(HOME_TEMPLATES.findIndex(t => t.id === despuesDe) + 1, 0, {
+    id:"ads-antes-despues-servicio"+suf, cat:"ads", w:1080, h, label:"Antes / Después · Servicio ("+formato+")", hasPill:true,
+    photos:[{ key:"antes", label:"Foto ANTES" }, { key:"despues", label:"Foto DESPUÉS" }], fields:[],
+    servicio:"colados", modo:"antesDespues", editor:"fmm", draw: fehDrawAdsServicio,
+  });
+});
+
 // Miniatura del picker: el mismo dibujo que el editor, con el contenido de fábrica.
 function fehDrawAdsServicio(ctx, W, H, st, t){
   fmmDrawPresentacionServicio(ctx, W, H, fmmEstadoAnuncio(t));
@@ -26868,6 +26878,12 @@ function fmmDibujarIconoBeneficio(ctx, st, bf, cx, cy, s, color){
 // Zona que la interfaz de Instagram tapa arriba y abajo en Historias
 // (250px de 1920 en cada extremo, a 1080 de ancho).
 function fmmZonaSeguraStory(W){ return Math.round(W * 250 / 1080); }
+// Alto (a 1080 de ancho) de la franja opcional para stickers en Historia.
+const FMM_ALTO_ZONA_STICKER = 300;
+function fmmEsHistoria(){
+  const t = FMM && fmmPlantilla(FMM.tplId);
+  return !!t && t.h / t.w > 1.6;
+}
 
 // Área donde se dibuja la foto protagonista: siempre a sangre completa
 // (la "franja de marca" de HOME es un chip encima de la foto).
@@ -26934,6 +26950,25 @@ function fmmDibujarChipHome(ctx, W, H, texto, familia){
   return { x: g.x, y: g.y, w, h: g.h };
 }
 
+// Antes / Después: reparte la zona de fotos en 2 celdas (fotos verticales
+// lado a lado, horizontales una sobre otra, separadas como en Feed A) y
+// dibuja cada foto con fehDrawPhoto — el mismo recorte "cover" con
+// sobreescala de 1.2× de las plantillas de HOME, para que los dos
+// deslizadores de reencuadre siempre muevan la foto.
+function fmmDibujarFotosAntesDespues(ctx, adAD, zona, gap){
+  const lado = adAD.orientacion === "horizontal";
+  const a = lado
+    ? { x: zona.x, y: zona.y, w: zona.w, h: (zona.h - gap) / 2 }
+    : { x: zona.x, y: zona.y, w: (zona.w - gap) / 2, h: zona.h };
+  const d = lado
+    ? { x: zona.x, y: zona.y + a.h + gap, w: zona.w, h: a.h }
+    : { x: zona.x + a.w + gap, y: zona.y, w: a.w, h: zona.h };
+  const fotos = adAD.fotos || {}, off = adAD.offsets || {};
+  fehDrawPhoto(ctx, fotos.antes || null, a.x, a.y, a.w, a.h, "foto ANTES", off.antes);
+  fehDrawPhoto(ctx, fotos.despues || null, d.x, d.y, d.w, d.h, "foto DESPUÉS", off.despues);
+  return { antes: a, despues: d };
+}
+
 // Tipografía de la plantilla (refinamiento de Claude Design, "Post Pisos
 // epóxicos"). HOME: titular en Playfair Display 500 con la 2ª línea en
 // itálica 400 y tracking negativo; todo lo demás en Manrope (300 / 500 /
@@ -26966,13 +27001,17 @@ function fmmOscurecer(hex, f){
 // 2 líneas. En horizontal el degradado va desde la izquierda; en vertical,
 // desde abajo, con el perfil del diseño (viñeta ligera arriba, foto limpia
 // al centro y color sólido bajo el titular).
-function fmmDrawPresentacionServicio(ctx, W, H, st){
+function fmmDrawPresentacionServicio(ctx, W, H, st, opciones){
   const marca = st.marca || "home";
   const pal = fmmPaleta(marca);
   // Modo anuncio (Anuncios · Servicio de HOME): sello "Cotización sin
   // costo", botón "Cotiza por WhatsApp", beneficios en 2 columnas y zonas
   // seguras de Historia arriba y abajo.
   const ad = st.anuncio || null;
+  // Antes / Después: dos fotos en lugar de una; el texto va en un panel
+  // navy abajo o a la izquierda y las fotos ocupan el resto, para que el
+  // degradado solo funda su borde y nunca las tape.
+  const adAD = st.antesDespues || null;
   const tipo = fmmTipografia(marca, pal, ad);
   const v = st.values || {};
   const k = st.intensidad == null ? 0.85 : st.intensidad;
@@ -26990,12 +27029,18 @@ function fmmDrawPresentacionServicio(ctx, W, H, st){
   // los formatos, Historia incluida. Abajo, en Historia, el bloque de texto
   // y el botón del anuncio respetan los 250px que tapa Instagram.
   const yLogo = px(80);
-  const margenInf = Math.max(M, zonaStory);
+  // Historia: espacio opcional para stickers de Instagram (encuesta, enlace,
+  // mención…), una franja libre justo encima de los 250px de abajo. El
+  // contenido sube para dejarla vacía.
+  const altoSticker = zonaStory && st.zonaSticker ? px(FMM_ALTO_ZONA_STICKER) : 0;
+  const margenInf = Math.max(M, zonaStory) + altoSticker;
   // Degradado "Desde la izquierda" en Feed/Historia: el lado derecho de la
   // foto queda limpio y todo el texto va en una columna a la izquierda
   // (~62% del ancho), con los beneficios uno debajo de otro.
   const gradIzq = !lateral && st.degradado === "izquierda";
-  const maxTextoW = lateral ? W*0.46 : (gradIzq ? W*0.62 : W - 2*M);
+  // Antes/Después a la izquierda: panel navy de 48% del ancho para el texto.
+  const panelIzqW = adAD && gradIzq ? Math.round(W * 0.48) : 0;
+  const maxTextoW = lateral ? W*0.46 : (panelIzqW ? panelIzqW - M - px(32) : gradIzq ? W*0.62 : W - 2*M);
   const conTracking = "letterSpacing" in ctx;
 
   // ── Medidas (antes de pintar: el degradado se acomoda a dónde empieza
@@ -27016,7 +27061,8 @@ function fmmDrawPresentacionServicio(ctx, W, H, st){
   // derecha; "arriba" apila ícono y etiqueta. En horizontal van todos en
   // una fila; en vertical, 4 se acomodan en 2×2.
   const izq = (st.layoutBen || "izquierda") !== "arriba";
-  const beneficios = (st.beneficios || []).slice(0, FMM_MAX_BENEFICIOS);
+  // En Antes/Después los beneficios (y la descripción) son opcionales.
+  const beneficios = (adAD && !adAD.mostrarBen) ? [] : (st.beneficios || []).slice(0, FMM_MAX_BENEFICIOS);
   const n = beneficios.length;
   const cols = lateral ? Math.max(1, n) : gradIzq ? 1 : (ad ? Math.min(2, Math.max(1, n)) : (n === 4 ? 2 : Math.max(1, n)));
   const filas = n ? Math.ceil(n / cols) : 0;
@@ -27047,18 +27093,21 @@ function fmmDrawPresentacionServicio(ctx, W, H, st){
   // Anuncio: el botón CTA (92px, el mismo de los Hero) va al pie y el
   // bloque de beneficios queda 48px arriba de él.
   const conCta = !!(ad && ad.mostrarCta !== false);
-  const altoCta = conCta ? 92 + px(48) : 0;
+  // Antes/Después: espaciados más compactos entre bloques, para dejarle
+  // el mayor espacio posible a las dos fotos.
+  const sep = n => px(adAD ? Math.round(n * 0.6) : n);
+  const altoCta = conCta ? 92 + sep(48) : 0;
   const benTop = H - margenInf - altoCta - altoBen;
-  const lineaBenY = benTop - px(36);   // línea fina sobre los beneficios
+  const lineaBenY = benTop - sep(36);   // línea fina sobre los beneficios
 
   // Subtítulo (la descripción): guion de acento 48×2 + texto Manrope 300 32px
   const tamDesc = Math.round(px(32));
   const guionW = px(48), guionGap = px(20);
   ctx.font = '300 '+tamDesc+'px '+tipo.cuerpo;
-  const lineasDesc = fmmEnvolver(ctx, v.descripcion || "", maxTextoW - guionW - guionGap, 3);
+  const lineasDesc = fmmEnvolver(ctx, (adAD && !adAD.mostrarDesc) ? "" : (v.descripcion || ""), maxTextoW - guionW - guionGap, panelIzqW ? 5 : 3);
   const lhDesc = tamDesc * 1.3;
   const altoDesc = lineasDesc.length * lhDesc;
-  const descTop = (n ? lineaBenY - px(72) : H - margenInf) - altoDesc;
+  const descTop = (n ? lineaBenY - sep(72) : H - margenInf - altoCta) - altoDesc;
 
   // Titular: 128px, interlineado .96, tracking negativo; se reduce para caber.
   // TAURINA: en mayúsculas, igual que su módulo (Norwester es de titulares).
@@ -27071,17 +27120,101 @@ function fmmDrawPresentacionServicio(ctx, W, H, st){
     if(conTracking) ctx.letterSpacing = ((linea === 1 ? tipo.tracking1 : tipo.tracking2) * t) + "px";
   };
   const tamMax = Math.round(px(128));
-  let tam = tamMax;
   const ancho = (txt, linea, t) => { ponerTit(linea, t); return ctx.measureText(txt).width; };
-  while(tam > Math.round(tamMax * 0.5) && (ancho(t1, 1, tam) > maxTextoW || ancho(t2, 2, tam) > maxTextoW)) tam -= 2;
+  // Tamaño y renglones del título partiendo de un tamaño máximo. Normalmente
+  // 1 renglón por línea; en la columna angosta de Antes/Después a la
+  // izquierda cada línea puede partirse en 2 para no achicar tanto la letra.
+  const ajustarTitulo = tMax => {
+    let t = tMax, r1 = [t1], r2 = [t2];
+    if(panelIzqW){
+      // 1 renglón si cabe; si no, el corte en 2 renglones de ancho más parejo.
+      // Primero se evita dejar sola una palabra corta ("De" / "a"): se
+      // prefiere achicar un poco la letra; sólo si no hay otra, se permite.
+      const corta = r => !/\s/.test(r) && r.length <= 3;
+      const partir = (txt, linea, sz, sinHuerfanas) => {
+        ponerTit(linea, sz);
+        if(ctx.measureText(txt).width <= maxTextoW) return [txt];
+        const pal = txt.split(/\s+/).filter(Boolean);
+        let mejor = null, peor = Infinity;
+        for(let k = 1; k < pal.length; k++){
+          const a = pal.slice(0, k).join(" "), b = pal.slice(k).join(" ");
+          if(sinHuerfanas && (corta(a) || corta(b))) continue;
+          const m = Math.max(ctx.measureText(a).width, ctx.measureText(b).width);
+          if(m <= maxTextoW && m < peor){ peor = m; mejor = [a, b]; }
+        }
+        return mejor;
+      };
+      const piso = Math.round(tamMax * 0.4);
+      let hallado = false;
+      for(const sinHuerfanas of [true, false]){
+        for(t = tMax; t > piso; t -= 2){
+          const a1 = partir(t1, 1, t, sinHuerfanas), a2 = partir(t2, 2, t, sinHuerfanas);
+          if(a1 && a2){ r1 = a1; r2 = a2; hallado = true; break; }
+        }
+        if(hallado) break;
+      }
+    } else {
+      while(t > Math.round(tamMax * (adAD ? 0.4 : 0.5)) && (ancho(t1, 1, t) > maxTextoW || ancho(t2, 2, t) > maxTextoW)) t -= 2;
+    }
+    return { t, r1, r2 };
+  };
+  let fit = ajustarTitulo(tamMax);
+  const yTextoDe = ft => descTop - sep(44) - ft.t * 0.96 * (ft.r1.length + ft.r2.length);
+  // Antes/Después: el título se achica lo necesario para no invadir la
+  // zona mínima de las fotos (42% del alto, abajo) ni el logo (izquierda).
+  if(adAD){
+    const finLogo = chipHome ? (() => { const g = fmmGeomChipHome(W, H); return g.y + g.h; })() : yLogo + logoH;
+    const limite = panelIzqW ? finLogo + px(48) : Math.round(H * 0.42) + px(40);
+    let tMax = fit.t;
+    while(yTextoDe(fit) < limite && tMax > Math.round(tamMax * 0.4)){
+      tMax -= 4;
+      fit = ajustarTitulo(tMax);
+    }
+  }
+  const tam = fit.t, renglones1 = fit.r1, renglones2 = fit.r2;
   if(conTracking) ctx.letterSpacing = "0px";
   const lhTitulo = tam * 0.96;
-  const yTexto = descTop - px(44) - lhTitulo * 2;
+  const yTexto = yTextoDe(fit);
 
   // ── Pintado ──
 
-  // 1. Foto a sangre
-  if(st.foto && st.foto.naturalWidth){
+  // 1. Foto a sangre (o las dos fotos de Antes/Después)
+  const alfa = a => Math.min(1, a * k / 0.85);
+  let celdasAD = null;
+  if(adAD){
+    ctx.fillStyle = pal.oscuro;
+    ctx.fillRect(0, 0, W, H);
+    // Abajo: las fotos llegan hasta 40px arriba del título. Izquierda: las
+    // fotos ocupan todo lo que queda a la derecha del panel de texto.
+    const fotosAbajo = Math.round(yTexto - px(40));
+    const zona = panelIzqW ? { x: panelIzqW, y: 0, w: W - panelIzqW, h: H } : { x: 0, y: 0, w: W, h: fotosAbajo };
+    celdasAD = fmmDibujarFotosAntesDespues(ctx, adAD, zona, px(8));
+    if(panelIzqW){
+      // Fundido corto: con fotos verticales cada celda mide ~280px de ancho.
+      const g = ctx.createLinearGradient(panelIzqW, 0, panelIzqW + px(48), 0);
+      g.addColorStop(0, fmmRgba(pal.oscuro, alfa(1)));
+      g.addColorStop(1, fmmRgba(pal.oscuro, 0));
+      ctx.fillStyle = g;
+      ctx.fillRect(panelIzqW, 0, px(48), H);
+    } else {
+      // Fundido proporcional a la foto de abajo: con fotos una sobre otra y
+      // todo el contenido activo, 170px taparían casi media foto DESPUÉS.
+      const fundido = Math.min(px(170), Math.round(celdasAD.despues.h * 0.35));
+      const g = ctx.createLinearGradient(0, fotosAbajo - fundido, 0, fotosAbajo);
+      g.addColorStop(0, fmmRgba(pal.oscuro, 0));
+      g.addColorStop(1, fmmRgba(pal.oscuro, alfa(1)));
+      ctx.fillStyle = g;
+      ctx.fillRect(0, fotosAbajo - fundido, W, fundido);
+    }
+    // Viñeta ligera arriba para que el logo se lea sobre las fotos.
+    if(!chipHome && !panelIzqW){
+      const gt = ctx.createLinearGradient(0, 0, 0, H * 0.16);
+      gt.addColorStop(0, fmmRgba(pal.oscuro, alfa(0.35)));
+      gt.addColorStop(1, fmmRgba(pal.oscuro, 0));
+      ctx.fillStyle = gt;
+      ctx.fillRect(0, 0, W, H * 0.16);
+    }
+  } else if(st.foto && st.foto.naturalWidth){
     const r = fmmRectFoto(st.foto, area.w, area.h, st.encuadre);
     ctx.save();
     ctx.beginPath(); ctx.rect(area.x, area.y, area.w, area.h); ctx.clip();
@@ -27093,8 +27226,9 @@ function fmmDrawPresentacionServicio(ctx, W, H, st){
 
   // 2. Degradado del color oscuro de la marca. La intensidad por defecto
   // (0.85) reproduce el degradado del diseño; más alta, más sólido.
-  const alfa = a => Math.min(1, a * k / 0.85);
-  if(lateral){
+  if(adAD){
+    // (ya resuelto arriba, junto con las fotos)
+  } else if(lateral){
     const g = ctx.createLinearGradient(0, 0, W*0.6, 0);
     g.addColorStop(0, fmmRgba(pal.oscuro, k));
     g.addColorStop(0.5, fmmRgba(pal.oscuro, k*0.7));
@@ -27183,6 +27317,19 @@ function fmmDrawPresentacionServicio(ctx, W, H, st){
     logo._fmmEscuchando = true;
     logo.addEventListener("load", () => { if(FMM) fmmRenderPreview(); }, { once:true });
   }
+  // Badges ANTES / DESPUÉS (estilo Feed A, fehTag) en la esquina de cada
+  // foto, siempre debajo de la línea del logo y del sello para no chocar.
+  if(celdasAD){
+    const finSello = anchoSello ? yLogo + (logoListo ? logoH : px(92)) / 2 + (22 + 24) / 2 : 0;
+    const finEncabezado = Math.max(finSello, chipHome ? (() => { const g = fmmGeomChipHome(W, H); return g.y + g.h; })() : yLogo + (logoListo ? logoH : px(92)));
+    const ponerBadge = (celda, txt, fondo, color) => {
+      const x = celda.x === 0 ? M : celda.x + px(24);
+      const y = Math.max(celda.y + px(24), finEncabezado + px(24));
+      fehTag(ctx, txt, x, y, fondo, color);
+    };
+    ponerBadge(celdasAD.antes, "ANTES", HOME_BRAND.navy, HOME_BRAND.crema);
+    ponerBadge(celdasAD.despues, "DESPUÉS", HOME_BRAND.terracota, HOME_BRAND.navy);
+  }
   if(anchoSello){
     const centroLogo = yLogo + (logoListo ? logoH : px(92)) / 2;
     fehDrawPill(ctx, SELLO_TXT, W - M, centroLogo - (22 + 24) / 2, { align:"right", bg:HOME_BRAND.terracota, color:HOME_BRAND.navy, font:SELLO_FONT, fontSize:22 });
@@ -27212,16 +27359,29 @@ function fmmDrawPresentacionServicio(ctx, W, H, st){
   });
 
   // Botón CTA del anuncio (el mismo de los Hero: fehDrawCTAButton), al pie.
-  if(conCta) fehDrawCTAButton(ctx, M, H - margenInf, (ad.cta || "").trim() || "Cotiza por WhatsApp");
+  if(conCta){
+    const textoCta = (ad.cta || "").trim() || "Cotiza por WhatsApp";
+    // En la columna de Antes/Después a la izquierda el botón se reduce para
+    // no salirse del panel y tapar las fotos.
+    ctx.font = '700 34px "Inter"';
+    const anchoCta = 90 + ctx.measureText(textoCta).width + 52;
+    const escCta = panelIzqW ? Math.min(1, maxTextoW / anchoCta) : 1;
+    if(escCta < 1){
+      ctx.save();
+      ctx.translate(M, H - margenInf); ctx.scale(escCta, escCta);
+      fehDrawCTAButton(ctx, 0, 0, textoCta);
+      ctx.restore();
+    } else fehDrawCTAButton(ctx, M, H - margenInf, textoCta);
+  }
 
   // 5. Titular (2 líneas: claro / acento)
   ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
   ponerTit(1, tam);
   ctx.fillStyle = pal.claro;
-  ctx.fillText(t1, M, yTexto + lhTitulo * 0.82);
+  renglones1.forEach((l, i) => ctx.fillText(l, M, yTexto + i * lhTitulo + lhTitulo * 0.82));
   ponerTit(2, tam);
   ctx.fillStyle = pal.acento;
-  ctx.fillText(t2, M, yTexto + lhTitulo + lhTitulo * 0.82);
+  renglones2.forEach((l, i) => ctx.fillText(l, M, yTexto + (renglones1.length + i) * lhTitulo + lhTitulo * 0.82));
   if(conTracking) ctx.letterSpacing = "0px";
 
   // 6. Subtítulo: guion de acento a la altura de la 1ª línea + texto
@@ -27233,6 +27393,23 @@ function fmmDrawPresentacionServicio(ctx, W, H, st){
     ctx.textBaseline = "middle";
     lineasDesc.forEach((l, j) => ctx.fillText(l, M + guionW + guionGap, descTop + lhDesc / 2 + j*lhDesc));
     ctx.textBaseline = "alphabetic";
+  }
+
+  // 7. Guía de la zona para stickers: solo en la vista previa, no se exporta.
+  if(altoSticker && opciones && opciones.guias){
+    const y0 = H - zonaStory - altoSticker + px(16), alto = altoSticker - px(32);
+    ctx.save();
+    ctx.strokeStyle = fmmRgba(pal.claro, 0.75);
+    ctx.lineWidth = Math.max(2, px(3));
+    ctx.setLineDash([px(18), px(12)]);
+    fehRoundRect(ctx, M, y0, W - 2*M, alto, px(24));
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.font = '600 '+Math.round(px(26))+'px '+tipo.cuerpo;
+    ctx.fillStyle = fmmRgba(pal.claro, 0.85);
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillText("Zona para stickers · no se exporta", W / 2, y0 + alto / 2);
+    ctx.restore();
   }
 }
 
@@ -27305,6 +27482,21 @@ function fmmEstadoAnuncio(t){
   });
   st.beneficios = sv.beneficios.map(b => ({ texto:b.texto, icono:b.icono, propio:null }));
   st.anuncio = { servicio: sv.id, cta: "Cotiza por WhatsApp", mostrarCta: true, mostrarSello: true };
+  if(t && t.modo === "antesDespues"){
+    // Por defecto solo el título (y el sello); descripción, beneficios y
+    // botón quedan apagados con su interruptor.
+    st.values.titulo1 = "De grietas a";
+    st.values.titulo2 = "banqueta nueva";
+    st.anuncio.mostrarCta = false;
+    st.antesDespues = {
+      orientacion: "vertical", orientacionManual: false,
+      fotos: { antes: null, despues: null },
+      offsets: { antes: { x:0, y:0 }, despues: { x:0, y:0 } },
+      mostrarDesc: false, mostrarBen: false,
+    };
+    st.degradado = "abajo";
+    st.degradadoManual = false;
+  }
   return st;
 }
 
@@ -27358,6 +27550,7 @@ function fmmEstadoInicial(){
     layoutBen: "izquierda",
     encabezado: "logo",
     degradado: "abajo",
+    zonaSticker: false,
     presetId: "",
   };
 }
@@ -27535,15 +27728,38 @@ function fmmRenderForm(){
   // Anuncios · Servicio: la marca (HOME) y el encabezado (logo sobre foto)
   // son fijos, sin presets; a cambio trae el sello y el botón del anuncio.
   const ad = FMM.anuncio || null;
+  const adAD = FMM.antesDespues || null;
+  // Antes / Después: orientación + 2 fotos con sus deslizadores de
+  // reencuadre (mismos que las plantillas de HOME: -100..100).
+  const fotoAD = (clave, etiqueta) => {
+    const img = adAD.fotos[clave], o = adAD.offsets[clave];
+    return '<div class="feh-ctrl-group"><label class="feh-ctrl-label">'+etiqueta+'</label>'
+      +'<div class="feh-photoslot'+(img?" feh-filled":"")+'" id="fmm-slot-'+clave+'" onclick="document.getElementById(\'fmm-file-'+clave+'\').click()">'+(img?"✓ Foto cargada — toca para cambiar":"📷 Toca para subir")+'</div>'
+      +'<input type="file" accept="image/*" id="fmm-file-'+clave+'" style="display:none;" onchange="fmmCargarFotoAD(\''+clave+'\',event)">'
+      +'<div class="feh-pan-ctrl" style="display:'+(img?"block":"none")+';">'
+        +'<label class="feh-ctrl-label" style="margin-top:8px;">Mover foto — horizontal</label>'
+        +'<input type="range" class="feh-range" data-fmm-off="'+clave+'-x" min="-100" max="100" value="'+Math.round(o.x*100)+'" oninput="fmmSetOffsetAD(\''+clave+'\',\'x\',this.value)">'
+        +'<label class="feh-ctrl-label" style="margin-top:6px;">Mover foto — vertical</label>'
+        +'<input type="range" class="feh-range" data-fmm-off="'+clave+'-y" min="-100" max="100" value="'+Math.round(o.y*100)+'" oninput="fmmSetOffsetAD(\''+clave+'\',\'y\',this.value)">'
+      +'</div>'
+    +'</div>';
+  };
   document.getElementById("fmm-form").innerHTML =
     (ad ? '' :
     '<div class="feh-ctrl-group"><label class="feh-ctrl-label">Marca</label>'
       +fmmPills("marca", FMM_MARCAS.map(m => ({ id:m.id, etiqueta:m.etiqueta })), FMM.marca, "fmmSetMarca")
-    +'</div>'
-    +'<div class="feh-ctrl-group" id="fmm-encabezado-grupo"><label class="feh-ctrl-label">Encabezado</label>'
-      +fmmPills("encabezado", FMM_ENCABEZADOS, FMM.encabezado, "fmmSetEncabezado")
     +'</div>')
-    +'<div class="feh-ctrl-group"><label class="feh-ctrl-label">Foto protagonista</label>'
+    +(!ad || adAD
+      ? '<div class="feh-ctrl-group" id="fmm-encabezado-grupo"><label class="feh-ctrl-label">Tipo de logo</label>'
+          +fmmPills("encabezado", FMM_ENCABEZADOS, FMM.encabezado, "fmmSetEncabezado")
+        +'</div>'
+      : '')
+    +(adAD
+      ? '<div class="feh-ctrl-group"><label class="feh-ctrl-label">Orientación de las fotos</label>'
+          +fmmPills("orientacion", [{ id:"vertical", etiqueta:"Verticales · lado a lado" }, { id:"horizontal", etiqueta:"Horizontales · una sobre otra" }], adAD.orientacion, "fmmSetOrientacionAD")
+        +'</div>'
+        +fotoAD("antes", "Foto ANTES") + fotoAD("despues", "Foto DESPUÉS")
+      : '<div class="feh-ctrl-group"><label class="feh-ctrl-label">Foto protagonista</label>'
       +'<div class="feh-photoslot'+(FMM.foto?" feh-filled":"")+'" id="fmm-slot" onclick="document.getElementById(\'fmm-file\').click()">'+(FMM.foto?"✓ Foto cargada — toca para cambiar":"📷 Toca para subir")+'</div>'
       +'<input type="file" accept="image/*" id="fmm-file" style="display:none;" onchange="fmmCargarFoto(event)">'
       +'<div class="feh-pan-ctrl" id="fmm-encuadre-ctrl" style="display:'+(FMM.foto?"flex":"none")+';">'
@@ -27552,7 +27768,7 @@ function fmmRenderForm(){
         +'<input type="range" class="feh-range" id="fmm-zoom" min="100" max="300" value="'+Math.round(FMM.encuadre.zoom*100)+'" oninput="fmmSetZoom(this.value/100)">'
         +'<button type="button" class="feh-btn feh-btn-ghost" style="margin-top:6px;" onclick="fmmCentrarFoto()">Centrar foto</button>'
       +'</div>'
-    +'</div>'
+    +'</div>')
     +(fmmEsVertical()
       ? '<div class="feh-ctrl-group"><label class="feh-ctrl-label">Dirección del degradado</label>'
           +fmmPills("degradado", FMM_DIRECCIONES_DEGRADADO, FMM.degradado || "abajo", "fmmSetDegradado")
@@ -27561,6 +27777,12 @@ function fmmRenderForm(){
     +'<div class="feh-ctrl-group"><label class="feh-ctrl-label">Intensidad del degradado</label>'
       +'<input type="range" class="feh-range" id="fmm-intensidad" min="0" max="100" value="'+Math.round(FMM.intensidad*100)+'" oninput="fmmSetIntensidad(this.value/100)">'
     +'</div>'
+    +(fmmEsHistoria()
+      ? '<div class="feh-ctrl-group"><label class="feh-ctrl-label">Historia de Instagram</label>'
+          +'<label class="feh-check-row"><input type="checkbox" data-fmm-zona-sticker'+(FMM.zonaSticker?" checked":"")+' onchange="fmmSetZonaSticker(this.checked)"> Dejar espacio para stickers (encuesta, enlace, mención…)</label>'
+          +'<div class="feh-hint">Sube el contenido y deja libre una franja abajo. La guía punteada solo se ve aquí; no sale en el PNG.</div>'
+        +'</div>'
+      : '')
     +fmmCampo("textoLogo", "Texto junto al logo (opcional)")
     +(ad
       ? '<div class="feh-ctrl-group"><label class="feh-ctrl-label">Sello y botón del anuncio</label>'
@@ -27572,7 +27794,16 @@ function fmmRenderForm(){
       : '<div class="feh-ctrl-group"><label class="feh-ctrl-label">Servicio</label><div id="fmm-presets">'+fmmHtmlPresets()+'</div></div>')
     +fmmCampo("titulo1", "Título — línea 1")
     +fmmCampo("titulo2", "Título — línea 2 (color de acento)")
-    +fmmCampo("descripcion", "Descripción (2 a 3 líneas)", true)
+    +(adAD
+      ? '<div class="feh-ctrl-group"><label class="feh-ctrl-label">Contenido opcional</label>'
+          +'<label class="feh-check-row"><input type="checkbox" data-fmm-mostrar-desc'+(adAD.mostrarDesc?" checked":"")+' onchange="fmmSetMostrarAD(\'mostrarDesc\',this.checked)"> Mostrar descripción</label>'
+          +'<label class="feh-check-row"><input type="checkbox" data-fmm-mostrar-ben'+(adAD.mostrarBen?" checked":"")+' onchange="fmmSetMostrarAD(\'mostrarBen\',this.checked)"> Mostrar beneficios con íconos</label>'
+        +'</div>'
+      : '')
+    +'<div id="fmm-ad-bloque-desc"'+(adAD && !adAD.mostrarDesc ? ' style="display:none;"' : '')+'>'
+      +fmmCampo("descripcion", "Descripción (2 a 3 líneas)", true)
+    +'</div>'
+    +'<div id="fmm-ad-bloque-ben"'+(adAD && !adAD.mostrarBen ? ' style="display:none;"' : '')+'>'
     +'<div class="feh-ctrl-group"><label class="feh-ctrl-label">Estilo de ícono</label>'
       +fmmPills("estilo-icono", FMM_ESTILOS_ICONO, FMM.estiloIcono, "fmmSetEstiloIcono")
     +'</div>'
@@ -27583,11 +27814,12 @@ function fmmRenderForm(){
       +fmmPills("layout-ben", FMM_LAYOUTS_BEN, FMM.layoutBen, "fmmSetLayoutBen")
     +'</div>'
     +'<div class="feh-ctrl-group"><label class="feh-ctrl-label">Beneficios (2 a 4)</label><div id="fmm-beneficios"></div></div>'
+    +'</div>'
     +'<div class="feh-actions">'
       +(ad
         ? '<button class="feh-btn feh-btn-ghost" onclick="fmmCerrarAnuncio()">‹ Volver a Anuncios</button>'
         : '<button class="feh-btn feh-btn-ghost" onclick="fmmVolverPicker()">‹ Otro formato</button>')
-      +'<button class="feh-btn feh-btn-primary" id="fmm-download-btn" onclick="fmmDescargar()"'+(FMM.foto?"":" disabled title=\"Sube la foto primero\"")+'>⬇ Descargar PNG</button>'
+      +'<button class="feh-btn feh-btn-primary" id="fmm-download-btn" onclick="fmmDescargar()"'+(fmmFotosListas()?"":" disabled title=\"Sube "+(adAD?"las dos fotos":"la foto")+" primero\"")+'>⬇ Descargar PNG</button>'
     +'</div>';
   fmmRenderBeneficios();
   fmmAplicarVarsMarca();
@@ -27617,9 +27849,75 @@ function fmmEsVertical(){
   const t = FMM && fmmPlantilla(FMM.tplId);
   return !!(t && t.h > t.w);
 }
+// Sugerencia de degradado según las fotos: verticales (lado a lado) dejan
+// libre la parte de abajo; horizontales (una sobre otra) caben mejor a la
+// derecha de un panel a la izquierda. Solo mientras no se elija a mano.
+function fmmDegradadoSugerido(orientacion){ return orientacion === "horizontal" ? "izquierda" : "abajo"; }
+
+function fmmSetOrientacionAD(o){
+  const ad = FMM && FMM.antesDespues;
+  if(!ad) return;
+  ad.orientacion = o === "horizontal" ? "horizontal" : "vertical";
+  ad.orientacionManual = true;
+  if(!FMM.degradadoManual){
+    FMM.degradado = fmmDegradadoSugerido(ad.orientacion);
+    fmmActivarPill("degradado", FMM.degradado);
+  }
+  fmmActivarPill("orientacion", ad.orientacion);
+  fmmRenderPreview();
+}
+
+function fmmSetOffsetAD(clave, eje, valor){
+  const ad = FMM && FMM.antesDespues;
+  if(!ad) return;
+  ad.offsets[clave][eje] = parseFloat(valor) / 100;   // -1..1, como fehSetOffset
+  fmmRenderPreview();
+}
+
+function fmmSetMostrarAD(clave, valor){
+  const ad = FMM && FMM.antesDespues;
+  if(!ad) return;
+  ad[clave] = !!valor;
+  const bloque = document.getElementById(clave === "mostrarDesc" ? "fmm-ad-bloque-desc" : "fmm-ad-bloque-ben");
+  if(bloque) bloque.style.display = valor ? "" : "none";
+  fmmRenderPreview();
+}
+
+// Foto ANTES o DESPUÉS. Con las dos cargadas, si ambas son horizontales (o
+// ambas verticales) se propone esa orientación, salvo que ya se eligiera.
+function fmmCargarFotoAD(clave, e){
+  const file = e.target.files && e.target.files[0];
+  e.target.value = "";
+  const ad = FMM && FMM.antesDespues;
+  if(!file || !ad) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const img = new Image();
+    img.onload = () => {
+      ad.fotos[clave] = img;
+      ad.offsets[clave] = { x:0, y:0 };
+      const a = ad.fotos.antes, d = ad.fotos.despues;
+      if(a && d && !ad.orientacionManual){
+        const hA = a.naturalWidth > a.naturalHeight, hD = d.naturalWidth > d.naturalHeight;
+        if(hA === hD) ad.orientacion = hA ? "horizontal" : "vertical";
+        if(!FMM.degradadoManual) FMM.degradado = fmmDegradadoSugerido(ad.orientacion);
+      }
+      fmmRenderForm();
+      fmmRenderPreview();
+    };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
 function fmmSetDegradado(dir){
+  FMM.degradadoManual = true;
   FMM.degradado = dir === "izquierda" ? "izquierda" : "abajo";
   fmmActivarPill("degradado", FMM.degradado);
+  fmmRenderPreview();
+}
+function fmmSetZonaSticker(valor){
+  FMM.zonaSticker = !!valor;
   fmmRenderPreview();
 }
 function fmmSetEncabezado(enc){
@@ -27897,7 +28195,7 @@ function fmmRenderPreview(){
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = "high";
   ctx.clearRect(0, 0, t.w, t.h);
-  fmmDrawPresentacionServicio(ctx, t.w, t.h, FMM);
+  fmmDrawPresentacionServicio(ctx, t.w, t.h, FMM, { guias: true });
 }
 
 // Gesto sobre la vista previa: arrastrar con un dedo/mouse mueve la foto;
@@ -27952,10 +28250,17 @@ function fmmInicializarGesto(){
 }
 
 const FMM_EXPORT_SCALE = 2;
+// ¿Están todas las fotos que necesita la plantilla? (1, o 2 en Antes/Después)
+function fmmFotosListas(){
+  if(!FMM) return false;
+  if(FMM.antesDespues) return !!(FMM.antesDespues.fotos.antes && FMM.antesDespues.fotos.despues);
+  return !!FMM.foto;
+}
+
 async function fmmDescargar(){
   const t = FMM && fmmPlantilla(FMM.tplId);
   if(!t) return;
-  if(!FMM.foto){ showToast("⚠️ Sube la foto primero"); return; }
+  if(!fmmFotosListas()){ showToast(FMM.antesDespues ? "⚠️ Sube las fotos ANTES y DESPUÉS primero" : "⚠️ Sube la foto primero"); return; }
   if(_fmmFontsReady) await _fmmFontsReady;
   const canvas = document.createElement("canvas");
   canvas.width = t.w * FMM_EXPORT_SCALE; canvas.height = t.h * FMM_EXPORT_SCALE;
@@ -27992,6 +28297,11 @@ window.fmmSetIcono = fmmSetIcono;
 window.fmmSetEstiloIcono = fmmSetEstiloIcono;
 window.fmmSetEncabezado = fmmSetEncabezado;
 window.fmmSetDegradado = fmmSetDegradado;
+window.fmmSetOrientacionAD = fmmSetOrientacionAD;
+window.fmmSetZonaSticker = fmmSetZonaSticker;
+window.fmmSetOffsetAD = fmmSetOffsetAD;
+window.fmmSetMostrarAD = fmmSetMostrarAD;
+window.fmmCargarFotoAD = fmmCargarFotoAD;
 window.fmmSetTextoBeneficio = fmmSetTextoBeneficio;
 window.fmmAgregarBeneficio = fmmAgregarBeneficio;
 window.fmmQuitarBeneficio = fmmQuitarBeneficio;
