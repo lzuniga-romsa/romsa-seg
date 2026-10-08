@@ -27480,17 +27480,20 @@ function fmmDrawPresentacionServicio(ctx, W, H, st, opciones){
   if(tituloGirado){
     // "arriba": se lee de abajo hacia arriba (1ª línea pegada al margen);
     // "abajo": de arriba hacia abajo (1ª línea a la derecha).
+    // La 1ª línea va al 88% del tamaño que llena el panel (no tan pesada);
+    // la 2ª conserva su tamaño.
     const { S, top, bottom } = tituloGirado;
-    const bloque = S * lhF * (1 + escala2);
+    const S1 = Math.round(S * 0.88);
+    const bloque = S1 * lhF + S * escala2 * lhF;
     ctx.save();
     if(giro === "arriba"){ ctx.translate(M, bottom); ctx.rotate(-Math.PI / 2); }
     else { ctx.translate(M + bloque, top); ctx.rotate(Math.PI / 2); }
-    ponerTit(1, S);
+    ponerTit(1, S1);
     ctx.fillStyle = pal.claro;
-    ctx.fillText(t1, 0, S * 0.8);
+    ctx.fillText(t1, 0, S1 * 0.8);
     ponerTit(2, S);
     ctx.fillStyle = pal.acento;
-    ctx.fillText(t2, 0, S * lhF + S * escala2 * 0.8);
+    ctx.fillText(t2, 0, S1 * lhF + S * escala2 * 0.8);
     ctx.restore();
   } else {
     ponerTit(1, tam);
