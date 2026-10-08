@@ -27255,7 +27255,21 @@ function fmmDrawPresentacionServicio(ctx, W, H, st, opciones){
   // Panel lateral: título y descripción se centran en el espacio libre
   // entre el logo y los beneficios (que quedan anclados abajo), en lugar de
   // quedar pegados abajo con un hueco grande bajo el logo.
-  const subirPanel = panelIzqW ? Math.max(0, Math.round((yTexto - (finLogo + px(48))) * 0.5)) : 0;
+  // Título girado (panel lateral de Antes/Después): las dos líneas corren a
+  // lo largo del panel, una junto a otra, del tamaño que llene el espacio
+  // libre entre el logo y la descripción / los beneficios.
+  const giro = panelIzqW && (adAD.tituloGirado === "arriba" || adAD.tituloGirado === "abajo") ? adAD.tituloGirado : "";
+  let tituloGirado = null;
+  if(giro){
+    const top = finLogo + px(64);
+    const bottom = lineasDesc.length ? descTop - px(56) : n ? lineaBenY - px(56) : H - margenInf;
+    const largo = bottom - top;
+    let S = Math.round(px(260));
+    while(S > px(40) && (ancho(t1, 1, S) > largo || ancho(t2, 2, S) > largo || S * lhF * (1 + escala2) > maxTextoW + px(32))) S -= 2;
+    if(conTracking) ctx.letterSpacing = "0px";
+    tituloGirado = { S, top, bottom };
+  }
+  const subirPanel = panelIzqW && !giro ? Math.max(0, Math.round((yTexto - (finLogo + px(48))) * 0.5)) : 0;
 
   // ── Pintado ──
 
@@ -27463,13 +27477,30 @@ function fmmDrawPresentacionServicio(ctx, W, H, st, opciones){
   if(subirPanel) ctx.translate(0, -subirPanel);
   // 5. Titular (2 líneas: claro / acento)
   ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
-  ponerTit(1, tam);
-  ctx.fillStyle = pal.claro;
-  renglones1.forEach((l, i) => ctx.fillText(l, M, yTexto + i * lhTitulo + lhTitulo * 0.82));
-  ponerTit(2, tam);
-  ctx.fillStyle = pal.acento;
-  const lhTitulo2 = lhTitulo * escala2;
-  renglones2.forEach((l, i) => ctx.fillText(l, M, yTexto + renglones1.length * lhTitulo + i * lhTitulo2 + lhTitulo2 * 0.82));
+  if(tituloGirado){
+    // "arriba": se lee de abajo hacia arriba (1ª línea pegada al margen);
+    // "abajo": de arriba hacia abajo (1ª línea a la derecha).
+    const { S, top, bottom } = tituloGirado;
+    const bloque = S * lhF * (1 + escala2);
+    ctx.save();
+    if(giro === "arriba"){ ctx.translate(M, bottom); ctx.rotate(-Math.PI / 2); }
+    else { ctx.translate(M + bloque, top); ctx.rotate(Math.PI / 2); }
+    ponerTit(1, S);
+    ctx.fillStyle = pal.claro;
+    ctx.fillText(t1, 0, S * 0.8);
+    ponerTit(2, S);
+    ctx.fillStyle = pal.acento;
+    ctx.fillText(t2, 0, S * lhF + S * escala2 * 0.8);
+    ctx.restore();
+  } else {
+    ponerTit(1, tam);
+    ctx.fillStyle = pal.claro;
+    renglones1.forEach((l, i) => ctx.fillText(l, M, yTexto + i * lhTitulo + lhTitulo * 0.82));
+    ponerTit(2, tam);
+    ctx.fillStyle = pal.acento;
+    const lhTitulo2 = lhTitulo * escala2;
+    renglones2.forEach((l, i) => ctx.fillText(l, M, yTexto + renglones1.length * lhTitulo + i * lhTitulo2 + lhTitulo2 * 0.82));
+  }
   if(conTracking) ctx.letterSpacing = "0px";
 
   // 6. Subtítulo: guion de acento a la altura de la 1ª línea + texto
@@ -27585,6 +27616,7 @@ function fmmEstadoAnuncio(t){
       offsets: { antes: { x:0, y:0 }, despues: { x:0, y:0 } },
       mostrarDesc: false, mostrarBen: false,
       mostrarEtiquetas: true, mostrarFlecha: true,
+      tituloGirado: "",
     };
     st.degradado = "abajo";
     st.degradadoManual = false;
@@ -27887,6 +27919,12 @@ function fmmRenderForm(){
     +fmmCampo("titulo1", "Título — línea 1")
     +fmmCampo("titulo2", "Título — línea 2 (color de acento)")
     +(adAD
+      ? '<div class="feh-ctrl-group"><label class="feh-ctrl-label">Dirección del título</label>'
+          +fmmPills("titulo-giro", [{ id:"", etiqueta:"Normal" }, { id:"arriba", etiqueta:"Girado ↑" }, { id:"abajo", etiqueta:"Girado ↓" }], adAD.tituloGirado || "", "fmmSetTituloGiradoAD")
+          +'<div class="feh-hint">El título girado corre a lo largo del panel y se agranda para llenarlo. Solo aplica con el degradado "Desde la izquierda".</div>'
+        +'</div>'
+      : '')
+    +(adAD
       ? '<div class="feh-ctrl-group"><label class="feh-ctrl-label">Contenido opcional</label>'
           +'<label class="feh-check-row"><input type="checkbox" data-fmm-mostrar-desc'+(adAD.mostrarDesc?" checked":"")+' onchange="fmmSetMostrarAD(\'mostrarDesc\',this.checked)"> Mostrar descripción</label>'
           +'<label class="feh-check-row"><input type="checkbox" data-fmm-mostrar-ben'+(adAD.mostrarBen?" checked":"")+' onchange="fmmSetMostrarAD(\'mostrarBen\',this.checked)"> Mostrar beneficios con íconos</label>'
@@ -27970,6 +28008,13 @@ function fmmSetOffsetAD(clave, eje, valor){
   fmmRenderPreview();
 }
 
+function fmmSetTituloGiradoAD(giro){
+  const ad = FMM && FMM.antesDespues;
+  if(!ad) return;
+  ad.tituloGirado = giro === "arriba" || giro === "abajo" ? giro : "";
+  fmmActivarPill("titulo-giro", ad.tituloGirado);
+  fmmRenderPreview();
+}
 function fmmSetVisibleAD(clave, valor){
   const ad = FMM && FMM.antesDespues;
   if(!ad || (clave !== "mostrarEtiquetas" && clave !== "mostrarFlecha")) return;
@@ -28402,6 +28447,7 @@ window.fmmSetDegradado = fmmSetDegradado;
 window.fmmSetOrientacionAD = fmmSetOrientacionAD;
 window.fmmSetZonaSticker = fmmSetZonaSticker;
 window.fmmSetVisibleAD = fmmSetVisibleAD;
+window.fmmSetTituloGiradoAD = fmmSetTituloGiradoAD;
 window.fmmSetOffsetAD = fmmSetOffsetAD;
 window.fmmSetMostrarAD = fmmSetMostrarAD;
 window.fmmCargarFotoAD = fmmCargarFotoAD;
