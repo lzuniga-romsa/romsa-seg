@@ -2800,6 +2800,7 @@ body.in-plantrabajo #app{
           <div style="flex:1;min-width:150px;">
             <div id="cot-form-titulo" style="font-size:16px;font-weight:800;color:var(--navy);">Nueva cotización</div>
             <div id="cot-folio-badge" style="font-size:10px;color:var(--tx2);margin-top:1px;"></div>
+            <span id="cot-sin-guardar" title="Hay cambios que aún no se guardan en la base de datos" style="display:none;margin-top:3px;font-size:9.5px;font-weight:700;color:#B45309;background:#FEF3C7;border:1px solid #FCD34D;padding:2px 7px;border-radius:10px;">● Cambios sin guardar</span>
           </div>
           <button onclick="vistaPreviaPdfCot()" title="Ver cómo quedará el PDF antes de descargar" style="background:#0EA5E9;border:none;color:#fff;font-size:11px;font-weight:700;padding:8px 12px;border-radius:9px;cursor:pointer;font-family:var(--font);">👁 Vista previa</button>
           <button onclick="guardarYVerCot()" style="background:#7C3AED;border:none;color:#fff;font-size:11px;font-weight:700;padding:8px 16px;border-radius:9px;cursor:pointer;font-family:var(--font);">📄 PDF</button>
@@ -3095,6 +3096,7 @@ body.in-plantrabajo #app{
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:6px;">
             <div style="font-size:10px;font-weight:700;color:var(--tx2);letter-spacing:1px;text-transform:uppercase;">📄 Condiciones generales</div>
             <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <button onclick="cotAbrirPegadoCondiciones()" title="Pegar condiciones desde Word o PDF y separarlas en cláusulas" style="background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.35);color:#B45309;font-size:10px;font-weight:700;padding:6px 10px;border-radius:6px;cursor:pointer;font-family:var(--font);">✨ Pegado mágico</button>
               <button onclick="abrirSelectorPlantilla()" title="Aplicar una plantilla guardada" style="background:rgba(124,58,237,.08);border:1px solid rgba(124,58,237,.25);color:#7C3AED;font-size:10px;font-weight:700;padding:6px 10px;border-radius:6px;cursor:pointer;font-family:var(--font);">📜 Aplicar plantilla</button>
               <button onclick="resetCondicionesCot()" style="background:none;border:none;color:var(--blue);font-size:10px;font-weight:600;cursor:pointer;font-family:var(--font);">↺ Restaurar todo</button>
             </div>
@@ -6839,6 +6841,8 @@ function goScreen(n){
     goScreen("fotoeditor");
     return;
   }
+  // Editor de cotización con cambios sin guardar: confirmar antes de salir
+  if(typeof _cotConfirmarSalida === "function" && !_cotConfirmarSalida()) return;
   document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
   // Ocultar iframe cuando no estamos en levantamientos
   var levScr=document.getElementById("screen-levantamientos");
@@ -9935,6 +9939,7 @@ window.toggleSaltoClausulaStd = toggleSaltoClausulaStd;
 window._refrescarBotonesSaltoStd = _refrescarBotonesSaltoStd;
 
 function resetCondicionesCot(){
+  if(typeof _cotSnapshotAhora === "function") _cotSnapshotAhora();   // estado previo para ↶ Deshacer
   // Restaurar textos
   COT_CLAUSULAS_STD.forEach(function(c){
     var el = document.getElementById(c.id);
@@ -9951,6 +9956,7 @@ function resetCondicionesCot(){
   _cotClausulasCustom = [];
   _renderClausulasCustom();
   if(typeof _refrescarBotonesSaltoStd === "function") _refrescarBotonesSaltoStd();
+  if(typeof _cotSnapshotAhora === "function") _cotSnapshotAhora();
   showToast("↺ Condiciones restauradas");
 }
 
@@ -10957,6 +10963,7 @@ window.renderCotDashboard = renderCotDashboard;
 let _cotSubtabActiva = "dashboard";
 
 function showCotSubtab(tab, btnEl){
+  if(typeof _cotConfirmarSalida === "function" && !_cotConfirmarSalida()) return;
   _cotSubtabActiva = tab;
   // Ocultar formulario si está abierto (cambio de pestaña principal)
   document.getElementById("cot-form-wrap").style.display = "none";
@@ -11610,6 +11617,7 @@ function aplicarPlantillaACotizacion(plantillaId){
   if(!p){ alert("Plantilla no encontrada"); return; }
   var modal = document.getElementById("modal-sel-plantilla");
   if(modal) modal.remove();
+  if(typeof _cotSnapshotAhora === "function") _cotSnapshotAhora();   // estado previo para ↶ Deshacer
 
   if(typeof _cotClausulasEliminadas === "undefined" || typeof COT_CLAUSULAS_STD === "undefined"){
     alert("Error: el editor de cotización no está activo");
@@ -13847,9 +13855,11 @@ function showNuevaCot(){
   document.querySelectorAll(".cot-subtab-content").forEach(function(el){ el.style.display = "none"; });
   document.getElementById("cot-form-wrap").style.display="block";
   if(typeof _cotResetHistorial==="function") _cotResetHistorial();
+  if(typeof _cotMarcarLimpio==="function") _cotMarcarLimpio(600);
 }
 
 function cerrarFormCot(){
+  if(!_cotConfirmarSalida()) return;
   document.getElementById("cot-form-wrap").style.display="none";
   // Volver a la sub-pestaña que estuviera activa (default lista)
   var tabActiva = _cotSubtabActiva || "lista";
@@ -13996,6 +14006,7 @@ function abrirCot(id){
   document.querySelectorAll(".cot-subtab-content").forEach(function(el){ el.style.display = "none"; });
   document.getElementById("cot-form-wrap").style.display="block";
   if(typeof _cotResetHistorial==="function") _cotResetHistorial();
+  if(typeof _cotMarcarLimpio==="function") _cotMarcarLimpio(600);
 }
 
 // Navegar al costeo origen desde la cotización
@@ -14305,7 +14316,34 @@ function _cotCapturarEstado(){
     var el = document.getElementById(id);
     if(el) campos[id] = el.value;
   });
-  return JSON.stringify({partidas:_cotPartidas, campos:campos});
+  return JSON.stringify({partidas:_cotPartidas, campos:campos, clausulas:_cotCapturarClausulas()});
+}
+
+// Estado de las Condiciones Generales (para ↶ Deshacer y para detectar
+// cambios sin guardar): textos estándar, ocultas, saltos y personalizadas.
+function _cotCapturarClausulas(){
+  var std = {};
+  COT_CLAUSULAS_STD.forEach(function(c){ var el = document.getElementById(c.id); if(el) std[c.id] = el.value; });
+  return {
+    std: std,
+    eliminadas: Array.from(_cotClausulasEliminadas || []).sort(),
+    saltos: Array.from(_cotClausulasSaltos || []).sort(),
+    custom: (_cotClausulasCustom || []).map(function(c){ return {titulo:c.titulo||"", texto:c.texto||"", saltoAntes:!!c.saltoAntes}; })
+  };
+}
+
+function _cotRestaurarClausulas(cl){
+  if(!cl) return;
+  Object.keys(cl.std || {}).forEach(function(id){ var el = document.getElementById(id); if(el) el.value = cl.std[id]; });
+  _cotClausulasEliminadas = new Set(cl.eliminadas || []);
+  _cotClausulasSaltos = new Set(cl.saltos || []);
+  _cotClausulasCustom = (cl.custom || []).map(function(c){ return Object.assign({}, c); });
+  COT_CLAUSULAS_STD.forEach(function(std){
+    var fg = document.getElementById("fg-"+std.id);
+    if(fg) fg.style.display = _cotClausulasEliminadas.has(std.id) ? "none" : "";
+  });
+  _renderClausulasCustom();
+  if(typeof _refrescarBotonesSaltoStd === "function") _refrescarBotonesSaltoStd();
 }
 
 function _cotRestaurarEstado(snap){
@@ -14318,8 +14356,10 @@ function _cotRestaurarEstado(snap){
         if(el) el.value = obj.campos[id];
       });
     }
+    if(obj.clausulas) _cotRestaurarClausulas(obj.clausulas);
     renderPartidasCot();
     calcTotalesCot();
+    _cotActualizarIndicadorCambios();
   }catch(e){ showToast("⚠️ Error al restaurar"); }
 }
 
@@ -14384,6 +14424,99 @@ function _cotResetHistorial(){
   _cotRedoStack = [];
   _cotSnapshotAhora();
 }
+
+// ── Cambios sin guardar (todo el editor de cotización) ──────────────────
+// Firma del formulario: todos los campos del editor + partidas + cláusulas +
+// seguimiento. Se toma como base al abrir (ya con los rellenos asíncronos
+// aplicados) y al guardar; si la firma actual difiere, hay cambios pendientes.
+// Los selects que se llenan solos en segundo plano (cliente, cuadrilla,
+// levantamiento) se comparan por su valor guardado, no por el DOM.
+var _cotFirmaBase = null;
+var _cotFirmaToken = 0;
+var _COT_SELECTS_ASINCRONOS = { "cot-cliente-id":1, "cot-cuadrilla-id":1, "cot-lev-id":1 };
+
+function _cotFirma(){
+  var wrap = document.getElementById("cot-form-wrap");
+  var campos = [];
+  if(wrap){
+    wrap.querySelectorAll("input, textarea, select").forEach(function(el){
+      if(el.type === "file" || el.type === "button" || _COT_SELECTS_ASINCRONOS[el.id]) return;
+      campos.push((el.id || el.className || el.tagName) + "=" + ((el.type === "checkbox" || el.type === "radio") ? el.checked : el.value));
+    });
+  }
+  return JSON.stringify({
+    campos: campos,
+    partidas: _cotPartidas,
+    clausulas: _cotCapturarClausulas(),
+    notas: (typeof _cotNotasSeguimiento !== "undefined") ? _cotNotasSeguimiento : null,
+    docs: (typeof _cotDocsSeguimiento !== "undefined") ? _cotDocsSeguimiento : null
+  });
+}
+
+// Toma la base "sin cambios". Al abrir se espera a que terminen los rellenos
+// asíncronos (modalidad, dropdowns) para no marcar cambios falsos.
+function _cotMarcarLimpio(retraso){
+  var token = ++_cotFirmaToken;
+  _cotFirmaBase = null;
+  var tomar = function(){
+    if(token !== _cotFirmaToken) return;
+    _cotFirmaBase = _cotFirma();
+    _cotActualizarIndicadorCambios();
+  };
+  if(retraso) setTimeout(tomar, retraso); else tomar();
+}
+
+function _cotFormularioAbierto(){
+  var wrap = document.getElementById("cot-form-wrap");
+  var scr = document.getElementById("screen-cotizaciones");
+  return !!(wrap && wrap.style.display !== "none" && (!scr || scr.classList.contains("active")));
+}
+
+function _cotHayCambiosSinGuardar(){
+  return _cotFormularioAbierto() && _cotFirmaBase !== null && _cotFirma() !== _cotFirmaBase;
+}
+
+// Indicador "● Cambios sin guardar" junto al título del editor.
+function _cotActualizarIndicadorCambios(){
+  var badge = document.getElementById("cot-sin-guardar");
+  if(!badge) return;
+  badge.style.display = (_cotFirmaBase !== null && _cotFirma() !== _cotFirmaBase) ? "inline-block" : "none";
+}
+
+// Antes de salir del editor: si hay cambios sin guardar, pedir confirmación.
+// Devuelve true si se puede salir (y descarta la marca de cambios).
+function _cotConfirmarSalida(){
+  if(!_cotHayCambiosSinGuardar()) return true;
+  if(!confirm("Tienes cambios sin guardar en esta cotización.\n\n¿Salir sin guardar? Los cambios se perderán.")) return false;
+  _cotFirmaBase = null;
+  _cotFirmaToken++;
+  _cotActualizarIndicadorCambios();
+  return true;
+}
+
+(function(){
+  var instalar = function(){
+    var wrap = document.getElementById("cot-form-wrap");
+    if(!wrap || wrap._cotCambiosInstalado) return;
+    wrap._cotCambiosInstalado = true;
+    var t = null;
+    var revisar = function(e){
+      // Escribir en una cláusula estándar también entra a ↶ Deshacer
+      if(e && e.target && e.target.id && COT_CLAUSULAS_STD.some(function(c){ return c.id === e.target.id; })) _cotSnapshot();
+      if(t) clearTimeout(t);
+      t = setTimeout(_cotActualizarIndicadorCambios, 250);
+    };
+    wrap.addEventListener("input", revisar);
+    wrap.addEventListener("change", revisar);
+    wrap.addEventListener("click", function(){ if(t) clearTimeout(t); t = setTimeout(_cotActualizarIndicadorCambios, 250); });
+  };
+  if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", instalar); else instalar();
+  window.addEventListener("beforeunload", function(e){
+    if(_cotHayCambiosSinGuardar()){ e.preventDefault(); e.returnValue = ""; return ""; }
+  });
+})();
+window._cotConfirmarSalida = _cotConfirmarSalida;
+window._cotHayCambiosSinGuardar = _cotHayCambiosSinGuardar;
 
 function addPartidaCot(){
   if(typeof _cotSnapshot==="function") _cotSnapshot(true);
@@ -14925,6 +15058,7 @@ async function guardarCot(){
     // esté "pendiente"/"vencida" y sea el vínculo vigente del costeo origen)
     if(typeof _verificarSyncCotizacionACosteo === "function") _verificarSyncCotizacionACosteo(cot);
     showToast("✅ Cotización guardada — "+folio);
+    if(typeof _cotMarcarLimpio === "function") _cotMarcarLimpio();
     return cot;
   }catch(e){
     console.error("Error guardando cotización:", e, "Objeto:", cot);
@@ -15000,6 +15134,32 @@ function generarPdfCot(cot){
 
 function _generarPdfConVentana(cot, winRef){
   generarPdfCotEnVentana(cot, winRef);
+}
+
+// Texto de una cláusula → renglones para el PDF: cada salto de línea es un
+// renglón y los párrafos de más de ~1500 caracteres se parten por frases
+// (y, si no hay puntuación, por palabras). Así el paginador puede repartir
+// entre hojas una cláusula más alta que una página sin recortarla.
+function _cotRenglonesClausula(txt){
+  var out = [];
+  // Junta piezas en renglones de hasta ~1200 caracteres
+  var juntar = function(piezas, sep){
+    var buf = "";
+    piezas.forEach(function(p){
+      if(buf && (buf + sep + p).length > 1200){ out.push(buf.trim()); buf = ""; }
+      buf = buf ? buf + sep + p : p;
+    });
+    if(buf.trim()) out.push(buf.trim());
+  };
+  String(txt || "").split("\n").forEach(function(l){
+    if(l.length <= 1500){ out.push(l); return; }
+    var frases = (l.match(/[^.!?;]+[.!?;]+["')\]]*\s*|[^.!?;]+$/g) || [l]).map(function(f){ return f.trim(); });
+    // Una "frase" enorme sin puntuación se parte por palabras
+    var piezas = [];
+    frases.forEach(function(f){ if(f.length > 1200) piezas = piezas.concat(f.split(" ")); else piezas.push(f); });
+    juntar(piezas, " ");
+  });
+  return out;
 }
 
 function generarPdfCotEnVentana(cot, winRef){
@@ -15197,9 +15357,11 @@ function generarPdfCotEnVentana(cot, winRef){
     + conds.map(function(c, idx){
       var brBefore = c.saltoAntes ? 'page-break-before:always !important;break-before:page !important;' : '';
       var clase = c.saltoAntes ? 'cot-clausula cot-clausula-salto' : 'cot-clausula';
+      // Texto protegido (un "<" pegado ya no rompe el PDF) y partido en
+      // renglones medibles para repartir cláusulas más altas que una hoja.
       return '<div class="'+clase+'" data-idx="'+idx+'" style="'+brBefore+'">'
-        +'<div class="cot-clausula-titulo">'+c.n+'</div>'
-        +'<div class="cot-clausula-texto">'+c.v+'</div>'
+        +'<div class="cot-clausula-titulo">'+escapeHtml(c.n)+'</div>'
+        +'<div class="cot-clausula-texto">'+_cotRenglonesClausula(c.v).map(function(r){ return '<div class="cot-renglon">'+(r ? escapeHtml(r) : '&nbsp;')+'</div>'; }).join('')+'</div>'
       +'</div>';
     }).join('')
     + '</div>';
@@ -15351,6 +15513,7 @@ function generarPdfCotEnVentana(cot, winRef){
     +'.cot-clausula-titulo{font-size:9.5px;font-weight:800;color:#0B1F3A;text-transform:uppercase;letter-spacing:1px;margin-bottom:5px;page-break-after:avoid !important;break-after:avoid !important;}'
     +'.cot-clausula-texto{font-size:11px;color:#4A5E7A;line-height:1.8;white-space:pre-wrap;orphans:3;widows:3;}'
     +'.cot-clausula-salto{page-break-before:always !important;break-before:page !important;}'
+    +'.cot-renglon{min-height:1em;}'
     +'@media print{'
     +'  @page{size:A4 portrait;margin:0;}'
     +'  html,body{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;margin:0;padding:0;}'
@@ -15518,6 +15681,17 @@ function generarPdfCotEnVentana(cot, winRef){
     +'    var PADDING_TOP = 20;'
     +'    var PADDING_BOTTOM = 16;'
     +'    var AREA_UTIL = HOJA_ALTO - HEADER_ALTO - FOOTER_ALTO - PADDING_TOP - PADDING_BOTTOM;'
+    // Se mide a ancho A4 real (794px, el de la hoja impresa) y con el
+    // encabezado y pie reales: con la ventana más ancha las cláusulas medían
+    // menos de lo que ocupan al imprimir y la hoja se desbordaba.
+    +'    var ANCHO_HOJA = 794;'
+    +'    var sonda = document.createElement("div");'
+    +'    sonda.style.cssText = "position:absolute;left:-99999px;top:0;width:"+ANCHO_HOJA+"px;visibility:hidden;";'
+    +'    sonda.innerHTML = "<div class=\\"hoja-cond\\" style=\\"min-height:0;height:auto;\\">" + _wmIsoHtml + headerTpl.innerHTML + "<div class=\\"hoja-cond-cuerpo\\"><div class=\\"hoja-cond-cuerpo-clausulas\\"></div>" + footerTpl.innerHTML + "</div></div>";'
+    +'    document.body.appendChild(sonda);'
+    +'    var altoFijo = sonda.firstChild.getBoundingClientRect().height;'
+    +'    sonda.remove();'
+    +'    if(altoFijo > 0) AREA_UTIL = HOJA_ALTO - Math.ceil(altoFijo) - 6;'
     +'    dbg("Área útil por hoja: "+AREA_UTIL+"px");'
     // Obtener todas las cláusulas (estaban en source, las pasamos a un contenedor temporal para medir)
     +'    var headerHTML = headerTpl.innerHTML;'
@@ -15525,17 +15699,27 @@ function generarPdfCotEnVentana(cot, winRef){
     +'    var sourceHTML = source.innerHTML;'
     // Mover todo el source a un contenedor temporal visible (off-screen) para medir
     +'    var medidor = document.createElement("div");'
-    +'    medidor.style.cssText = "position:absolute;left:-99999px;top:0;width:"+(wrap.offsetWidth || 794)+"px;visibility:hidden;";'
-    +'    medidor.innerHTML = sourceHTML;'
+    +'    medidor.style.cssText = "position:absolute;left:-99999px;top:0;width:"+ANCHO_HOJA+"px;visibility:hidden;";'
+    +'    medidor.innerHTML = "<div class=\\"hoja-cond-cuerpo\\"><div class=\\"hoja-cond-cuerpo-clausulas\\">" + sourceHTML + "</div></div>";'
     +'    document.body.appendChild(medidor);'
     +'    var clausulas = medidor.querySelectorAll(".cot-clausula");'
     +'    var alturas = [];'
     +'    clausulas.forEach(function(cl){'
-    +'      alturas.push({'
+    +'      var item = {'
     +'        html: cl.outerHTML,'
     +'        alto: cl.getBoundingClientRect().height,'
     +'        salto: cl.classList.contains("cot-clausula-salto")'
-    +'      });'
+    +'      };'
+    // Más alta que una hoja: se guardan sus renglones para repartirla
+    +'      if(item.alto + 18 > AREA_UTIL){'
+    +'        var tit = cl.querySelector(".cot-clausula-titulo");'
+    +'        item.titHtml = tit ? tit.outerHTML : "";'
+    +'        item.titTxt = tit ? tit.textContent : "";'
+    +'        item.titAlto = tit ? tit.getBoundingClientRect().height + 5 : 0;'
+    +'        item.rens = [];'
+    +'        cl.querySelectorAll(".cot-renglon").forEach(function(r){ item.rens.push({html: r.outerHTML, alto: r.getBoundingClientRect().height}); });'
+    +'      }'
+    +'      alturas.push(item);'
     +'    });'
     +'    medidor.remove();'
     +'    dbg("Cláusulas: "+alturas.length+", alturas:", alturas.map(function(a){return Math.round(a.alto);}));'
@@ -15543,9 +15727,32 @@ function generarPdfCotEnVentana(cot, winRef){
     +'    var hojas = [];'
     +'    var hojaActual = [];'
     +'    var altoActual = 0;'
+    +'    function cerrarHoja(){ if(hojaActual.length){ hojas.push(hojaActual); } hojaActual = []; altoActual = 0; }'
+    +'    function escTxt(t){ return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }'
     +'    alturas.forEach(function(item, idx){'
     +'      var altoConMargen = item.alto + 18;' // +18 del margin-bottom
     +'      var necesitaSaltoManual = item.salto && idx > 0;'
+    // Cláusula más alta que una hoja: se reparte por renglones; empieza en la
+    // hoja actual si caben el título y su primer párrafo, y continúa en hojas
+    // nuevas con el título "(cont.)". Nunca se recorta texto.
+    +'      if(item.rens && item.rens.length){'
+    +'        if(necesitaSaltoManual) cerrarHoja();'
+    +'        var primeros = item.titAlto + item.rens[0].alto + 18;'
+    +'        if(hojaActual.length && altoActual + primeros > AREA_UTIL) cerrarHoja();'
+    +'        var k = 0, buf = [], altoBuf = item.titAlto;'
+    +'        var pieza = function(){'
+    +'          var t = k === 0 ? item.titHtml : "<div class=\\"cot-clausula-titulo\\">" + escTxt(item.titTxt) + " (cont.)</div>";'
+    +'          return "<div class=\\"cot-clausula cot-clausula-parte\\">" + t + "<div class=\\"cot-clausula-texto\\">" + buf.join("") + "</div></div>";'
+    +'        };'
+    +'        item.rens.forEach(function(r){'
+    +'          if(buf.length && altoActual + altoBuf + r.alto + 18 > AREA_UTIL){'
+    +'            hojaActual.push(pieza()); cerrarHoja(); k++; buf = []; altoBuf = item.titAlto;'
+    +'          }'
+    +'          buf.push(r.html); altoBuf += r.alto;'
+    +'        });'
+    +'        if(buf.length){ hojaActual.push(pieza()); altoActual += altoBuf + 18; }'
+    +'        return;'
+    +'      }'
     +'      var noCabe = (altoActual + altoConMargen) > AREA_UTIL;'
     +'      if((necesitaSaltoManual || noCabe) && hojaActual.length > 0){'
     +'        hojas.push(hojaActual);'
@@ -21762,7 +21969,12 @@ window._rpEliminarFoto = _rpEliminarFoto;
 // ✨ PEGADO MÁGICO — Parser de texto a reporte estructurado
 // ═══════════════════════════════════════════════════════════════════════
 
-function rpAbrirPegadoMagico(){
+// Modal genérico de "Pegado mágico" (Reportes de Obra, Condiciones de la
+// cotización): textarea grande, recuadro "Cómo funciona", vista previa y
+// botones "🔍 Probar" / "✨ Aplicar". Los ids del textarea y de la vista
+// previa son los mismos para todos (solo hay un modal abierto a la vez).
+function _pmAbrirModal(cfg){
+  document.getElementById("modal-pegado-magico")?.remove();
   const ov = document.createElement("div");
   ov.id = "modal-pegado-magico";
   ov.style.cssText = "position:fixed;inset:0;background:rgba(11,31,58,.8);z-index:700;display:flex;align-items:flex-end;justify-content:center;";
@@ -21772,7 +21984,7 @@ function rpAbrirPegadoMagico(){
     <div style="padding:14px 18px;border-bottom:1px solid var(--g1);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#fff;z-index:1;">
       <div>
         <div style="font-size:9px;color:#F59E0B;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;">Pegado mágico</div>
-        <div style="font-size:15px;font-weight:800;color:var(--navy);">✨ Pegar reporte completo</div>
+        <div style="font-size:15px;font-weight:800;color:var(--navy);">${cfg.titulo}</div>
       </div>
       <button onclick="document.getElementById('modal-pegado-magico')?.remove()" style="background:none;border:none;font-size:22px;color:var(--tx2);cursor:pointer;">×</button>
     </div>
@@ -21780,16 +21992,59 @@ function rpAbrirPegadoMagico(){
     <div style="padding:16px;flex:1;">
 
       <div style="background:#F0F9FF;border:1px solid #7DD3FC;border-radius:8px;padding:12px;margin-bottom:14px;font-size:11px;color:#075985;line-height:1.6;">
-        <strong>💡 Cómo funciona:</strong><br>
+        ${cfg.ayudaHtml}
+      </div>
+
+      <label style="font-size:9.5px;font-weight:700;color:var(--tx2);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px;display:block;">${cfg.etiquetaTexto}</label>
+      <textarea id="rp-pegado-texto" placeholder="${escapeHtml(cfg.placeholder)}" style="width:100%;min-height:280px;font-family:'Courier New',monospace;font-size:11px;padding:12px;border:2px solid var(--g1);border-radius:8px;resize:vertical;outline:none;line-height:1.5;"></textarea>
+
+      <div id="rp-pegado-preview" style="display:none;margin-top:14px;background:#D1FAE5;border:1px solid #6EE7B7;border-radius:8px;padding:12px;">
+        <div id="rp-pegado-preview-titulo" style="font-size:10px;font-weight:800;color:#065F46;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">✓ Detectado</div>
+        <div id="rp-pegado-preview-content" style="font-size:11px;color:#065F46;line-height:1.7;"></div>
+      </div>
+
+    </div>
+
+    <div style="padding:12px 18px;border-top:1px solid var(--g1);display:flex;gap:8px;background:#fff;position:sticky;bottom:0;">
+      <button onclick="${cfg.onProbar}" style="flex:1;background:var(--off);border:1px solid var(--g1);color:var(--navy);font-size:12px;font-weight:700;padding:11px;border-radius:8px;cursor:pointer;font-family:var(--font);">🔍 Probar</button>
+      <button onclick="${cfg.onAplicar}" style="flex:2;background:#F59E0B;border:none;color:#fff;font-size:12px;font-weight:800;padding:11px;border-radius:8px;cursor:pointer;font-family:var(--font);">${cfg.textoAplicar}</button>
+    </div>
+  </div>`;
+  document.body.appendChild(ov);
+  setTimeout(() => document.getElementById("rp-pegado-texto")?.focus(), 100);
+}
+
+// Pinta la vista previa del modal de pegado mágico. tipo: "ok" (verde),
+// "aviso" (ámbar) o "error" (rojo).
+function _pmMostrarPreview(html, tipo){
+  const previewEl = document.getElementById("rp-pegado-preview");
+  const contentEl = document.getElementById("rp-pegado-preview-content");
+  const tituloEl = document.getElementById("rp-pegado-preview-titulo");
+  if(!previewEl || !contentEl) return;
+  const colores = {
+    ok:    { fondo:"#D1FAE5", borde:"#6EE7B7", texto:"#065F46", titulo:"✓ Detectado" },
+    aviso: { fondo:"#FEF3C7", borde:"#FCD34D", texto:"#92400E", titulo:"⚠️ Revisa antes de aplicar" },
+    error: { fondo:"#FEE2E2", borde:"#FCA5A5", texto:"#991B1B", titulo:"⚠️ Atención" },
+  }[tipo || "ok"];
+  previewEl.style.background = colores.fondo;
+  previewEl.style.borderColor = colores.borde;
+  contentEl.style.color = colores.texto;
+  if(tituloEl){ tituloEl.style.color = colores.texto; tituloEl.textContent = colores.titulo; }
+  previewEl.style.display = "block";
+  contentEl.innerHTML = html;
+}
+
+function rpAbrirPegadoMagico(){
+  _pmAbrirModal({
+    titulo: "✨ Pegar reporte completo",
+    ayudaHtml: `<strong>💡 Cómo funciona:</strong><br>
         1. Copia el texto completo de tu reporte (Word, PDF, Drive, lo que sea)<br>
         2. Pégalo abajo<br>
         3. Click "Procesar texto" → llenará TODOS los campos automáticamente<br>
         <br>
-        <strong>📋 Detecta automáticamente:</strong> ATENCIÓN, CLIENTE, FECHA, ASUNTO, ÁREA TRABAJADA, y las secciones numeradas (1. Descripción, 2. Alcance, 3. Resultados, etc.)
-      </div>
-
-      <label style="font-size:9.5px;font-weight:700;color:var(--tx2);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px;display:block;">Pega aquí tu texto completo</label>
-      <textarea id="rp-pegado-texto" placeholder="Pega aquí el texto completo del reporte...
+        <strong>📋 Detecta automáticamente:</strong> ATENCIÓN, CLIENTE, FECHA, ASUNTO, ÁREA TRABAJADA, y las secciones numeradas (1. Descripción, 2. Alcance, 3. Resultados, etc.)`,
+    etiquetaTexto: "Pega aquí tu texto completo",
+    placeholder: `Pega aquí el texto completo del reporte...
 
 Ejemplo:
 
@@ -21811,22 +22066,11 @@ Se llevaron a cabo trabajos de suministro y aplicación de un sistema...
 • Superficie continua y uniforme.
 • Mejora en resistencia al desgaste.
 
-..." style="width:100%;min-height:280px;font-family:'Courier New',monospace;font-size:11px;padding:12px;border:2px solid var(--g1);border-radius:8px;resize:vertical;outline:none;line-height:1.5;"></textarea>
-
-      <div id="rp-pegado-preview" style="display:none;margin-top:14px;background:#D1FAE5;border:1px solid #6EE7B7;border-radius:8px;padding:12px;">
-        <div style="font-size:10px;font-weight:800;color:#065F46;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">✓ Detectado</div>
-        <div id="rp-pegado-preview-content" style="font-size:11px;color:#065F46;line-height:1.7;"></div>
-      </div>
-
-    </div>
-
-    <div style="padding:12px 18px;border-top:1px solid var(--g1);display:flex;gap:8px;background:#fff;position:sticky;bottom:0;">
-      <button onclick="rpProbarParseo()" style="flex:1;background:var(--off);border:1px solid var(--g1);color:var(--navy);font-size:12px;font-weight:700;padding:11px;border-radius:8px;cursor:pointer;font-family:var(--font);">🔍 Probar</button>
-      <button onclick="rpAplicarPegadoMagico()" style="flex:2;background:#F59E0B;border:none;color:#fff;font-size:12px;font-weight:800;padding:11px;border-radius:8px;cursor:pointer;font-family:var(--font);">✨ Aplicar al reporte</button>
-    </div>
-  </div>`;
-  document.body.appendChild(ov);
-  setTimeout(() => document.getElementById("rp-pegado-texto")?.focus(), 100);
+...`,
+    onProbar: "rpProbarParseo()",
+    onAplicar: "rpAplicarPegadoMagico()",
+    textoAplicar: "✨ Aplicar al reporte",
+  });
 }
 
 // Helper para limpiar formato Markdown (asteriscos, guiones bajos, etc.) —
@@ -21958,23 +22202,9 @@ function rpParsearTexto(txt){
 
 function rpProbarParseo(){
   const txt = document.getElementById("rp-pegado-texto")?.value || "";
-  const previewEl = document.getElementById("rp-pegado-preview");
-  const contentEl = document.getElementById("rp-pegado-preview-content");
-  if(!txt.trim()){
-    if(previewEl){
-      previewEl.style.background = "#FEE2E2";
-      previewEl.style.borderColor = "#FCA5A5";
-      previewEl.style.display = "block";
-      contentEl.style.color = "#991B1B";
-      contentEl.innerHTML = "⚠️ Pega algún texto primero";
-    }
-    return;
-  }
+  if(!txt.trim()){ _pmMostrarPreview("⚠️ Pega algún texto primero", "error"); return; }
   const parsed = rpParsearTexto(txt);
-  if(!parsed){
-    contentEl.innerHTML = "⚠️ No se pudo procesar el texto";
-    return;
-  }
+  if(!parsed){ _pmMostrarPreview("⚠️ No se pudo procesar el texto", "error"); return; }
 
   let html = "";
   const camposNombres = {
@@ -22005,11 +22235,7 @@ function rpProbarParseo(){
     html += "<em>No se detectaron secciones numeradas (1., 2., 3...)</em><br>";
   }
 
-  previewEl.style.background = "#D1FAE5";
-  previewEl.style.borderColor = "#6EE7B7";
-  contentEl.style.color = "#065F46";
-  previewEl.style.display = "block";
-  contentEl.innerHTML = html;
+  _pmMostrarPreview(html, "ok");
 }
 
 function rpAplicarPegadoMagico(){
@@ -22054,6 +22280,287 @@ window.rpAbrirPegadoMagico = rpAbrirPegadoMagico;
 window.rpProbarParseo = rpProbarParseo;
 window.rpAplicarPegadoMagico = rpAplicarPegadoMagico;
 window.rpParsearTexto = rpParsearTexto;
+
+// ═══════════════════════════════════════════════════════════════════════
+// ✨ PEGADO MÁGICO — Condiciones Generales de la cotización
+// Puro regex/heurística en el navegador (sin IA). Convierte texto pegado de
+// Word/PDF en cláusulas {titulo, texto} y las aplica como cláusulas
+// personalizadas de la cotización en edición (solo en memoria).
+// ═══════════════════════════════════════════════════════════════════════
+
+// Viñetas que llegan pegadas de Word/PDF (incluye los símbolos de la fuente
+// Symbol/Wingdings que Word copia como caracteres de uso privado).
+const _COT_PM_VINETAS = "•●▪▫◦‣⁃∙·○■□➢➤►▶✓✔✗";
+const _COT_PM_ORDINALES = "primera|segunda|tercera|cuarta|quinta|sexta|s[eé]ptima|octava|novena|d[eé]cima(?:\\s*(?:primera|segunda|tercera|cuarta|quinta|sexta|s[eé]ptima|octava|novena))?|und[eé]cima|duod[eé]cima";
+
+// Normaliza texto pegado: saltos de línea, espacios no separables, caracteres
+// invisibles, tabuladores y comillas tipográficas.
+function _cotPmNormalizar(txt){
+  return String(txt || "")
+    .replace(/\r\n?/g, "\n")
+    .replace(/[​-‍﻿­]/g, "")
+    .replace(/[      ]/g, " ")
+    .replace(/\t/g, " ")
+    .replace(/[“”„‟]/g, '"')
+    .replace(/[‘’‚‛]/g, "'")
+    .replace(/…/g, "...")
+    .split("\n").map(function(l){ return l.replace(/ {2,}/g, " ").replace(/\s+$/, ""); }).join("\n")
+    .trim();
+}
+
+// ¿Con qué marca empieza la línea? Devuelve {tipo, resto} o null.
+// tipo: num (1. / 1) / PRIMERA.-), romano (I. / II)), mayus (TÍTULO EN
+// MAYÚSCULAS), dospuntos (Título:), letra (a) / (a) / a.), vineta (• - –),
+// subnum (1.1, nunca inicia cláusula).
+function _cotPmMarca(linea){
+  let l = linea.trim().replace(/^#{1,6}\s*/, "").replace(/^>\s*/, "");
+  let s = l.replace(/^(\*\*|__)\s*/, "");
+  if(!s) return null;
+  let m;
+  if((m = s.match(/^\d{1,2}\.\d{1,2}(?:\.\d{1,2})*\.?\s+(.+)$/))) return { tipo:"subnum", resto:m[1] };
+  if((m = s.match(new RegExp("^(?:cl[aá]usula\\s+)?(" + _COT_PM_ORDINALES + ")\\b\\s*(?:\\.-|\\.–|[\\.\\-–:)])?\\s*(.*)$", "i")))
+     && /^(cl[aá]usula\s|[A-ZÁÉÍÓÚÑ]{4,})/.test(s)) return { tipo:"num", resto:m[2] };
+  if((m = s.match(/^(?:cl[aá]usula\s+)?(\d{1,2})\s*(?:\.-|\.–|\.|\)|-|–|:)(?:\s+|(?=[A-ZÁÉÍÓÚÑ¿"]))(.+)$/i))) return { tipo:"num", resto:m[2] };
+  if((m = s.match(/^([IVX]{1,5})\s*(?:\.-|\.|\)|-|–)\s+(.+)$/)) && /^(X{0,3})(IX|IV|V?I{0,3})$/.test(m[1])) return { tipo:"romano", resto:m[2] };
+  if((m = s.match(/^\(?([a-zA-ZñÑ])\)\s+(.+)$/)) || (m = s.match(/^([a-zñ])\s*(?:\.-|\.|-)\s+(.+)$/))) return { tipo:"letra", resto:m[2] };
+  if((m = s.match(new RegExp("^(?:[" + _COT_PM_VINETAS + "]\\s*|[\\-–—*]\\s+)(.+)$")))) return { tipo:"vineta", resto:m[1] };
+  const limpio = _rpLimpiarMd(s);
+  const letras = (limpio.match(/[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/g) || []).length;
+  const palabras = limpio.split(/\s+/).filter(Boolean).length;
+  if(letras >= 4 && limpio.length <= 90 && palabras <= 12 && !/[a-záéíóúüñ]/.test(limpio)) return { tipo:"mayus", resto:limpio };
+  if(/:$/.test(limpio) && limpio.length <= 80 && palabras <= 10 && /^[A-ZÁÉÍÓÚÑ¿]/.test(limpio)) return { tipo:"dospuntos", resto:limpio };
+  return null;
+}
+
+// Separa el texto que sigue a la marca en título y cuerpo:
+// "Precio: El precio…" → {Precio, El precio…}; "Garantía" → {Garantía, ""};
+// una oración larga sin título → {"", oración}.
+function _cotPmTituloCuerpo(resto, tipo){
+  resto = _rpLimpiarMd(resto || "");
+  if(tipo === "mayus" || tipo === "dospuntos") return { titulo: resto.replace(/[\s:.\-–]+$/, ""), cuerpo: "" };
+  const corto = t => t.length >= 2 && t.length <= 70 && t.split(/\s+/).length <= 9;
+  let m = resto.match(/^(.+?)\s*(?::|\.-|\.–|\s[–—-]\s)\s*(.+)$/);
+  if(m && corto(m[1])) return { titulo: _rpLimpiarMd(m[1]), cuerpo: m[2] };
+  m = resto.match(/^([^.]+)\.\s+([A-ZÁÉÍÓÚÑ¿¡"(].*)$/);
+  if(m && corto(m[1]) && m[1].split(/\s+/).length <= 6) return { titulo: m[1], cuerpo: m[2] };
+  if(resto.length <= 90 && !/[.;]$/.test(resto)) return { titulo: resto.replace(/[\s:]+$/, ""), cuerpo: "" };
+  return { titulo: "", cuerpo: resto };
+}
+
+// Limpia el cuerpo de una cláusula: viñetas normalizadas a "• ", markdown
+// fuera, máximo una línea en blanco entre párrafos. Conserva los saltos.
+function _cotPmLimpiarCuerpo(lineas){
+  const reVineta = new RegExp("^\\s*(?:[" + _COT_PM_VINETAS + "]\\s*|[\\-–—*]\\s+)");
+  return lineas.map(function(l){
+    if(!l.trim()) return "";
+    const conVineta = reVineta.test(l);
+    const t = _rpLimpiarMd(l.replace(reVineta, ""));
+    return conVineta ? "• " + t : t;
+  }).join("\n").replace(/\n{3,}/g, "\n\n").trim();
+}
+
+// Parser principal: texto → {clausulas:[{titulo, texto}], tipo, sinEstructura, encabezado}
+function cotParsearCondiciones(txt){
+  const t = _cotPmNormalizar(txt);
+  if(!t) return null;
+  const lineas = t.split("\n");
+  const marcas = lineas.map(_cotPmMarca);
+
+  // Nivel principal: el tipo de la primera marca que se repite al menos dos
+  // veces (así "1." manda sobre los "a)" y viñetas internos, y un título en
+  // MAYÚSCULAS manda sobre las viñetas que trae debajo). Si ninguna se
+  // repite, la primera marca que aparezca.
+  const grupo = tp => (tp === "mayus" || tp === "dospuntos") ? "titulo" : tp;
+  const cuenta = {};
+  marcas.forEach(function(mk){ if(mk && mk.tipo !== "subnum") cuenta[grupo(mk.tipo)] = (cuenta[grupo(mk.tipo)] || 0) + 1; });
+  let principal = null;
+  for(const mk of marcas){ if(mk && mk.tipo !== "subnum" && cuenta[grupo(mk.tipo)] >= 2){ principal = grupo(mk.tipo); break; } }
+  if(!principal){ const primera = marcas.find(mk => mk && mk.tipo !== "subnum"); if(primera) principal = grupo(primera.tipo); }
+  // Con títulos en MAYÚSCULAS presentes, las líneas "Algo:" se quedan como
+  // texto del cuerpo (suelen introducir una lista dentro de la cláusula).
+  const hayMayus = marcas.some(mk => mk && mk.tipo === "mayus");
+  const esInicio = mk => !!mk && grupo(mk.tipo) === principal && !(principal === "titulo" && hayMayus && mk.tipo === "dospuntos");
+
+  const res = { clausulas: [], tipo: principal, sinEstructura: false, encabezado: "" };
+  if(!principal){
+    res.sinEstructura = true;
+    res.clausulas.push({ titulo: "", texto: _cotPmLimpiarCuerpo(lineas) });
+    return res;
+  }
+
+  let preambulo = [], actual = null;
+  lineas.forEach(function(l, i){
+    const mk = marcas[i];
+    if(esInicio(mk)){
+      if(actual) res.clausulas.push(actual);
+      const tc = _cotPmTituloCuerpo(mk.resto, mk.tipo);
+      actual = { titulo: tc.titulo, lineas: tc.cuerpo ? [tc.cuerpo] : [] };
+    } else if(actual){
+      actual.lineas.push(l);
+    } else {
+      preambulo.push(l);
+    }
+  });
+  if(actual) res.clausulas.push(actual);
+  res.clausulas = res.clausulas.map(c => ({ titulo: c.titulo, texto: _cotPmLimpiarCuerpo(c.lineas) }))
+    .filter(c => c.titulo || c.texto);
+
+  // Texto antes de la primera cláusula: si es solo el encabezado del
+  // documento ("CONDICIONES GENERALES DE VENTA") se omite; si es texto real,
+  // se conserva como primera cláusula sin título para no perder nada.
+  const pre = _cotPmLimpiarCuerpo(preambulo);
+  if(pre){
+    if(pre.length <= 100 && pre.split("\n").length <= 2 && /condici|t[eé]rmino|cl[aá]usula/i.test(pre)) res.encabezado = pre;
+    else res.clausulas.unshift({ titulo: "", texto: pre });
+  }
+  if(!res.clausulas.length){
+    res.sinEstructura = true;
+    res.clausulas.push({ titulo: "", texto: _cotPmLimpiarCuerpo(lineas) });
+  }
+  return res;
+}
+
+function cotAbrirPegadoCondiciones(){
+  _pmAbrirModal({
+    titulo: "✨ Pegar condiciones generales",
+    ayudaHtml: `<strong>💡 Cómo funciona:</strong><br>
+        1. Copia las condiciones completas (Word, PDF, correo…)<br>
+        2. Pégalas abajo y toca "🔍 Probar" para ver qué cláusulas se detectaron<br>
+        3. Toca "✨ Aplicar": si la cotización ya tiene condiciones, te preguntará si reemplazarlas o agregarlas al final<br>
+        <br>
+        <strong>📋 Detecta cada cláusula por:</strong> numeración (1. · 1) · I. · a) · PRIMERA.-), viñetas (• - –) o títulos en MAYÚSCULAS / terminados en ":". Los incisos y viñetas dentro de una cláusula numerada se quedan en su texto.<br>
+        <strong>📝 Solo cambia el formulario:</strong> nada se guarda hasta que toques Guardar.`,
+    etiquetaTexto: "Pega aquí las condiciones",
+    placeholder: `Pega aquí las condiciones generales...
+
+Ejemplo:
+
+1. Forma de pago
+60% de anticipo y 40% contra entrega del área terminada.
+
+2. Garantía: 12 meses a partir de la entrega formal, bajo estas condiciones:
+a) Aviso por escrito dentro de 30 días naturales.
+b) No aplica con humedad ascendente o fallas en la losa.
+
+3. Tiempo de ejecución
+Dos días por cada 100 m² en área libre y continua.`,
+    onProbar: "cotProbarPegadoCondiciones()",
+    onAplicar: "cotAplicarPegadoCondiciones()",
+    textoAplicar: "✨ Aplicar a condiciones",
+  });
+}
+
+const _COT_PM_TIPOS = { num:"numeración", romano:"números romanos", titulo:"títulos (MAYÚSCULAS o con dos puntos)", letra:"incisos (a, b, c…)", vineta:"viñetas" };
+
+function cotProbarPegadoCondiciones(){
+  const txt = document.getElementById("rp-pegado-texto")?.value || "";
+  if(!txt.trim()){ _pmMostrarPreview("⚠️ Pega algún texto primero", "error"); return; }
+  const r = cotParsearCondiciones(txt);
+  if(!r){ _pmMostrarPreview("⚠️ No se pudo procesar el texto", "error"); return; }
+  let html = "";
+  if(r.sinEstructura){
+    html += "<strong>No se detectó estructura de cláusulas.</strong> Todo el texto se cargará como <strong>una sola cláusula</strong> sin título (en el PDF saldrá como \"Cláusula adicional\"; puedes ponerle título después).<br><br>";
+  } else {
+    html += "<strong>📝 " + r.clausulas.length + " cláusula" + (r.clausulas.length === 1 ? "" : "s") + " detectada" + (r.clausulas.length === 1 ? "" : "s") + "</strong> (por " + (_COT_PM_TIPOS[r.tipo] || r.tipo) + "):<br>";
+    if(r.encabezado) html += "<span style='opacity:.75;'>Se omitió el encabezado «" + escapeHtml(r.encabezado.replace(/\n/g, " ")) + "».</span><br>";
+  }
+  r.clausulas.forEach(function(c, i){
+    const lineas = c.texto.split("\n").filter(l => l.trim());
+    const muestra = lineas.slice(0, 2).map(l => escapeHtml(l.length > 110 ? l.slice(0, 110) + "…" : l)).join("<br>");
+    html += "<div style='margin:8px 0 0;padding:7px 9px;background:rgba(255,255,255,.55);border-radius:6px;'>"
+      + "<strong>" + (i + 1) + ". " + (c.titulo ? escapeHtml(c.titulo) : "<em>(sin título)</em>") + "</strong>"
+      + (muestra ? "<div style='opacity:.8;margin-top:2px;'>" + muestra + (lineas.length > 2 ? "<br>…" : "") + "</div>" : "<div style='opacity:.7;'><em>(sin texto)</em></div>")
+      + "<div style='opacity:.6;font-size:10px;margin-top:2px;'>" + lineas.length + " renglón" + (lineas.length === 1 ? "" : "es") + " · " + c.texto.length.toLocaleString("es-MX") + " caracteres</div>"
+    + "</div>";
+  });
+  if(r.clausulas.some(c => /vigencia/i.test(c.titulo))){
+    html += "<br>ℹ️ El PDF ya agrega \"Vigencia de la Propuesta\" al final; si pegas tu propia cláusula de vigencia saldrá dos veces.";
+  }
+  _pmMostrarPreview(html, r.sinEstructura ? "aviso" : "ok");
+}
+
+// Cláusulas que hoy tiene la cotización en edición (estándar visibles con
+// texto + personalizadas con texto o título).
+function _cotContarCondicionesActuales(){
+  let n = 0;
+  COT_CLAUSULAS_STD.forEach(function(c){
+    const el = document.getElementById(c.id);
+    if(!_cotClausulasEliminadas.has(c.id) && el && el.value.trim()) n++;
+  });
+  (_cotClausulasCustom || []).forEach(function(c){ if((c.titulo || "").trim() || (c.texto || "").trim()) n++; });
+  return n;
+}
+
+// Diálogo con 3 opciones (el confirm() nativo solo tiene 2).
+function _cotPmPreguntarModo(nActuales, nNuevas, alElegir){
+  document.getElementById("modal-pm-modo")?.remove();
+  const ov = document.createElement("div");
+  ov.id = "modal-pm-modo";
+  ov.style.cssText = "position:fixed;inset:0;background:rgba(11,31,58,.6);z-index:760;display:flex;align-items:center;justify-content:center;padding:16px;";
+  const boton = (modo, texto, estilo) => '<button data-pm-modo="' + modo + '" style="width:100%;' + estilo + 'font-size:12px;font-weight:800;padding:11px;border-radius:8px;cursor:pointer;font-family:var(--font);margin-top:8px;">' + texto + '</button>';
+  ov.innerHTML = '<div style="background:#fff;border-radius:14px;max-width:420px;width:100%;padding:18px;">'
+    + '<div style="font-size:9px;color:#F59E0B;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;">Pegado mágico</div>'
+    + '<div style="font-size:15px;font-weight:800;color:var(--navy);margin-top:2px;">La cotización ya tiene condiciones</div>'
+    + '<div style="font-size:11.5px;color:var(--tx2);line-height:1.6;margin-top:6px;">Hay <strong>' + nActuales + ' cláusula' + (nActuales === 1 ? '' : 's') + '</strong> escrita' + (nActuales === 1 ? '' : 's') + '. ¿Qué hago con las <strong>' + nNuevas + '</strong> que pegaste?</div>'
+    + boton("reemplazar", "Reemplazar las actuales", "background:#F59E0B;border:none;color:#fff;")
+    + boton("agregar", "Agregar al final", "background:rgba(30,111,217,.08);border:1px solid rgba(30,111,217,.35);color:#1E6FD9;")
+    + boton("cancelar", "Cancelar", "background:var(--off);border:1px solid var(--g1);color:var(--navy);")
+    + '<div style="font-size:10px;color:var(--tx2);margin-top:10px;line-height:1.5;">Nada se guarda hasta que toques Guardar. Puedes revertirlo con ↶ Deshacer.</div>'
+  + '</div>';
+  ov.addEventListener("click", function(e){
+    const b = e.target.closest("[data-pm-modo]");
+    if(!b && e.target !== ov) return;
+    ov.remove();
+    alElegir(b ? b.dataset.pmModo : "cancelar");
+  });
+  document.body.appendChild(ov);
+}
+
+// Aplica cláusulas pegadas al formulario (solo memoria). modo: "reemplazar"
+// (oculta las estándar y quita las personalizadas, como una plantilla) o
+// "agregar" (al final de las personalizadas). No toca ningún otro campo.
+function _cotAplicarClausulasPegadas(clausulas, modo){
+  if(typeof _cotSnapshotAhora === "function") _cotSnapshotAhora();   // estado previo para ↶ Deshacer
+  const nuevas = clausulas.map(c => ({ titulo: c.titulo || "", texto: c.texto || "", saltoAntes: false }));
+  if(modo === "reemplazar"){
+    _cotClausulasSaltos = new Set();
+    COT_CLAUSULAS_STD.forEach(function(std){
+      _cotClausulasEliminadas.add(std.id);
+      const fg = document.getElementById("fg-" + std.id);
+      if(fg) fg.style.display = "none";
+    });
+    _cotClausulasCustom = nuevas;
+  } else {
+    _cotClausulasCustom = (_cotClausulasCustom || []).concat(nuevas);
+  }
+  _renderClausulasCustom();
+  if(typeof _refrescarBotonesSaltoStd === "function") _refrescarBotonesSaltoStd();
+  if(typeof _cotSnapshotAhora === "function") _cotSnapshotAhora();
+  if(typeof _cotActualizarIndicadorCambios === "function") _cotActualizarIndicadorCambios();
+}
+
+function cotAplicarPegadoCondiciones(){
+  const txt = document.getElementById("rp-pegado-texto")?.value || "";
+  if(!txt.trim()){ _pmMostrarPreview("⚠️ Pega algún texto primero", "error"); return; }
+  const r = cotParsearCondiciones(txt);
+  if(!r || !r.clausulas.length){ _pmMostrarPreview("⚠️ No se pudo procesar el texto", "error"); return; }
+  const terminar = function(modo){
+    if(modo !== "reemplazar" && modo !== "agregar") return;   // Cancelar: no cambia nada
+    _cotAplicarClausulasPegadas(r.clausulas, modo);
+    document.getElementById("modal-pegado-magico")?.remove();
+    const n = r.clausulas.length;
+    showToast("✨ " + n + " cláusula" + (n === 1 ? "" : "s") + (modo === "reemplazar" ? " — condiciones reemplazadas" : " agregada" + (n === 1 ? "" : "s") + " al final") + " · sin guardar");
+    setTimeout(function(){ document.getElementById("cot-clausulas-custom-wrap")?.scrollIntoView({ behavior:"smooth", block:"start" }); }, 80);
+  };
+  const actuales = _cotContarCondicionesActuales();
+  if(actuales > 0) _cotPmPreguntarModo(actuales, r.clausulas.length, terminar);
+  else terminar("reemplazar");
+}
+
+window.cotParsearCondiciones = cotParsearCondiciones;
+window.cotAbrirPegadoCondiciones = cotAbrirPegadoCondiciones;
+window.cotProbarPegadoCondiciones = cotProbarPegadoCondiciones;
+window.cotAplicarPegadoCondiciones = cotAplicarPegadoCondiciones;
 
 // ═══════════════════════════════════════════════════════════════════════
 // 📄 GENERADOR DE PDF DEL REPORTE DE OBRA
@@ -33091,14 +33598,22 @@ function generarPdfCotPremium(cot, winRef, fotoDataUrl){
   });
   var _vigTxt = 'La presente propuesta tiene una vigencia de '+vigencia+' días naturales contados a partir de la fecha de emisión.';
   condsRaw.push({t:'Vigencia de la Propuesta', v:_vigTxt});
+  // Cada cláusula es un bloque; si no cabe ni en una página vacía,
+  // _fpDistribuirBloques la reparte por renglones con el título "(cont.)".
   var condsBloques = condsRaw.map(function(c, i){
-    return '<div class="fp-item" style="display:flex;gap:12px;padding:12px 0;border-top:1px solid #E7EAEE;break-inside:avoid;">'
-      + '<div class="fp-badge" style="width:17px;height:17px;font-size:8.5px;border-radius:4px;flex-shrink:0;margin-top:1px;">'+(i+1)+'</div>'
-      + '<div style="flex:1;">'
-        + '<div style="font-size:9.5px;font-weight:700;color:#0B1F3A;letter-spacing:.3px;margin-bottom:5px;">'+escapeHtml(c.t)+'</div>'
-        + '<div style="font-size:10px;color:#1B2430;line-height:1.6;white-space:pre-wrap;">'+escapeHtml(c.v)+'</div>'
-      + '</div>'
-    + '</div>';
+    var renglones = _cotRenglonesClausula(c.v).map(function(r){ return '<div class="fp-renglon" style="min-height:1em;">'+(r ? escapeHtml(r) : '&nbsp;')+'</div>'; });
+    var pieza = function(k, rs){
+      return '<div class="fp-item" style="display:flex;gap:12px;padding:12px 0;'+(k === 0 ? 'border-top:1px solid #E7EAEE;' : '')+'break-inside:avoid;">'
+        + (k === 0
+            ? '<div class="fp-badge" style="width:17px;height:17px;font-size:8.5px;border-radius:4px;flex-shrink:0;margin-top:1px;">'+(i+1)+'</div>'
+            : '<div style="width:17px;flex-shrink:0;"></div>')
+        + '<div style="flex:1;">'
+          + '<div style="font-size:9.5px;font-weight:700;color:#0B1F3A;letter-spacing:.3px;margin-bottom:5px;">'+escapeHtml(c.t)+(k === 0 ? '' : ' (cont.)')+'</div>'
+          + '<div style="font-size:10px;color:#1B2430;line-height:1.6;white-space:pre-wrap;">'+rs.join('')+'</div>'
+        + '</div>'
+      + '</div>';
+    };
+    return { html: pieza(0, renglones), renglones: renglones, pieza: pieza };
   });
 
   var CSS = _fpCss();
@@ -33308,13 +33823,33 @@ function _fpDistribuirBloques(bloques, eyebrow, h1, logoAzul, nombreCliente, pro
   var paginas = [];
   var actual = [];
   var altoActual = 0;
-  bloques.forEach(function(html){
+  var disponible = function(){ return HOJA_ALTO - (paginas.length === 0 ? HEADER_ALTO_P1 : HEADER_ALTO_CONT) - FOOTER_ALTO - PADDING_VERT; };
+  var cerrar = function(){ if(actual.length) paginas.push(actual); actual = []; altoActual = 0; };
+  // Un bloque es HTML, o {html, renglones, pieza(k, renglones)} para los que
+  // pueden partirse (cláusulas de condiciones).
+  bloques.forEach(function(b){
+    var partible = b && typeof b === 'object' && b.renglones && b.renglones.length;
+    var html = partible ? b.html : (typeof b === 'object' ? b.html : b);
     var h = medir(html);
-    var headerActual = paginas.length === 0 ? HEADER_ALTO_P1 : HEADER_ALTO_CONT;
-    var disponible = HOJA_ALTO - headerActual - FOOTER_ALTO - PADDING_VERT;
-    if(altoActual + h > disponible && actual.length > 0){
-      paginas.push(actual); actual = []; altoActual = 0;
+    // Más alto que una página vacía: se reparte por renglones (empieza en la
+    // página actual si caben el título y su primer párrafo) en vez de desbordarse.
+    if(partible && h > HOJA_ALTO - HEADER_ALTO_CONT - FOOTER_ALTO - PADDING_VERT){
+      var cabeza0 = medir(b.pieza(0, [])), cabezaK = medir(b.pieza(1, []));
+      sandbox.innerHTML = html;
+      var altos = Array.prototype.map.call(sandbox.querySelectorAll('.fp-renglon'), function(el){ return el.getBoundingClientRect().height; });
+      var primeros = cabeza0 + (altos[0] || 0);
+      if(actual.length && altoActual + primeros > disponible()) cerrar();
+      var k = 0, buf = [], altoBuf = cabeza0;
+      b.renglones.forEach(function(r, i){
+        if(buf.length && altoActual + altoBuf + altos[i] > disponible()){
+          actual.push(b.pieza(k, buf)); cerrar(); k++; buf = []; altoBuf = cabezaK;
+        }
+        buf.push(r); altoBuf += altos[i];
+      });
+      if(buf.length){ actual.push(b.pieza(k, buf)); altoActual += altoBuf; }
+      return;
     }
+    if(altoActual + h > disponible() && actual.length > 0) cerrar();
     actual.push(html); altoActual += h;
   });
   if(actual.length) paginas.push(actual);
