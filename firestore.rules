@@ -87,6 +87,15 @@ service cloud.firestore {
       allow read: if request.auth != null && request.auth.uid == uid;
     }
 
+    // ── Leads HOME (home_leads) ──────────────────────────────────────
+    // Prospectos de HOME by ROMSA (Messenger, Instagram, WhatsApp
+    // Business). Solo admin: lista fija o usuarios/{uid}.rol == "admin"
+    // (leído con get() en perfil()). Técnico y editor_fotos quedan fuera;
+    // por eso home_leads también se excluye del catch-all de abajo.
+    match /home_leads/{leadId} {
+      allow read, write: if esAdmin();
+    }
+
     // ── EXCEPCIÓN: Vista pública de obras (link para clientes) ───────
     // La lectura pública (sin login) NO SE TOCA — sigue funcionando
     // exactamente igual. La escritura ya requería sesión iniciada; se le
@@ -121,11 +130,13 @@ service cloud.firestore {
     // para esas dos colecciones (se comprobó exactamente este hueco con
     // el emulador antes de este ajuste). Por eso aquí se captura el
     // nombre de la colección de nivel superior como variable y se
-    // excluyen esas dos por nombre.
+    // excluyen esas colecciones por nombre (usuarios, checkins_login y
+    // home_leads, que es solo para admin).
     match /{coleccion}/{document=**} {
       allow read, write: if request.auth != null && !esSoloFotos()
         && coleccion != "usuarios"
-        && coleccion != "checkins_login";
+        && coleccion != "checkins_login"
+        && coleccion != "home_leads";
     }
   }
 }
