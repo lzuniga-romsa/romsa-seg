@@ -3136,11 +3136,15 @@ body.in-plantrabajo #app, body.in-leadshome #app{
           <div id="cot-partidas-wrap"></div>
           <!-- Totales -->
           <div style="border-top:2px solid var(--off);padding-top:12px;margin-top:4px;">
-            <div style="display:flex;justify-content:space-between;padding:5px 0;font-size:12px;color:var(--tx2);">
+            <div id="cot-fila-subtotal" style="display:flex;justify-content:space-between;padding:5px 0;font-size:12px;color:var(--tx2);">
               <span>Subtotal</span><span id="cot-subtotal" style="font-weight:600;">$0.00</span>
             </div>
-            <div style="display:flex;justify-content:space-between;padding:5px 0;font-size:12px;color:var(--tx2);border-bottom:1px solid var(--g1);">
+            <div id="cot-fila-iva" style="display:flex;justify-content:space-between;padding:5px 0;font-size:12px;color:var(--tx2);border-bottom:1px solid var(--g1);">
               <span>IVA 8% (Región Fronteriza)</span><span id="cot-iva" style="font-weight:600;">$0.00</span>
+            </div>
+            <!-- HOME guardada con el esquema anterior: migración manual -->
+            <div id="cot-iva-migrar" style="display:none;margin:8px 0 2px;">
+              <button type="button" onclick="cotAplicarIvaIncluido()" style="width:100%;background:rgba(195,111,74,.08);border:1px dashed rgba(195,111,74,.55);color:#9A4F2E;font-size:11px;font-weight:700;padding:9px;border-radius:8px;cursor:pointer;font-family:var(--font);">Aplicar IVA incluido (8%)</button>
             </div>
             <div style="display:flex;justify-content:space-between;padding:10px 0 4px;font-size:18px;font-weight:900;color:var(--navy);">
               <span>Gran Total</span><span id="cot-total">$0.00</span>
@@ -13949,6 +13953,7 @@ async function eliminarCotizacion(id, folio){
 // ── Abrir / nueva cotización ──────────────────────────────────────
 function showNuevaCot(){
   cotActivaId=null;
+  _cotIvaIncl = true;   // las cotizaciones nuevas usan IVA incluido si son HOME
   window._cotizacionLeadOrigen = null;   // Leads HOME lo vuelve a poner si la abre desde un lead
   document.getElementById("cot-form-titulo").textContent="Nueva cotización";
   _cotModalidad = "industrial"; // default
@@ -14027,6 +14032,7 @@ function cerrarFormCot(){
 function abrirCot(id){
   var c=cotizaciones.find(function(x){return x.id===id;});
   if(!c)return;
+  _cotIvaIncl = !!c.ivaIncluido;   // HOME antiguas (sin el campo) se ven exactamente como antes
   window._cotizacionLeadOrigen = null;   // abrir otra cotización no la vincula a un lead
   cotActivaId=id;
   document.getElementById("cot-form-titulo").textContent="Editar — "+c.folio;
@@ -14345,6 +14351,9 @@ function cambiarModalidadCot(modalidad){
   if(modalidad === "rackline"){
     _aplicarPlantillaRacklinePorDefault();
   }
+  // HOME con IVA incluido muestra precios y totales distintos: refrescar
+  if(typeof renderPartidasCot === "function" && document.getElementById("cot-partidas-wrap")) renderPartidasCot();
+  if(typeof calcTotalesCot === "function") calcTotalesCot();
 }
 
 // Aplica automáticamente la plantilla de condiciones cuyo nombre es "RACKLINE"
@@ -14473,7 +14482,7 @@ function _cotCapturarEstado(){
     var el = document.getElementById(id);
     if(el) campos[id] = el.value;
   });
-  return JSON.stringify({partidas:_cotPartidas, campos:campos, clausulas:_cotCapturarClausulas()});
+  return JSON.stringify({partidas:_cotPartidas, campos:campos, clausulas:_cotCapturarClausulas(), ivaIncl:_cotIvaIncl});
 }
 
 // Estado de las Condiciones Generales (para ↶ Deshacer y para detectar
@@ -14514,6 +14523,7 @@ function _cotRestaurarEstado(snap){
       });
     }
     if(obj.clausulas) _cotRestaurarClausulas(obj.clausulas);
+    if(typeof obj.ivaIncl === "boolean") _cotIvaIncl = obj.ivaIncl;
     renderPartidasCot();
     calcTotalesCot();
     _cotActualizarIndicadorCambios();
@@ -14604,6 +14614,7 @@ function _cotFirma(){
   return JSON.stringify({
     campos: campos,
     partidas: _cotPartidas,
+    ivaIncl: _cotIvaIncl,
     clausulas: _cotCapturarClausulas(),
     notas: (typeof _cotNotasSeguimiento !== "undefined") ? _cotNotasSeguimiento : null,
     docs: (typeof _cotDocsSeguimiento !== "undefined") ? _cotDocsSeguimiento : null
@@ -14970,32 +14981,97 @@ window.agregarDocumentos = agregarDocumentos;
 window.eliminarDocumento = eliminarDocumento;
 window.abrirDocumento = abrirDocumento;
 
+// ── IVA incluido en cotizaciones HOME ─────────────────────────────────
+// HOME by ROMSA presenta precios con el IVA ya incluido: el usuario captura
+// el precio unitario SIN IVA (igual que el sync Costeo→Cotización) y al
+// mostrar se usa precioUnit × (1 + IVA_HOME) redondeado a centavos; cada
+// importe = cantidad × precio mostrado (redondeado) y el Gran total es la
+// suma de esos importes, así pantalla y PDF cuadran al centavo. Aplica solo
+// a cotizaciones HOME con ivaIncluido:true (las nuevas); las HOME antiguas,
+// industrial y rackline conservan el esquema Subtotal + IVA de siempre.
+const IVA_HOME = 0.08;
+var _cotIvaIncl = true;   // esquema de la cotización en edición (true en las nuevas)
+
+function _cotRedondear(n){ return Math.round(((Number(n) || 0) + Number.EPSILON) * 100) / 100; }
+// ¿Esta cotización guardada usa IVA incluido?
+function _cotUsaIvaIncluido(cot){ return !!(cot && cot.ivaIncluido) && _modalidadDe(cot) === "home"; }
+// ¿La cotización en edición usa IVA incluido? (solo en modalidad HOME)
+function _cotIvaInclActivo(){ return !!_cotIvaIncl && _cotModalidad === "home"; }
+function _cotPrecioMostrado(p, ivaIncl){
+  var pu = parseFloat(p.precio) || 0;
+  return ivaIncl ? _cotRedondear(pu * (1 + IVA_HOME)) : pu;
+}
+function _cotImporte(p, ivaIncl){
+  if(!ivaIncl) return (p.qty||0)*(p.precio||0);   // esquema anterior, sin cambios
+  return _cotRedondear((parseFloat(p.qty) || 0) * _cotPrecioMostrado(p, true));
+}
+// Totales de una lista de partidas. Sin IVA incluido: exactamente el cálculo
+// de siempre (Subtotal + IVA 8%). Con IVA incluido: total = suma de importes
+// mostrados; subtotal/iva se guardan solo como referencia interna.
+function _cotTotalesDe(partidas, ivaIncl){
+  partidas = partidas || [];
+  if(!ivaIncl){
+    var sub0 = partidas.reduce(function(s,p){return s+(p.qty||0)*(p.precio||0);},0);
+    var iva0 = sub0*0.08;
+    return {sub:sub0, iva:iva0, total:sub0+iva0};
+  }
+  var sub = _cotRedondear(partidas.reduce(function(s,p){ return s + (parseFloat(p.qty)||0)*(parseFloat(p.precio)||0); }, 0));
+  var total = _cotRedondear(partidas.reduce(function(s,p){ return s + _cotImporte(p, true); }, 0));
+  return {sub:sub, iva:_cotRedondear(total - sub), total:total};
+}
+
 function calcTotalesCot(){
-  var sub=_cotPartidas.reduce(function(s,p){return s+(p.qty||0)*(p.precio||0);},0);
-  var iva=sub*0.08;
-  var total=sub+iva;
+  var ivaIncl = _cotIvaInclActivo();
+  var t = _cotTotalesDe(_cotPartidas, ivaIncl);
+  var sub = t.sub, iva = t.iva, total = t.total;
   var elS=document.getElementById("cot-subtotal");
   var elI=document.getElementById("cot-iva");
   var elT=document.getElementById("cot-total");
   if(elS)elS.textContent="$"+fmtPeso(sub);
   if(elI)elI.textContent="$"+fmtPeso(iva);
   if(elT)elT.textContent="$"+fmtPeso(total);
+  // HOME con IVA incluido: solo el Gran total (sin filas de Subtotal ni IVA)
+  var fS=document.getElementById("cot-fila-subtotal"); if(fS) fS.style.display = ivaIncl ? "none" : "flex";
+  var fI=document.getElementById("cot-fila-iva"); if(fI) fI.style.display = ivaIncl ? "none" : "flex";
+  // Botón de migración: solo HOME guardadas con el esquema anterior
+  var mig=document.getElementById("cot-iva-migrar"); if(mig) mig.style.display = (_cotModalidad === "home" && !_cotIvaIncl) ? "block" : "none";
   // Actualizar subtotales individuales y texto descriptivo
   _cotPartidas.forEach(function(p){
     var elSub=document.getElementById("cot-p-sub-"+p.id);
-    if(elSub) elSub.textContent="$"+fmtPeso((p.qty||0)*(p.precio||0));
+    if(elSub) elSub.textContent="$"+fmtPeso(_cotImporte(p, ivaIncl));
     var elDesc=document.getElementById("cot-p-desc-calc-"+p.id);
-    if(elDesc) elDesc.textContent = (p.qty||0).toLocaleString("es-MX")+' '+(p.unit||"m²")+(p.precio?" × $"+fmtPeso(p.precio):"");
+    if(elDesc) elDesc.textContent = (p.qty||0).toLocaleString("es-MX")+' '+(p.unit||"m²")+(p.precio?" × $"+fmtPeso(_cotPrecioMostrado(p, ivaIncl)):"");
   });
   return {sub:sub,iva:iva,total:total};
 }
+
+// Migración manual de una cotización HOME antigua al esquema IVA incluido
+function cotAplicarIvaIncluido(){
+  if(_cotModalidad !== "home" || _cotIvaIncl) return;
+  var antes = _cotTotalesDe(_cotPartidas, false).total, despues = _cotTotalesDe(_cotPartidas, true).total;
+  if(!confirm("Aplicar IVA incluido (8%) a esta cotización HOME:\n\n"
+    + "• Cada precio unitario se mostrará con el 8% ya incluido.\n"
+    + "• Se quitan las filas de Subtotal e IVA; solo queda el Gran total.\n"
+    + "• \"Pago en efectivo\" pasa a \"Pago en 1 exhibición\" por el Gran total.\n"
+    + "• Los precios capturados no cambian.\n\n"
+    + "Gran total: $"+fmtPeso(antes)+" → $"+fmtPeso(despues)+(Math.abs(antes-despues) >= 0.005 ? " (diferencia por redondeo a centavos)" : "")+"\n\n"
+    + "Se aplica al guardar la cotización. ¿Continuar?")) return;
+  if(typeof _cotSnapshotAhora === "function") _cotSnapshotAhora();
+  _cotIvaIncl = true;
+  renderPartidasCot();
+  calcTotalesCot();
+  if(typeof _cotSnapshotAhora === "function") _cotSnapshotAhora();
+  if(typeof _cotActualizarIndicadorCambios === "function") _cotActualizarIndicadorCambios();
+  showToast("✓ IVA incluido aplicado — guarda la cotización para conservarlo");
+}
+window.cotAplicarIvaIncluido = cotAplicarIvaIncluido;
 
 function renderPartidasCot(){
   var wrap=document.getElementById("cot-partidas-wrap");
   if(!wrap)return;
   var UNITS=["m²","m.l. (metro lineal)","lote","pieza","servicio","m³","kg","hr"];
   wrap.innerHTML=_cotPartidas.map(function(p){
-    var subtP=(p.qty||0)*(p.precio||0);
+    var subtP=_cotImporte(p, _cotIvaInclActivo());
     var unitsOpts=UNITS.map(function(u){return '<option value="'+u+'"'+(u===(p.unit||"m²")?" selected":"")+'>'+u+'</option>';}).join("");
     var servicOpts=Object.keys(CAT_SERVICIOS).map(function(k){
       return '<option value="'+k+'"'+(k===p.servicio?" selected":"")+">"+k+"</option>";
@@ -15040,7 +15116,7 @@ function renderPartidasCot(){
           +'<input class="finput" id="cot-p-precio-'+p.id+'" type="number" min="0" step="any" value="'+(p.precio||"")+'" placeholder="0.00" oninput="onPartidaField('+p.id+',&apos;precio&apos;,this.value)" style="font-size:14px;font-weight:700;"></div>'
       +'</div>'
       +'<div style="background:rgba(124,58,237,.08);border:1px solid rgba(124,58,237,.15);border-radius:8px;padding:8px 12px;display:flex;align-items:center;justify-content:space-between;">'
-        +'<span id="cot-p-desc-calc-'+p.id+'" style="font-size:10px;color:var(--tx2);">'+( (p.qty||0).toLocaleString("es-MX")+' '+( p.unit||"m²")+(p.precio?" × $"+fmtPeso(p.precio):""))+'</span>'
+        +'<span id="cot-p-desc-calc-'+p.id+'" style="font-size:10px;color:var(--tx2);">'+( (p.qty||0).toLocaleString("es-MX")+' '+( p.unit||"m²")+(p.precio?" × $"+fmtPeso(_cotPrecioMostrado(p, _cotIvaInclActivo())):""))+'</span>'
         +'<span id="cot-p-sub-'+p.id+'" style="font-size:14px;font-weight:800;color:#7C3AED;">$'+fmtPeso(subtP)+'</span>'
       +'</div>'
     +'</div>';
@@ -15171,6 +15247,9 @@ async function guardarCot(){
       };
     }),
     subtotal:tots.sub,iva:tots.iva,granTotal:tots.total,
+    // HOME: precios con IVA incluido (ver IVA_HOME). Sin el campo = esquema anterior.
+    ivaIncluido: _cotIvaInclActivo() ? true : undefined,
+    ivaTasa: _cotIvaInclActivo() ? IVA_HOME : undefined,
     // Estado de seguimiento (Sesión 1)
     estado: estadoNuevoCot,
     fechaRespuesta: (document.getElementById("cot-fecha-respuesta")?.value) || "",
@@ -15329,6 +15408,9 @@ function generarPdfCotEnVentana(cot, winRef){
   var sub    = parseFloat(cot.subtotal  || 0);
   var iva    = parseFloat(cot.iva       || 0);
   var total  = parseFloat(cot.granTotal || 0);
+  // HOME con IVA incluido: precios y total desde las partidas (cuadran al centavo)
+  var _ivaIncl = _cotUsaIvaIncluido(cot);
+  if(_ivaIncl) total = _cotTotalesDe(cot.partidas, true).total;
   // Logos según modalidad (HOME vs Industrial)
   var _modCot = _modalidadDe(cot);
   var logo   = _logoColorDe(_modCot)  || window._romsaLogoAzul   || '';
@@ -15363,9 +15445,10 @@ function generarPdfCotEnVentana(cot, winRef){
   // _cotOpcionesPagoHtml más abajo). Fuente: tarifas de Mercado Pago
   // consultadas por el usuario el 28-ago-2026. Verificar vigencia en
   // mercadopago.com.mx antes de confiar en estos números — Mercado Pago
-  // puede actualizarlas. El efectivo NO lleva IVA (política del negocio,
-  // no de Mercado Pago) y no tiene comisión — se calcula distinto, ver
-  // función abajo.
+  // puede actualizarlas. Con IVA incluido (HOME nuevas) el pago en una sola
+  // exhibición es el Gran total, sin descuento; solo las HOME antiguas
+  // (esquema Subtotal + IVA) conservan "Efectivo" sin IVA para imprimirse
+  // exactamente como antes.
   var HOME_TASAS_MP = {
     ivaGeneral: 0.08,            // IVA general de la cotización (Región Fronteriza)
     ivaComision: 0.08,           // IVA específico sobre la comisión de Mercado Pago (Región Fronteriza) — mismo valor que ivaGeneral hoy, pero es un concepto distinto
@@ -15386,14 +15469,18 @@ function generarPdfCotEnVentana(cot, winRef){
   // de marca HOME: nunca usar la frase "sin intereses" — siempre "Pago a
   // X meses".
   function _cotOpcionesPagoHtml(total){
-    var efectivo = total / (1 + HOME_TASAS_MP.ivaGeneral);
     var transferencia = total;
     var tarjetaContado = total * (1 + HOME_TASAS_MP.tarjetaContado * (1 + HOME_TASAS_MP.ivaComision));
 
     function fmt(n){ return '$'+fmtPeso(n); }
 
-    var partesContado = [
-      '<strong style="color:#0B1F3A;">Efectivo</strong> '+fmt(efectivo),
+    // Con IVA incluido, "Pago en 1 exhibición" (efectivo o transferencia) ya
+    // es el Gran total: no se repite "Transferencia" por el mismo monto.
+    var partesContado = _ivaIncl ? [
+      '<strong style="color:#0B1F3A;">Pago en 1 exhibición</strong> '+fmt(total),
+      '<strong style="color:#0B1F3A;">Tarjeta (1 pago)</strong> '+fmt(tarjetaContado)
+    ] : [
+      '<strong style="color:#0B1F3A;">Efectivo</strong> '+fmt(total / (1 + HOME_TASAS_MP.ivaGeneral)),
       '<strong style="color:#0B1F3A;">Transferencia</strong> '+fmt(transferencia),
       '<strong style="color:#0B1F3A;">Tarjeta (1 pago)</strong> '+fmt(tarjetaContado)
     ];
@@ -15410,7 +15497,7 @@ function generarPdfCotEnVentana(cot, winRef){
         + partesContado.join(' &nbsp;·&nbsp; ')
         + '<br>' + partesMeses.join(' &nbsp;·&nbsp; ')
       + '</div>'
-      + '<div style="font-size:7.5px;color:#8A9AB8;margin-top:6px;">Pagos a meses con tarjeta en terminal Mercado Pago, sujetos a aprobación del banco. Montos con comisión + IVA incluidos.</div>'
+      + '<div style="font-size:7.5px;color:#8A9AB8;margin-top:6px;">Pagos a meses con tarjeta en terminal Mercado Pago, sujetos a aprobación del banco. '+(_ivaIncl ? 'Montos con comisión incluida.' : 'Montos con comisión + IVA incluidos.')+'</div>'
     + '</div>';
   }
 
@@ -15437,7 +15524,7 @@ function generarPdfCotEnVentana(cot, winRef){
 
   // Filas de partidas
   var filas = (cot.partidas||[]).map(function(p,i){
-    var st=(p.qty||0)*(p.precio||0);
+    var st=_cotImporte(p, _ivaIncl);
     var procHtml='';
     if(inclProc&&p.proc&&p.proc.trim()){
       var lineas=p.proc.split('\n').filter(function(l){return l.trim();});
@@ -15464,7 +15551,7 @@ function generarPdfCotEnVentana(cot, winRef){
       +'<td style="padding:'+_padCelda+';border-bottom:1px solid #EDF1F8;text-align:center;vertical-align:top;white-space:nowrap;">'
           +'<div style="font-size:13px;font-weight:700;color:#0B1F3A;">'+(p.qty||0).toLocaleString('es-MX')+' <span style="font-size:11px;font-weight:500;color:#4A5E7A;">'+(p.unit||'')+'</span></div>'
         +'</td>'
-      +'<td style="padding:'+_padCelda+';border-bottom:1px solid #EDF1F8;text-align:right;vertical-align:top;white-space:nowrap;font-size:12px;color:#4A5E7A;">$'+fmtPeso(p.precio)+'</td>'
+      +'<td style="padding:'+_padCelda+';border-bottom:1px solid #EDF1F8;text-align:right;vertical-align:top;white-space:nowrap;font-size:12px;color:#4A5E7A;">$'+fmtPeso(_ivaIncl ? _cotPrecioMostrado(p, true) : p.precio)+'</td>'
       +'<td style="padding:'+_padCelda+';border-bottom:1px solid #EDF1F8;text-align:right;vertical-align:top;white-space:nowrap;font-size:14px;font-weight:900;color:#0B1F3A;">$'+fmtPeso(st)+'</td>'
     +'</tr>';
   }).join('');
@@ -15746,16 +15833,17 @@ function generarPdfCotEnVentana(cot, winRef){
         +brTotales
         +'<div style="display:flex;justify-content:flex-end;margin-bottom:14px;">'
           +'<div style="width:360px;">'
-            // Subtotal
-            +'<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 18px;background:#F7F9FC;border:1px solid #E2E8F2;border-radius:8px 8px 0 0;font-size:11.5px;">'
+            // Subtotal e IVA — no aparecen en HOME con IVA incluido
+            +(_ivaIncl ? '' :
+            '<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 18px;background:#F7F9FC;border:1px solid #E2E8F2;border-radius:8px 8px 0 0;font-size:11.5px;">'
               +'<span style="color:#6B7FA3;letter-spacing:.3px;">Subtotal</span><span style="font-weight:600;color:#0B1F3A;font-variant-numeric:tabular-nums;">$'+fmtPeso(sub)+'</span>'
             +'</div>'
             // IVA
             +'<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 18px;background:#F7F9FC;border:1px solid #E2E8F2;border-top:none;font-size:11px;">'
               +'<span style="color:#6B7FA3;letter-spacing:.3px;">IVA 8% <span style="font-size:9px;color:#9AAAC4;font-weight:500;">· Región Fronteriza</span></span><span style="font-weight:600;color:#0B1F3A;font-variant-numeric:tabular-nums;">$'+fmtPeso(iva)+'</span>'
-            +'</div>'
+            +'</div>')
             // Gran Total — bloque ejecutivo compacto
-            +'<div style="background:linear-gradient(135deg,#0B1F3A 0%,#1B3F72 100%);border-radius:0 0 8px 8px;padding:14px 20px;position:relative;overflow:hidden;">'
+            +'<div style="background:linear-gradient(135deg,#0B1F3A 0%,#1B3F72 100%);border-radius:'+(_ivaIncl ? '8px' : '0 0 8px 8px')+';padding:14px 20px;position:relative;overflow:hidden;">'
               +'<div style="position:absolute;right:-30px;top:-30px;width:110px;height:110px;border-radius:50%;background:rgba(30,111,217,.12);"></div>'
               +'<div style="position:relative;z-index:2;">'
                 +'<div style="font-size:8.5px;font-weight:700;letter-spacing:2.5px;color:rgba(255,255,255,.5);text-transform:uppercase;margin-bottom:3px;">Gran Total</div>'
@@ -16355,6 +16443,7 @@ async function descargarCotPPT(cot){
   var iva    = parseFloat(cot.iva       || 0);
   var total  = parseFloat(cot.granTotal || 0);
   var partidas = cot.partidas || [];
+  if(_cotUsaIvaIncluido(cot)) total = _cotTotalesDe(partidas, true).total;   // HOME con IVA incluido
 
   var inclProc        = document.getElementById('cot-incl-proc')?.checked === true;
   var inclCondiciones = document.getElementById('cot-incl-condiciones')?.checked !== false;
@@ -16520,8 +16609,9 @@ function _ppt_construirSlide1(pptx, cot, partidas, sub, iva, total, lugarFecha, 
   if(partidas.length > 8) fontTabla = 9;
   if(partidas.length > 14) fontTabla = 8;
 
+  var _ivaIncl = _cotUsaIvaIncluido(cot);
   var filasTabla = partidas.map(function(p, i){
-    var st = (parseFloat(p.qty)||0) * (parseFloat(p.precio)||0);
+    var st = _ivaIncl ? _cotImporte(p, true) : (parseFloat(p.qty)||0) * (parseFloat(p.precio)||0);
     var tituloP = (p.tituloCustom && p.tituloCustom.trim()) ? p.tituloCustom.trim() : (p.servicio || "Sin título");
     var bgRow = (i%2===0) ? COLOR.white : COLOR.bgZebra;
 
@@ -16535,7 +16625,7 @@ function _ppt_construirSlide1(pptx, cot, partidas, sub, iva, total, lugarFecha, 
     return [
       {text: conceptoTexto, options:{fill:{color: bgRow}, align:"left", valign:"middle", margin:[6,8,6,8]}},
       {text: (parseFloat(p.qty)||0).toLocaleString('es-MX')+" "+(p.unit||""), options:{fontSize: fontTabla, color: COLOR.navy, fill:{color: bgRow}, align:"center", valign:"middle", bold:true}},
-      {text: "$"+fmtPeso(parseFloat(p.precio)||0), options:{fontSize: fontTabla-0.5, color: COLOR.txtSec, fill:{color: bgRow}, align:"right", valign:"middle"}},
+      {text: "$"+fmtPeso(_ivaIncl ? _cotPrecioMostrado(p, true) : (parseFloat(p.precio)||0)), options:{fontSize: fontTabla-0.5, color: COLOR.txtSec, fill:{color: bgRow}, align:"right", valign:"middle"}},
       {text: "$"+fmtPeso(st), options:{fontSize: fontTabla+1, color: COLOR.navy, fill:{color: bgRow}, align:"right", valign:"middle", bold:true}}
     ];
   });
@@ -16563,6 +16653,7 @@ function _ppt_construirSlide1(pptx, cot, partidas, sub, iva, total, lugarFecha, 
   var anchoBox = 3.2;
   var xBox = 8.5 - 0.45 - anchoBox;
 
+  if(!_ivaIncl){
   // Subtotal
   slide.addShape("rect", {x:xBox, y:yTot, w:anchoBox, h:0.34, fill:{color: COLOR.bgLight}, line:{color: COLOR.border, width:0.5}});
   slide.addText("Subtotal", {x:xBox+0.15, y:yTot+0.06, w:1.5, h:0.22, fontSize:10.5, color: COLOR.txtMute, fontFace:"Calibri"});
@@ -16573,9 +16664,10 @@ function _ppt_construirSlide1(pptx, cot, partidas, sub, iva, total, lugarFecha, 
   slide.addText("IVA 8%", {x:xBox+0.15, y:yTot+0.40, w:1.0, h:0.22, fontSize:10, color: COLOR.txtMute, fontFace:"Calibri"});
   slide.addText("Región Fronteriza", {x:xBox+0.7, y:yTot+0.42, w:1.4, h:0.18, fontSize:7, color:"9AAAC4", fontFace:"Calibri", italic:true});
   slide.addText("$"+fmtPeso(iva), {x:xBox+1.4, y:yTot+0.40, w:anchoBox-1.55, h:0.22, fontSize:10.5, color: COLOR.navy, fontFace:"Calibri", align:"right", bold:true});
+  }
 
-  // GRAN TOTAL — bloque navy degradado
-  var yTotal = yTot + 0.68;
+  // GRAN TOTAL — bloque navy degradado (HOME con IVA incluido: solo este bloque)
+  var yTotal = _ivaIncl ? yTot : yTot + 0.68;
   slide.addShape("rect", {x:xBox, y:yTotal, w:anchoBox, h:0.85, fill:{color: COLOR.navy}, line:{type:"none"}});
   slide.addShape("rect", {x:xBox+anchoBox*0.5, y:yTotal, w:anchoBox*0.5, h:0.85, fill:{color: COLOR.navy2, transparency: 35}, line:{type:"none"}});
   slide.addShape("ellipse", {x:xBox+anchoBox-0.6, y:yTotal-0.4, w:1.0, h:1.0, fill:{color: COLOR.blue, transparency: 88}, line:{type:"none"}});
@@ -19648,13 +19740,17 @@ function _mostrarBannerSyncCosteoACotizacion(costeo, cot, cambios){
         const c = cambios.find(x=>x.sistemaId===p.sistemaId);
         return c ? Object.assign({}, p, {precio:c.precioNuevo, syncPrecioUnit:c.precioNuevo}) : p;
       });
-      const sub = nuevasPartidas.reduce((sum,p)=>sum+((parseFloat(p.qty)||0)*(parseFloat(p.precio)||0)),0);
-      const iva = sub*0.08;
+      // El precio de la partida sigue siendo SIN IVA; los totales se calculan
+      // con el esquema de esa cotización (HOME con IVA incluido o el de siempre).
+      const _tSync = _cotUsaIvaIncluido(cot)
+        ? _cotTotalesDe(nuevasPartidas, true)
+        : (function(){ const s0 = nuevasPartidas.reduce((sum,p)=>sum+((parseFloat(p.qty)||0)*(parseFloat(p.precio)||0)),0); return {sub:s0, iva:s0*0.08, total:s0+s0*0.08}; })();
+      const sub = _tSync.sub, iva = _tSync.iva;
       try{
         if(costeo.id) await costeoCosteosRef.doc(costeo.id).update({sistemas:_sanitizarParaFirestore(costeo.sistemas)});
-        await cotRef.doc(cot.id).update({partidas:_sanitizarParaFirestore(nuevasPartidas), subtotal:sub, iva:iva, granTotal:sub+iva});
+        await cotRef.doc(cot.id).update({partidas:_sanitizarParaFirestore(nuevasPartidas), subtotal:sub, iva:iva, granTotal:_tSync.total});
         cot.partidas = nuevasPartidas;
-        cot.subtotal = sub; cot.iva = iva; cot.granTotal = sub+iva;
+        cot.subtotal = sub; cot.iva = iva; cot.granTotal = _tSync.total;
         if(typeof cotActivaId !== "undefined" && cotActivaId === cot.id){
           _cotPartidas = nuevasPartidas.map(function(p,i){ return Object.assign({id:i+1}, p); });
           if(typeof renderPartidasCot === "function") renderPartidasCot();
@@ -33623,6 +33719,8 @@ function generarPdfCotPremium(cot, winRef, fotoDataUrl){
   var sub    = parseFloat(cot.subtotal  || 0);
   var iva    = parseFloat(cot.iva       || 0);
   var total  = parseFloat(cot.granTotal || 0);
+  var _ivaIncl = _cotUsaIvaIncluido(cot);   // HOME con IVA incluido
+  if(_ivaIncl) total = _cotTotalesDe(cot.partidas, true).total;
   var _modCot = _modalidadDe(cot);
   var logoAzul = _logoColorDe(_modCot) || window._romsaLogoAzul || '';
   var logoBlanco = _logoBlancoDe(_modCot) || window._romsaLogoBlanco || '';
@@ -33709,7 +33807,7 @@ function generarPdfCotPremium(cot, winRef, fotoDataUrl){
   // BLOQUE 3 — Soluciones Propuestas: cada partida como ficha técnica independiente
   var partidasBloques = [introBloque, resumenTecnicoBloque];
   partidas.forEach(function(p, i){
-    var st = (parseFloat(p.qty)||0) * (parseFloat(p.precio)||0);
+    var st = _ivaIncl ? _cotImporte(p, true) : (parseFloat(p.qty)||0) * (parseFloat(p.precio)||0);
     var titulo = (p.tituloCustom && p.tituloCustom.trim()) ? p.tituloCustom.trim()
                : (p.servicio === '__PERSONALIZADO__' ? 'Sin título' : (p.servicio || 'Sin título'));
     var ficha = '<div class="fp-item" style="break-inside:avoid;border:1px solid #F1F3F7;border-radius:12px;padding:22px 24px;margin-bottom:16px;">'
@@ -33726,7 +33824,7 @@ function generarPdfCotPremium(cot, winRef, fotoDataUrl){
       + '<div style="display:flex;gap:28px;margin-bottom:18px;padding-bottom:18px;border-bottom:1px solid #F1F3F7;">'
         + '<div><div style="font-size:8px;font-weight:500;letter-spacing:1.2px;color:#8993A3;text-transform:uppercase;margin-bottom:4px;">Área</div><div style="font-size:12px;font-weight:600;color:#2C4A78;">'+(parseFloat(p.qty)||0).toLocaleString('es-MX')+' '+escapeHtml(p.unit||'')+'</div></div>'
         + (garantiaTxt?'<div><div style="font-size:8px;font-weight:500;letter-spacing:1.2px;color:#8993A3;text-transform:uppercase;margin-bottom:4px;">Garantía</div><div style="font-size:12px;font-weight:600;color:#2C4A78;">'+garantiaTxt+' meses</div></div>':'')
-        + '<div><div style="font-size:8px;font-weight:500;letter-spacing:1.2px;color:#8993A3;text-transform:uppercase;margin-bottom:4px;">Precio por '+escapeHtml(p.unit||'unidad')+'</div><div style="font-size:12px;font-weight:600;color:#2C4A78;">$'+fmtPeso(parseFloat(p.precio)||0)+'</div></div>'
+        + '<div><div style="font-size:8px;font-weight:500;letter-spacing:1.2px;color:#8993A3;text-transform:uppercase;margin-bottom:4px;">Precio por '+escapeHtml(p.unit||'unidad')+'</div><div style="font-size:12px;font-weight:600;color:#2C4A78;">$'+fmtPeso(_ivaIncl ? _cotPrecioMostrado(p, true) : (parseFloat(p.precio)||0))+'</div></div>'
       + '</div>'
       + (p.desc ? '<div style="margin-bottom:16px;"><div style="font-size:8.5px;font-weight:500;letter-spacing:1.2px;color:#8993A3;text-transform:uppercase;margin-bottom:7px;">Descripción</div><div style="font-size:10.5px;color:#1B2430;line-height:1.7;white-space:pre-wrap;">'+escapeHtml(p.desc)+'</div></div>' : '')
       + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">'
@@ -33740,9 +33838,10 @@ function generarPdfCotPremium(cot, winRef, fotoDataUrl){
   // Resumen de Inversión — bloque ejecutivo con frase de cierre
   var totalesBloque = '<div class="fp-item" style="break-inside:avoid;max-width:360px;margin-left:auto;margin-top:10px;background:linear-gradient(160deg,#F7F9FC,#fff);border:1px solid #E7EAEE;border-radius:10px;padding:18px 20px;">'
       + '<div style="font-size:8.5px;font-weight:500;letter-spacing:1.4px;color:#8993A3;text-transform:uppercase;margin-bottom:12px;">Resumen de Inversión</div>'
-      + '<div style="display:flex;justify-content:space-between;font-size:11px;color:#5B6672;padding:5px 0;"><span>Subtotal</span><span style="color:#1B2430;font-weight:500;">$'+fmtPeso(sub)+'</span></div>'
-      + '<div style="display:flex;justify-content:space-between;font-size:11px;color:#5B6672;padding:5px 0;border-bottom:1px solid #E7EAEE;"><span>IVA</span><span style="color:#1B2430;font-weight:500;">$'+fmtPeso(iva)+'</span></div>'
-      + '<div style="display:flex;justify-content:space-between;align-items:center;padding:14px 0 12px;">'
+      + (_ivaIncl ? '' :
+        '<div style="display:flex;justify-content:space-between;font-size:11px;color:#5B6672;padding:5px 0;"><span>Subtotal</span><span style="color:#1B2430;font-weight:500;">$'+fmtPeso(sub)+'</span></div>'
+      + '<div style="display:flex;justify-content:space-between;font-size:11px;color:#5B6672;padding:5px 0;border-bottom:1px solid #E7EAEE;"><span>IVA</span><span style="color:#1B2430;font-weight:500;">$'+fmtPeso(iva)+'</span></div>')
+      + '<div style="display:flex;justify-content:space-between;align-items:center;padding:'+(_ivaIncl ? '4px' : '14px')+' 0 12px;">'
         + '<div><div style="font-size:9px;font-weight:700;letter-spacing:1.4px;color:#2C4A78;text-transform:uppercase;margin-bottom:3px;">Gran Total</div><div style="font-size:8px;color:#5B6672;">MXN</div></div>'
         + '<div style="font-family:\'Manrope\',sans-serif;font-size:22px;font-weight:800;color:#2C4A78;">$'+fmtPeso(total)+'</div>'
       + '</div>'
@@ -33921,7 +34020,7 @@ function _fpResumenHtml(logoAzul, cliente, atencion, proyecto, ubicacion, totalM
     + snapCard('Proyecto', escapeHtml(proyecto), '', '', true)
     + snapCard('Ubicación', escapeHtml(ubicacion), '', '', true)
     + snapCard('Área', totalM2>0?totalM2.toLocaleString('es-MX'):'—', totalM2>0?'m²':'', '')
-    + snapCard('Inversión', '$'+fmtPeso(total).split('.')[0], 'MXN', 'IVA incluido')
+    + snapCard('Inversión', '$'+fmtPeso(total).split('.')[0], 'MXN', _cotUsaIvaIncluido(cot) ? '' : 'IVA incluido')
     + snapCard('Vigencia', String(vigencia), 'días', 'Desde emisión')
   + '</div>';
 
