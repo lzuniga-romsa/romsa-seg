@@ -747,7 +747,8 @@ body.in-auditoria #topbar, body.in-auditoria #subnav, body.in-auditoria #navbar,
 body.in-dashboardgeneral #topbar, body.in-dashboardgeneral #subnav, body.in-dashboardgeneral #navbar, body.in-dashboardgeneral .fab, body.in-dashboardgeneral #fab,
 body.in-contactos #topbar, body.in-contactos #subnav, body.in-contactos #navbar, body.in-contactos .fab, body.in-contactos #fab,
 body.in-contactosdb #topbar, body.in-contactosdb #subnav, body.in-contactosdb #navbar, body.in-contactosdb .fab, body.in-contactosdb #fab,
-body.in-plantrabajo #topbar, body.in-plantrabajo #subnav, body.in-plantrabajo #navbar, body.in-plantrabajo .fab, body.in-plantrabajo #fab{
+body.in-plantrabajo #topbar, body.in-plantrabajo #subnav, body.in-plantrabajo #navbar, body.in-plantrabajo .fab, body.in-plantrabajo #fab,
+body.in-leadshome #topbar, body.in-leadshome #subnav, body.in-leadshome #navbar, body.in-leadshome .fab, body.in-leadshome #fab{
   display:none !important;
 }
 /* Seguimiento de Obras: oculta el topbar (avatar/logo/salir) Y el
@@ -761,9 +762,124 @@ body.in-seguimiento #topbar, body.in-seguimiento #subnav{
 body.in-cotizaciones #app, body.in-costeo #app, body.in-fotoeditor #app,
 body.in-reportes #app, body.in-auditoria #app, body.in-dashboardgeneral #app,
 body.in-contactos #app, body.in-contactosdb #app,
-body.in-plantrabajo #app{
+body.in-plantrabajo #app, body.in-leadshome #app{
   padding-bottom:0 !important;
 }
+
+/* ═══════════════ LEADS HOME (LD-13) — marca HOME: navy, terracota, crema ═══════════════ */
+#screen-leadshome{padding:0;overflow-y:auto;background:#F7F3EE;font-family:var(--font);}
+.lh-head{background:#0B1F3A;padding:16px 18px 18px;color:#fff;position:relative;overflow:hidden;}
+.lh-head::after{content:"";position:absolute;right:-40px;top:-40px;width:160px;height:160px;border-radius:50%;background:rgba(195,111,74,.14);}
+.lh-head > *{position:relative;z-index:1;}
+.lh-head-row{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:10px;}
+.lh-head-eyebrow{font-size:9.5px;letter-spacing:1.6px;text-transform:uppercase;color:rgba(247,243,238,.6);font-weight:700;margin-top:10px;}
+.lh-head-tit{font-size:20px;font-weight:800;letter-spacing:.2px;}
+.lh-head-desc{font-size:11.5px;color:rgba(247,243,238,.7);margin-top:4px;}
+.lh-btn{font-family:var(--font);font-size:12px;font-weight:700;padding:9px 14px;border-radius:9px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;text-decoration:none;line-height:1.1;}
+.lh-btn svg{width:15px;height:15px;}
+.lh-btn-pri{background:#C36F4A;border:1px solid #C36F4A;color:#fff;}
+.lh-btn-sec{background:#fff;border:1px solid rgba(11,31,58,.18);color:#0B1F3A;}
+.lh-btn-grande{width:100%;justify-content:center;font-size:14px;padding:13px;}
+.lh-btn:disabled{opacity:.6;cursor:default;}
+.lh-link{background:none;border:none;padding:0;color:#C36F4A;font-weight:700;font-size:inherit;cursor:pointer;font-family:var(--font);text-decoration:underline;text-underline-offset:2px;}
+.lh-link-quitar{color:rgba(11,31,58,.55);}
+.lh-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;padding:14px 16px 4px;}
+.lh-kpi{background:#fff;border:1px solid rgba(11,31,58,.1);border-radius:12px;padding:10px 12px;text-align:left;font-family:var(--font);color:#0B1F3A;}
+.lh-kpi-lbl{font-size:9px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:rgba(11,31,58,.55);}
+.lh-kpi-val{font-size:22px;font-weight:800;margin-top:2px;}
+.lh-kpi-sub{font-size:10.5px;color:rgba(11,31,58,.6);}
+.lh-kpi-canales{display:flex;gap:9px;flex-wrap:wrap;font-size:11px;font-weight:700;color:rgba(11,31,58,.7);margin-top:3px;}
+.lh-kpi-canales span{display:inline-flex;align-items:center;gap:3px;}
+.lh-kpi-canales svg{width:13px;height:13px;}
+.lh-kpi-boton{cursor:pointer;}
+.lh-kpi-alerta{border-color:#C36F4A;box-shadow:inset 3px 0 0 #C36F4A;}
+.lh-kpi-alerta .lh-kpi-val{color:#C36F4A;}
+.lh-kpi-etapas{grid-column:1/-1;}
+.lh-kpi-etapas-fila{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;}
+.lh-kpi-etapa{font-size:10.5px;padding:3px 8px;border-radius:12px;white-space:nowrap;}
+.lh-filtro-activo{outline:2px solid #C36F4A;outline-offset:1px;}
+.lh-barra{display:flex;flex-direction:column;gap:8px;padding:10px 16px;}
+.lh-barra-fila{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+.lh-barra-fila #lh-f-q{flex:1;min-width:180px;width:auto;font-size:13px;padding:9px 12px;}
+.lh-seg{display:inline-flex;background:#fff;border:1px solid rgba(11,31,58,.15);border-radius:9px;overflow:hidden;}
+.lh-seg button{font-family:var(--font);background:none;border:none;padding:8px 12px;font-size:11.5px;font-weight:700;color:rgba(11,31,58,.6);cursor:pointer;}
+.lh-seg button.lh-seg-activo{background:#0B1F3A;color:#fff;}
+.lh-input{width:100%;background:#fff;border:1px solid rgba(11,31,58,.18);border-radius:9px;padding:10px 12px;font-size:14px;font-family:var(--font);color:#0B1F3A;outline:none;box-sizing:border-box;}
+.lh-input:focus{border-color:#C36F4A;}
+.lh-filtros{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:6px;align-items:end;}
+.lh-filtros .lh-input{font-size:12px;padding:8px 10px;}
+.lh-fecha{display:flex;flex-direction:column;gap:2px;}
+.lh-fecha span{font-size:9.5px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:rgba(11,31,58,.55);}
+.lh-resumen-filtro{font-size:11.5px;color:rgba(11,31,58,.65);padding:0 16px 8px;}
+.lh-tablero{display:flex;gap:10px;overflow-x:auto;padding:4px 16px 24px;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity;}
+.lh-col{flex:0 0 250px;background:rgba(11,31,58,.04);border-radius:12px;padding:8px;scroll-snap-align:start;min-height:160px;transition:background .15s;}
+.lh-col-sobre{background:rgba(195,111,74,.14);}
+.lh-col-head{display:flex;align-items:center;justify-content:space-between;padding:2px 2px 8px;}
+.lh-col-n{font-size:11px;font-weight:700;color:rgba(11,31,58,.55);}
+.lh-col-vacia{font-size:11px;color:rgba(11,31,58,.4);text-align:center;padding:16px 4px;}
+.lh-chip{display:inline-block;font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:12px;white-space:nowrap;}
+.lh-canal{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:700;color:#0B1F3A;background:#F7F3EE;border:1px solid rgba(11,31,58,.12);padding:2px 7px;border-radius:10px;white-space:nowrap;}
+.lh-canal svg{width:12px;height:12px;}
+.lh-card{background:#fff;border:1px solid rgba(11,31,58,.1);border-radius:10px;padding:10px;margin-bottom:8px;cursor:pointer;}
+.lh-card:hover{border-color:rgba(11,31,58,.3);}
+.lh-card-alerta{box-shadow:inset 3px 0 0 #C36F4A;}
+.lh-card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:6px;}
+.lh-card-nombre{font-size:13px;font-weight:800;color:#0B1F3A;line-height:1.25;}
+.lh-card-serv{font-size:11.5px;color:rgba(11,31,58,.75);margin-top:3px;}
+.lh-card-meta{display:flex;flex-direction:column;gap:2px;font-size:10.5px;color:rgba(11,31,58,.55);margin-top:6px;}
+.lh-venc{color:#C36F4A !important;font-weight:700;}
+.lh-card-acciones{display:flex;gap:6px;align-items:center;margin-top:8px;}
+.lh-card-etapa{flex:1;min-width:0;font-family:var(--font);font-size:11px;padding:6px 6px;border:1px solid rgba(11,31,58,.15);border-radius:7px;background:#F7F3EE;color:#0B1F3A;}
+.lh-btn-wa{display:inline-flex;align-items:center;justify-content:center;width:32px;height:30px;border-radius:7px;border:1px solid rgba(11,31,58,.18);color:#0B1F3A;background:#fff;flex-shrink:0;}
+.lh-btn-wa svg{width:16px;height:16px;}
+.lh-tabla-wrap{overflow-x:auto;padding:0 16px 24px;}
+.lh-tabla{width:100%;border-collapse:collapse;background:#fff;border-radius:12px;overflow:hidden;font-size:12px;color:#0B1F3A;min-width:760px;}
+.lh-tabla th{text-align:left;font-size:9.5px;letter-spacing:1px;text-transform:uppercase;color:rgba(11,31,58,.55);padding:10px;border-bottom:1px solid rgba(11,31,58,.1);background:#fff;}
+.lh-tabla td{padding:9px 10px;border-bottom:1px solid rgba(11,31,58,.06);vertical-align:middle;}
+.lh-tabla tr{cursor:pointer;}
+.lh-tabla tbody tr:hover{background:#F7F3EE;}
+.lh-fila-alerta td:first-child{box-shadow:inset 3px 0 0 #C36F4A;}
+.lh-td-nombre{font-weight:700;}
+.lh-td-sub{font-size:10px;color:rgba(11,31,58,.5);}
+.lh-vacio{margin:24px 16px;padding:28px 18px;text-align:center;background:#fff;border:1px dashed rgba(11,31,58,.2);border-radius:12px;color:rgba(11,31,58,.75);font-size:13px;line-height:1.7;}
+.lh-overlay{position:fixed;inset:0;background:rgba(11,31,58,.55);z-index:720;display:flex;align-items:flex-end;justify-content:center;}
+.lh-overlay-centro{align-items:center;padding:16px;z-index:760;}
+.lh-hoja{background:#fff;width:100%;max-width:520px;max-height:92vh;border-radius:18px 18px 0 0;display:flex;flex-direction:column;font-family:var(--font);color:#0B1F3A;}
+.lh-hoja-ancha{max-width:680px;}
+.lh-hoja-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:14px 18px;border-bottom:1px solid rgba(11,31,58,.08);}
+.lh-eyebrow{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#C36F4A;}
+.lh-hoja-tit{font-size:16px;font-weight:800;}
+.lh-cerrar{background:none;border:none;font-size:22px;color:rgba(11,31,58,.5);cursor:pointer;line-height:1;}
+.lh-hoja-body{padding:6px 18px 14px;overflow-y:auto;}
+.lh-hoja-pie{padding:12px 18px;border-top:1px solid rgba(11,31,58,.08);display:flex;gap:10px;align-items:center;justify-content:space-between;}
+.lh-lbl{display:block;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:rgba(11,31,58,.6);margin:12px 0 5px;}
+.lh-req{color:#C36F4A;}
+.lh-opc{font-weight:500;text-transform:none;letter-spacing:0;color:rgba(11,31,58,.45);}
+.lh-pills{display:flex;gap:6px;flex-wrap:wrap;}
+.lh-pill{font-family:var(--font);display:inline-flex;align-items:center;gap:5px;background:#F7F3EE;border:1px solid rgba(11,31,58,.15);color:#0B1F3A;font-size:12.5px;font-weight:600;padding:9px 12px;border-radius:20px;cursor:pointer;}
+.lh-pill svg{width:15px;height:15px;}
+.lh-pill-on{background:#0B1F3A;border-color:#0B1F3A;color:#fff;}
+.lh-pills-etapa .lh-pill{font-size:11.5px;padding:7px 10px;}
+.lh-aviso{background:#F7F3EE;border:1px solid rgba(195,111,74,.45);color:#0B1F3A;font-size:12px;border-radius:9px;padding:9px 11px;margin-top:8px;line-height:1.5;}
+.lh-error{color:#C36F4A;font-size:12px;font-weight:700;min-height:16px;margin-top:8px;}
+.lh-grid2{display:grid;grid-template-columns:1fr 1fr;gap:0 12px;}
+@media (max-width:560px){ .lh-grid2{grid-template-columns:1fr;} }
+.lh-cot{background:#F7F3EE;border-radius:10px;padding:10px 12px;margin-top:12px;font-size:12.5px;}
+.lh-cot-botones{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px;}
+.lh-historial{display:flex;flex-direction:column;gap:5px;font-size:11px;color:rgba(11,31,58,.65);}
+.lh-meta-pie{font-size:10.5px;color:rgba(11,31,58,.45);margin-top:12px;}
+.lh-dialogo{background:#fff;border-radius:14px;max-width:420px;width:100%;padding:18px;font-family:var(--font);color:#0B1F3A;}
+.lh-dialogo-tit{font-size:15px;font-weight:800;}
+.lh-dialogo-cuerpo{font-size:12.5px;line-height:1.6;margin-top:6px;}
+.lh-dialogo-botones{display:flex;flex-direction:column;gap:8px;margin-top:14px;}
+.lh-dialogo-botones .lh-btn{justify-content:center;}
+.lh-motivos{display:flex;flex-direction:column;gap:6px;margin-top:6px;}
+.lh-motivos label{display:flex;align-items:center;gap:8px;font-size:13px;}
+/* Acceso al módulo dentro del grupo HOME by ROMSA del menú */
+.mod-group-logo-card-home{flex-direction:column;gap:10px;}
+.mod-home-link{font-family:var(--ds-font-body, var(--font));background:rgba(195,111,74,.16);border:1px solid rgba(195,111,74,.55);color:#F7F3EE;font-size:11.5px;font-weight:700;padding:7px 12px;border-radius:9px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;}
+.mod-home-link:hover{background:rgba(195,111,74,.3);}
+.mod-home-link svg{width:14px;height:14px;}
 .cos-tab{padding:12px 14px;font-size:11px;font-weight:700;color:var(--tx2);letter-spacing:.3px;cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;}
 .cos-tab-active{color:#1E6FD9;border-bottom-color:#1E6FD9;}
 .cos-cat-tab-active{background:var(--navy)!important;color:#fff!important;}
@@ -1868,8 +1984,10 @@ body.in-plantrabajo #app{
         <div class="mod-group-logo-card">
           <img class="mod-group-logo-img" id="mod-group-logo-rackline" alt="Rackline" src="">
         </div>
-        <div class="mod-group-logo-card">
+        <div class="mod-group-logo-card mod-group-logo-card-home">
           <img class="mod-group-logo-img mod-group-logo-img-home" id="mod-group-logo-home" alt="Home by Romsa" src="">
+          <!-- Grupo HOME by ROMSA: Leads HOME (LD-13), solo admin -->
+          <button type="button" id="mod-home-leads" class="mod-home-link" style="display:none;" onclick="selectModule('leadshome')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11 12 4l9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-5h4v5"/></svg>Leads HOME</button>
         </div>
       </div>
     </div>
@@ -3694,6 +3812,38 @@ body.in-plantrabajo #app{
   <!-- ════════════════════════════════════════════════════════════════ -->
   <!-- 🔍 MÓDULO AUDITORÍA TÉCNICA · Diagnóstico de piso, cortesía cliente -->
   <!-- ════════════════════════════════════════════════════════════════ -->
+  <!-- ════ LEADS HOME (LD-13) — prospectos de HOME by ROMSA ════ -->
+  <div id="screen-leadshome" class="screen">
+    <div class="lh-head">
+      <div class="mod-header-top"><button class="mod-header-back" onclick="volverSelector()">← Menú</button></div>
+      <div class="lh-head-eyebrow">HOME by ROMSA · Prospectos · LD-13</div>
+      <div class="lh-head-row">
+        <div class="lh-head-tit">Leads HOME</div>
+        <button type="button" class="lh-btn lh-btn-pri" onclick="lhAbrirNuevo()">+ Nuevo lead</button>
+      </div>
+      <div class="lh-head-desc">Mensajes de WhatsApp Business, Instagram y Messenger, desde el primer contacto hasta la cotización.</div>
+    </div>
+    <div id="lh-kpis" class="lh-kpis"></div>
+    <div class="lh-barra">
+      <div class="lh-barra-fila">
+        <div class="lh-seg" role="tablist">
+          <button type="button" data-lh-vista="tablero" onclick="lhSetVista('tablero')">Tablero</button>
+          <button type="button" data-lh-vista="tabla" onclick="lhSetVista('tabla')">Tabla</button>
+        </div>
+        <input id="lh-f-q" class="lh-input" placeholder="Buscar por nombre o teléfono" oninput="lhLeerFiltros()">
+        <button type="button" id="lh-f-sinseg" class="lh-btn lh-btn-sec" onclick="lhToggleSinSeguimiento()">Sin seguimiento</button>
+      </div>
+      <div class="lh-filtros">
+        <select id="lh-f-canal" class="lh-input" onchange="lhLeerFiltros()"></select>
+        <select id="lh-f-servicio" class="lh-input" onchange="lhLeerFiltros()"></select>
+        <select id="lh-f-etapa" class="lh-input" onchange="lhLeerFiltros()"></select>
+        <label class="lh-fecha"><span>Contacto desde</span><input id="lh-f-desde" class="lh-input" type="date" onchange="lhLeerFiltros()"></label>
+        <label class="lh-fecha"><span>hasta</span><input id="lh-f-hasta" class="lh-input" type="date" onchange="lhLeerFiltros()"></label>
+      </div>
+    </div>
+    <div id="lh-contenido"></div>
+  </div>
+
   <div id="screen-auditoria" class="screen" style="padding:0;overflow-y:auto;background:var(--off);">
 
     <!-- HEADER del módulo -->
@@ -6860,7 +7010,7 @@ function goScreen(n){
   // Modo fullscreen — ocultar el shell general (topbar/subnav/navbar) para
   // que cada módulo dependa únicamente de su propio header, sin duplicar
   // el botón de menú principal.
-  document.body.classList.remove("in-cotizaciones","in-costeo","in-fotoeditor","in-reportes","in-auditoria","in-dashboardgeneral","in-seguimiento","in-contactos","in-contactosdb","in-plantrabajo");
+  document.body.classList.remove("in-cotizaciones","in-costeo","in-fotoeditor","in-reportes","in-auditoria","in-dashboardgeneral","in-seguimiento","in-contactos","in-contactosdb","in-plantrabajo","in-leadshome");
   if(n === "cotizaciones") document.body.classList.add("in-cotizaciones");
   if(n === "costeo" || n === "costeo-editor") document.body.classList.add("in-costeo");
   if(n === "fotoeditor") document.body.classList.add("in-fotoeditor");
@@ -6870,6 +7020,7 @@ function goScreen(n){
   if(n === "contactos") document.body.classList.add("in-contactos");
   if(n === "contactosdb") document.body.classList.add("in-contactosdb");
   if(n === "plantrabajo") document.body.classList.add("in-plantrabajo");
+  if(n === "leadshome") document.body.classList.add("in-leadshome");
   // Seguimiento de Obras: oculta el topbar y el subnav global viejo —
   // su navegación interna real (Inicio/Obras/+Nueva) sigue funcionando
   // vía las mismas onclick, ahora como .mod-tabs dentro de la pantalla.
@@ -6910,7 +7061,7 @@ function goScreen(n){
   // Modo vista amplia para módulos de escritorio (Costeo y Cotizaciones)
   const _appEl = document.getElementById("app");
   if(_appEl){
-    if(n==="costeo" || n==="costeo-editor" || n==="cotizaciones"){
+    if(n==="costeo" || n==="costeo-editor" || n==="cotizaciones" || n==="leadshome"){
       _appEl.classList.add("wide-mode");
     } else {
       _appEl.classList.remove("wide-mode");
@@ -9791,6 +9942,10 @@ function selectModule(mod){
   } else if(mod === 'taurina'){
     goScreen('taurina');
     if(typeof taurinaInit === "function") taurinaInit();
+  } else if(mod === 'leadshome'){
+    if(!window._leadsAcceso){ showToast("🔒 Sin acceso a este módulo"); volverSelector(); return; }
+    goScreen('leadshome');
+    if(typeof leadsInit === "function") leadsInit();
   }
 }
 
@@ -13794,6 +13949,7 @@ async function eliminarCotizacion(id, folio){
 // ── Abrir / nueva cotización ──────────────────────────────────────
 function showNuevaCot(){
   cotActivaId=null;
+  window._cotizacionLeadOrigen = null;   // Leads HOME lo vuelve a poner si la abre desde un lead
   document.getElementById("cot-form-titulo").textContent="Nueva cotización";
   _cotModalidad = "industrial"; // default
   setTimeout(function(){ cambiarModalidadCot("industrial"); }, 0);
@@ -13871,6 +14027,7 @@ function cerrarFormCot(){
 function abrirCot(id){
   var c=cotizaciones.find(function(x){return x.id===id;});
   if(!c)return;
+  window._cotizacionLeadOrigen = null;   // abrir otra cotización no la vincula a un lead
   cotActivaId=id;
   document.getElementById("cot-form-titulo").textContent="Editar — "+c.folio;
   _cotModalidad = _modalidadDe(c);
@@ -15053,6 +15210,10 @@ async function guardarCot(){
     // Hook: si esta cotización viene de un costeo, vincular bidireccionalmente
     if(typeof window._actualizarVinculoPostGuardadoCotizacion === "function" && window._cotizacionCosteoOrigen){
       window._actualizarVinculoPostGuardadoCotizacion(cot);
+    }
+    // Hook: cotización abierta desde Leads HOME → guardar cotizacionId en el lead
+    if(typeof window._leadsVincularCotizacion === "function" && window._cotizacionLeadOrigen){
+      window._leadsVincularCotizacion(cot);
     }
     // Sincronización cotización → costeo (solo mientras esta cotización
     // esté "pendiente"/"vencida" y sea el vínculo vigente del costeo origen)
@@ -20057,6 +20218,14 @@ auth.onAuthStateChanged(async user => {
     if(modCardAuditoria) modCardAuditoria.style.display = isAdmin ? "" : "none";
     window._auditoriaAcceso = isAdmin;
 
+    // Leads HOME — solo admin: lista fija o rol "admin" en su perfil (el
+    // mismo criterio que esAdmin() en firestore.rules para home_leads).
+    // editor_fotos y técnico no lo ven.
+    const _leadsAcceso = !_esSoloFotos && (isAdmin || _rolProfile === "admin");
+    window._leadsAcceso = _leadsAcceso;
+    const modHomeLeads = document.getElementById("mod-home-leads");
+    if(modHomeLeads) modHomeLeads.style.display = _leadsAcceso ? "" : "none";
+
     // Logo en login
     const ll = document.getElementById("login-logo-img");
     const ml = document.getElementById("tb-logo-img");
@@ -20094,6 +20263,8 @@ auth.onAuthStateChanged(async user => {
     currentUserProfile = null;
     isAdmin = false;
     window.isAdmin = false;
+    window._leadsAcceso = false;
+    var _mhl = document.getElementById("mod-home-leads"); if(_mhl) _mhl.style.display = "none";
     // ⚠️ Si es vista pública del cliente (?obra=...) NO mostrar login
     const _isPublicView = new URLSearchParams(window.location.search).get("obra");
     window._esVistaPublica = !!_isPublicView;
@@ -33947,6 +34118,638 @@ function _fpCierreHtml(logoBlanco, tel, email, web){
     + '</div>'
   + '</div>';
 }
+</script>
+<script>
+// ═══════════════════════════════════════════════════════════════════════
+// LEADS HOME (LD-13) — prospectos de HOME by ROMSA que llegan por
+// Messenger, Instagram y WhatsApp Business. Colección Firestore
+// `home_leads`; solo admin (window._leadsAcceso + reglas con esAdmin()).
+// ═══════════════════════════════════════════════════════════════════════
+const LH_CANALES = ["WhatsApp", "Instagram", "Messenger", "Otro"];
+const LH_SERVICIOS = ["Restauración de banquetas", "Colado", "Piso estampado", "Piso epóxico residencial", "Grind and Seal / Poliuretano", "Otro"];
+const LH_ETAPAS = ["Nuevo", "Info enviada", "Visita agendada", "Visita realizada", "Cotización enviada", "En seguimiento", "Ganado", "Perdido"];
+const LH_MOTIVOS = ["Precio", "Sin respuesta", "Eligió a otro", "No es el momento", "Otro"];
+const LH_ABIERTAS = ["Nuevo", "Info enviada", "Visita agendada", "Visita realizada", "Cotización enviada", "En seguimiento"];
+const LH_DIAS_SIN_MOVIMIENTO = 3;
+
+let _lhLeads = [];
+let _lhUnsub = null;
+let _lhCargado = false;
+let _lhError = "";
+let _lhVista = (function(){ try { return localStorage.getItem("lh_vista") === "tabla" ? "tabla" : "tablero"; } catch(e){ return "tablero"; } })();
+let _lhFiltros = { q:"", canal:"", servicio:"", etapa:"", desde:"", hasta:"", sinSeguimiento:false };
+let _lhArrastrando = null;
+
+function _lhRef(){ return (typeof db !== "undefined" && db) ? db.collection("home_leads") : null; }
+function _lhEsc(s){ return escapeHtml(s == null ? "" : String(s)); }
+function _lhUsuario(){ return (typeof currentUserProfile !== "undefined" && currentUserProfile && currentUserProfile.nombre) || (typeof currentUser !== "undefined" && currentUser && currentUser.email) || ""; }
+function _lhUid(){ return (typeof currentUser !== "undefined" && currentUser && currentUser.uid) || ""; }
+
+// Fecha local (no UTC: en Mexicali de noche toISOString ya da "mañana")
+function _lhFechaLocal(d){
+  d = d || new Date();
+  return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+}
+function _lhHoy(){ return _lhFechaLocal(new Date()); }
+function _lhDiasEntre(desdeISO, hasta){
+  if(!desdeISO) return null;
+  const a = new Date(String(desdeISO).slice(0, 10) + "T00:00:00");
+  const b = hasta ? new Date(hasta + "T00:00:00") : new Date(_lhHoy() + "T00:00:00");
+  if(isNaN(a)) return null;
+  return Math.round((b - a) / 86400000);
+}
+function _lhFechaCorta(iso){
+  if(!iso) return "";
+  const d = new Date(String(iso).slice(0, 10) + "T00:00:00");
+  if(isNaN(d)) return iso;
+  return d.toLocaleDateString("es-MX", { day:"numeric", month:"short" });
+}
+
+// Teléfono: se guarda solo con dígitos; para comparar duplicados se usan
+// los últimos 10; para WhatsApp, un número de 10 dígitos lleva lada 52.
+function _lhNormTel(t){ return String(t || "").replace(/\D/g, ""); }
+function _lhTelClave(t){ const d = _lhNormTel(t); return d.length >= 7 ? d.slice(-10) : ""; }
+function _lhTelBonito(t){
+  const d = _lhNormTel(t);
+  if(d.length === 10) return d.slice(0, 3) + " " + d.slice(3, 6) + " " + d.slice(6);
+  if(d.length === 12 && d.startsWith("52")) return "+52 " + d.slice(2, 5) + " " + d.slice(5, 8) + " " + d.slice(8);
+  return d;
+}
+function _lhWaUrl(t){
+  const d = _lhNormTel(t);
+  if(!d) return "";
+  return "https://wa.me/" + (d.length === 10 ? "52" + d : d);
+}
+
+// "Sin seguimiento": abierto y con más de 3 días sin movimiento, o con el
+// próximo seguimiento ya vencido.
+function _lhSinSeguimiento(l){
+  if(LH_ABIERTAS.indexOf(l.etapa) === -1) return false;
+  const venc = l.proximoSeguimiento && l.proximoSeguimiento < _lhHoy();
+  const ult = l.actualizadoEn || l.creadoEn || l.fechaContacto;
+  const dias = _lhDiasEntre(ult);
+  return !!venc || (dias !== null && dias > LH_DIAS_SIN_MOVIMIENTO);
+}
+
+// Etapas: misma familia de color (navy) con intensidad creciente; Ganado en
+// terracota y Perdido apagado. Máximo 3 colores de marca.
+function _lhEstiloEtapa(etapa){
+  const i = LH_ETAPAS.indexOf(etapa);
+  if(etapa === "Ganado") return "background:#C36F4A;color:#fff;border:1px solid #C36F4A;";
+  if(etapa === "Perdido") return "background:transparent;color:rgba(11,31,58,.5);border:1px dashed rgba(11,31,58,.35);";
+  const alfa = [0.06, 0.12, 0.2, 0.3, 0.45, 0.62][Math.max(0, i)] || 0.06;
+  return "background:rgba(11,31,58," + alfa + ");color:" + (alfa >= 0.45 ? "#fff" : "#0B1F3A") + ";border:1px solid rgba(11,31,58," + Math.min(1, alfa + 0.1) + ");";
+}
+function _lhChipEtapa(etapa){ return '<span class="lh-chip" style="' + _lhEstiloEtapa(etapa) + '">' + _lhEsc(etapa) + '</span>'; }
+
+// Íconos de canal en un solo color (sin logos de terceros a color)
+const LH_ICONOS = {
+  WhatsApp: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21l1.65-4.5A8.5 8.5 0 1 1 8 20.1L3 21Z"/><path d="M9 9.5c0 3 2.5 5.5 5.5 5.5l1.2-1.2-1.8-1-1 .8a4.5 4.5 0 0 1-2.5-2.5l.8-1-1-1.8L9 9.5Z"/></svg>',
+  Instagram: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r=".6" fill="currentColor"/></svg>',
+  Messenger: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3C7 3 3 6.7 3 11.3c0 2.6 1.3 4.9 3.3 6.4V21l3-1.6c.9.2 1.8.4 2.7.4 5 0 9-3.7 9-8.4S17 3 12 3Z"/><path d="m7.5 13.5 3-3.2 2 2 3-3.3"/></svg>',
+  Otro: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12h.01M12 12h.01M16 12h.01"/></svg>',
+  wa: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21l1.65-4.5A8.5 8.5 0 1 1 8 20.1L3 21Z"/><path d="M9 9.5c0 3 2.5 5.5 5.5 5.5l1.2-1.2-1.8-1-1 .8a4.5 4.5 0 0 1-2.5-2.5l.8-1-1-1.8L9 9.5Z"/></svg>'
+};
+function _lhChipCanal(canal){ return '<span class="lh-canal" title="' + _lhEsc(canal) + '">' + (LH_ICONOS[canal] || LH_ICONOS.Otro) + _lhEsc(canal) + '</span>'; }
+
+// ── Carga ───────────────────────────────────────────────────────────────
+function leadsInit(){
+  if(!window._leadsAcceso){ return; }
+  _lhPintarControles();
+  lhRender();
+  if(_lhUnsub) return;
+  const ref = _lhRef();
+  if(!ref){ _lhError = "La base de datos no está disponible."; lhRender(); return; }
+  try {
+    _lhUnsub = ref.onSnapshot(function(snap){
+      _lhLeads = (snap && snap.docs ? snap.docs : []).map(function(d){ return Object.assign({}, d.data(), { id:d.id }); });
+      _lhCargado = true; _lhError = "";
+      lhRender();
+    }, function(err){
+      console.error("[LEADS] Error:", err);
+      _lhCargado = true;
+      _lhError = (err && err.code === "permission-denied")
+        ? "Sin permiso para ver los leads. Tu perfil necesita rol admin (y las reglas de Firestore publicadas)."
+        : "No se pudieron cargar los leads: " + ((err && err.message) || err);
+      lhRender();
+    });
+  } catch(e){ _lhError = "No se pudieron cargar los leads: " + e.message; lhRender(); }
+}
+
+// ── Filtros y vista ─────────────────────────────────────────────────────
+function _lhPintarControles(){
+  const opc = (arr, ph) => '<option value="">' + ph + '</option>' + arr.map(x => '<option value="' + _lhEsc(x) + '">' + _lhEsc(x) + '</option>').join("");
+  const sc = document.getElementById("lh-f-canal"); if(sc && !sc.options.length) sc.innerHTML = opc(LH_CANALES, "Todos los canales");
+  const ss = document.getElementById("lh-f-servicio"); if(ss && !ss.options.length) ss.innerHTML = opc(LH_SERVICIOS, "Todos los servicios");
+  const se = document.getElementById("lh-f-etapa"); if(se && !se.options.length) se.innerHTML = opc(LH_ETAPAS, "Todas las etapas");
+}
+function lhSetVista(v){
+  _lhVista = v === "tabla" ? "tabla" : "tablero";
+  try { localStorage.setItem("lh_vista", _lhVista); } catch(e){}
+  lhRender();
+}
+function lhLeerFiltros(){
+  const v = id => (document.getElementById(id) || {}).value || "";
+  _lhFiltros.q = v("lh-f-q").trim();
+  _lhFiltros.canal = v("lh-f-canal");
+  _lhFiltros.servicio = v("lh-f-servicio");
+  _lhFiltros.etapa = v("lh-f-etapa");
+  _lhFiltros.desde = v("lh-f-desde");
+  _lhFiltros.hasta = v("lh-f-hasta");
+  lhRender();
+}
+function lhToggleSinSeguimiento(){ _lhFiltros.sinSeguimiento = !_lhFiltros.sinSeguimiento; lhRender(); }
+function lhLimpiarFiltros(){
+  _lhFiltros = { q:"", canal:"", servicio:"", etapa:"", desde:"", hasta:"", sinSeguimiento:false };
+  ["lh-f-q", "lh-f-canal", "lh-f-servicio", "lh-f-etapa", "lh-f-desde", "lh-f-hasta"].forEach(function(id){ const el = document.getElementById(id); if(el) el.value = ""; });
+  lhRender();
+}
+function _lhFiltrados(){
+  const f = _lhFiltros;
+  const q = f.q.toLowerCase();
+  const qTel = _lhNormTel(f.q);
+  return _lhLeads.filter(function(l){
+    if(q){
+      const enNombre = String(l.nombre || "").toLowerCase().indexOf(q) !== -1;
+      const enTel = qTel.length >= 3 && _lhNormTel(l.telefono).indexOf(qTel) !== -1;
+      if(!enNombre && !enTel) return false;
+    }
+    if(f.canal && l.canal !== f.canal) return false;
+    if(f.servicio && l.servicio !== f.servicio) return false;
+    if(f.etapa && l.etapa !== f.etapa) return false;
+    if(f.desde && (l.fechaContacto || "") < f.desde) return false;
+    if(f.hasta && (l.fechaContacto || "") > f.hasta) return false;
+    if(f.sinSeguimiento && !_lhSinSeguimiento(l)) return false;
+    return true;
+  }).sort(function(a, b){ return String(b.fechaContacto || "").localeCompare(String(a.fechaContacto || "")) || String(b.creadoEn || "").localeCompare(String(a.creadoEn || "")); });
+}
+
+// ── Render ──────────────────────────────────────────────────────────────
+function lhRender(){
+  const cont = document.getElementById("lh-contenido");
+  if(!cont) return;
+  _lhPintarKpis();
+  document.querySelectorAll("[data-lh-vista]").forEach(function(b){ b.classList.toggle("lh-seg-activo", b.dataset.lhVista === _lhVista); });
+  const ss = document.getElementById("lh-f-sinseg");
+  if(ss) ss.classList.toggle("lh-filtro-activo", _lhFiltros.sinSeguimiento);
+  if(_lhError){ cont.innerHTML = '<div class="lh-vacio">' + _lhEsc(_lhError) + '</div>'; return; }
+  if(!_lhCargado){ cont.innerHTML = '<div class="lh-vacio">Cargando leads…</div>'; return; }
+  if(!_lhLeads.length){
+    cont.innerHTML = '<div class="lh-vacio"><strong>Aún no hay leads.</strong><br>Agrega el primero con <button class="lh-link" onclick="lhAbrirNuevo()">Nuevo lead</button>.</div>';
+    return;
+  }
+  const lista = _lhFiltrados();
+  const hayFiltros = _lhFiltros.q || _lhFiltros.canal || _lhFiltros.servicio || _lhFiltros.etapa || _lhFiltros.desde || _lhFiltros.hasta || _lhFiltros.sinSeguimiento;
+  if(!lista.length){
+    cont.innerHTML = '<div class="lh-vacio">Ningún lead coincide con los filtros.<br><button class="lh-link" onclick="lhLimpiarFiltros()">Limpiar filtros</button></div>';
+    return;
+  }
+  cont.innerHTML = (hayFiltros ? '<div class="lh-resumen-filtro">' + lista.length + ' de ' + _lhLeads.length + ' leads · <button class="lh-link" onclick="lhLimpiarFiltros()">Limpiar filtros</button></div>' : '')
+    + (_lhVista === "tabla" ? _lhHtmlTabla(lista) : _lhHtmlTablero(lista));
+}
+
+function _lhPintarKpis(){
+  const el = document.getElementById("lh-kpis");
+  if(!el) return;
+  const hoy = _lhHoy(), mes = hoy.slice(0, 7);
+  const delMes = _lhLeads.filter(l => String(l.fechaContacto || "").slice(0, 7) === mes);
+  const porCanal = LH_CANALES.map(c => ({ c: c, n: delMes.filter(l => l.canal === c).length }));
+  const total = _lhLeads.length;
+  const ganados = _lhLeads.filter(l => l.etapa === "Ganado").length;
+  const conv = total ? Math.round(ganados / total * 100) : 0;
+  const sinSeg = _lhLeads.filter(_lhSinSeguimiento).length;
+  el.innerHTML =
+    '<div class="lh-kpi"><div class="lh-kpi-lbl">Nuevos del mes</div><div class="lh-kpi-val">' + delMes.length + '</div>'
+      + '<div class="lh-kpi-canales">' + porCanal.map(x => '<span title="' + x.c + '">' + (LH_ICONOS[x.c] || "") + x.n + '</span>').join("") + '</div></div>'
+    + '<div class="lh-kpi"><div class="lh-kpi-lbl">Conversión</div><div class="lh-kpi-val">' + conv + '%</div><div class="lh-kpi-sub">' + ganados + ' ganado' + (ganados === 1 ? '' : 's') + ' de ' + total + '</div></div>'
+    + '<button type="button" id="lh-kpi-sinseg" class="lh-kpi lh-kpi-boton' + (sinSeg ? ' lh-kpi-alerta' : '') + (_lhFiltros.sinSeguimiento ? ' lh-filtro-activo' : '') + '" onclick="lhToggleSinSeguimiento()" title="Más de ' + LH_DIAS_SIN_MOVIMIENTO + ' días sin movimiento o seguimiento vencido. Toca para filtrar.">'
+      + '<div class="lh-kpi-lbl">Sin seguimiento</div><div class="lh-kpi-val">' + sinSeg + '</div><div class="lh-kpi-sub">' + (_lhFiltros.sinSeguimiento ? 'Mostrando solo estos · quitar' : 'Toca para ver') + '</div></button>'
+    + '<div class="lh-kpi lh-kpi-etapas"><div class="lh-kpi-lbl">Por etapa</div><div class="lh-kpi-etapas-fila">'
+      + LH_ETAPAS.map(e => '<span class="lh-kpi-etapa" style="' + _lhEstiloEtapa(e) + '" title="' + _lhEsc(e) + '"><b>' + _lhLeads.filter(l => l.etapa === e).length + '</b> ' + _lhEsc(e) + '</span>').join("")
+    + '</div></div>';
+}
+
+function _lhHtmlTarjeta(l){
+  const dias = _lhDiasEntre(l.fechaContacto);
+  const venc = l.proximoSeguimiento && l.proximoSeguimiento < _lhHoy();
+  const alerta = _lhSinSeguimiento(l);
+  const wa = _lhWaUrl(l.telefono);
+  return '<div class="lh-card' + (alerta ? ' lh-card-alerta' : '') + '" draggable="true" data-lh-id="' + _lhEsc(l.id) + '" ondragstart="_lhDragStart(event,\'' + _lhEsc(l.id) + '\')" ondragend="_lhDragEnd()" onclick="lhAbrirDetalle(\'' + _lhEsc(l.id) + '\')">'
+    + '<div class="lh-card-top"><div class="lh-card-nombre">' + _lhEsc(l.nombre) + '</div>' + _lhChipCanal(l.canal) + '</div>'
+    + '<div class="lh-card-serv">' + _lhEsc(l.servicio || "Sin servicio") + '</div>'
+    + '<div class="lh-card-meta">'
+      + '<span>' + (dias === null ? '' : (dias <= 0 ? 'Contacto hoy' : 'Hace ' + dias + ' día' + (dias === 1 ? '' : 's'))) + '</span>'
+      + (l.proximoSeguimiento ? '<span class="' + (venc ? 'lh-venc' : '') + '">Seguimiento ' + _lhFechaCorta(l.proximoSeguimiento) + (venc ? ' · vencido' : '') + '</span>' : '')
+      + (l.etapa === "Visita agendada" && l.fechaVisita ? '<span>Visita ' + _lhFechaCorta(l.fechaVisita) + '</span>' : '')
+    + '</div>'
+    + '<div class="lh-card-acciones" onclick="event.stopPropagation()">'
+      + '<select class="lh-card-etapa" aria-label="Etapa" onchange="lhCambiarEtapa(\'' + _lhEsc(l.id) + '\', this.value)">' + LH_ETAPAS.map(e => '<option' + (e === l.etapa ? ' selected' : '') + '>' + _lhEsc(e) + '</option>').join("") + '</select>'
+      + (wa ? '<a class="lh-btn-wa" href="' + wa + '" target="_blank" rel="noopener" title="WhatsApp ' + _lhEsc(_lhTelBonito(l.telefono)) + '">' + LH_ICONOS.wa + '</a>' : '')
+    + '</div>'
+  + '</div>';
+}
+
+function _lhHtmlTablero(lista){
+  return '<div class="lh-tablero">' + LH_ETAPAS.map(function(e){
+    const enEtapa = lista.filter(l => l.etapa === e);
+    return '<div class="lh-col" data-lh-etapa="' + _lhEsc(e) + '" ondragover="_lhDragOver(event)" ondragleave="_lhDragLeave(event)" ondrop="_lhDrop(event,\'' + _lhEsc(e) + '\')">'
+      + '<div class="lh-col-head">' + _lhChipEtapa(e) + '<span class="lh-col-n">' + enEtapa.length + '</span></div>'
+      + '<div class="lh-col-body">' + (enEtapa.length ? enEtapa.map(_lhHtmlTarjeta).join("") : '<div class="lh-col-vacia">Sin leads</div>') + '</div>'
+    + '</div>';
+  }).join("") + '</div>';
+}
+
+function _lhHtmlTabla(lista){
+  return '<div class="lh-tabla-wrap"><table class="lh-tabla"><thead><tr>'
+    + '<th>Nombre</th><th>Teléfono</th><th>Canal</th><th>Servicio</th><th>Etapa</th><th>Contacto</th><th>Seguimiento</th><th></th>'
+    + '</tr></thead><tbody>'
+    + lista.map(function(l){
+      const dias = _lhDiasEntre(l.fechaContacto);
+      const venc = l.proximoSeguimiento && l.proximoSeguimiento < _lhHoy();
+      const wa = _lhWaUrl(l.telefono);
+      return '<tr class="' + (_lhSinSeguimiento(l) ? 'lh-fila-alerta' : '') + '" data-lh-id="' + _lhEsc(l.id) + '" onclick="lhAbrirDetalle(\'' + _lhEsc(l.id) + '\')">'
+        + '<td class="lh-td-nombre">' + _lhEsc(l.nombre) + '</td>'
+        + '<td>' + _lhEsc(_lhTelBonito(l.telefono)) + '</td>'
+        + '<td>' + _lhChipCanal(l.canal) + '</td>'
+        + '<td>' + _lhEsc(l.servicio || "") + '</td>'
+        + '<td>' + _lhChipEtapa(l.etapa) + '</td>'
+        + '<td>' + _lhFechaCorta(l.fechaContacto) + (dias !== null ? '<div class="lh-td-sub">hace ' + Math.max(0, dias) + ' d</div>' : '') + '</td>'
+        + '<td class="' + (venc ? 'lh-venc' : '') + '">' + (l.proximoSeguimiento ? _lhFechaCorta(l.proximoSeguimiento) + (venc ? ' · vencido' : '') : '—') + '</td>'
+        + '<td onclick="event.stopPropagation()">' + (wa ? '<a class="lh-btn-wa" href="' + wa + '" target="_blank" rel="noopener" title="WhatsApp">' + LH_ICONOS.wa + '</a>' : '') + '</td>'
+      + '</tr>';
+    }).join("")
+    + '</tbody></table></div>';
+}
+
+// ── Arrastrar tarjetas entre columnas (escritorio; en móvil, el selector
+//    de etapa de cada tarjeta) ─────────────────────────────────────────
+function _lhDragStart(ev, id){ _lhArrastrando = id; try { ev.dataTransfer.setData("text/plain", id); ev.dataTransfer.effectAllowed = "move"; } catch(e){} }
+function _lhDragEnd(){ _lhArrastrando = null; document.querySelectorAll(".lh-col-sobre").forEach(c => c.classList.remove("lh-col-sobre")); }
+function _lhDragOver(ev){ ev.preventDefault(); ev.currentTarget.classList.add("lh-col-sobre"); }
+function _lhDragLeave(ev){ ev.currentTarget.classList.remove("lh-col-sobre"); }
+function _lhDrop(ev, etapa){
+  ev.preventDefault();
+  ev.currentTarget.classList.remove("lh-col-sobre");
+  let id = _lhArrastrando;
+  try { id = ev.dataTransfer.getData("text/plain") || id; } catch(e){}
+  _lhArrastrando = null;
+  if(id) lhCambiarEtapa(id, etapa);
+}
+
+// ── Diálogo genérico pequeño ────────────────────────────────────────────
+function _lhDialogo(titulo, cuerpoHtml, botones, alElegir){
+  document.getElementById("lh-dialogo")?.remove();
+  const ov = document.createElement("div");
+  ov.id = "lh-dialogo";
+  ov.className = "lh-overlay lh-overlay-centro";
+  ov.innerHTML = '<div class="lh-dialogo"><div class="lh-dialogo-tit">' + titulo + '</div><div class="lh-dialogo-cuerpo">' + cuerpoHtml + '</div>'
+    + '<div class="lh-dialogo-botones">' + botones.map(b => '<button type="button" class="lh-btn ' + (b.clase || "lh-btn-sec") + '" data-lh-boton="' + b.id + '">' + b.texto + '</button>').join("") + '</div></div>';
+  ov.addEventListener("click", function(e){
+    const b = e.target.closest("[data-lh-boton]");
+    if(!b && e.target !== ov) return;
+    const id = b ? b.dataset.lhBoton : "cancelar";
+    const datos = {};
+    ov.querySelectorAll("[data-lh-campo]").forEach(function(c){ datos[c.dataset.lhCampo] = c.type === "radio" ? (c.checked ? c.value : datos[c.dataset.lhCampo]) : c.value; });
+    ov.remove();
+    alElegir(id, datos);
+  });
+  document.body.appendChild(ov);
+  setTimeout(function(){ ov.querySelector("input:not([type=radio]),select")?.focus(); }, 60);
+}
+
+// ── Cambio de etapa (tablero, tabla, detalle) ───────────────────────────
+// Registra historial; Perdido pide motivo; Visita agendada pide fecha;
+// Ganado sugiere el flujo normal de Cotizaciones si hay cotización.
+function lhCambiarEtapa(id, etapa){
+  const l = _lhLeads.find(x => x.id === id);
+  if(!l || LH_ETAPAS.indexOf(etapa) === -1) return;
+  if(l.etapa === etapa){ lhRender(); return; }
+  const aplicar = function(extra){
+    const ahora = new Date().toISOString();
+    const cambios = Object.assign({
+      etapa: etapa,
+      historial: (Array.isArray(l.historial) ? l.historial : []).concat([{ etapa: etapa, fecha: ahora, usuario: _lhUsuario() }]),
+      actualizadoEn: ahora
+    }, extra || {});
+    if(etapa !== "Perdido" && l.motivoPerdida) cambios.motivoPerdida = "";
+    _lhActualizar(id, cambios).then(function(ok){
+      if(!ok) return;
+      showToast("Lead movido a " + etapa);
+      if(etapa === "Ganado" && l.cotizacionId) _lhSugerirGanada(l);
+      if(document.getElementById("lh-detalle")) lhAbrirDetalle(id);
+    });
+  };
+  if(etapa === "Perdido"){
+    _lhDialogo("¿Por qué se perdió?",
+      '<div class="lh-motivos">' + LH_MOTIVOS.map((m, i) => '<label><input type="radio" name="lh-motivo" data-lh-campo="motivo" value="' + m + '"' + (i === 0 ? ' checked' : '') + '> ' + m + '</label>').join("") + '</div>'
+        + '<input class="lh-input" data-lh-campo="detalle" placeholder="Detalle (opcional)" style="margin-top:8px;">',
+      [{ id:"ok", texto:"Marcar perdido", clase:"lh-btn-pri" }, { id:"cancelar", texto:"Cancelar" }],
+      function(b, d){
+        if(b !== "ok"){ lhRender(); return; }
+        aplicar({ motivoPerdida: (d.motivo || "Otro") + (d.detalle && d.detalle.trim() ? " — " + d.detalle.trim() : "") });
+      });
+    return;
+  }
+  if(etapa === "Visita agendada"){
+    _lhDialogo("Visita agendada", '<label class="lh-lbl">Fecha de la visita</label><input type="date" class="lh-input" data-lh-campo="fecha" value="' + _lhEsc(l.fechaVisita || "") + '">',
+      [{ id:"ok", texto:"Guardar", clase:"lh-btn-pri" }, { id:"sin", texto:"Sin fecha por ahora" }, { id:"cancelar", texto:"Cancelar" }],
+      function(b, d){
+        if(b === "cancelar"){ lhRender(); return; }
+        aplicar(b === "ok" && d.fecha ? { fechaVisita: d.fecha } : {});
+      });
+    return;
+  }
+  aplicar();
+}
+
+function _lhSugerirGanada(l){
+  const c = (typeof cotizaciones !== "undefined" ? cotizaciones : []).find(x => x.id === l.cotizacionId);
+  const folio = (c && c.folio) || l.cotizacionFolio || "vinculada";
+  const ganada = c && (c.estado === "aceptada" || c.estado === "en_obra" || c.estado === "cerrada");
+  if(ganada) return;
+  _lhDialogo("¿Marcar la cotización como ganada?",
+    'El lead tiene la cotización <b>' + _lhEsc(folio) + '</b>. Puedes marcarla ganada con el flujo normal de Cotizaciones (te pedirá el monto final, como siempre).',
+    [{ id:"ok", texto:"Marcar cotización ganada", clase:"lh-btn-pri" }, { id:"cancelar", texto:"Ahora no" }],
+    function(b){
+      if(b !== "ok") return;
+      if(c && typeof aplicarCambioEstadoCot === "function") aplicarCambioEstadoCot(c.id, "aceptada");
+      else showToast("⚠️ Abre la cotización " + folio + " en Cotizaciones para marcarla ganada");
+    });
+}
+
+// ── Escrituras ──────────────────────────────────────────────────────────
+function _lhActualizar(id, cambios){
+  const ref = _lhRef();
+  const l = _lhLeads.find(x => x.id === id);
+  if(l) Object.assign(l, cambios);   // se refleja al instante; onSnapshot confirma
+  lhRender();
+  if(!ref) return Promise.resolve(false);
+  return ref.doc(id).update(_sanitizarParaFirestore(cambios)).then(function(){ return true; }).catch(function(e){
+    console.error("[LEADS] Error actualizando:", e);
+    showToast("❌ No se guardó: " + (e.code === "permission-denied" ? "sin permiso" : e.message));
+    return false;
+  });
+}
+
+// ── Nuevo lead (rápido, pensado para el celular) ────────────────────────
+function lhAbrirNuevo(){
+  document.getElementById("lh-nuevo")?.remove();
+  const ov = document.createElement("div");
+  ov.id = "lh-nuevo";
+  ov.className = "lh-overlay";
+  ov.onclick = function(e){ if(e.target === ov) ov.remove(); };
+  const pills = (nombre, arr) => '<div class="lh-pills" data-lh-grupo="' + nombre + '">' + arr.map(x => '<button type="button" class="lh-pill" data-valor="' + _lhEsc(x) + '">' + (nombre === "canal" ? (LH_ICONOS[x] || "") : "") + _lhEsc(x) + '</button>').join("") + '</div>';
+  ov.innerHTML = '<div class="lh-hoja">'
+    + '<div class="lh-hoja-head"><div><div class="lh-eyebrow">HOME by ROMSA</div><div class="lh-hoja-tit">Nuevo lead</div></div><button type="button" class="lh-cerrar" onclick="document.getElementById(\'lh-nuevo\').remove()">×</button></div>'
+    + '<div class="lh-hoja-body">'
+      + '<label class="lh-lbl">Nombre <span class="lh-req">*</span></label><input id="lh-n-nombre" class="lh-input" autocomplete="off" enterkeyhint="next" placeholder="Ej. Laura Méndez">'
+      + '<label class="lh-lbl">Canal <span class="lh-req">*</span></label>' + pills("canal", LH_CANALES)
+      + '<label class="lh-lbl">Servicio</label>' + pills("servicio", LH_SERVICIOS)
+      + '<label class="lh-lbl">Teléfono <span class="lh-opc">opcional</span></label><input id="lh-n-tel" class="lh-input" type="tel" inputmode="tel" autocomplete="off" placeholder="686 123 4567">'
+      + '<div id="lh-n-dup" class="lh-aviso" style="display:none;"></div>'
+      + '<button type="button" class="lh-link" id="lh-n-mas-btn" onclick="document.getElementById(\'lh-n-mas\').style.display=\'block\';this.style.display=\'none\';">＋ Dirección, notas y fecha de contacto</button>'
+      + '<div id="lh-n-mas" style="display:none;">'
+        + '<label class="lh-lbl">Dirección <span class="lh-opc">opcional</span></label><input id="lh-n-dir" class="lh-input" autocomplete="off">'
+        + '<label class="lh-lbl">Notas <span class="lh-opc">opcional</span></label><textarea id="lh-n-notas" class="lh-input" rows="2"></textarea>'
+        + '<label class="lh-lbl">Fecha de contacto</label><input id="lh-n-fecha" class="lh-input" type="date" value="' + _lhHoy() + '">'
+      + '</div>'
+      + '<div id="lh-n-error" class="lh-error"></div>'
+    + '</div>'
+    + '<div class="lh-hoja-pie"><button type="button" class="lh-btn lh-btn-pri lh-btn-grande" onclick="lhGuardarNuevo()">Guardar lead</button></div>'
+  + '</div>';
+  ov.querySelectorAll(".lh-pills").forEach(function(g){
+    g.addEventListener("click", function(e){
+      const b = e.target.closest(".lh-pill"); if(!b) return;
+      const ya = b.classList.contains("lh-pill-on");
+      g.querySelectorAll(".lh-pill").forEach(x => x.classList.remove("lh-pill-on"));
+      if(!ya) b.classList.add("lh-pill-on");
+    });
+  });
+  document.body.appendChild(ov);
+  const tel = document.getElementById("lh-n-tel");
+  tel.addEventListener("blur", _lhAvisarDuplicado);
+  setTimeout(function(){ document.getElementById("lh-n-nombre")?.focus(); }, 80);
+}
+
+function _lhDuplicadoDe(telefono, excluirId){
+  const clave = _lhTelClave(telefono);
+  if(!clave) return null;
+  return _lhLeads.find(l => l.id !== excluirId && _lhTelClave(l.telefono) === clave) || null;
+}
+function _lhAvisarDuplicado(){
+  const box = document.getElementById("lh-n-dup");
+  if(!box) return;
+  const d = _lhDuplicadoDe(document.getElementById("lh-n-tel")?.value);
+  box.style.display = d ? "block" : "none";
+  if(d) box.innerHTML = 'Ese teléfono ya está en <b>' + _lhEsc(d.nombre) + '</b> (' + _lhEsc(d.etapa) + '). <button type="button" class="lh-link" onclick="document.getElementById(\'lh-nuevo\')?.remove();lhAbrirDetalle(\'' + _lhEsc(d.id) + '\')">Abrir el existente</button>';
+}
+
+function lhGuardarNuevo(forzar){
+  const val = id => (document.getElementById(id) || {}).value || "";
+  const sel = g => { const b = document.querySelector('#lh-nuevo [data-lh-grupo="' + g + '"] .lh-pill-on'); return b ? b.dataset.valor : ""; };
+  const nombre = val("lh-n-nombre").trim();
+  const canal = sel("canal");
+  const err = document.getElementById("lh-n-error");
+  if(!nombre || !canal){ if(err) err.textContent = !nombre ? "Escribe el nombre." : "Elige el canal."; return; }
+  const telefono = _lhNormTel(val("lh-n-tel"));
+  const dup = forzar ? null : _lhDuplicadoDe(telefono);
+  if(dup){
+    _lhDialogo("Posible duplicado",
+      'El teléfono ' + _lhEsc(_lhTelBonito(telefono)) + ' ya está en el lead <b>' + _lhEsc(dup.nombre) + '</b> (' + _lhEsc(dup.etapa) + ', ' + _lhEsc(dup.canal) + ').',
+      [{ id:"abrir", texto:"Abrir el existente", clase:"lh-btn-pri" }, { id:"guardar", texto:"Guardar de todos modos" }, { id:"cancelar", texto:"Cancelar" }],
+      function(b){
+        if(b === "abrir"){ document.getElementById("lh-nuevo")?.remove(); lhAbrirDetalle(dup.id); }
+        else if(b === "guardar") lhGuardarNuevo(true);
+      });
+    return;
+  }
+  const ahora = new Date().toISOString();
+  const lead = {
+    nombre: nombre, telefono: telefono, canal: canal, servicio: sel("servicio") || "",
+    direccion: val("lh-n-dir").trim(), notas: val("lh-n-notas").trim(),
+    fechaContacto: val("lh-n-fecha") || _lhHoy(),
+    etapa: "Nuevo", fechaVisita: "", proximoSeguimiento: "", cotizacionId: "", cotizacionFolio: "", motivoPerdida: "",
+    historial: [{ etapa: "Nuevo", fecha: ahora, usuario: _lhUsuario() }],
+    creadoPor: _lhUsuario(), creadoPorUid: _lhUid(), creadoEn: ahora, actualizadoEn: ahora
+  };
+  const ref = _lhRef();
+  if(!ref){ if(err) err.textContent = "La base de datos no está disponible."; return; }
+  const btn = document.querySelector("#lh-nuevo .lh-btn-grande"); if(btn){ btn.disabled = true; btn.textContent = "Guardando…"; }
+  ref.add(lead).then(function(docRef){
+    if(docRef && docRef.id && !_lhLeads.some(l => l.id === docRef.id)) _lhLeads.unshift(Object.assign({}, lead, { id: docRef.id }));
+    document.getElementById("lh-nuevo")?.remove();
+    lhRender();
+    showToast("✓ Lead guardado: " + nombre);
+  }).catch(function(e){
+    console.error("[LEADS] Error creando:", e);
+    if(btn){ btn.disabled = false; btn.textContent = "Guardar lead"; }
+    if(err) err.textContent = "No se guardó: " + (e.code === "permission-denied" ? "sin permiso (rol admin)" : e.message);
+  });
+}
+
+// ── Detalle / edición ───────────────────────────────────────────────────
+function lhAbrirDetalle(id){
+  const l = _lhLeads.find(x => x.id === id);
+  if(!l) return;
+  // Si ya estaba abierto (p. ej. tras cambiar la etapa desde aquí), se
+  // conserva lo que el usuario llevaba escrito en los campos.
+  const previo = document.getElementById("lh-detalle");
+  const escrito = {};
+  if(previo && previo.dataset.lhId === id) previo.querySelectorAll("[id^='lh-d-']").forEach(function(el){ escrito[el.id] = el.value; });
+  previo?.remove();
+  const ov = document.createElement("div");
+  ov.id = "lh-detalle";
+  ov.dataset.lhId = id;
+  ov.className = "lh-overlay";
+  ov.onclick = function(e){ if(e.target === ov) ov.remove(); };
+  const opc = (arr, actual) => arr.map(x => '<option' + (x === actual ? ' selected' : '') + '>' + _lhEsc(x) + '</option>').join("");
+  const cot = l.cotizacionId ? (typeof cotizaciones !== "undefined" ? cotizaciones : []).find(c => c.id === l.cotizacionId) : null;
+  const folio = (cot && cot.folio) || l.cotizacionFolio || "";
+  const antesDeEnviada = LH_ETAPAS.indexOf(l.etapa) < LH_ETAPAS.indexOf("Cotización enviada");
+  const wa = _lhWaUrl(l.telefono);
+  ov.innerHTML = '<div class="lh-hoja lh-hoja-ancha">'
+    + '<div class="lh-hoja-head"><div><div class="lh-eyebrow">' + _lhEsc(l.canal) + ' · ' + _lhEsc(_lhFechaCorta(l.fechaContacto)) + '</div><div class="lh-hoja-tit">' + _lhEsc(l.nombre) + '</div></div>'
+      + '<div style="display:flex;gap:6px;align-items:center;">' + (wa ? '<a class="lh-btn lh-btn-sec" href="' + wa + '" target="_blank" rel="noopener">' + LH_ICONOS.wa + ' WhatsApp</a>' : '') + '<button type="button" class="lh-cerrar" onclick="document.getElementById(\'lh-detalle\').remove()">×</button></div></div>'
+    + '<div class="lh-hoja-body">'
+      + '<label class="lh-lbl">Etapa</label><div class="lh-pills lh-pills-etapa">' + LH_ETAPAS.map(e => '<button type="button" class="lh-pill' + (e === l.etapa ? ' lh-pill-on' : '') + '" onclick="lhCambiarEtapa(\'' + _lhEsc(l.id) + '\',\'' + _lhEsc(e) + '\')">' + _lhEsc(e) + '</button>').join("") + '</div>'
+      + (l.etapa === "Perdido" && l.motivoPerdida ? '<div class="lh-aviso">Motivo: ' + _lhEsc(l.motivoPerdida) + '</div>' : '')
+      + '<div class="lh-cot">'
+        + (l.cotizacionId
+          ? '<div>Cotización vinculada: <b>' + _lhEsc(folio || "—") + '</b>' + (cot && cot.estado ? ' · ' + _lhEsc(cot.estado) : '') + '</div>'
+            + '<div class="lh-cot-botones"><button type="button" class="lh-btn lh-btn-sec" onclick="lhAbrirCotizacion(\'' + _lhEsc(l.id) + '\')">Abrir cotización</button>'
+            + (antesDeEnviada ? '<button type="button" class="lh-btn lh-btn-pri" onclick="lhCambiarEtapa(\'' + _lhEsc(l.id) + '\',\'Cotización enviada\')">Marcar "Cotización enviada"</button>' : '')
+            + '<button type="button" class="lh-link" onclick="lhCrearCotizacion(\'' + _lhEsc(l.id) + '\')">Crear otra</button></div>'
+          : '<div>Sin cotización vinculada.</div><div class="lh-cot-botones"><button type="button" class="lh-btn lh-btn-pri" onclick="lhCrearCotizacion(\'' + _lhEsc(l.id) + '\')">Crear cotización</button></div>')
+      + '</div>'
+      + '<div class="lh-grid2">'
+        + '<div><label class="lh-lbl">Nombre <span class="lh-req">*</span></label><input id="lh-d-nombre" class="lh-input" value="' + _lhEsc(l.nombre) + '"></div>'
+        + '<div><label class="lh-lbl">Teléfono</label><input id="lh-d-tel" class="lh-input" type="tel" inputmode="tel" value="' + _lhEsc(_lhTelBonito(l.telefono)) + '"></div>'
+        + '<div><label class="lh-lbl">Canal <span class="lh-req">*</span></label><select id="lh-d-canal" class="lh-input">' + opc(LH_CANALES, l.canal) + '</select></div>'
+        + '<div><label class="lh-lbl">Servicio</label><select id="lh-d-servicio" class="lh-input"><option value="">—</option>' + opc(LH_SERVICIOS, l.servicio) + '</select></div>'
+        + '<div><label class="lh-lbl">Fecha de contacto</label><input id="lh-d-fecha" class="lh-input" type="date" value="' + _lhEsc(l.fechaContacto || "") + '"></div>'
+        + '<div><label class="lh-lbl">Próximo seguimiento</label><input id="lh-d-seg" class="lh-input" type="date" value="' + _lhEsc(l.proximoSeguimiento || "") + '"></div>'
+        + '<div><label class="lh-lbl">Fecha de visita</label><input id="lh-d-visita" class="lh-input" type="date" value="' + _lhEsc(l.fechaVisita || "") + '"></div>'
+        + '<div><label class="lh-lbl">Dirección</label><input id="lh-d-dir" class="lh-input" value="' + _lhEsc(l.direccion || "") + '"></div>'
+      + '</div>'
+      + '<label class="lh-lbl">Notas</label><textarea id="lh-d-notas" class="lh-input" rows="3">' + _lhEsc(l.notas || "") + '</textarea>'
+      + '<div id="lh-d-dup" class="lh-aviso" style="display:none;"></div>'
+      + '<label class="lh-lbl">Historial</label><div class="lh-historial">'
+        + (Array.isArray(l.historial) && l.historial.length ? l.historial.slice().reverse().map(h => '<div>' + _lhChipEtapa(h.etapa) + ' <span>' + _lhEsc(new Date(h.fecha).toLocaleString("es-MX", { day:"numeric", month:"short", hour:"2-digit", minute:"2-digit" })) + (h.usuario ? ' · ' + _lhEsc(h.usuario) : '') + '</span></div>').join("") : '<div>Sin movimientos.</div>')
+      + '</div>'
+      + '<div class="lh-meta-pie">Creado por ' + _lhEsc(l.creadoPor || "—") + '</div>'
+    + '</div>'
+    + '<div class="lh-hoja-pie"><button type="button" class="lh-link lh-link-quitar" onclick="lhEliminar(\'' + _lhEsc(l.id) + '\')">Eliminar lead</button><button type="button" class="lh-btn lh-btn-pri" onclick="lhGuardarDetalle(\'' + _lhEsc(l.id) + '\')">Guardar cambios</button></div>'
+  + '</div>';
+  document.body.appendChild(ov);
+  Object.keys(escrito).forEach(function(k){ const el = document.getElementById(k); if(el) el.value = escrito[k]; });
+}
+
+function lhGuardarDetalle(id){
+  const l = _lhLeads.find(x => x.id === id);
+  if(!l) return;
+  const val = k => (document.getElementById(k) || {}).value || "";
+  const nombre = val("lh-d-nombre").trim();
+  if(!nombre){ showToast("⚠️ El nombre es obligatorio"); return; }
+  const telefono = _lhNormTel(val("lh-d-tel"));
+  const dup = telefono !== _lhNormTel(l.telefono) ? _lhDuplicadoDe(telefono, id) : null;
+  const cambios = {
+    nombre: nombre, telefono: telefono, canal: val("lh-d-canal") || l.canal, servicio: val("lh-d-servicio"),
+    fechaContacto: val("lh-d-fecha") || l.fechaContacto, proximoSeguimiento: val("lh-d-seg"), fechaVisita: val("lh-d-visita"),
+    direccion: val("lh-d-dir").trim(), notas: val("lh-d-notas").trim(), actualizadoEn: new Date().toISOString()
+  };
+  const guardar = function(){ _lhActualizar(id, cambios).then(function(ok){ if(ok){ document.getElementById("lh-detalle")?.remove(); showToast("✓ Lead actualizado"); } }); };
+  if(dup){
+    _lhDialogo("Posible duplicado", 'Ese teléfono ya está en <b>' + _lhEsc(dup.nombre) + '</b> (' + _lhEsc(dup.etapa) + ').',
+      [{ id:"guardar", texto:"Guardar de todos modos", clase:"lh-btn-pri" }, { id:"abrir", texto:"Abrir el existente" }, { id:"cancelar", texto:"Cancelar" }],
+      function(b){ if(b === "guardar") guardar(); else if(b === "abrir") lhAbrirDetalle(dup.id); });
+    return;
+  }
+  guardar();
+}
+
+function lhEliminar(id){
+  const l = _lhLeads.find(x => x.id === id);
+  if(!l || !confirm("¿Eliminar el lead \"" + l.nombre + "\"? No se puede deshacer.")) return;
+  const ref = _lhRef();
+  _lhLeads = _lhLeads.filter(x => x.id !== id);
+  document.getElementById("lh-detalle")?.remove();
+  lhRender();
+  if(ref) ref.doc(id).delete().then(() => showToast("Lead eliminado")).catch(e => showToast("❌ No se eliminó: " + e.message));
+}
+
+// ── Cotización desde el lead ────────────────────────────────────────────
+// Abre una cotización nueva (modalidad HOME) con los datos del lead. El
+// vínculo cotizacionId se guarda cuando la cotización se guarda (gancho en
+// guardarCot → _leadsVincularCotizacion). La etapa NO cambia sola: el
+// usuario la pasa a "Cotización enviada" cuando lo confirme.
+function lhCrearCotizacion(id){
+  const l = _lhLeads.find(x => x.id === id);
+  if(!l) return;
+  if(l.cotizacionId && !confirm("Este lead ya tiene la cotización " + (l.cotizacionFolio || "") + ". ¿Crear otra? El vínculo pasará a la nueva cuando la guardes.")) return;
+  document.getElementById("lh-detalle")?.remove();
+  selectModule("cotizaciones");
+  setTimeout(function(){
+    if(typeof showNuevaCot !== "function"){ showToast("⚠️ No se pudo abrir Cotizaciones"); return; }
+    showNuevaCot();
+    setTimeout(function(){
+      if(typeof cambiarModalidadCot === "function") cambiarModalidadCot("home");
+      const set = (k, v) => { const el = document.getElementById(k); if(el && v) el.value = v; };
+      set("cot-atencion", l.nombre);
+      set("cot-empresa", l.nombre);
+      set("cot-proyecto", (l.servicio && l.servicio !== "Otro" ? l.servicio : "Proyecto residencial") + (l.direccion ? " — " + l.direccion : ""));
+      set("cot-tel", _lhTelBonito(l.telefono));
+      window._cotizacionLeadOrigen = { leadId: l.id, nombre: l.nombre, cotId: null };
+      const vinc = document.getElementById("cot-vinculo-costeo");
+      if(vinc){
+        vinc.style.display = "block";
+        vinc.innerHTML = '<strong style="color:#C36F4A;">🏠 Cotización desde Leads HOME:</strong> ' + _lhEsc(l.nombre)
+          + '<br><span style="color:var(--tx3);">Al guardarla quedará vinculada al lead. La etapa del lead no cambia sola.</span>';
+      }
+      showToast("🏠 Cotización HOME pre-llenada · " + l.nombre);
+    }, 250);
+  }, 200);
+}
+
+// Gancho que llama guardarCot al guardar una cotización abierta desde un lead
+function _leadsVincularCotizacion(cot){
+  const o = window._cotizacionLeadOrigen;
+  if(!o || !cot || !cot.id) return;
+  if(o.cotId && o.cotId !== cot.id) return;   // otra cotización: no vincular
+  o.cotId = cot.id;
+  const cambios = { cotizacionId: cot.id, cotizacionFolio: cot.folio || "", actualizadoEn: new Date().toISOString() };
+  const ref = _lhRef();
+  const l = _lhLeads.find(x => x.id === o.leadId);
+  if(l) Object.assign(l, cambios);
+  if(ref) ref.doc(o.leadId).update(cambios).then(function(){
+    showToast("🔗 Cotización " + (cot.folio || "") + " vinculada al lead " + o.nombre);
+  }).catch(function(e){ console.error("[LEADS] Error vinculando cotización:", e); });
+}
+
+function lhAbrirCotizacion(id){
+  const l = _lhLeads.find(x => x.id === id);
+  if(!l || !l.cotizacionId) return;
+  const existe = (typeof cotizaciones !== "undefined" ? cotizaciones : []).some(c => c.id === l.cotizacionId);
+  if(!existe){ showToast("⚠️ No se encontró la cotización " + (l.cotizacionFolio || "")); return; }
+  document.getElementById("lh-detalle")?.remove();
+  selectModule("cotizaciones");
+  setTimeout(function(){ if(typeof abrirCot === "function") abrirCot(l.cotizacionId); }, 200);
+}
+
+window.leadsInit = leadsInit;
+window.lhRender = lhRender;
+window.lhSetVista = lhSetVista;
+window.lhLeerFiltros = lhLeerFiltros;
+window.lhLimpiarFiltros = lhLimpiarFiltros;
+window.lhToggleSinSeguimiento = lhToggleSinSeguimiento;
+window.lhCambiarEtapa = lhCambiarEtapa;
+window.lhAbrirNuevo = lhAbrirNuevo;
+window.lhGuardarNuevo = lhGuardarNuevo;
+window.lhAbrirDetalle = lhAbrirDetalle;
+window.lhGuardarDetalle = lhGuardarDetalle;
+window.lhEliminar = lhEliminar;
+window.lhCrearCotizacion = lhCrearCotizacion;
+window.lhAbrirCotizacion = lhAbrirCotizacion;
+window._leadsVincularCotizacion = _leadsVincularCotizacion;
 </script>
 </body>
 </html>
