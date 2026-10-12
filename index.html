@@ -15474,10 +15474,13 @@ function generarPdfCotEnVentana(cot, winRef){
 
     function fmt(n){ return '$'+fmtPeso(n); }
 
-    var partesContado = [
-      _ivaIncl
-        ? '<strong style="color:#0B1F3A;">Pago en 1 exhibición</strong> '+fmt(total)
-        : '<strong style="color:#0B1F3A;">Efectivo</strong> '+fmt(total / (1 + HOME_TASAS_MP.ivaGeneral)),
+    // Con IVA incluido, "Pago en 1 exhibición" (efectivo o transferencia) ya
+    // es el Gran total: no se repite "Transferencia" por el mismo monto.
+    var partesContado = _ivaIncl ? [
+      '<strong style="color:#0B1F3A;">Pago en 1 exhibición</strong> '+fmt(total),
+      '<strong style="color:#0B1F3A;">Tarjeta (1 pago)</strong> '+fmt(tarjetaContado)
+    ] : [
+      '<strong style="color:#0B1F3A;">Efectivo</strong> '+fmt(total / (1 + HOME_TASAS_MP.ivaGeneral)),
       '<strong style="color:#0B1F3A;">Transferencia</strong> '+fmt(transferencia),
       '<strong style="color:#0B1F3A;">Tarjeta (1 pago)</strong> '+fmt(tarjetaContado)
     ];
