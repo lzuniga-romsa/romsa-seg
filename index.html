@@ -33526,8 +33526,12 @@ window.bceCalEditarRegla = bceCalEditarRegla;
   <div style="background:#fff;border-radius:16px;max-width:560px;width:100%;padding:28px;max-height:90vh;overflow-y:auto;">
     <div style="font-size:9.5px;font-weight:700;color:#1E6FD9;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:4px;">Cotización Premium</div>
     <div style="font-size:17px;font-weight:800;color:#0B1F3A;margin-bottom:6px;font-family:var(--font);">Elige la foto de portada</div>
-    <div style="font-size:12px;color:#64748B;margin-bottom:18px;line-height:1.5;">Elige de tu librería, o sube una foto nueva — se guarda para tus próximas cotizaciones.</div>
+    <div style="font-size:12px;color:#64748B;margin-bottom:18px;line-height:1.5;">Elige una foto predeterminada o de tu librería, o sube una nueva — se guarda para tus próximas cotizaciones.</div>
 
+    <div style="font-size:11px;font-weight:700;color:#4A5E7A;margin-bottom:10px;">Predeterminadas</div>
+    <div id="fp-grid-predeterminadas" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:20px;"></div>
+
+    <div style="font-size:11px;font-weight:700;color:#4A5E7A;margin-bottom:10px;">Mi librería</div>
     <div id="fp-grid-default" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:20px;">
       <div style="grid-column:1/-1;text-align:center;padding:20px;color:#94A3B8;font-size:12px;">Cargando librería...</div>
     </div>
@@ -33568,11 +33572,66 @@ const _fpFotos = {
 };
 let _fpCustomDataUrl = null;
 
+// ── Fotos predeterminadas (_fpFotos) ─────────────────────────────────
+// Siempre visibles en la sección "Predeterminadas" del selector, sin botón
+// de eliminar. El grid no mete los base64 completos (≈1.2 MB) en el DOM:
+// usa miniaturas de ~320px generadas una sola vez y guardadas en memoria;
+// el PDF sí recibe la foto original completa.
+const _FP_PREDETERMINADAS = [
+  ["cubierta", "Cubierta"], ["epoxico", "Epóxico"], ["pulido", "Pulido"],
+  ["epoxico_gris_medio", "Epóxico gris medio"], ["epoxico_gris_claro", "Epóxico gris claro"],
+  ["dpa", "DPA"], ["uretano_cementicio", "Uretano cementicio"]
+];
+const _fpMiniaturas = {};
+function _fpMiniatura(clave){
+  if(_fpMiniaturas[clave]) return Promise.resolve(_fpMiniaturas[clave]);
+  return new Promise(function(ok){
+    var img = new Image();
+    img.onload = function(){
+      try {
+        var w = 320, h = Math.round(img.naturalHeight * w / img.naturalWidth);
+        var c = document.createElement("canvas"); c.width = w; c.height = h;
+        c.getContext("2d").drawImage(img, 0, 0, w, h);
+        _fpMiniaturas[clave] = c.toDataURL("image/jpeg", 0.8);
+      } catch(e){ _fpMiniaturas[clave] = _fpFotos[clave]; }
+      ok(_fpMiniaturas[clave]);
+    };
+    img.onerror = function(){ ok(""); };
+    img.src = _fpFotos[clave];
+  });
+}
+function _fpRenderPredeterminadas(){
+  var grid = document.getElementById('fp-grid-predeterminadas');
+  if(!grid) return;
+  grid.innerHTML = _FP_PREDETERMINADAS.filter(function(x){ return _fpFotos[x[0]]; }).map(function(x){
+    var mini = _fpMiniaturas[x[0]];
+    return '<div data-fp-predet="'+x[0]+'" onclick="_fpSeleccionarPredeterminada(\''+x[0]+'\')" style="cursor:pointer;">'
+      + '<div class="fp-mini" style="width:100%;aspect-ratio:4/3;border-radius:8px;background-color:#EEF1F5;'+(mini ? 'background-image:url(\''+mini+'\');' : '')+'background-size:cover;background-position:center;border:2px solid transparent;margin-bottom:6px;"></div>'
+      + '<div style="font-size:10px;font-weight:600;color:#4A5E7A;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+escapeHtml(x[1])+'</div>'
+    + '</div>';
+  }).join('');
+  // Miniaturas que aún no existen: se generan en segundo plano y se pintan
+  _FP_PREDETERMINADAS.forEach(function(x){
+    if(_fpMiniaturas[x[0]] || !_fpFotos[x[0]]) return;
+    _fpMiniatura(x[0]).then(function(mini){
+      var el = grid.querySelector('[data-fp-predet="'+x[0]+'"] .fp-mini');
+      if(el && mini) el.style.backgroundImage = "url('"+mini+"')";
+    });
+  });
+}
+function _fpSeleccionarPredeterminada(clave){
+  if(!_fpFotos[clave]) return;
+  document.getElementById('modal-foto-premium').style.display = 'none';
+  _guardarYVerCotPremiumConFoto(_fpFotos[clave]);   // misma generación que una foto de librería
+}
+window._fpSeleccionarPredeterminada = _fpSeleccionarPredeterminada;
+
 // ── Librería de fotos de portada — Firebase Storage + Firestore ──────
-// Reemplaza las fotos de ejemplo "quemadas" en _fpFotos: ahora el selector
-// carga dinámicamente desde la colección cotizacion_fotos_portada.
+// Sección "Mi librería": fotos subidas por el usuario (colección
+// cotizacion_fotos_portada), con botón de eliminar.
 let _fpLibreria = [];
 let _fpLibreriaCargada = false;
+let _fpLibreriaError = "";
 let _fpArchivoNuevo = null;
 
 async function _fpCargarLibreria(forzar){
@@ -33586,8 +33645,10 @@ async function _fpCargarLibreria(forzar){
       return data;
     });
     _fpLibreriaCargada = true;
+    _fpLibreriaError = "";
   } catch(err){
     console.error("[ROMSA] Error cargando librería de fotos de portada:", err);
+    _fpLibreriaError = (err && err.code === "permission-denied") ? "Sin permiso para leer tu librería de fotos." : "No se pudo cargar tu librería de fotos.";
   }
   return _fpLibreria;
 }
@@ -33596,7 +33657,7 @@ function _fpRenderGrid(){
   var grid = document.getElementById('fp-grid-default');
   if(!grid) return;
   if(!_fpLibreria.length){
-    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:22px 10px;color:#94A3B8;font-size:12px;line-height:1.5;">Aún no hay fotos en tu librería.<br>Sube la primera abajo 👇</div>';
+    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:16px 10px;color:#94A3B8;font-size:12px;line-height:1.5;">'+escapeHtml(_fpLibreriaError || 'Aún no subes fotos propias.')+'</div>';
     return;
   }
   grid.innerHTML = _fpLibreria.map(function(f){
@@ -33619,6 +33680,7 @@ async function abrirSelectorFotoPremium(){
   _fpCustomDataUrl = null;
   _fpArchivoNuevo = null;
   document.getElementById('modal-foto-premium').style.display = 'flex';
+  _fpRenderPredeterminadas();   // fijas: visibles de inmediato, sin esperar a Firestore
   var grid = document.getElementById('fp-grid-default');
   grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:20px;color:#94A3B8;font-size:12px;">Cargando librería...</div>';
   await _fpCargarLibreria();
