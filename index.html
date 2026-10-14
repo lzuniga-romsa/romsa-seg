@@ -293,18 +293,31 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
    VISTA CLIENTE
 ══════════════════════════════════════ */
 #vista-cliente{
+  /* Marca del portal (o.marcaPortal): ROMSA por defecto; HOME abajo. */
+  --vc-fondo:#07111E;--vc-hdr:#0B1829;--vc-acento:#1E6FD9;--vc-acento-rgb:30,111,217;
+  --vc-claro:#60A5FA;--vc-nota:#90C0FF;
   display:none;position:fixed;inset:0;
-  background:#07111E;z-index:600;overflow-y:auto;
+  background:var(--vc-fondo);z-index:600;overflow-y:auto;
+}
+#vista-cliente[data-marca="home"]{
+  --vc-fondo:#08121F;--vc-hdr:#0B1F3A;--vc-acento:#C36F4A;--vc-acento-rgb:195,111,74;
+  --vc-claro:#E5A07C;--vc-nota:#F2CBB4;
 }
 #vista-cliente::-webkit-scrollbar{display:none;}
 
 /* CLIENT HEADER */
 .vc-hdr{
-  background:#0B1829;
+  background:var(--vc-hdr);
   padding:calc(var(--safe-top)+14px) 22px 20px;
   text-align:center;
   border-bottom:1px solid rgba(255,255,255,.07);
+  position:relative;overflow:hidden;
 }
+/* Destellos con el color de la marca */
+.vc-hdr::before{content:"";position:absolute;top:-70px;right:-60px;width:240px;height:240px;border-radius:50%;background:radial-gradient(circle,rgba(var(--vc-acento-rgb),.24) 0%,transparent 70%);pointer-events:none;}
+.vc-hdr::after{content:"";position:absolute;left:0;right:0;bottom:0;height:3px;background:linear-gradient(90deg,transparent,var(--vc-acento),var(--vc-claro),transparent);pointer-events:none;}
+.vc-destello{position:absolute;left:-50px;bottom:-70px;width:180px;height:180px;border-radius:50%;background:radial-gradient(circle,rgba(var(--vc-acento-rgb),.16) 0%,transparent 70%);pointer-events:none;}
+.vc-hdr > :not(.vc-destello){position:relative;z-index:1;}
 .vc-logo-wrap{
   display:flex;align-items:center;justify-content:center;
   margin-bottom:20px;
@@ -320,7 +333,7 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
   letter-spacing:-.4px;line-height:1.2;margin-bottom:4px;
 }
 .vc-service-tag{
-  font-size:12px;color:var(--sky);font-weight:500;margin-bottom:14px;
+  font-size:12px;color:var(--vc-claro);font-weight:500;margin-bottom:14px;
 }
 .vc-meta-row{
   display:flex;align-items:center;justify-content:center;gap:16px;
@@ -341,16 +354,16 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
 .vc-pct-big{font-size:40px;font-weight:900;color:#fff;letter-spacing:-2px;line-height:1;}
 .vc-pct-label{font-size:9px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:1.5px;font-weight:700;}
 .vc-estado-chip{
-  background:rgba(30,111,217,.2);border:1px solid rgba(30,111,217,.3);
-  color:var(--sky);font-size:10px;font-weight:700;padding:4px 10px;border-radius:20px;
+  background:rgba(var(--vc-acento-rgb),.2);border:1px solid rgba(var(--vc-acento-rgb),.3);
+  color:var(--vc-claro);font-size:10px;font-weight:700;padding:4px 10px;border-radius:20px;
 }
 .vc-prog-track{height:10px;background:rgba(255,255,255,.08);border-radius:20px;overflow:hidden;margin:14px 0;}
-.vc-prog-fill{height:100%;border-radius:20px;background:linear-gradient(90deg,var(--blue),var(--sky));transition:width .8s ease;}
+.vc-prog-fill{height:100%;border-radius:20px;background:linear-gradient(90deg,var(--vc-acento),var(--vc-claro));transition:width .8s ease;}
 .vc-etapas{display:flex;flex-direction:column;gap:9px;margin-top:14px;}
 .vc-etapa-row{display:flex;align-items:center;gap:10px;}
 .vc-etapa-ico{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;}
 .vc-e-done{background:var(--green);color:#fff;}
-.vc-e-active{background:var(--blue);color:#fff;}
+.vc-e-active{background:var(--vc-acento);color:#fff;}
 .vc-e-pending{background:rgba(255,255,255,.07);color:rgba(255,255,255,.2);}
 #vc-filtro-etapa option{background:#0B1F3A;color:#fff;}
 .vc-etapa-txt{font-size:13px;font-weight:500;}
@@ -374,7 +387,7 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
   border-radius:12px;overflow:hidden;margin-bottom:10px;
 }
 .vc-upd-hdr{padding:12px 14px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,.05);}
-.vc-upd-date{font-size:12px;font-weight:700;color:var(--sky);}
+.vc-upd-date{font-size:12px;font-weight:700;color:var(--vc-claro);}
 .vc-upd-etapa{font-size:9px;font-weight:700;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.8px;margin-top:2px;}
 .vc-upd-pct{font-size:13px;font-weight:800;color:var(--green);}
 .vc-fotos-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:3px;padding:3px;}
@@ -413,7 +426,14 @@ html,body{height:100%;background:var(--off);color:var(--tx);font-family:var(--fo
   cursor:pointer;font-family:var(--font);transition:all .15s;
 }
 .vc-footer-btn:active{background:rgba(255,255,255,.1);}
-.vc-footer-btn.primary{background:var(--blue);border-color:var(--blue);box-shadow:0 2px 10px rgba(30,111,217,.35);}
+.vc-footer-btn.primary{background:var(--vc-acento);border-color:var(--vc-acento);box-shadow:0 2px 10px rgba(var(--vc-acento-rgb),.35);}
+/* Selector interno de marca del portal (pestaña Compartir) */
+.vc-marca-row{padding:12px 16px 0;}
+.vc-marca-lbl{font-size:11px;font-weight:700;color:var(--tx2);margin-bottom:6px;}
+.vc-marca-opciones{display:flex;gap:8px;}
+.vc-marca-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:7px;padding:9px 10px;border-radius:10px;border:1.5px solid var(--border, #DDE5F0);background:#fff;color:var(--tx2, #5A6270);font-size:12px;font-weight:700;font-family:var(--font);cursor:pointer;}
+.vc-marca-btn .vc-marca-punto{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.vc-marca-btn.activa{border-color:var(--marca-btn);color:#0B1F3A;box-shadow:0 0 0 3px color-mix(in srgb, var(--marca-btn) 18%, transparent);}
 .vc-powered{text-align:center;font-size:10px;color:rgba(255,255,255,.15);padding:12px 0 calc(16px + var(--safe-bot));}
 @keyframes pulse-dot{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.5;transform:scale(.7);}}
 @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.6;}}
@@ -2547,6 +2567,13 @@ body.in-plantrabajo #app, body.in-leadshome #app{
           <div class="card-hd" style="display:flex;align-items:center;justify-content:space-between;">
             <span class="card-ttl">Link del cliente</span>
             <button id="btn-revocar-link" onclick="toggleLinkCliente()" style="font-size:10px;font-weight:700;padding:4px 10px;border-radius:8px;border:none;cursor:pointer;background:var(--red-dim);color:var(--red);">🔒 Revocar acceso</button>
+          </div>
+          <div class="vc-marca-row">
+            <div class="vc-marca-lbl">Marca del portal que ve el cliente</div>
+            <div class="vc-marca-opciones">
+              <button type="button" class="vc-marca-btn" data-vc-marca="romsa" style="--marca-btn:#1E6FD9;" onclick="setMarcaPortal('romsa')"><span class="vc-marca-punto" style="background:#1E6FD9;"></span>ROMSA Industrial</button>
+              <button type="button" class="vc-marca-btn" data-vc-marca="home" style="--marca-btn:#C36F4A;" onclick="setMarcaPortal('home')"><span class="vc-marca-punto" style="background:#C36F4A;"></span>HOME by ROMSA</button>
+            </div>
           </div>
           <div id="link-revocado-banner" style="display:none;background:var(--red-dim);border-radius:8px;padding:10px 12px;margin:10px 16px 0;font-size:12px;color:var(--red);font-weight:600;text-align:center;">
             🔒 Link desactivado — el cliente no puede acceder
@@ -4749,6 +4776,7 @@ body.in-plantrabajo #app, body.in-leadshome #app{
 <!-- VISTA CLIENTE -->
 <div id="vista-cliente">
   <div class="vc-hdr">
+    <div class="vc-destello"></div>
     <div style="position:relative;margin-bottom:16px;">
       <div style="position:absolute;top:0;right:0;display:flex;align-items:center;gap:3px;background:rgba(16,185,129,.15);border:1px solid rgba(16,185,129,.25);color:#34D399;font-size:8px;font-weight:700;letter-spacing:.8px;padding:3px 8px;border-radius:20px;white-space:nowrap;">
         <div style="width:4px;height:4px;background:#10B981;border-radius:50%;animation:pulse-dot 1.5s ease-in-out infinite;"></div>EN VIVO
@@ -4760,7 +4788,7 @@ body.in-plantrabajo #app, body.in-leadshome #app{
     </div>
     <div style="width:32px;height:1px;background:rgba(255,255,255,.1);margin:0 auto 16px;"></div>
     <div style="font-size:9px;color:rgba(255,255,255,.35);line-height:1.4;white-space:nowrap;text-align:center;margin-bottom:6px;">
-      Seguimiento de obra en tiempo real del proyecto ejecutado por ROMSA Industrial
+      Seguimiento de obra en tiempo real del proyecto ejecutado por <span id="vc-marca-nombre">ROMSA Industrial</span>
     </div>
   </div>
   <div class="vc-body">
@@ -4795,7 +4823,7 @@ body.in-plantrabajo #app, body.in-leadshome #app{
     <!-- UPDATES TIMELINE -->
     <div class="vc-sec-ttl" style="justify-content:space-between;">
       Actualizaciones en tiempo real
-      <button onclick="forceRefreshVC()" style="background:rgba(30,111,217,.2);border:1px solid rgba(30,111,217,.3);color:var(--sky);font-size:9px;font-weight:700;padding:3px 10px;border-radius:20px;cursor:pointer;font-family:var(--font);letter-spacing:.8px;flex-shrink:0;">↻ Actualizar</button>
+      <button onclick="forceRefreshVC()" style="background:rgba(var(--vc-acento-rgb),.2);border:1px solid rgba(var(--vc-acento-rgb),.3);color:var(--vc-claro);font-size:9px;font-weight:700;padding:3px 10px;border-radius:20px;cursor:pointer;font-family:var(--font);letter-spacing:.8px;flex-shrink:0;">↻ Actualizar</button>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin:0 0 12px;padding:0 2px;">
       <select id="vc-filtro-etapa" onchange="aplicarFiltrosVC()" style="flex:1;min-width:120px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);color:#fff;font-size:11px;padding:7px 10px;border-radius:8px;font-family:var(--font);">
@@ -4816,7 +4844,7 @@ body.in-plantrabajo #app, body.in-leadshome #app{
     <div id="vc-whatsapp-btn" style="padding:0 16px 12px;display:none;">
       <button onclick="contactarWhatsApp()" style="width:100%;background:#25D366;border:none;border-radius:12px;padding:14px;font-family:var(--font);font-size:13px;font-weight:700;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-        Contactar a ROMSA por WhatsApp
+        <span id="vc-whats-txt">Contactar a ROMSA por WhatsApp</span>
       </button>
       <button id="btn-firmar-conformidad" onclick="abrirFirma()" style="display:none;width:100%;background:var(--navy);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:14px;font-family:var(--font);font-size:13px;font-weight:700;color:#fff;cursor:pointer;margin-top:8px;">
         ✍️ Firmar carta de conformidad
@@ -4828,7 +4856,7 @@ body.in-plantrabajo #app, body.in-leadshome #app{
     <div class="vc-footer" id="vc-footer-btns" style="grid-template-columns:1fr;">
       <div class="vc-footer-btn primary" onclick="cerrarVC()">← Cerrar vista</div>
     </div>
-    <div class="vc-powered">Seguimiento de obra en tiempo real · ROMSA Industrial · Baja California</div>
+    <div class="vc-powered" id="vc-powered">Seguimiento de obra en tiempo real · ROMSA Industrial · Baja California</div>
 
   </div>
 </div>
@@ -8031,6 +8059,8 @@ async function saveReporte(){
 // ─── COMPARTIR ────────────────────────────────────
 function renderCompartir(o){
   const link = window.location.origin+window.location.pathname+"?obra="+o.id;
+  const marcaPortal = vcMarca(o).id;
+  document.querySelectorAll(".vc-marca-btn").forEach(b => b.classList.toggle("activa", b.dataset.vcMarca === marcaPortal));
   const revocado = o.linkRevocado === true;
   // Banner y botón
   const banner = document.getElementById("link-revocado-banner");
@@ -8050,6 +8080,18 @@ function renderCompartir(o){
     try{new QRCode(qrEl,{text:link,width:180,height:180,colorDark:"#0B1F3A",colorLight:"#ffffff",correctLevel:QRCode.CorrectLevel.H});}
     catch(e){qrEl.textContent=link;}
   }
+}
+
+// Marca del portal del cliente: se guarda en la obra y el link/QR no
+// cambia — el cliente ve el portal con el logo y los colores de esa marca.
+async function setMarcaPortal(marca){
+  const o = getO(); if(!o) return;
+  const nueva = marca === "home" ? "home" : "romsa";
+  if(vcMarca(o).id === nueva) return;
+  o.marcaPortal = nueva;
+  await saveObra(o);
+  renderCompartir(o);
+  showToast("🎨 El cliente verá el portal con la marca " + VC_MARCAS[nueva].nombre);
 }
 
 async function toggleLinkCliente(){
@@ -8075,6 +8117,38 @@ function compartirLink(){
 }
 
 // ─── VISTA CLIENTE ────────────────────────────────
+// Marcas del portal del cliente (por obra: o.marcaPortal; sin dato = ROMSA).
+// Los colores viven en CSS (#vista-cliente[data-marca=…]); aquí van el logo
+// y los textos con el nombre de la marca.
+const VC_MARCAS = {
+  romsa: { id:"romsa", nombre:"ROMSA Industrial", corto:"ROMSA", logo:() => window._romsaLogoBlanco, altoLogo:"34px", hdr:"#0B1829", tel:"526863513988" },
+  home:  { id:"home",  nombre:"HOME by ROMSA",    corto:"HOME by ROMSA", logo:() => window._homeLogoBlanco, altoLogo:"64px", hdr:"#0B1F3A", tel:"526861754812" },
+};
+function vcMarca(o){ return VC_MARCAS[o && o.marcaPortal === "home" ? "home" : "romsa"]; }
+function aplicarMarcaVC(o){
+  const m = vcMarca(o);
+  const vc = document.getElementById("vista-cliente");
+  if(!vc) return m;
+  vc.dataset.marca = m.id;
+  const logo = document.getElementById("vc-logo-img");
+  const src = m.logo();
+  if(logo){
+    if(src && logo.getAttribute("src") !== src) logo.src = src;
+    logo.alt = m.nombre;
+    logo.style.height = m.altoLogo;
+  }
+  const poner = (id, txt) => { const el = document.getElementById(id); if(el) el.textContent = txt; };
+  poner("vc-marca-nombre", m.nombre);
+  poner("vc-whats-txt", "Contactar a " + m.corto + " por WhatsApp");
+  poner("vc-powered", "Seguimiento de obra en tiempo real · " + m.nombre + " · Baja California");
+  // En el link público, también la pestaña del navegador.
+  if(new URLSearchParams(window.location.search).get("obra")){
+    document.title = m.nombre + " — Seguimiento de Obra";
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if(meta) meta.setAttribute("content", m.hdr);
+  }
+  return m;
+}
 function previewCliente(){ mostrarVC(getO()); }
 function cerrarVC(){ document.getElementById("vista-cliente").style.display="none"; }
 function forceRefreshVC(){
@@ -8088,6 +8162,7 @@ function forceRefreshVC(){
 
 function mostrarVC(o){
   if(!o)return;
+  const marca=aplicarMarcaVC(o);
   const rep=o.reporte||{};
 
   // Header
@@ -8098,7 +8173,7 @@ function mostrarVC(o){
   const badgeEl=document.getElementById("vc-servicio-badge");
   if(badgeEl){
     badgeEl.innerHTML = o.servicio
-      ? `<div style="display:inline-flex;align-items:center;background:rgba(30,111,217,.18);border:1px solid rgba(30,111,217,.3);color:#60A5FA;font-size:8.5px;font-weight:600;padding:2px 9px;border-radius:20px;">${o.servicio}</div>`
+      ? `<div style="display:inline-flex;align-items:center;background:rgba(var(--vc-acento-rgb),.18);border:1px solid rgba(var(--vc-acento-rgb),.3);color:var(--vc-claro);font-size:8.5px;font-weight:600;padding:2px 9px;border-radius:20px;">${o.servicio}</div>`
       : "";
   }
   // Inject project identity block above resumen
@@ -8143,7 +8218,7 @@ function mostrarVC(o){
   if(rep.m2) items.unshift({l:"Superficie total",v:rep.m2.toFixed(2)+" "+(rep.unidad||"m²")});
   // Técnico: usar rep.tecnico si existe, sino el perfil del técnico que creó la obra
   const tecnicoNombre = rep.tecnico || o.creadoPor || "";
-  if(tecnicoNombre) items.push({l:"Supervisor de obra",v:'<strong>'+tecnicoNombre+'</strong><br><small style="font-weight:400;opacity:.55;">Responsable técnico certificado ROMSA</small>'});
+  if(tecnicoNombre) items.push({l:"Supervisor de obra",v:'<strong>'+tecnicoNombre+'</strong><br><small style="font-weight:400;opacity:.55;">Responsable técnico certificado '+marca.corto+'</small>'});
   grid.innerHTML=items.map(i=>`
     <div class="vc-report-field">
       <div class="vc-rf-l">${i.l}</div>
@@ -8179,11 +8254,11 @@ function mostrarVC(o){
       </div>
       <div style="flex:1;min-width:0;">
         <div class="vc-etapa-txt ${e.estado}">${e.nombre}</div>
-        ${e.estado==='active'?'<div style="font-size:9px;color:#60A5FA;font-weight:700;letter-spacing:.5px;margin-top:1px;">EN CURSO</div>':''}
+        ${e.estado==='active'?'<div style="font-size:9px;color:var(--vc-claro);font-weight:700;letter-spacing:.5px;margin-top:1px;">EN CURSO</div>':''}
       </div>
       <div style="text-align:right;flex-shrink:0;">
         ${e.fechaCompletada?`<div style="text-align:right;"><div style="font-size:10px;color:rgba(255,255,255,.35);">${e.fechaCompletada}</div><div style="font-size:10px;color:rgba(255,255,255,.55);font-weight:700;margin-top:1px;">${e.horaCompletada||''}</div></div>`:''}
-        ${e.estado==='active'&&e.fechaActivo?`<div style="text-align:right;"><div style="font-size:10px;color:#60A5FA;">${e.fechaActivo}</div><div style="font-size:10px;color:#60A5FA;font-weight:700;margin-top:1px;">${e.horaActivo||''}</div></div>`:''}
+        ${e.estado==='active'&&e.fechaActivo?`<div style="text-align:right;"><div style="font-size:10px;color:var(--vc-claro);">${e.fechaActivo}</div><div style="font-size:10px;color:var(--vc-claro);font-weight:700;margin-top:1px;">${e.horaActivo||''}</div></div>`:''}
         ${e.estado==='pendiente'?'<div style="font-size:9px;color:rgba(255,255,255,.15);">Pendiente</div>':''}
       </div>
     </div>`).join("");
@@ -8226,8 +8301,8 @@ function mostrarVC(o){
         </div>`:''}
         ${u.nota?`<div class="vc-nota">${u.nota}</div>`:''}
         ${u.m2hoy?`<div style="margin:0 14px 8px;display:flex;align-items:center;gap:8px;"><span style="font-size:10px;font-weight:700;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.8px;">📐 Área trabajada:</span><span style="font-family:var(--mono);font-size:13px;font-weight:700;color:#fff;">${u.m2hoy} ${u.m2unit||'m²'}</span></div>`:''}
-        ${u.notaCliente?`<div style="margin:0 14px 12px;background:rgba(30,111,217,.15);border:1px solid rgba(30,111,217,.25);border-radius:8px;padding:10px 13px;font-size:12px;color:#90C0FF;line-height:1.6;">
-          <span style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--sky);display:block;margin-bottom:6px;">📋 Nota de ROMSA</span>
+        ${u.notaCliente?`<div style="margin:0 14px 12px;background:rgba(var(--vc-acento-rgb),.15);border:1px solid rgba(var(--vc-acento-rgb),.25);border-radius:8px;padding:10px 13px;font-size:12px;color:var(--vc-nota);line-height:1.6;">
+          <span style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--vc-claro);display:block;margin-bottom:6px;">📋 Nota de ${marca.corto}</span>
           ${u.notaCliente}
           ${(u.notaFotos||[]).length?`<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:3px;margin-top:8px;">${(u.notaFotos||[]).map(src=>`<div onclick="verImg('${src}')" style="aspect-ratio:1;border-radius:5px;overflow:hidden;cursor:pointer;"><img src="${src}" style="width:100%;height:100%;object-fit:cover;"></div>`).join("")}</div>`:""}
         </div>`:''}
@@ -9442,14 +9517,15 @@ function contactarWhatsApp(){
   const o = obras[0] || getO();
   const nombre = o ? (o.cliente?o.cliente+" — "+o.nombre:o.nombre) : "mi proyecto";
   // Usar el teléfono del técnico de la obra, o el general de ROMSA como fallback
-  let tel = "526863513988"; // ROMSA general
+  const marcaVC = vcMarca(o);
+  let tel = marcaVC.tel; // general de la marca del portal (ROMSA o HOME)
   if(o && o.telTecnico){
     // Limpiar el número: solo dígitos
     const rawTel = o.telTecnico.replace(/\D/g,"");
     // Agregar código de país México si no tiene
     tel = rawTel.length === 10 ? "52" + rawTel : rawTel;
   }
-  const msg = encodeURIComponent("Hola ROMSA Industrial, te contacto respecto al proyecto: *" + nombre + "*. Mi consulta es: ");
+  const msg = encodeURIComponent("Hola " + marcaVC.nombre + ", te contacto respecto al proyecto: *" + nombre + "*. Mi consulta es: ");
   const url = "https://wa.me/" + tel + "?text=" + msg;
   window.open(url, "_blank");
 }
