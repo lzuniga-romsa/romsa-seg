@@ -1051,6 +1051,30 @@ body.in-plantrabajo #app, body.in-leadshome #app{
 .enc-reset:hover{border-color:#C36F4A;}
 .enc-ctrl-hint{font-size:10.5px;color:#A79C90;margin-top:4px;line-height:1.4;}
 .enc-ctrl.enc-activa .enc-ctrl-label{color:#C36F4A;}
+
+/* ── Video en las plantillas (ver vplCargarArchivo / vplExportar) ── */
+.vpl-ctrl{margin-top:10px;padding:10px;border:1.5px solid #E7DFD5;border-radius:10px;background:#fff;}
+.vpl-fila{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.vpl-btn{border:1.5px solid #E7DFD5;background:#F7F3EE;color:#0B1F3A;font-size:11.5px;font-weight:700;font-family:inherit;border-radius:8px;padding:6px 10px;cursor:pointer;}
+.vpl-btn:hover{border-color:#C36F4A;}
+.vpl-nube{font-size:10.5px;color:#8A7F73;margin-left:auto;}
+.vpl-recorte{display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;margin-top:8px;}
+.vpl-recorte label{display:flex;flex-direction:column;gap:2px;font-size:10.5px;font-weight:700;color:#8A7F73;text-transform:uppercase;letter-spacing:.05em;}
+.vpl-recorte label b{color:#0B1F3A;text-transform:none;letter-spacing:0;}
+.vpl-dur{grid-column:1/-1;font-size:10.5px;color:#A79C90;}
+.vpl-play-lienzo{position:absolute;display:none;width:38px;height:38px;border-radius:50%;border:1.5px solid rgba(255,255,255,.7);background:rgba(11,31,58,.6);color:#fff;font-size:15px;line-height:1;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.25);z-index:2;}
+.vpl-play-lienzo:hover{background:rgba(11,31,58,.85);}
+.vpl-exp-fondo{position:fixed;inset:0;background:rgba(11,31,58,.55);z-index:3000;display:flex;align-items:center;justify-content:center;padding:16px;}
+.vpl-exp-caja{background:#fff;border-radius:16px;padding:20px;width:100%;max-width:420px;max-height:calc(100dvh - 32px);overflow-y:auto;box-shadow:0 12px 40px rgba(0,0,0,.3);font-family:var(--font, inherit);color:#0B1F3A;}
+.vpl-exp-titulo{font-size:16px;font-weight:800;margin-bottom:6px;}
+.vpl-exp-aviso{font-size:12px;color:#5A6270;line-height:1.5;margin-bottom:12px;}
+.vpl-exp-barra{height:10px;border-radius:6px;background:#EFE7DC;overflow:hidden;}
+.vpl-exp-barra>div{height:100%;width:0;background:#C36F4A;transition:width .2s linear;}
+.vpl-exp-pct{font-size:12px;font-weight:700;margin:6px 0 12px;text-align:right;}
+.vpl-exp-video{width:100%;max-height:52vh;border-radius:10px;background:#000;display:block;margin-bottom:10px;}
+.vpl-exp-info{font-size:11.5px;color:#5A6270;margin-bottom:12px;text-align:center;}
+.vpl-exp-acciones{display:flex;gap:8px;flex-wrap:wrap;}
+.vpl-exp-acciones .feh-btn{text-decoration:none;text-align:center;display:block;min-width:120px;}
 #fmm-picker-grid{align-items:start;}
 .fmm-icon-picker{margin-top:8px;border:1px solid #E1E6EF;border-radius:10px;background:#fff;}
 .fmm-icon-picker summary{display:flex;align-items:center;gap:10px;padding:6px 10px 6px 6px;cursor:pointer;list-style:none;font-size:12px;}
@@ -4090,10 +4114,10 @@ body.in-plantrabajo #app, body.in-leadshome #app{
       <div class="fe-upload-wrap">
         <div class="fe-dropzone" id="fe-dropzone" onclick="document.getElementById('fe-file-input').click()">
           <div style="font-size:40px;margin-bottom:8px;">🖼️</div>
-          <div style="font-weight:700;color:#1B1B1F;margin-bottom:4px;">Sube una foto para empezar</div>
-          <div style="font-size:12px;color:#7A7A82;">Toca aquí, o arrastra una imagen</div>
+          <div style="font-weight:700;color:#1B1B1F;margin-bottom:4px;">Sube una foto o un video para empezar</div>
+          <div style="font-size:12px;color:#7A7A82;">Toca aquí · video MP4, MOV o WebM de hasta 60 s</div>
         </div>
-        <input type="file" id="fe-file-input" accept="image/*" style="display:none;" onchange="bceHandleUpload(event)">
+        <input type="file" id="fe-file-input" accept="image/*,video/mp4,video/quicktime,video/webm,.mp4,.m4v,.mov,.webm" style="display:none;" onchange="bceHandleUpload(event)">
       </div>
     </div>
 
@@ -4238,7 +4262,7 @@ body.in-plantrabajo #app, body.in-leadshome #app{
 
         <div class="fe-actions">
           <button class="fe-btn fe-btn-ghost" onclick="bceChangePhoto()">🔄 Cambiar foto</button>
-          <button class="fe-btn fe-btn-primary" onclick="bceDownload()">⬇ Descargar</button>
+          <button class="fe-btn fe-btn-primary" id="fe-download-btn" onclick="bceDownload()">⬇ Descargar</button>
         </div>
       </div>
     </div>
@@ -24248,7 +24272,8 @@ function bceCurrentPostType(){ return BCE_POST_TYPES.find(p => p.key === BCE.pos
 // donde casi siempre está el sujeto principal) para colocar el texto.
 function bceAnalyzeLuminosity(img){
   const sw = 120;
-  const sh = Math.max(1, Math.round(sw * img.naturalHeight / img.naturalWidth));
+  const dims = encDimsOrigen(img) || { w: 1, h: 1 };   // foto, o el primer cuadro de un video
+  const sh = Math.max(1, Math.round(sw * dims.h / dims.w));
   const c = document.createElement("canvas");
   c.width = sw; c.height = sh;
   const cx = c.getContext("2d");
@@ -24396,26 +24421,30 @@ function encDibujarOrigen(ctx, origen, caja, enc, zoomDefecto){
   const dims = encDimsOrigen(origen);
   if(!dims) return null;
   const r = encRect(dims, caja, enc, zoomDefecto);
+  if(_vplCapa && vplEsOrigenVideo(origen)){ vplPerforar(ctx, caja, origen, enc, zoomDefecto); return r; }
   ctx.drawImage(origen, r.dx, r.dy, r.dw, r.dh);
-  if(enc) encRegistrarRanura(ctx, caja, enc, dims, zoomDefecto);
+  if(enc) encRegistrarRanura(ctx, caja, enc, dims, zoomDefecto, origen);
   return r;
 }
 
 // ── Registro de editores y ranuras ──
 // cfg: { render: fn que vuelve a dibujar la vista previa,
-//        mapa: fn que devuelve { clave: estadoDeEncuadre } de las fotos }
+//        mapa: fn que devuelve { clave: estadoDeEncuadre } de las fotos,
+//        exportarVideo: { tamano(), dibujar(ctx, w, h), nombre() } para grabar
+//          la plantilla cuando alguna ranura tiene video (ver vplExportar),
+//        botonDescarga: id del botón de descarga (cambia a "Exportar video") }
 const _encEditores = new Map();
 function encRegistrarEditor(canvasId, cfg){
   _encEditores.set(canvasId, Object.assign({ canvasId, ranuras: [], activa: null, enCuadro: false, rafPendiente: 0 }, cfg));
 }
 function encEditorDe(canvas){ return canvas && canvas.id ? _encEditores.get(canvas.id) || null : null; }
 
-function encRegistrarRanura(ctx, caja, enc, dims, zoomDefecto){
+function encRegistrarRanura(ctx, caja, enc, dims, zoomDefecto, origen){
   const ed = encEditorDe(ctx.canvas);
   if(!ed || !ed.enCuadro) return;
   // Caja en píxeles del canvas (la vista previa puede dibujar con escala).
   const m = ctx.getTransform ? ctx.getTransform() : { a:1, d:1, e:0, f:0 };
-  ed.ranuras.push({ x: m.a * caja.x + m.e, y: m.d * caja.y + m.f, w: m.a * caja.w, h: m.d * caja.h, enc, dims, zoomDefecto, clave: null });
+  ed.ranuras.push({ x: m.a * caja.x + m.e, y: m.d * caja.y + m.f, w: m.a * caja.w, h: m.d * caja.h, enc, dims, zoomDefecto, origen, clave: null });
 }
 
 // La vista previa de cada editor se dibuja entre encInicioCuadro y
@@ -24426,6 +24455,7 @@ function encInicioCuadro(canvas){
   encInstalarGestos(canvas, ed);
   ed.ranuras = [];
   ed.enCuadro = true;
+  ed.vplCapaSucia = true;
 }
 function encFinCuadro(canvas){
   const ed = encEditorDe(canvas);
@@ -24437,6 +24467,7 @@ function encFinCuadro(canvas){
   canvas.classList.toggle("enc-movible", ed.ranuras.length > 0);
   encActualizarMarco(ed);
   encSincronizarControles(ed);
+  vplSincronizarControles(ed);
 }
 
 // Ranura activa: la última tocada (contorno sutil + su control resaltado).
@@ -24585,7 +24616,7 @@ function encActualizarMarco(ed){
   s.width = (r.w * kx) + "px";
   s.height = (r.h * ky) + "px";
 }
-window.addEventListener("resize", () => _encEditores.forEach(encActualizarMarco));
+window.addEventListener("resize", () => _encEditores.forEach(ed => { encActualizarMarco(ed); vplSincronizarControles(ed); }));
 
 // ── Controles de apoyo por foto: deslizador de zoom y "Restablecer encuadre" ──
 function encControlesHtml(canvasId, clave){
@@ -24633,6 +24664,594 @@ function encSincronizarControles(ed){
 }
 window.encZoomDesdeControl = encZoomDesdeControl;
 window.encRestablecerDesdeControl = encRestablecerDesdeControl;
+
+// ══════════════════════════════════════════════════════════════
+// VIDEO EN LAS PLANTILLAS (Fase 1) — cualquier ranura de foto acepta
+// también un video (MP4, MOV o WebM; máx. 60 s y 100 MB). No hay
+// plantillas ni encuadre aparte:
+//  · El "origen" de la ranura es el <video> (o, si pasa de 1080p, un canvas
+//    reducido que se copia en cada cuadro) y se dibuja con el mismo
+//    encDibujarOrigen() que una foto, así que mover/zoom funcionan igual y
+//    la plantilla (logo, textos, franjas) va encima con su diseño de siempre.
+//  · En el editor se reproduce desde el archivo local (blob:, sin CORS ni
+//    esperas); en paralelo el archivo se guarda en Storage
+//    (editor_videos/{uid}/…), nunca como base64.
+//  · Exportar = reproducir la plantilla sobre un canvas del tamaño real y
+//    grabarlo con captureStream + MediaRecorder (misma técnica del Generador
+//    de Video: captureStream(0) + requestFrame, audio por Web Audio).
+//    MP4 (H.264) si el navegador lo graba; si no, WebM.
+// Metadatos del video en origen._vpl.
+// ══════════════════════════════════════════════════════════════
+const VPL_MAX_SEG = 60, VPL_MAX_MB = 100;
+const VPL_ACCEPT = "image/*,video/mp4,video/quicktime,video/webm,.mp4,.m4v,.mov,.webm";
+const VPL_FPS = 30;
+// Más de 1080p (lado corto > 1080 o lado largo > 1920) se dibuja reducido.
+const VPL_LADO_CORTO = 1080, VPL_LADO_LARGO = 1920;
+let VPL_EXPORTANDO = false;
+
+function vplEsVideo(file){
+  if(!file) return false;
+  return /^video\//.test(file.type || "") || /\.(mp4|m4v|mov|webm)$/i.test(file.name || "");
+}
+function vplEsOrigenVideo(o){ return !!(o && o._vpl); }
+function vplTextoRanura(o){
+  if(!o) return "📷 Toca para subir";
+  return vplEsOrigenVideo(o) ? "✓ Video cargado — toca para cambiar" : "✓ Foto cargada — toca para cambiar";
+}
+
+// Formato y peso, antes de abrir el archivo. "" = válido.
+function vplValidarArchivo(file){
+  const ext = ((file.name || "").split(".").pop() || "").toLowerCase();
+  const tipoOk = /^video\/(mp4|quicktime|webm|x-m4v)$/.test(file.type || "") || ["mp4", "m4v", "mov", "webm"].includes(ext);
+  if(!tipoOk) return "Formato de video no compatible. Usa MP4, MOV o WebM.";
+  const mb = (file.size || 0) / (1024 * 1024);
+  if(mb > VPL_MAX_MB) return "El video pesa " + Math.round(mb) + " MB y el máximo es " + VPL_MAX_MB + " MB. Recórtalo o expórtalo en menor calidad antes de subirlo.";
+  return "";
+}
+
+function vplEsperar(video, evento, ms){
+  return new Promise((resolve, reject) => {
+    const fin = (ok, err) => { clearTimeout(to); video.removeEventListener(evento, bien); video.removeEventListener("error", mal); ok ? resolve() : reject(err); };
+    const bien = () => fin(true);
+    const mal = () => fin(false, new Error("Este navegador no puede reproducir ese video. Prueba con un MP4 (H.264) o WebM."));
+    const to = setTimeout(() => fin(false, new Error("El video tardó demasiado en abrir. Intenta de nuevo.")), ms);
+    video.addEventListener(evento, bien);
+    video.addEventListener("error", mal);
+  });
+}
+// Lleva el video a t segundos y espera a que el cuadro esté listo (nunca se
+// queda colgado: a los 3 s sigue igual).
+function vplIrA(video, t){
+  return new Promise(resolve => {
+    const fin = () => { clearTimeout(to); video.removeEventListener("seeked", fin); video.removeEventListener("loadeddata", fin); resolve(); };
+    const to = setTimeout(fin, 3000);
+    if(Math.abs(video.currentTime - t) < 0.001 && !video.seeking){
+      if(video.readyState >= 2) fin(); else video.addEventListener("loadeddata", fin);
+      return;
+    }
+    video.addEventListener("seeked", fin);
+    video.currentTime = t;
+  });
+}
+
+// Abre el archivo, valida duración y devuelve el origen listo para la ranura.
+async function vplCargarArchivo(file, canvasId){
+  const error = vplValidarArchivo(file);
+  if(error) throw new Error(error);
+  const url = URL.createObjectURL(file);
+  const video = document.createElement("video");
+  video.muted = true;
+  video.playsInline = true;
+  video.setAttribute("playsinline", "");
+  video.setAttribute("webkit-playsinline", "");
+  video.preload = "auto";
+  try{
+    const meta = vplEsperar(video, "loadedmetadata", 20000);
+    video.src = url;
+    await meta;
+    let d = video.duration;
+    // Algunos WebM (p. ej. grabados en el navegador) no traen la duración:
+    // se obtiene saltando al final.
+    if(!isFinite(d)){
+      const fin = vplEsperar(video, "seeked", 10000);
+      video.currentTime = 1e7;
+      await fin;
+      d = video.duration;
+    }
+    if(!isFinite(d) || d <= 0) throw new Error("No se pudo leer la duración del video.");
+    if(d > VPL_MAX_SEG + 0.25) throw new Error("El video dura " + Math.round(d) + " s y el máximo es " + VPL_MAX_SEG + " s. Recórtalo antes de subirlo.");
+    if(!video.videoWidth || !video.videoHeight) throw new Error("El archivo no tiene imagen de video.");
+    await vplIrA(video, 0);
+  } catch(err){
+    URL.revokeObjectURL(url);
+    video.removeAttribute("src");
+    throw err;
+  }
+  const w = video.videoWidth, h = video.videoHeight;
+  const k = Math.min(1, VPL_LADO_CORTO / Math.min(w, h), VPL_LADO_LARGO / Math.max(w, h));
+  let origen = video;
+  if(k < 1){
+    origen = document.createElement("canvas");
+    origen.width = Math.round(w * k);
+    origen.height = Math.round(h * k);
+  }
+  origen._vpl = {
+    video, url, nombre: file.name || "video", duracion: video.duration,
+    inicio: 0, fin: video.duration, silenciado: false,
+    reducido: origen !== video ? origen : null, canvasId,
+    nube: "pendiente", ruta: "", urlNube: "", progresoNube: 0,
+  };
+  vplActualizarCuadro(origen);
+  // Con el video en pausa, cada salto (recorte de inicio/fin) repinta.
+  video.addEventListener("seeked", () => {
+    vplActualizarCuadro(origen);
+    const ed = _encEditores.get(origen._vpl.canvasId);
+    if(ed && !ed.vplPlay && !VPL_EXPORTANDO) ed.render();
+  });
+  vplSubirANube(file, origen);
+  return origen;
+}
+
+// ── Capa fija de la plantilla ──
+// Ningún diseño mezcla los píxeles de la foto con lo que va encima (todo es
+// "source-over"), así que mientras corre un video la plantilla se dibuja UNA
+// vez con la ranura del video perforada (transparente) y en cada cuadro solo
+// se pinta el video en su caja y esa capa encima: mismo resultado, sin
+// redibujar textos, degradados y logos 30 veces por segundo.
+let _vplCapa = null;
+function vplPerforar(ctx, caja, origen, enc, zoomDefecto){
+  const m = ctx.getTransform ? ctx.getTransform() : { a:1, d:1, e:0, f:0 };
+  _vplCapa.huecos.push({ origen, enc, zoomDefecto, x: m.a * caja.x + m.e, y: m.d * caja.y + m.f, w: m.a * caja.w, h: m.d * caja.h });
+  ctx.save();
+  ctx.globalCompositeOperation = "destination-out";   // respeta el recorte (clip) de la ranura
+  ctx.fillStyle = "#000";
+  ctx.fillRect(caja.x, caja.y, caja.w, caja.h);
+  ctx.restore();
+}
+function vplCrearCapa(dibujar, w, h){
+  const capa = document.createElement("canvas");
+  capa.width = w; capa.height = h;
+  const c = capa.getContext("2d");
+  c.imageSmoothingEnabled = true;
+  c.imageSmoothingQuality = "high";
+  _vplCapa = { huecos: [] };
+  let huecos;
+  try{ dibujar(c, w, h); } finally { huecos = _vplCapa.huecos; _vplCapa = null; }
+  return { capa, huecos };
+}
+function vplComponer(ctx, capa){
+  ctx.clearRect(0, 0, capa.capa.width, capa.capa.height);
+  capa.huecos.forEach(hu => {
+    const dims = encDimsOrigen(hu.origen);
+    if(!dims) return;
+    const r = encRect(dims, hu, hu.enc, hu.zoomDefecto);
+    ctx.save();
+    ctx.beginPath(); ctx.rect(hu.x, hu.y, hu.w, hu.h); ctx.clip();
+    ctx.drawImage(hu.origen, r.dx, r.dy, r.dw, r.dh);
+    ctx.restore();
+  });
+  ctx.drawImage(capa.capa, 0, 0);
+}
+
+// Copia el cuadro actual al canvas reducido (solo videos de más de 1080p).
+function vplActualizarCuadro(o){
+  const m = o && o._vpl;
+  if(!m || !m.reducido || m.video.readyState < 2) return;
+  m.reducido.getContext("2d").drawImage(m.video, 0, 0, m.reducido.width, m.reducido.height);
+}
+
+// Guarda el archivo original en Storage: editor_videos/{uid}/{ts}_{rand}.{ext}.
+// La edición no depende de esto (se reproduce del archivo local).
+async function vplSubirANube(file, origen){
+  const m = origen._vpl;
+  const refrescar = () => { const ed = _encEditores.get(m.canvasId); if(ed) vplSincronizarControles(ed); };
+  const usuario = (typeof currentUser !== "undefined" && currentUser) || null;
+  if(!storage || !usuario){ m.nube = "sin-sesion"; refrescar(); return; }
+  const ext = ((file.name || "").split(".").pop() || "mp4").toLowerCase().replace(/[^a-z0-9]/g, "") || "mp4";
+  const tipo = file.type || (ext === "mov" ? "video/quicktime" : ext === "webm" ? "video/webm" : "video/mp4");
+  m.ruta = "editor_videos/" + usuario.uid + "/" + Date.now() + "_" + Math.random().toString(36).slice(2, 8) + "." + ext;
+  m.nube = "subiendo";
+  refrescar();
+  try{
+    const ref = storage.ref().child(m.ruta);
+    const tarea = ref.put(file, { contentType: tipo });
+    if(tarea.on) tarea.on("state_changed", s => { m.progresoNube = s.totalBytes ? s.bytesTransferred / s.totalBytes : 0; refrescar(); });
+    await tarea;
+    m.urlNube = await ref.getDownloadURL();
+    m.nube = "ok";
+  } catch(e){
+    console.warn("[Video plantillas] No se pudo guardar en Storage (" + m.ruta + "):", e);
+    m.nube = "error";
+    m.errorNube = (e && (e.code || e.message)) || "error";
+  }
+  refrescar();
+}
+
+// Suelta un video que ya no está en su ranura (pausa y libera el archivo local).
+function vplLiberar(o){
+  if(!vplEsOrigenVideo(o)) return;
+  const m = o._vpl;
+  try{ m.video.pause(); }catch(e){}
+  m.video.removeAttribute("src");
+  try{ m.video.load(); }catch(e){}
+  URL.revokeObjectURL(m.url);
+}
+
+// Carga un archivo de video en una ranura: aviso mientras abre, mensaje
+// claro si no cumple los límites. asignar(origen) es la misma función que
+// usa la ranura con una foto.
+function vplCargarEnRanura(file, canvasId, slotId, asignar){
+  const slot = slotId ? document.getElementById(slotId) : null;
+  const textoPrevio = slot ? slot.textContent : "";
+  if(slot) slot.textContent = "⏳ Abriendo video…"; else showToast("⏳ Abriendo video…");
+  vplCargarArchivo(file, canvasId).then(asignar, err => {
+    const msg = (err && err.message) || "No se pudo abrir el video.";
+    showToast("⚠️ " + msg);
+    if(slot){
+      slot.textContent = "⚠️ " + msg;
+      setTimeout(() => { if(slot.textContent === "⚠️ " + msg) slot.textContent = textoPrevio; }, 7000);
+    }
+  });
+}
+
+// ── Reproducción en el editor ──
+function vplVideosDe(ed){
+  const vistos = new Set();
+  return ed.ranuras.map(r => r.origen).filter(o => vplEsOrigenVideo(o) && !vistos.has(o) && vistos.add(o));
+}
+function vplTieneVideo(canvasId){
+  const ed = _encEditores.get(canvasId);
+  return !!ed && vplVideosDe(ed).length > 0;
+}
+function vplReproducir(canvasId){
+  const ed = _encEditores.get(canvasId);
+  if(!ed || VPL_EXPORTANDO) return;
+  const vids = vplVideosDe(ed);
+  if(!vids.length) return;
+  ed.vplPlay = true;
+  // Todos arrancan juntos desde su inicio (o siguen donde iban si están
+  // dentro del recorte).
+  vids.forEach(o => {
+    const m = o._vpl, v = m.video;
+    v.muted = m.silenciado;
+    if(v.currentTime < m.inicio || v.currentTime >= m.fin - 0.05) v.currentTime = m.inicio;
+    v.play().catch(() => { v.muted = true; v.play().catch(() => {}); });
+  });
+  if(_vplAudio){ _vplAudio.ctx.resume().catch(() => {}); _vplAudio.monitor.gain.value = 1; }
+  let ultimo = 0;
+  const paso = ts => {
+    if(!ed.vplPlay) return;
+    const canvas = document.getElementById(ed.canvasId);
+    // Si el editor dejó de verse (se cambió de pantalla), se pausa solo.
+    if(!canvas || !canvas.getClientRects().length){ vplPausar(ed.canvasId); return; }
+    vplVideosDe(ed).forEach(o => {
+      const m = o._vpl, v = m.video;
+      if(v.currentTime >= m.fin - 0.02 || v.ended){ v.currentTime = m.inicio; if(v.paused) v.play().catch(() => {}); }
+      vplActualizarCuadro(o);
+    });
+    if(ts - ultimo >= 1000 / VPL_FPS - 4){
+      ultimo = ts;
+      // Un render completo (y una capa nueva) solo si algo cambió fuera del
+      // video: texto, foto, gesto… (encInicioCuadro marca la capa sucia).
+      const capa = ed.vplCapaPrevia;
+      if(ed.vplCapaSucia || !capa || capa.capa.width !== canvas.width || capa.capa.height !== canvas.height){
+        ed.render();
+        ed.vplCapaPrevia = vplCrearCapa(ed.exportarVideo.dibujarPrevia || ed.exportarVideo.dibujar, canvas.width, canvas.height);
+        ed.vplCapaSucia = false;
+      } else {
+        vplComponer(canvas.getContext("2d"), capa);
+      }
+    }
+    ed.vplRaf = requestAnimationFrame(paso);
+  };
+  ed.vplRaf = requestAnimationFrame(paso);
+  vplSincronizarControles(ed);
+}
+function vplPausar(canvasId){
+  const ed = _encEditores.get(canvasId);
+  if(!ed) return;
+  const tocaba = ed.vplPlay;
+  ed.vplPlay = false;
+  if(ed.vplRaf) cancelAnimationFrame(ed.vplRaf);
+  ed.vplRaf = 0;
+  vplVideosDe(ed).forEach(o => { try{ o._vpl.video.pause(); }catch(e){} });
+  if(tocaba) ed.render();
+  vplSincronizarControles(ed);
+}
+function vplAlternar(canvasId){
+  const ed = _encEditores.get(canvasId);
+  if(ed && ed.vplPlay) vplPausar(canvasId); else vplReproducir(canvasId);
+}
+
+// ── Controles por ranura: reproducir/pausar, sonido y recorte ──
+function vplControlesHtml(canvasId, clave){
+  const rango = (cual) => '<label>' + (cual === "inicio" ? "Inicio" : "Fin") + ' <b data-vpl-txt="' + cual + '">0.0 s</b>'
+    + '<input type="range" class="feh-range" data-vpl-rango="' + cual + '" min="0" max="1" step="0.1" value="0" aria-label="' + (cual === "inicio" ? "Inicio" : "Fin") + ' del video" oninput="vplRecorteDesdeControl(this)"></label>';
+  return '<div class="vpl-ctrl" data-vpl-canvas="' + canvasId + '" data-vpl-clave="' + clave + '" style="display:none;">'
+    + '<div class="vpl-fila">'
+      + '<button type="button" class="vpl-btn" data-vpl-accion="play" onclick="vplAlternarDesdeControl(this)">▶ Reproducir</button>'
+      + '<button type="button" class="vpl-btn" data-vpl-accion="sonido" onclick="vplSonidoDesdeControl(this)">🔊 Con sonido</button>'
+      + '<span class="vpl-nube"></span>'
+    + '</div>'
+    + '<div class="vpl-recorte">' + rango("inicio") + rango("fin") + '<div class="vpl-dur" data-vpl-txt="dur"></div></div>'
+  + '</div>';
+}
+function vplControlDe(el){
+  const c = el && el.closest(".vpl-ctrl");
+  const ed = c && _encEditores.get(c.dataset.vplCanvas);
+  if(!ed) return null;
+  const r = encRanuraDeClave(ed, c.dataset.vplClave);
+  return { ed, c, origen: r && vplEsOrigenVideo(r.origen) ? r.origen : null };
+}
+function vplAlternarDesdeControl(btn){
+  const x = vplControlDe(btn);
+  if(x) vplAlternar(x.ed.canvasId);
+}
+function vplSonidoDesdeControl(btn){
+  const x = vplControlDe(btn);
+  if(!x || !x.origen) return;
+  const m = x.origen._vpl;
+  m.silenciado = !m.silenciado;
+  m.video.muted = m.silenciado;
+  vplSincronizarControles(x.ed);
+}
+function vplRecorteDesdeControl(input){
+  const x = vplControlDe(input);
+  if(!x || !x.origen) return;
+  const m = x.origen._vpl;
+  const v = Math.round(parseFloat(input.value) * 10) / 10;
+  const MIN = Math.min(0.5, m.duracion);   // el recorte deja al menos medio segundo
+  if(input.dataset.vplRango === "inicio") m.inicio = Math.max(0, Math.min(v, m.fin - MIN));
+  else m.fin = Math.min(m.duracion, Math.max(v, m.inicio + MIN));
+  // En pausa, muestra el cuadro del punto que se está ajustando.
+  if(!x.ed.vplPlay) m.video.currentTime = input.dataset.vplRango === "inicio" ? m.inicio : Math.max(m.inicio, m.fin - 0.05);
+  vplSincronizarControles(x.ed);
+}
+function vplFmt(s){ return (Math.round(s * 10) / 10).toFixed(1) + " s"; }
+function vplPoner(el, prop, valor){ if(el && el[prop] !== valor) el[prop] = valor; }
+
+// Refleja el estado en los controles, el botón ▶ sobre la vista previa y
+// el botón de descarga (se llama tras cada render de la vista previa).
+function vplSincronizarControles(ed){
+  const canvas = document.getElementById(ed.canvasId);
+  const vids = vplVideosDe(ed);
+  document.querySelectorAll('.vpl-ctrl[data-vpl-canvas="' + ed.canvasId + '"]').forEach(c => {
+    const r = encRanuraDeClave(ed, c.dataset.vplClave);
+    const o = r && vplEsOrigenVideo(r.origen) ? r.origen : null;
+    vplPoner(c.style, "display", o ? "" : "none");
+    if(!o) return;
+    const m = o._vpl;
+    vplPoner(c.querySelector('[data-vpl-accion="play"]'), "textContent", ed.vplPlay ? "⏸ Pausar" : "▶ Reproducir");
+    vplPoner(c.querySelector('[data-vpl-accion="sonido"]'), "textContent", m.silenciado ? "🔇 Silenciado" : "🔊 Con sonido");
+    c.querySelectorAll("[data-vpl-rango]").forEach(inp => {
+      vplPoner(inp, "max", String(Math.round(m.duracion * 10) / 10));
+      if(document.activeElement !== inp) vplPoner(inp, "value", String(inp.dataset.vplRango === "inicio" ? m.inicio : m.fin));
+    });
+    vplPoner(c.querySelector('[data-vpl-txt="inicio"]'), "textContent", vplFmt(m.inicio));
+    vplPoner(c.querySelector('[data-vpl-txt="fin"]'), "textContent", vplFmt(m.fin));
+    vplPoner(c.querySelector('[data-vpl-txt="dur"]'), "textContent", "Clip de " + vplFmt(m.fin - m.inicio) + " (video de " + vplFmt(m.duracion) + ")" + (m.silenciado ? " · se exporta sin audio" : ""));
+    const nube = { pendiente: "", "sin-sesion": "Sin sesión: no se guarda en la nube",
+      subiendo: "☁️ Guardando… " + Math.round((m.progresoNube || 0) * 100) + "%", ok: "☁️ Guardado en la nube",
+      error: "⚠️ No se guardó en la nube (puedes seguir editando)" }[m.nube] || "";
+    vplPoner(c.querySelector(".vpl-nube"), "textContent", nube);
+  });
+  // Botón ▶/⏸ sobre la vista previa.
+  if(canvas && canvas.parentElement){
+    if(!ed.vplBoton && vids.length){
+      ed.vplBoton = document.createElement("button");
+      ed.vplBoton.type = "button";
+      ed.vplBoton.className = "vpl-play-lienzo";
+      ed.vplBoton.setAttribute("aria-label", "Reproducir o pausar el video");
+      ed.vplBoton.addEventListener("click", () => vplAlternar(ed.canvasId));
+      canvas.parentElement.classList.add("enc-area");
+      canvas.parentElement.appendChild(ed.vplBoton);
+    }
+    if(ed.vplBoton){
+      const b = canvas.getBoundingClientRect(), bp = canvas.parentElement.getBoundingClientRect();
+      const ver = vids.length > 0 && b.width > 0;
+      vplPoner(ed.vplBoton.style, "display", ver ? "block" : "none");
+      if(ver){
+        // Esquina inferior derecha (solo en pantalla: no sale en el archivo).
+        vplPoner(ed.vplBoton.style, "left", (b.right - bp.left + canvas.parentElement.scrollLeft - 46) + "px");
+        vplPoner(ed.vplBoton.style, "top", (b.bottom - bp.top + canvas.parentElement.scrollTop - 46) + "px");
+        vplPoner(ed.vplBoton, "textContent", ed.vplPlay ? "⏸" : "▶");
+      }
+    }
+  }
+  // Botón de descarga: con video, exporta video.
+  const btn = ed.botonDescarga && document.getElementById(ed.botonDescarga);
+  if(btn){
+    if(btn.dataset.vplTexto === undefined) btn.dataset.vplTexto = btn.textContent;
+    vplPoner(btn, "textContent", vids.length ? "🎬 Exportar video" : btn.dataset.vplTexto);
+  }
+}
+
+// ── Audio para la exportación (Web Audio, como el Generador de Video) ──
+// Un solo contexto; cada <video> se conecta una vez (createMediaElementSource
+// no se puede repetir sobre el mismo elemento) a la grabación y a las bocinas
+// (monitor, en 0 mientras se graba).
+let _vplAudio = null;
+function vplAudio(){
+  if(_vplAudio) return _vplAudio;
+  const C = window.AudioContext || window.webkitAudioContext;
+  if(!C) return null;
+  const ctx = new C();
+  const monitor = ctx.createGain();
+  monitor.connect(ctx.destination);
+  _vplAudio = { ctx, dest: ctx.createMediaStreamDestination(), monitor };
+  return _vplAudio;
+}
+function vplConectarAudio(o){
+  const m = o._vpl, a = vplAudio();
+  if(m.fuenteAudio || !a) return !!m.fuenteAudio;
+  try{
+    m.fuenteAudio = a.ctx.createMediaElementSource(m.video);
+    m.fuenteAudio.connect(a.dest);
+    m.fuenteAudio.connect(a.monitor);
+  } catch(e){ console.warn("[Video plantillas] Sin audio para este video:", e); }
+  return !!m.fuenteAudio;
+}
+
+// MP4 (H.264) si el navegador lo graba (Safari, Chrome reciente); si no,
+// WebM VP9 (el mismo del Generador de Video; con VP8 Chromium descartaba
+// muchos más cuadros al grabar en tiempo real). No se usa "video/mp4" a
+// secas en Chromium: ahí sería VP9 dentro de MP4, que muchos celulares no
+// reproducen.
+function vplElegirFormato(){
+  const MR = window.MediaRecorder;
+  const soporta = t => { try{ return !!(MR && MR.isTypeSupported && MR.isTypeSupported(t)); }catch(e){ return false; } };
+  for(const t of ["video/mp4;codecs=avc1.42E01E,mp4a.40.2", "video/mp4;codecs=avc1,mp4a.40.2", "video/mp4;codecs=avc1.42E01E", "video/mp4;codecs=avc1"]) if(soporta(t)) return { mime: t, ext: "mp4", etiqueta: "MP4" };
+  for(const t of ["video/webm;codecs=vp9,opus", "video/webm;codecs=vp8,opus", "video/webm"]) if(soporta(t)) return { mime: t, ext: "webm", etiqueta: "WebM" };
+  if(soporta("video/mp4")) return { mime: "video/mp4", ext: "mp4", etiqueta: "MP4" };
+  return { mime: "", ext: "webm", etiqueta: "WebM" };
+}
+
+// Ventana de progreso / resultado de la exportación.
+function vplPanelExportacion(segundos){
+  const fondo = document.createElement("div");
+  fondo.className = "vpl-exp-fondo";
+  fondo.innerHTML = '<div class="vpl-exp-caja" role="dialog" aria-label="Exportar video">'
+    + '<div class="vpl-exp-titulo">🎬 Exportando video…</div>'
+    + '<div class="vpl-exp-aviso">La exportación dura lo mismo que el video (≈ ' + Math.ceil(segundos) + ' s): se reproduce y se graba en tiempo real. No cambies de pestaña ni bloquees la pantalla hasta que termine.</div>'
+    + '<div class="vpl-exp-barra"><div></div></div><div class="vpl-exp-pct">0%</div>'
+    + '<div class="vpl-exp-acciones"><button type="button" class="feh-btn feh-btn-ghost" data-vpl-exp="cancelar">Cancelar</button></div>'
+  + '</div>';
+  document.body.appendChild(fondo);
+  const ui = { cancelado: false };
+  const caja = fondo.firstChild;
+  caja.querySelector('[data-vpl-exp="cancelar"]').onclick = () => { ui.cancelado = true; };
+  ui.progreso = f => {
+    const pct = Math.max(0, Math.min(100, Math.round(f * 100)));
+    caja.querySelector(".vpl-exp-barra>div").style.width = pct + "%";
+    caja.querySelector(".vpl-exp-pct").textContent = pct + "%";
+  };
+  ui.cerrar = () => { if(ui.url) URL.revokeObjectURL(ui.url); fondo.remove(); };
+  ui.error = msg => {
+    caja.innerHTML = '<div class="vpl-exp-titulo">⚠️ No se pudo exportar</div><div class="vpl-exp-aviso">' + escapeHtml(msg) + '</div>'
+      + '<div class="vpl-exp-acciones"><button type="button" class="feh-btn feh-btn-ghost" data-vpl-exp="cerrar">Cerrar</button></div>';
+    caja.querySelector('[data-vpl-exp="cerrar"]').onclick = ui.cerrar;
+  };
+  ui.listo = (blob, archivo, formato, w, h, seg) => {
+    ui.url = URL.createObjectURL(blob);
+    const file = new File([blob], archivo, { type: blob.type });
+    const compartir = !!(navigator.canShare && navigator.share && (() => { try{ return navigator.canShare({ files: [file] }); }catch(e){ return false; } })());
+    caja.innerHTML = '<div class="vpl-exp-titulo">✅ Video listo</div>'
+      + '<video class="vpl-exp-video" controls playsinline src="' + ui.url + '"></video>'
+      + '<div class="vpl-exp-info">' + formato.etiqueta + ' · ' + w + '×' + h + ' · ' + Math.round(seg) + ' s · ' + (blob.size / 1048576).toFixed(1) + ' MB</div>'
+      + '<div class="vpl-exp-acciones">'
+        + '<a class="feh-btn feh-btn-primary" data-vpl-exp="descargar" href="' + ui.url + '" download="' + escapeHtml(archivo) + '">⬇ Descargar</a>'
+        + (compartir ? '<button type="button" class="feh-btn feh-btn-ghost" data-vpl-exp="compartir">📤 Compartir</button>' : '')
+        + '<button type="button" class="feh-btn feh-btn-ghost" data-vpl-exp="cerrar">Cerrar</button>'
+      + '</div>';
+    caja.querySelector('[data-vpl-exp="cerrar"]').onclick = ui.cerrar;
+    const bc = caja.querySelector('[data-vpl-exp="compartir"]');
+    if(bc) bc.onclick = () => navigator.share({ files: [file], title: archivo }).catch(() => {});
+  };
+  return ui;
+}
+
+// Graba la plantilla con sus videos. Duración = el clip más largo; los
+// demás repiten en bucle hasta completarla.
+async function vplExportar(canvasId){
+  const ed = _encEditores.get(canvasId);
+  if(!ed || !ed.exportarVideo || VPL_EXPORTANDO) return;
+  const vids = vplVideosDe(ed);
+  if(!vids.length) return;
+  if(!window.MediaRecorder || !HTMLCanvasElement.prototype.captureStream){
+    showToast("⚠️ Este navegador no puede grabar video. Usa Chrome o Safari actualizados.");
+    return;
+  }
+  vplPausar(canvasId);
+  const formato = vplElegirFormato();
+  const { w, h } = ed.exportarVideo.tamano();
+  const D = Math.max(...vids.map(o => o._vpl.fin - o._vpl.inicio));
+  VPL_EXPORTANDO = true;
+  const ui = vplPanelExportacion(D);
+  let firestorePausado = false, audio = null, streamVideo = null;
+  try{
+    // Igual que el Generador de Video: los listeners de Firestore compiten
+    // por el hilo principal mientras se graba.
+    if(typeof fevPausarFirestoreParaExport === "function"){ fevPausarFirestoreParaExport(); firestorePausado = true; }
+    const canvas = document.createElement("canvas");
+    canvas.width = w; canvas.height = h;
+    const ctx = canvas.getContext("2d");
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
+    const conSonido = vids.filter(o => !o._vpl.silenciado);
+    if(conSonido.length){
+      audio = vplAudio();
+      if(audio){
+        await audio.ctx.resume().catch(() => {});
+        audio.monitor.gain.value = 0;
+        if(!conSonido.map(vplConectarAudio).some(Boolean)) audio = null;
+      }
+    }
+    await Promise.all(vids.map(o => { const m = o._vpl; m.video.pause(); m.video.muted = m.silenciado; return vplIrA(m.video, m.inicio); }));
+    vids.forEach(vplActualizarCuadro);
+    const capa = vplCrearCapa(ed.exportarVideo.dibujar, w, h);
+    vplComponer(ctx, capa);
+    const porCuadro = typeof CanvasCaptureMediaStreamTrack !== "undefined" && "requestFrame" in CanvasCaptureMediaStreamTrack.prototype;
+    streamVideo = canvas.captureStream(porCuadro ? 0 : VPL_FPS);
+    const pista = streamVideo.getVideoTracks()[0];
+    const pistas = [...streamVideo.getVideoTracks()].concat(audio ? audio.dest.stream.getAudioTracks() : []);
+    const opciones = { videoBitsPerSecond: 8000000 };
+    if(formato.mime) opciones.mimeType = formato.mime;
+    const rec = new MediaRecorder(new MediaStream(pistas), opciones);
+    const partes = [];
+    let errorGrabacion = null;
+    rec.ondataavailable = e => { if(e.data && e.data.size) partes.push(e.data); };
+    rec.onerror = e => { errorGrabacion = (e && e.error) || new Error("La grabación falló."); };
+    const detenido = new Promise(r => { rec.onstop = r; });
+    // Si el navegador no deja reproducir con sonido, se graba sin audio
+    // antes que congelar la imagen.
+    await Promise.all(vids.map(o => o._vpl.video.play().catch(() => { o._vpl.video.muted = true; return o._vpl.video.play().catch(() => {}); })));
+    rec.start(1000);
+    if(porCuadro) pista.requestFrame();
+    const t0 = performance.now();
+    for(let i = 1; !ui.cancelado; i++){
+      const t = (performance.now() - t0) / 1000;
+      if(t >= D) break;
+      vids.forEach(o => {
+        const m = o._vpl, v = m.video;
+        if(v.currentTime >= m.fin - 0.02 || v.ended){ v.currentTime = m.inicio; v.play().catch(() => {}); }
+        vplActualizarCuadro(o);
+      });
+      vplComponer(ctx, capa);
+      if(porCuadro) pista.requestFrame();
+      ui.progreso(t / D);
+      const espera = t0 + i * 1000 / VPL_FPS - performance.now();
+      await new Promise(r => setTimeout(r, Math.max(0, espera)));
+    }
+    rec.stop();
+    vids.forEach(o => o._vpl.video.pause());
+    await detenido;
+    if(ui.cancelado){ ui.cerrar(); return; }
+    const tipo = (rec.mimeType || formato.mime || "video/webm").split(";")[0];
+    const blob = new Blob(partes, { type: tipo });
+    // Nunca dar por bueno un archivo vacío (equipo saturado, códec que no arrancó…).
+    if(errorGrabacion || !blob.size) throw new Error("El navegador no logró grabar el video" + (errorGrabacion && errorGrabacion.message ? " (" + errorGrabacion.message + ")" : "") + ". Cierra otras apps o pestañas e intenta de nuevo.");
+    ui.progreso(1);
+    const ext = /mp4/.test(tipo) ? "mp4" : "webm";
+    const fmt = ext === "mp4" ? { etiqueta: "MP4", ext } : { etiqueta: "WebM", ext };
+    ui.listo(blob, (ed.exportarVideo.nombre ? ed.exportarVideo.nombre() : "video") + "_" + Date.now() + "." + ext, fmt, w, h, D);
+  } catch(err){
+    console.error("[Video plantillas] Error al exportar:", err);
+    ui.error((err && err.message) || "Error desconocido al grabar el video.");
+  } finally {
+    VPL_EXPORTANDO = false;
+    // Cerrar la captura del canvas: si quedan vivas, exportaciones seguidas
+    // van acumulando codificadores y alguna termina saliendo vacía.
+    if(streamVideo) streamVideo.getTracks().forEach(t => { try{ t.stop(); }catch(e){} });
+    if(_vplAudio) _vplAudio.monitor.gain.value = 1;
+    if(firestorePausado) fevReanudarFirestoreTrasExport();
+    vplSincronizarControles(ed);
+  }
+}
+
+window.vplAlternarDesdeControl = vplAlternarDesdeControl;
+window.vplSonidoDesdeControl = vplSonidoDesdeControl;
+window.vplRecorteDesdeControl = vplRecorteDesdeControl;
+window.vplExportar = vplExportar;
 
 // ── COMPONENTES (reutilizables, cada uno dibuja una pieza) ──────
 // Foto a sangre del Motor de Marca: cover exacto, con el encuadre del usuario.
@@ -25466,7 +26085,7 @@ function bceInit(){
   if(_bceInited) return;
   _bceInited = true;
   const encCtrl = document.getElementById("fe-encuadre");
-  if(encCtrl) encCtrl.innerHTML = encControlesHtml("fe-canvas", "foto");
+  if(encCtrl) encCtrl.innerHTML = encControlesHtml("fe-canvas", "foto") + vplControlesHtml("fe-canvas", "foto");
   BCE.logoWhiteImg = new Image();
   BCE.logoWhiteImg.src = bceLogoSrc(BCE.brand, "blanco");
   BCE.logoNavyImg = new Image();
@@ -25577,18 +26196,22 @@ function bceGoToStep(n){
 async function bceHandleUpload(e){
   const file = e.target.files && e.target.files[0];
   if(!file) return;
+  // Foto o video: los dos van a la misma ranura (ver "Video en las plantillas").
+  const asignar = async (img) => {
+    if(BCE.img !== img) vplLiberar(BCE.img);
+    BCE.img = img;
+    BCE.luminosity = null;
+    BCE.encuadre = encNuevo(1);   // foto nueva: encuadre inicial
+    bceGoToStep(2);
+    if(_bceFontsReady) await _bceFontsReady;
+    bceRenderPreview();
+    bceGenerateCopy();
+  };
+  if(vplEsVideo(file)){ vplCargarEnRanura(file, "fe-canvas", null, asignar); e.target.value = ""; return; }
   const reader = new FileReader();
   reader.onload = (ev) => {
     const img = new Image();
-    img.onload = async () => {
-      BCE.img = img;
-      BCE.luminosity = null;
-      BCE.encuadre = encNuevo(1);   // foto nueva: encuadre inicial
-      bceGoToStep(2);
-      if(_bceFontsReady) await _bceFontsReady;
-      bceRenderPreview();
-      bceGenerateCopy();
-    };
+    img.onload = () => asignar(img);
     img.src = ev.target.result;
   };
   reader.readAsDataURL(file);
@@ -25596,6 +26219,8 @@ async function bceHandleUpload(e){
 }
 
 function bceChangePhoto(){
+  vplPausar("fe-canvas");
+  vplLiberar(BCE.img);
   BCE.img = null;
   document.getElementById("fe-file-input").value = "";
   bceGoToStep(1);
@@ -25782,6 +26407,12 @@ function bceRenderPreview(){
 encRegistrarEditor("fe-canvas", {
   render: bceRenderPreview,
   mapa: () => BCE.img ? { foto: BCE.encuadre } : {},
+  botonDescarga: "fe-download-btn",
+  exportarVideo: {
+    tamano: () => { const n = bceCurrentNetwork(); return { w: n.w, h: n.h }; },
+    dibujar: (ctx, w, h) => bceCompose(ctx, w, h),
+    nombre: () => "ROMSA_" + bceCurrentNetwork().key,
+  },
 });
 
 // ── Generador de texto de acompañamiento (basado en plantillas, no IA) ──
@@ -25841,6 +26472,7 @@ async function bceDownload(){
   if(!BCE.img){ showToast("⚠️ Sube una foto primero"); return; }
   if(!BCE.fields.titulo){ showToast("⚠️ Escribe al menos un título"); return; }
   if(_bceFontsReady) await _bceFontsReady;
+  if(vplEsOrigenVideo(BCE.img)){ vplExportar("fe-canvas"); return; }
   const net = bceCurrentNetwork();
   const canvas = document.createElement("canvas");
   canvas.width = net.w; canvas.height = net.h;
@@ -26278,6 +26910,7 @@ function fehVolverPicker(){
 function fehElegirPlantilla(id){
   const t = HOME_TEMPLATES.find(x=>x.id===id);
   if(!t) return;
+  vplPausar("feh-canvas");
   // Anuncios · Servicio: se editan con el editor de Presentación de Servicio.
   if(t.editor === "fmm"){ fmmAbrirAnuncio(t.id); return; }
   _fehDraftCtx = null;
@@ -26298,9 +26931,10 @@ function fehElegirPlantilla(id){
   document.getElementById("feh-photo-slots").innerHTML = t.photos.map(p=>
     '<div class="feh-ctrl-group">'
       +'<label class="feh-ctrl-label">'+escapeHtml(p.label)+'</label>'
-      +'<div class="feh-photoslot'+(FEH.photos[p.key]?' feh-filled':'')+'" id="feh-slot-'+p.key+'" onclick="document.getElementById(\'feh-file-'+p.key+'\').click()">'+(FEH.photos[p.key]?'✓ Foto cargada — toca para cambiar':'📷 Toca para subir')+'</div>'
-      +'<input type="file" accept="image/*" id="feh-file-'+p.key+'" style="display:none;" onchange="fehCargarFoto(\''+p.key+'\',event)">'
+      +'<div class="feh-photoslot'+(FEH.photos[p.key]?' feh-filled':'')+'" id="feh-slot-'+p.key+'" onclick="document.getElementById(\'feh-file-'+p.key+'\').click()">'+vplTextoRanura(FEH.photos[p.key])+'</div>'
+      +'<input type="file" accept="'+VPL_ACCEPT+'" id="feh-file-'+p.key+'" style="display:none;" onchange="fehCargarFoto(\''+p.key+'\',event)">'
       +encControlesHtml("feh-canvas", p.key)
+      +vplControlesHtml("feh-canvas", p.key)
     +'</div>'
   ).join("");
 
@@ -26393,20 +27027,24 @@ function fehGuardarBorrador(){
 function fehCargarFoto(key, e){
   const file = e.target.files && e.target.files[0];
   if(!file) return;
+  // Foto o video: los dos se asignan igual a la ranura.
+  const asignar = (img)=>{
+    if(FEH.photos[key] !== img) vplLiberar(FEH.photos[key]);
+    FEH.photos[key] = img;
+    // Reiniciar el encuadre manual: una foto nueva no debe heredar el
+    // ajuste de posición/zoom de la que tenía antes ese mismo recuadro.
+    if(!FEH.photoOffsets) FEH.photoOffsets = {};
+    FEH.photoOffsets[key] = encNuevo(FEH_ZOOM_INICIAL);
+    const slot = document.getElementById("feh-slot-"+key);
+    if(slot){ slot.classList.add("feh-filled"); slot.textContent = vplTextoRanura(img); }
+    fehActualizarBotonDescarga();
+    fehRenderPreview();
+  };
+  if(vplEsVideo(file)){ vplCargarEnRanura(file, "feh-canvas", "feh-slot-"+key, asignar); e.target.value = ""; return; }
   const reader = new FileReader();
   reader.onload = (ev)=>{
     const img = new Image();
-    img.onload = ()=>{
-      FEH.photos[key] = img;
-      // Reiniciar el encuadre manual: una foto nueva no debe heredar el
-      // ajuste de posición/zoom de la que tenía antes ese mismo recuadro.
-      if(!FEH.photoOffsets) FEH.photoOffsets = {};
-      FEH.photoOffsets[key] = encNuevo(FEH_ZOOM_INICIAL);
-      const slot = document.getElementById("feh-slot-"+key);
-      if(slot){ slot.classList.add("feh-filled"); slot.textContent = "✓ Foto cargada — toca para cambiar"; }
-      fehActualizarBotonDescarga();
-      fehRenderPreview();
-    };
+    img.onload = ()=> asignar(img);
     img.src = ev.target.result;
   };
   reader.readAsDataURL(file);
@@ -26435,7 +27073,16 @@ function fehRenderPreview(){
   encFinCuadro(canvas);
   fehGenerateCopy(t, FEH);
 }
-encRegistrarEditor("feh-canvas", { render: fehRenderPreview, mapa: () => (FEH && FEH.photoOffsets) || {} });
+encRegistrarEditor("feh-canvas", {
+  render: fehRenderPreview,
+  mapa: () => (FEH && FEH.photoOffsets) || {},
+  botonDescarga: "feh-download-btn",
+  exportarVideo: {
+    tamano: () => { const t = HOME_TEMPLATES.find(x=>x.id===FEH.tplId); return { w: t.w, h: t.h }; },
+    dibujar: (ctx, w, h) => { const t = HOME_TEMPLATES.find(x=>x.id===FEH.tplId); t.draw(ctx, w, h, FEH, t); },
+    nombre: () => "HOME_" + FEH.tplId,
+  },
+});
 
 // Un pilar por plantilla (de los 4 del manual), para no meter los 4 en un
 // copy corto — el manual pide que "aparezcan en todo material de venta",
@@ -26529,6 +27176,7 @@ async function fehDescargar(){
   const faltan = t.photos.filter(p=>!FEH.photos[p.key]);
   if(faltan.length){ showToast("⚠️ Sube "+(faltan.length>1?"todas las fotos":"la foto")+" primero"); return; }
   if(_fehFontsReady) await _fehFontsReady;
+  if(vplTieneVideo("feh-canvas")){ vplExportar("feh-canvas"); return; }
   const canvas = document.createElement("canvas");
   canvas.width = t.w * HOME_EXPORT_SCALE; canvas.height = t.h * HOME_EXPORT_SCALE;
   const ctx = canvas.getContext("2d");
@@ -27366,6 +28014,7 @@ function taurinaVolverPicker(){
 function taurinaElegirPlantilla(id){
   const t = TAURINA_TEMPLATES.find(x=>x.id===id);
   if(!t) return;
+  vplPausar("taurina-canvas");
   // Igual que HOME: otra plantilla conserva las fotos, con encuadre nuevo.
   const fotosPrevias = TAURINA.photos || {};
   TAURINA = { tplId:id, photos:{}, values:{}, photoOffsets:{} };
@@ -27381,9 +28030,10 @@ function taurinaElegirPlantilla(id){
   document.getElementById("taurina-photo-slots").innerHTML = t.photos.map(p=>
     '<div class="feh-ctrl-group">'
       +'<label class="feh-ctrl-label">'+escapeHtml(p.label)+'</label>'
-      +'<div class="feh-photoslot'+(TAURINA.photos[p.key]?' feh-filled':'')+'" id="taurina-slot-'+p.key+'" onclick="document.getElementById(\'taurina-file-'+p.key+'\').click()">'+(TAURINA.photos[p.key]?'✓ Foto cargada — toca para cambiar':'📷 Toca para subir')+'</div>'
-      +'<input type="file" accept="image/*" id="taurina-file-'+p.key+'" style="display:none;" onchange="taurinaCargarFoto(\''+p.key+'\',event)">'
+      +'<div class="feh-photoslot'+(TAURINA.photos[p.key]?' feh-filled':'')+'" id="taurina-slot-'+p.key+'" onclick="document.getElementById(\'taurina-file-'+p.key+'\').click()">'+vplTextoRanura(TAURINA.photos[p.key])+'</div>'
+      +'<input type="file" accept="'+VPL_ACCEPT+'" id="taurina-file-'+p.key+'" style="display:none;" onchange="taurinaCargarFoto(\''+p.key+'\',event)">'
       +encControlesHtml("taurina-canvas", p.key)
+      +vplControlesHtml("taurina-canvas", p.key)
     +'</div>'
   ).join("");
 
@@ -27412,18 +28062,21 @@ function taurinaSetValor(key, val){
 function taurinaCargarFoto(key, e){
   const file = e.target.files && e.target.files[0];
   if(!file) return;
+  const asignar = (img)=>{
+    if(TAURINA.photos[key] !== img) vplLiberar(TAURINA.photos[key]);
+    TAURINA.photos[key] = img;
+    if(!TAURINA.photoOffsets) TAURINA.photoOffsets = {};
+    TAURINA.photoOffsets[key] = encNuevo(FEH_ZOOM_INICIAL);
+    const slot = document.getElementById("taurina-slot-"+key);
+    if(slot){ slot.classList.add("feh-filled"); slot.textContent = vplTextoRanura(img); }
+    taurinaActualizarBotonDescarga();
+    taurinaRenderPreview();
+  };
+  if(vplEsVideo(file)){ vplCargarEnRanura(file, "taurina-canvas", "taurina-slot-"+key, asignar); e.target.value = ""; return; }
   const reader = new FileReader();
   reader.onload = (ev)=>{
     const img = new Image();
-    img.onload = ()=>{
-      TAURINA.photos[key] = img;
-      if(!TAURINA.photoOffsets) TAURINA.photoOffsets = {};
-      TAURINA.photoOffsets[key] = encNuevo(FEH_ZOOM_INICIAL);
-      const slot = document.getElementById("taurina-slot-"+key);
-      if(slot){ slot.classList.add("feh-filled"); slot.textContent = "✓ Foto cargada — toca para cambiar"; }
-      taurinaActualizarBotonDescarga();
-      taurinaRenderPreview();
-    };
+    img.onload = ()=> asignar(img);
     img.src = ev.target.result;
   };
   reader.readAsDataURL(file);
@@ -27451,7 +28104,16 @@ function taurinaRenderPreview(){
   t.draw(ctx, t.w, t.h, TAURINA, t);
   encFinCuadro(canvas);
 }
-encRegistrarEditor("taurina-canvas", { render: taurinaRenderPreview, mapa: () => (TAURINA && TAURINA.photoOffsets) || {} });
+encRegistrarEditor("taurina-canvas", {
+  render: taurinaRenderPreview,
+  mapa: () => (TAURINA && TAURINA.photoOffsets) || {},
+  botonDescarga: "taurina-download-btn",
+  exportarVideo: {
+    tamano: () => { const t = TAURINA_TEMPLATES.find(x=>x.id===TAURINA.tplId); return { w: t.w, h: t.h }; },
+    dibujar: (ctx, w, h) => { const t = TAURINA_TEMPLATES.find(x=>x.id===TAURINA.tplId); t.draw(ctx, w, h, TAURINA, t); },
+    nombre: () => "TAURINA_" + TAURINA.tplId,
+  },
+});
 
 // Sugerencia de copy: el usuario puede seguir editando después — no son
 // campos de solo lectura, solo se precargan con una opción del banco.
@@ -27473,6 +28135,7 @@ async function taurinaDescargar(){
   const faltan = t.photos.filter(p=>!TAURINA.photos[p.key]);
   if(faltan.length){ showToast("⚠️ Sube "+(faltan.length>1?"todas las fotos":"la foto")+" primero"); return; }
   if(_taurinaFontsReady) await _taurinaFontsReady;
+  if(vplTieneVideo("taurina-canvas")){ vplExportar("taurina-canvas"); return; }
   const canvas = document.createElement("canvas");
   canvas.width = t.w * TAURINA_EXPORT_SCALE; canvas.height = t.h * TAURINA_EXPORT_SCALE;
   const ctx = canvas.getContext("2d");
@@ -28354,7 +29017,7 @@ function fmmDrawPresentacionServicio(ctx, W, H, st, opciones){
       ctx.fillStyle = gt;
       ctx.fillRect(0, 0, W, H * 0.16);
     }
-  } else if(st.foto && st.foto.naturalWidth){
+  } else if(encDimsOrigen(st.foto)){
     ctx.save();
     ctx.beginPath(); ctx.rect(area.x, area.y, area.w, area.h); ctx.clip();
     encDibujarOrigen(ctx, st.foto, area, st.encuadre, FMM_ZOOM_INICIAL);
@@ -28678,6 +29341,7 @@ function fmmAbrirAnuncio(id){
   const t = fmmPlantilla(id);
   if(!t || !t.editor) return;
   fmmInicializar();
+  vplPausar("fmm-canvas");
   if(!_fmmModoAnuncio) _fmmEstadoMultimarca = FMM;
   _fmmModoAnuncio = true;
   FMM = fmmEstadoAnuncio(t);
@@ -28692,6 +29356,7 @@ function fmmAbrirAnuncio(id){
 }
 
 function fmmSalirModoAnuncio(){
+  vplPausar("fmm-canvas");
   _fmmModoAnuncio = false;
   FMM = _fmmEstadoMultimarca;
   _fmmEstadoMultimarca = null;
@@ -28770,6 +29435,7 @@ function fmmVolverPicker(){
 function fmmElegirPlantilla(id){
   const t = FMM_TEMPLATES.find(x => x.id === id);
   if(!t) return;
+  vplPausar("fmm-canvas");
   if(!FMM) FMM = fmmEstadoInicial();
   FMM.tplId = id;
   FMM.encuadre = encNuevo(FMM_ZOOM_INICIAL);
@@ -28910,9 +29576,10 @@ function fmmRenderForm(){
   const fotoAD = (clave, etiqueta) => {
     const img = adAD.fotos[clave];
     return '<div class="feh-ctrl-group"><label class="feh-ctrl-label">'+etiqueta+'</label>'
-      +'<div class="feh-photoslot'+(img?" feh-filled":"")+'" id="fmm-slot-'+clave+'" onclick="document.getElementById(\'fmm-file-'+clave+'\').click()">'+(img?"✓ Foto cargada — toca para cambiar":"📷 Toca para subir")+'</div>'
-      +'<input type="file" accept="image/*" id="fmm-file-'+clave+'" style="display:none;" onchange="fmmCargarFotoAD(\''+clave+'\',event)">'
+      +'<div class="feh-photoslot'+(img?" feh-filled":"")+'" id="fmm-slot-'+clave+'" onclick="document.getElementById(\'fmm-file-'+clave+'\').click()">'+vplTextoRanura(img)+'</div>'
+      +'<input type="file" accept="'+VPL_ACCEPT+'" id="fmm-file-'+clave+'" style="display:none;" onchange="fmmCargarFotoAD(\''+clave+'\',event)">'
       +encControlesHtml("fmm-canvas", clave)
+      +vplControlesHtml("fmm-canvas", clave)
     +'</div>';
   };
   document.getElementById("fmm-form").innerHTML =
@@ -28931,9 +29598,10 @@ function fmmRenderForm(){
         +'</div>'
         +fotoAD("antes", "Foto ANTES") + fotoAD("despues", "Foto DESPUÉS")
       : '<div class="feh-ctrl-group"><label class="feh-ctrl-label">Foto protagonista</label>'
-      +'<div class="feh-photoslot'+(FMM.foto?" feh-filled":"")+'" id="fmm-slot" onclick="document.getElementById(\'fmm-file\').click()">'+(FMM.foto?"✓ Foto cargada — toca para cambiar":"📷 Toca para subir")+'</div>'
-      +'<input type="file" accept="image/*" id="fmm-file" style="display:none;" onchange="fmmCargarFoto(event)">'
+      +'<div class="feh-photoslot'+(FMM.foto?" feh-filled":"")+'" id="fmm-slot" onclick="document.getElementById(\'fmm-file\').click()">'+vplTextoRanura(FMM.foto)+'</div>'
+      +'<input type="file" accept="'+VPL_ACCEPT+'" id="fmm-file" style="display:none;" onchange="fmmCargarFoto(event)">'
       +encControlesHtml("fmm-canvas", "foto")
+      +vplControlesHtml("fmm-canvas", "foto")
     +'</div>')
     +(fmmEsVertical()
       ? '<div class="feh-ctrl-group"><label class="feh-ctrl-label">Dirección del degradado</label>'
@@ -29075,21 +29743,25 @@ function fmmCargarFotoAD(clave, e){
   e.target.value = "";
   const ad = FMM && FMM.antesDespues;
   if(!file || !ad) return;
+  // Foto o video en cada mitad (pueden mezclarse).
+  const asignar = img => {
+    if(ad.fotos[clave] !== img) vplLiberar(ad.fotos[clave]);
+    ad.fotos[clave] = img;
+    ad.offsets[clave] = encNuevo(FEH_ZOOM_INICIAL);
+    const a = encDimsOrigen(ad.fotos.antes), d = encDimsOrigen(ad.fotos.despues);
+    if(a && d && !ad.orientacionManual){
+      const hA = a.w > a.h, hD = d.w > d.h;
+      if(hA === hD) ad.orientacion = hA ? "horizontal" : "vertical";
+      if(!FMM.degradadoManual) FMM.degradado = fmmDegradadoSugerido(ad.orientacion);
+    }
+    fmmRenderForm();
+    fmmRenderPreview();
+  };
+  if(vplEsVideo(file)){ vplCargarEnRanura(file, "fmm-canvas", "fmm-slot-"+clave, asignar); return; }
   const reader = new FileReader();
   reader.onload = ev => {
     const img = new Image();
-    img.onload = () => {
-      ad.fotos[clave] = img;
-      ad.offsets[clave] = encNuevo(FEH_ZOOM_INICIAL);
-      const a = ad.fotos.antes, d = ad.fotos.despues;
-      if(a && d && !ad.orientacionManual){
-        const hA = a.naturalWidth > a.naturalHeight, hD = d.naturalWidth > d.naturalHeight;
-        if(hA === hD) ad.orientacion = hA ? "horizontal" : "vertical";
-        if(!FMM.degradadoManual) FMM.degradado = fmmDegradadoSugerido(ad.orientacion);
-      }
-      fmmRenderForm();
-      fmmRenderPreview();
-    };
+    img.onload = () => asignar(img);
     img.src = ev.target.result;
   };
   reader.readAsDataURL(file);
@@ -29347,15 +30019,18 @@ function fmmSetIntensidad(k){ FMM.intensidad = Math.max(0, Math.min(1, k)); fmmR
 function fmmCargarFoto(e){
   const file = e.target.files && e.target.files[0];
   if(!file) return;
+  const asignar = img => {
+    if(FMM.foto !== img) vplLiberar(FMM.foto);
+    FMM.foto = img;
+    FMM.encuadre = encNuevo(FMM_ZOOM_INICIAL);
+    fmmRenderForm();
+    fmmRenderPreview();
+  };
+  if(vplEsVideo(file)){ vplCargarEnRanura(file, "fmm-canvas", "fmm-slot", asignar); e.target.value = ""; return; }
   const reader = new FileReader();
   reader.onload = ev => {
     const img = new Image();
-    img.onload = () => {
-      FMM.foto = img;
-      FMM.encuadre = encNuevo(FMM_ZOOM_INICIAL);
-      fmmRenderForm();
-      fmmRenderPreview();
-    };
+    img.onload = () => asignar(img);
     img.src = ev.target.result;
   };
   reader.readAsDataURL(file);
@@ -29380,6 +30055,13 @@ function fmmRenderPreview(){
 encRegistrarEditor("fmm-canvas", {
   render: fmmRenderPreview,
   mapa: () => !FMM ? {} : FMM.antesDespues ? FMM.antesDespues.offsets : (FMM.foto ? { foto: FMM.encuadre } : {}),
+  botonDescarga: "fmm-download-btn",
+  exportarVideo: {
+    tamano: () => { const t = fmmPlantilla(FMM.tplId); return { w: t.w, h: t.h }; },
+    dibujar: (ctx, w, h) => fmmDrawPresentacionServicio(ctx, w, h, FMM),
+    dibujarPrevia: (ctx, w, h) => fmmDrawPresentacionServicio(ctx, w, h, FMM, { guias: true }),
+    nombre: () => (FMM_MARCAS.find(m => m.id === FMM.marca) || FMM_MARCAS[0]).etiqueta.split(" ")[0].toUpperCase() + "_" + FMM.tplId,
+  },
 });
 
 const FMM_EXPORT_SCALE = 2;
@@ -29395,6 +30077,7 @@ async function fmmDescargar(){
   if(!t) return;
   if(!fmmFotosListas()){ showToast(FMM.antesDespues ? "⚠️ Sube las fotos ANTES y DESPUÉS primero" : "⚠️ Sube la foto primero"); return; }
   if(_fmmFontsReady) await _fmmFontsReady;
+  if(vplTieneVideo("fmm-canvas")){ vplExportar("fmm-canvas"); return; }
   const canvas = document.createElement("canvas");
   canvas.width = t.w * FMM_EXPORT_SCALE; canvas.height = t.h * FMM_EXPORT_SCALE;
   const ctx = canvas.getContext("2d");
