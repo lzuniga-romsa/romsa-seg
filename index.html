@@ -1006,7 +1006,6 @@ body.in-plantrabajo #app, body.in-leadshome #app{
 .feh-input:focus{outline:none;border-color:#C36F4A;}
 .feh-photoslot{border:2px dashed #C9BBAE;border-radius:12px;padding:14px;text-align:center;cursor:pointer;background:#fff;font-size:11.5px;color:#8A7F73;font-weight:600;}
 .feh-photoslot.feh-filled{border-style:solid;border-color:#C36F4A;color:#0B1F3A;}
-.feh-pan-ctrl{display:flex;flex-direction:column;gap:4px;}
 .feh-range{width:100%;accent-color:#C36F4A;}
 .feh-check-row{display:flex;align-items:center;gap:8px;font-size:12px;color:#0B1F3A;font-weight:600;cursor:pointer;font-family:inherit;margin-top:6px;}
 .feh-actions{display:flex;gap:8px;margin-top:2px;}
@@ -1033,11 +1032,25 @@ body.in-plantrabajo #app, body.in-leadshome #app{
 
 /* ── Plantillas multimarca (dentro de Editor de Fotos) — mismo overlay y
    mismas clases .feh-* que HOME/TAURINA; solo agrega lo que no existía:
-   el gesto de arrastre/zoom sobre la vista previa y la miniatura 16:9. ── */
+   la miniatura 16:9 (el gesto sobre la foto es el de "Encuadre de fotos"). ── */
 #fmm-root{position:fixed;inset:0;background:#F4F6FA;z-index:500;display:none;flex-direction:column;overflow-y:auto;}
-#fmm-canvas{touch-action:none;cursor:grab;}
-#fmm-canvas.fmm-arrastrando{cursor:grabbing;}
 .feh-picker-thumb.fmm-thumb-land{aspect-ratio:16/9;}
+
+/* ── Encuadre de fotos: mover / zoom de cada foto sobre la vista previa,
+   compartido por todos los editores de plantillas (ver encDibujarOrigen). ── */
+.enc-area{position:relative;}
+.enc-lienzo.enc-movible{touch-action:none;}
+.enc-lienzo.enc-sobre-foto{cursor:grab;}
+.enc-lienzo.enc-arrastrando{cursor:grabbing;}
+.enc-marco{position:absolute;display:none;pointer-events:none;box-sizing:border-box;border:2px solid rgba(255,255,255,.85);box-shadow:0 0 0 1px rgba(11,31,58,.35),inset 0 0 0 1px rgba(11,31,58,.25);border-radius:2px;}
+.enc-ctrl{margin-top:8px;}
+.enc-ctrl-fila{display:flex;align-items:center;gap:8px;}
+.enc-ctrl-label{font-size:10.5px;font-weight:700;color:#8A7F73;text-transform:uppercase;letter-spacing:.06em;flex-shrink:0;}
+.enc-ctrl .enc-zoom{flex:1;min-width:0;}
+.enc-reset{flex-shrink:0;border:1.5px solid #E7DFD5;background:#fff;color:#0B1F3A;font-size:11px;font-weight:700;font-family:inherit;border-radius:8px;padding:6px 9px;cursor:pointer;}
+.enc-reset:hover{border-color:#C36F4A;}
+.enc-ctrl-hint{font-size:10.5px;color:#A79C90;margin-top:4px;line-height:1.4;}
+.enc-ctrl.enc-activa .enc-ctrl-label{color:#C36F4A;}
 #fmm-picker-grid{align-items:start;}
 .fmm-icon-picker{margin-top:8px;border:1px solid #E1E6EF;border-radius:10px;background:#fff;}
 .fmm-icon-picker summary{display:flex;align-items:center;gap:10px;padding:6px 10px 6px 6px;cursor:pointer;list-style:none;font-size:12px;}
@@ -4092,6 +4105,11 @@ body.in-plantrabajo #app, body.in-leadshome #app{
       </div>
 
       <div class="fe-form-wrap">
+
+        <div class="fe-ctrl-group">
+          <label class="fe-ctrl-label">Encuadre de la foto</label>
+          <div id="fe-encuadre"></div>
+        </div>
 
         <div class="fe-ctrl-group">
           <label class="fe-ctrl-label">Red social</label>
@@ -24216,6 +24234,7 @@ let BCE = {
   logoIconOnly: false, // true = usar solo el ícono del logo (sin texto), donde exista
   badgeStyle: "line", // "line" (línea de acento, actual) | "badge" (etiqueta con fondo)
   minimalAcento: false, // true = título con fondo de color en la plantilla Minimal
+  encuadre: encNuevo(1), // zoom/posición de la foto (ver "Encuadre de fotos")
 };
 
 function bceCurrentNetwork(){ return BCE_NETWORKS.find(n => n.key === BCE.networkKey) || BCE_NETWORKS[0]; }
@@ -24326,17 +24345,299 @@ function bceWrapText(ctx, text, maxWidth){
   if(cur) lines.push(cur);
   return lines;
 }
-function bcePhotoRect(canvasW, canvasH){
-  const img = BCE.img;
-  const scale = Math.max(canvasW / img.naturalWidth, canvasH / img.naturalHeight);
-  const dw = img.naturalWidth * scale, dh = img.naturalHeight * scale;
-  return { dx: (canvasW - dw) / 2, dy: (canvasH - dh) / 2, dw, dh };
+// ══════════════════════════════════════════════════════════════
+// ENCUADRE DE FOTOS — mover y hacer zoom a cada foto directamente sobre la
+// vista previa. Un solo mecanismo para todos los editores de plantillas
+// (Motor de Marca, HOME, TAURINA y Multimarca / Anuncios):
+//  · Cada "ranura" de foto guarda { zoom, offsetX, offsetY }. zoom va de 1
+//    (recorte "cover" exacto: la foto apenas llena su caja) a 4; offsetX /
+//    offsetY = cuánto se corre el centro de la foto respecto al centro de la
+//    caja, como fracción del ancho / alto de la caja.
+//  · encDibujarOrigen() es la ÚNICA función que dibuja la foto de una ranura,
+//    en la vista previa y en la exportación, así que el archivo sale con el
+//    mismo encuadre que se ve. Recibe un "origen" con ancho y alto (imagen,
+//    video o canvas): no depende del tipo de medio.
+//  · Al dibujar la vista previa, cada ranura queda registrada con su caja en
+//    píxeles del canvas; el gesto busca la ranura bajo el puntero, así que
+//    ninguna plantilla declara sus cajas aparte. Texto, logo y demás
+//    elementos se dibujan encima como siempre y no se mueven.
+// ══════════════════════════════════════════════════════════════
+const ENC_ZOOM_MIN = 1, ENC_ZOOM_MAX = 4;
+
+function encNuevo(zoom){ return { zoom: zoom || 1, offsetX: 0, offsetY: 0 }; }
+function encLimitar(v, a, b){ return Math.max(a, Math.min(b, v)); }
+
+// Ancho y alto del origen: imagen (natural), video o canvas.
+function encDimsOrigen(o){
+  if(!o) return null;
+  const w = o.naturalWidth || o.videoWidth || o.width || 0;
+  const h = o.naturalHeight || o.videoHeight || o.height || 0;
+  return w > 0 && h > 0 ? { w, h } : null;
 }
 
+// Rectángulo donde se dibuja un origen de dims {w,h} dentro de la caja
+// {x,y,w,h}. El desplazamiento se limita a lo que sobra de la foto, así que
+// nunca quedan huecos dentro de la caja.
+function encRect(dims, caja, enc, zoomDefecto){
+  enc = enc || {};
+  const zoom = encLimitar(enc.zoom || zoomDefecto || 1, ENC_ZOOM_MIN, ENC_ZOOM_MAX);
+  const s = Math.max(caja.w / dims.w, caja.h / dims.h) * zoom;
+  const dw = dims.w * s, dh = dims.h * s;
+  const mx = (dw - caja.w) / 2, my = (dh - caja.h) / 2;   // sobrante por lado
+  const ox = encLimitar((enc.offsetX || 0) * caja.w, -mx, mx);
+  const oy = encLimitar((enc.offsetY || 0) * caja.h, -my, my);
+  return { dx: caja.x - mx + ox, dy: caja.y - my + oy, dw, dh, zoom, mx, my };
+}
+
+// Dibuja el origen con su encuadre (el recorte/clip de la caja lo pone quien
+// llama). zoomDefecto: el encuadre inicial de esa plantilla, para ranuras sin
+// estado. Con estado, la ranura queda registrada para el gesto.
+function encDibujarOrigen(ctx, origen, caja, enc, zoomDefecto){
+  const dims = encDimsOrigen(origen);
+  if(!dims) return null;
+  const r = encRect(dims, caja, enc, zoomDefecto);
+  ctx.drawImage(origen, r.dx, r.dy, r.dw, r.dh);
+  if(enc) encRegistrarRanura(ctx, caja, enc, dims, zoomDefecto);
+  return r;
+}
+
+// ── Registro de editores y ranuras ──
+// cfg: { render: fn que vuelve a dibujar la vista previa,
+//        mapa: fn que devuelve { clave: estadoDeEncuadre } de las fotos }
+const _encEditores = new Map();
+function encRegistrarEditor(canvasId, cfg){
+  _encEditores.set(canvasId, Object.assign({ canvasId, ranuras: [], activa: null, enCuadro: false, rafPendiente: 0 }, cfg));
+}
+function encEditorDe(canvas){ return canvas && canvas.id ? _encEditores.get(canvas.id) || null : null; }
+
+function encRegistrarRanura(ctx, caja, enc, dims, zoomDefecto){
+  const ed = encEditorDe(ctx.canvas);
+  if(!ed || !ed.enCuadro) return;
+  // Caja en píxeles del canvas (la vista previa puede dibujar con escala).
+  const m = ctx.getTransform ? ctx.getTransform() : { a:1, d:1, e:0, f:0 };
+  ed.ranuras.push({ x: m.a * caja.x + m.e, y: m.d * caja.y + m.f, w: m.a * caja.w, h: m.d * caja.h, enc, dims, zoomDefecto, clave: null });
+}
+
+// La vista previa de cada editor se dibuja entre encInicioCuadro y
+// encFinCuadro; las exportaciones (otro canvas) no registran nada.
+function encInicioCuadro(canvas){
+  const ed = encEditorDe(canvas);
+  if(!ed) return;
+  encInstalarGestos(canvas, ed);
+  ed.ranuras = [];
+  ed.enCuadro = true;
+}
+function encFinCuadro(canvas){
+  const ed = encEditorDe(canvas);
+  if(!ed) return;
+  ed.enCuadro = false;
+  const mapa = ed.mapa() || {};
+  const claves = Object.keys(mapa);
+  ed.ranuras.forEach(r => { r.clave = claves.find(k => mapa[k] === r.enc) || null; });
+  canvas.classList.toggle("enc-movible", ed.ranuras.length > 0);
+  encActualizarMarco(ed);
+  encSincronizarControles(ed);
+}
+
+// Ranura activa: la última tocada (contorno sutil + su control resaltado).
+function encActivar(ed, clave){ ed.activa = clave; }
+function encReiniciarEditor(canvasId){
+  const ed = _encEditores.get(canvasId);
+  if(ed) ed.activa = null;
+}
+function encRanuraDeClave(ed, clave){
+  for(let i = ed.ranuras.length - 1; i >= 0; i--) if(ed.ranuras[i].clave === clave) return ed.ranuras[i];
+  return null;
+}
+
+// ── Operaciones sobre una ranura (en píxeles del canvas) ──
+function encAjustar(r){
+  const enc = r.enc;
+  const q = encRect(r.dims, r, enc, r.zoomDefecto);
+  enc.zoom = q.zoom;
+  enc.offsetX = r.w ? encLimitar(enc.offsetX || 0, -q.mx / r.w, q.mx / r.w) : 0;
+  enc.offsetY = r.h ? encLimitar(enc.offsetY || 0, -q.my / r.h, q.my / r.h) : 0;
+}
+function encMover(r, dx, dy){
+  r.enc.offsetX = (r.enc.offsetX || 0) + dx / r.w;
+  r.enc.offsetY = (r.enc.offsetY || 0) + dy / r.h;
+  encAjustar(r);
+}
+// Zoom alrededor de un punto: lo que está bajo ese punto se queda ahí.
+function encZoomEn(r, factor, pt){
+  const enc = r.enc;
+  const q = encRect(r.dims, r, enc, r.zoomDefecto);
+  const z1 = encLimitar(q.zoom * factor, ENC_ZOOM_MIN, ENC_ZOOM_MAX);
+  const f = z1 / q.zoom;
+  const cx = pt.x + (q.dx + q.dw / 2 - pt.x) * f;
+  const cy = pt.y + (q.dy + q.dh / 2 - pt.y) * f;
+  enc.zoom = z1;
+  enc.offsetX = (cx - (r.x + r.w / 2)) / r.w;
+  enc.offsetY = (cy - (r.y + r.h / 2)) / r.h;
+  encAjustar(r);
+}
+
+// Un render por cuadro de animación mientras dura el gesto.
+function encPedirRender(ed){
+  if(ed.rafPendiente) return;
+  ed.rafPendiente = requestAnimationFrame(() => { ed.rafPendiente = 0; ed.render(); });
+}
+
+// ── Gestos sobre la vista previa (Pointer Events: mouse, dedo y pellizco) ──
+function encInstalarGestos(canvas, ed){
+  if(canvas._encGestos) return;
+  canvas._encGestos = true;
+  canvas.classList.add("enc-lienzo");
+  const punteros = new Map();
+  let ranura = null;
+  // Pantalla → píxeles del canvas (la vista previa está escalada por CSS).
+  const aCanvas = e => {
+    const b = canvas.getBoundingClientRect();
+    return { x: (e.clientX - b.left) * canvas.width / (b.width || 1), y: (e.clientY - b.top) * canvas.height / (b.height || 1) };
+  };
+  const buscar = pt => {
+    for(let i = ed.ranuras.length - 1; i >= 0; i--){
+      const r = ed.ranuras[i];
+      if(pt.x >= r.x && pt.x <= r.x + r.w && pt.y >= r.y && pt.y <= r.y + r.h) return r;
+    }
+    return null;
+  };
+  // Tras un render las ranuras se recrean: seguir con la misma foto.
+  const actual = () => (ranura && ed.ranuras.find(r => r.enc === ranura.enc)) || ranura;
+  const mover = (dx, dy) => { ranura = actual(); encMover(ranura, dx, dy); };
+
+  canvas.addEventListener("pointerdown", e => {
+    const pt = aCanvas(e);
+    if(!punteros.size){
+      ranura = buscar(pt);
+      if(!ranura) return;
+      encActivar(ed, ranura.clave);
+    } else if(!ranura) return;
+    e.preventDefault();
+    try{ canvas.setPointerCapture(e.pointerId); }catch(err){}
+    punteros.set(e.pointerId, pt);
+    canvas.classList.add("enc-arrastrando");
+    encPedirRender(ed);
+  });
+  canvas.addEventListener("pointermove", e => {
+    if(!punteros.has(e.pointerId)){
+      if(!punteros.size && e.pointerType === "mouse") canvas.classList.toggle("enc-sobre-foto", !!buscar(aCanvas(e)));
+      return;
+    }
+    const prev = punteros.get(e.pointerId), pt = aCanvas(e);
+    punteros.set(e.pointerId, pt);
+    if(punteros.size >= 2){
+      // Pellizco: zoom con la distancia entre los dedos y movimiento con su
+      // punto medio, a la vez.
+      let otro = null;
+      punteros.forEach((v, id) => { if(id !== e.pointerId && !otro) otro = v; });
+      const m0 = { x: (prev.x + otro.x) / 2, y: (prev.y + otro.y) / 2 };
+      const m1 = { x: (pt.x + otro.x) / 2, y: (pt.y + otro.y) / 2 };
+      const d0 = Math.hypot(prev.x - otro.x, prev.y - otro.y), d1 = Math.hypot(pt.x - otro.x, pt.y - otro.y);
+      ranura = actual();
+      if(d0 > 0 && d1 > 0) encZoomEn(ranura, d1 / d0, m0);
+      mover(m1.x - m0.x, m1.y - m0.y);
+    } else {
+      mover(pt.x - prev.x, pt.y - prev.y);
+    }
+    encPedirRender(ed);
+  });
+  const soltar = e => {
+    if(!punteros.delete(e.pointerId)) return;
+    if(!punteros.size){ ranura = null; canvas.classList.remove("enc-arrastrando"); }
+  };
+  canvas.addEventListener("pointerup", soltar);
+  canvas.addEventListener("pointercancel", soltar);
+  canvas.addEventListener("pointerleave", e => { if(e.pointerType === "mouse" && !punteros.size) canvas.classList.remove("enc-sobre-foto"); });
+  // Rueda del mouse, Ctrl+rueda y pellizco del trackpad: zoom en el cursor.
+  canvas.addEventListener("wheel", e => {
+    const pt = aCanvas(e);
+    const r = buscar(pt);
+    if(!r) return;
+    e.preventDefault();
+    encActivar(ed, r.clave);
+    const d = e.deltaY * (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 400 : 1);
+    encZoomEn(r, Math.exp(-d * (e.ctrlKey ? 0.01 : 0.0015)), pt);
+    encPedirRender(ed);
+  }, { passive: false });
+}
+
+// ── Contorno de la foto activa (capa HTML encima del canvas: no sale en el
+// archivo exportado) ──
+function encActualizarMarco(ed){
+  const canvas = document.getElementById(ed.canvasId);
+  if(!canvas || !canvas.parentElement) return;
+  const padre = canvas.parentElement;
+  if(!ed.marco){
+    ed.marco = document.createElement("div");
+    ed.marco.className = "enc-marco";
+    padre.classList.add("enc-area");
+    padre.appendChild(ed.marco);
+  }
+  const r = ed.activa != null ? encRanuraDeClave(ed, ed.activa) : null;
+  const b = canvas.getBoundingClientRect(), bp = padre.getBoundingClientRect();
+  if(!r || !b.width || !canvas.width){ ed.marco.style.display = "none"; return; }
+  const kx = b.width / canvas.width, ky = b.height / canvas.height;
+  const s = ed.marco.style;
+  s.display = "block";
+  s.left = (b.left - bp.left + padre.scrollLeft + r.x * kx) + "px";
+  s.top = (b.top - bp.top + padre.scrollTop + r.y * ky) + "px";
+  s.width = (r.w * kx) + "px";
+  s.height = (r.h * ky) + "px";
+}
+window.addEventListener("resize", () => _encEditores.forEach(encActualizarMarco));
+
+// ── Controles de apoyo por foto: deslizador de zoom y "Restablecer encuadre" ──
+function encControlesHtml(canvasId, clave){
+  return '<div class="enc-ctrl" data-enc-canvas="'+canvasId+'" data-enc-clave="'+clave+'" style="display:none;">'
+    +'<div class="enc-ctrl-fila">'
+      +'<span class="enc-ctrl-label">Zoom</span>'
+      +'<input type="range" class="feh-range enc-zoom" min="'+(ENC_ZOOM_MIN*100)+'" max="'+(ENC_ZOOM_MAX*100)+'" step="1" value="100" aria-label="Zoom de la foto" oninput="encZoomDesdeControl(this)">'
+      +'<button type="button" class="enc-reset" onclick="encRestablecerDesdeControl(this)">Restablecer encuadre</button>'
+    +'</div>'
+    +'<div class="enc-ctrl-hint">Arrastra la foto en la vista previa para moverla · rueda del mouse o pellizco para acercar.</div>'
+  +'</div>';
+}
+function encControlDe(el){
+  const c = el && el.closest(".enc-ctrl");
+  const ed = c && _encEditores.get(c.dataset.encCanvas);
+  if(!ed) return null;
+  const clave = c.dataset.encClave;
+  return { ed, clave, ranura: encRanuraDeClave(ed, clave) };
+}
+function encZoomDesdeControl(input){
+  const x = encControlDe(input);
+  if(!x || !x.ranura) return;
+  encActivar(x.ed, x.clave);
+  const r = x.ranura;
+  encZoomEn(r, (parseFloat(input.value) / 100) / encRect(r.dims, r, r.enc, r.zoomDefecto).zoom, { x: r.x + r.w / 2, y: r.y + r.h / 2 });
+  x.ed.render();
+}
+function encRestablecerDesdeControl(btn){
+  const x = encControlDe(btn);
+  if(!x || !x.ranura) return;
+  encActivar(x.ed, x.clave);
+  Object.assign(x.ranura.enc, encNuevo(x.ranura.zoomDefecto));
+  x.ed.render();
+}
+// Cada control se ve solo si su foto está en la vista previa, y refleja el
+// zoom actual (salvo mientras se arrastra el propio deslizador).
+function encSincronizarControles(ed){
+  document.querySelectorAll('.enc-ctrl[data-enc-canvas="'+ed.canvasId+'"]').forEach(c => {
+    const r = encRanuraDeClave(ed, c.dataset.encClave);
+    c.style.display = r ? "" : "none";
+    c.classList.toggle("enc-activa", !!r && ed.activa === c.dataset.encClave);
+    const inp = c.querySelector(".enc-zoom");
+    if(r && inp && document.activeElement !== inp) inp.value = Math.round(encRect(r.dims, r, r.enc, r.zoomDefecto).zoom * 100);
+  });
+}
+window.encZoomDesdeControl = encZoomDesdeControl;
+window.encRestablecerDesdeControl = encRestablecerDesdeControl;
+
 // ── COMPONENTES (reutilizables, cada uno dibuja una pieza) ──────
+// Foto a sangre del Motor de Marca: cover exacto, con el encuadre del usuario.
 function cHero(ctx, w, h){
-  const p = bcePhotoRect(w, h);
-  ctx.drawImage(BCE.img, p.dx, p.dy, p.dw, p.dh);
+  encDibujarOrigen(ctx, BCE.img, { x:0, y:0, w, h }, BCE.encuadre, 1);
 }
 function cGradientOverlay(ctx, x, y, w, h, colorHex, opacity, dir){
   const rgb = bceHexToRgb(colorHex);
@@ -25164,6 +25465,8 @@ function bceLogoSrc(brand, variant){
 function bceInit(){
   if(_bceInited) return;
   _bceInited = true;
+  const encCtrl = document.getElementById("fe-encuadre");
+  if(encCtrl) encCtrl.innerHTML = encControlesHtml("fe-canvas", "foto");
   BCE.logoWhiteImg = new Image();
   BCE.logoWhiteImg.src = bceLogoSrc(BCE.brand, "blanco");
   BCE.logoNavyImg = new Image();
@@ -25280,6 +25583,7 @@ async function bceHandleUpload(e){
     img.onload = async () => {
       BCE.img = img;
       BCE.luminosity = null;
+      BCE.encuadre = encNuevo(1);   // foto nueva: encuadre inicial
       bceGoToStep(2);
       if(_bceFontsReady) await _bceFontsReady;
       bceRenderPreview();
@@ -25337,12 +25641,20 @@ function bceRenderServiceOptions(){
   ).join("");
 }
 
+// Cambiar de formato o de plantilla conserva la foto pero vuelve a su
+// encuadre inicial (el recorte cambia con la proporción y el diseño).
+function bceRestablecerEncuadre(){
+  BCE.encuadre = encNuevo(1);
+  encReiniciarEditor("fe-canvas");
+}
 function bceUiSelectNetwork(key){
+  if(key !== BCE.networkKey) bceRestablecerEncuadre();
   BCE.networkKey = key;
   document.querySelectorAll("#fe-network-pills .fe-tpl-btn").forEach(b => b.classList.toggle("active", b.dataset.net === key));
   bceLiveUpdate();
 }
 function bceUiSelectTemplate(key){
+  if(key !== BCE.templateKey) bceRestablecerEncuadre();
   BCE.templateKey = key;
   document.querySelectorAll("#fe-template-pills .fe-tpl-btn").forEach(b => b.classList.toggle("active", b.dataset.tpl === key));
   const impactoFields = document.getElementById("fe-impacto-fields");
@@ -25463,8 +25775,14 @@ function bceRenderPreview(){
   canvas.width = size.w;
   canvas.height = size.h;
   const ctx = canvas.getContext("2d");
+  encInicioCuadro(canvas);
   bceCompose(ctx, size.w, size.h);
+  encFinCuadro(canvas);
 }
+encRegistrarEditor("fe-canvas", {
+  render: bceRenderPreview,
+  mapa: () => BCE.img ? { foto: BCE.encuadre } : {},
+});
 
 // ── Generador de texto de acompañamiento (basado en plantillas, no IA) ──
 // Arma un texto listo para pegar en la publicación, con tono y longitud
@@ -25963,8 +26281,15 @@ function fehElegirPlantilla(id){
   // Anuncios · Servicio: se editan con el editor de Presentación de Servicio.
   if(t.editor === "fmm"){ fmmAbrirAnuncio(t.id); return; }
   _fehDraftCtx = null;
+  // Cambiar de plantilla conserva las fotos de las ranuras que se llaman
+  // igual (antes/después, foto) pero restablece su encuadre.
+  const fotosPrevias = (FEH && FEH.photos) || {};
   FEH = { tplId:id, photos:{}, values:{}, photoOffsets:{}, showBadge:true, showAviso:false };
   t.fields.forEach(f=>{ FEH.values[f.key] = f.default; });
+  t.photos.forEach(p=>{
+    if(fotosPrevias[p.key]){ FEH.photos[p.key] = fotosPrevias[p.key]; FEH.photoOffsets[p.key] = encNuevo(FEH_ZOOM_INICIAL); }
+  });
+  encReiniciarEditor("feh-canvas");
 
   document.getElementById("feh-step-picker").classList.remove("active");
   document.getElementById("feh-step-editor").classList.add("active");
@@ -25973,14 +26298,9 @@ function fehElegirPlantilla(id){
   document.getElementById("feh-photo-slots").innerHTML = t.photos.map(p=>
     '<div class="feh-ctrl-group">'
       +'<label class="feh-ctrl-label">'+escapeHtml(p.label)+'</label>'
-      +'<div class="feh-photoslot" id="feh-slot-'+p.key+'" onclick="document.getElementById(\'feh-file-'+p.key+'\').click()">📷 Toca para subir</div>'
+      +'<div class="feh-photoslot'+(FEH.photos[p.key]?' feh-filled':'')+'" id="feh-slot-'+p.key+'" onclick="document.getElementById(\'feh-file-'+p.key+'\').click()">'+(FEH.photos[p.key]?'✓ Foto cargada — toca para cambiar':'📷 Toca para subir')+'</div>'
       +'<input type="file" accept="image/*" id="feh-file-'+p.key+'" style="display:none;" onchange="fehCargarFoto(\''+p.key+'\',event)">'
-      +'<div class="feh-pan-ctrl" id="feh-pan-'+p.key+'" style="display:none;">'
-        +'<label class="feh-ctrl-label" style="margin-top:8px;">Mover foto — horizontal</label>'
-        +'<input type="range" class="feh-range" min="-100" max="100" value="0" oninput="fehSetOffset(\''+p.key+'\',\'x\',this.value)">'
-        +'<label class="feh-ctrl-label" style="margin-top:6px;">Mover foto — vertical</label>'
-        +'<input type="range" class="feh-range" min="-100" max="100" value="0" oninput="fehSetOffset(\''+p.key+'\',\'y\',this.value)">'
-      +'</div>'
+      +encControlesHtml("feh-canvas", p.key)
     +'</div>'
   ).join("");
 
@@ -25998,13 +26318,6 @@ function fehElegirPlantilla(id){
   fehActualizarBotonDescarga();
   fehActualizarBannerBorrador();
   (_fehFontsReady || Promise.resolve()).then(fehRenderPreview);
-}
-
-function fehSetOffset(key, axis, val){
-  if(!FEH.photoOffsets) FEH.photoOffsets = {};
-  if(!FEH.photoOffsets[key]) FEH.photoOffsets[key] = {x:0,y:0};
-  FEH.photoOffsets[key][axis] = parseFloat(val)/100; // rango -1..1
-  fehRenderPreview();
 }
 
 function fehSetShowBadge(checked){
@@ -26086,16 +26399,11 @@ function fehCargarFoto(key, e){
     img.onload = ()=>{
       FEH.photos[key] = img;
       // Reiniciar el encuadre manual: una foto nueva no debe heredar el
-      // ajuste de posición de la que tenía antes ese mismo recuadro.
+      // ajuste de posición/zoom de la que tenía antes ese mismo recuadro.
       if(!FEH.photoOffsets) FEH.photoOffsets = {};
-      FEH.photoOffsets[key] = {x:0, y:0};
+      FEH.photoOffsets[key] = encNuevo(FEH_ZOOM_INICIAL);
       const slot = document.getElementById("feh-slot-"+key);
       if(slot){ slot.classList.add("feh-filled"); slot.textContent = "✓ Foto cargada — toca para cambiar"; }
-      const panCtrl = document.getElementById("feh-pan-"+key);
-      if(panCtrl){
-        panCtrl.style.display = "block";
-        panCtrl.querySelectorAll('input[type="range"]').forEach(r=>{ r.value = 0; });
-      }
       fehActualizarBotonDescarga();
       fehRenderPreview();
     };
@@ -26122,9 +26430,12 @@ function fehRenderPreview(){
   const ctx = canvas.getContext("2d");
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = "high";
+  encInicioCuadro(canvas);
   t.draw(ctx, t.w, t.h, FEH, t);
+  encFinCuadro(canvas);
   fehGenerateCopy(t, FEH);
 }
+encRegistrarEditor("feh-canvas", { render: fehRenderPreview, mapa: () => (FEH && FEH.photoOffsets) || {} });
 
 // Un pilar por plantilla (de los 4 del manual), para no meter los 4 en un
 // copy corto — el manual pide que "aparezcan en todo material de venta",
@@ -26239,34 +26550,17 @@ async function fehDescargar(){
   }, "image/png", 1.0);
 }
 
-// ── Helpers de dibujo compartidos por las 6 plantillas ──────────
-// offX/offY: -1..1 (0 = centrado, como antes). Permiten reencuadrar la
-// foto dentro de su marco cuando el recorte automático (cover-fit) corta
-// mal el elemento importante de la imagen.
-//
-// Con un cover-fit "puro" (scale = max(w/imgW, h/imgH)), matemáticamente
-// SIEMPRE hay sobrante en un solo eje (el otro queda exacto, sobrante=0)
-// — cuál de los dos depende de la relación de aspecto de la foto contra
-// el marco. Eso hacía que uno de los dos sliders no tuviera ningún efecto
-// visible según la foto (no era un listener roto: no había a dónde mover
-// la imagen en ese eje). Se agrega un 20% de zoom extra fijo para que
-// SIEMPRE quede margen de reencuadre en ambos ejes, sin importar la foto.
-function fehCoverRect(img, x, y, w, h, offX, offY){
-  offX = offX || 0; offY = offY || 0;
-  const scale = Math.max(w / img.naturalWidth, h / img.naturalHeight) * 1.2;
-  const dw = img.naturalWidth * scale, dh = img.naturalHeight * scale;
-  const overflowX = dw - w, overflowY = dh - h;
-  const dx = x - overflowX * ((offX + 1) / 2);
-  const dy = y - overflowY * ((offY + 1) / 2);
-  return { dx, dy, dw, dh };
-}
-function fehDrawPhoto(ctx, img, x, y, w, h, label, offset){
+// ── Helpers de dibujo compartidos por las plantillas ──────────
+// Encuadre inicial de las fotos de HOME / TAURINA / Antes-Después: el
+// recorte "cover" con 20% de zoom extra (así se han visto siempre). El
+// usuario lo cambia moviendo / acercando la foto sobre la vista previa
+// (ver "Encuadre de fotos"); enc = { zoom, offsetX, offsetY } de la ranura.
+const FEH_ZOOM_INICIAL = 1.2;
+function fehDrawPhoto(ctx, img, x, y, w, h, label, enc){
   ctx.save();
   ctx.beginPath(); ctx.rect(x, y, w, h); ctx.clip();
   if(img){
-    const o = offset || {x:0,y:0};
-    const r = fehCoverRect(img, x, y, w, h, o.x, o.y);
-    ctx.drawImage(img, r.dx, r.dy, r.dw, r.dh);
+    encDibujarOrigen(ctx, img, { x, y, w, h }, enc, FEH_ZOOM_INICIAL);
   } else {
     ctx.fillStyle = "#D8DDE8";
     ctx.fillRect(x, y, w, h);
@@ -26880,7 +27174,6 @@ window.fehVolverPicker = fehVolverPicker;
 window.fehElegirPlantilla = fehElegirPlantilla;
 window.fehSetValor = fehSetValor;
 window.fehCargarFoto = fehCargarFoto;
-window.fehSetOffset = fehSetOffset;
 window.fehSetShowBadge = fehSetShowBadge;
 window.fehSetShowAviso = fehSetShowAviso;
 window.fehGuardarBorrador = fehGuardarBorrador;
@@ -27073,8 +27366,14 @@ function taurinaVolverPicker(){
 function taurinaElegirPlantilla(id){
   const t = TAURINA_TEMPLATES.find(x=>x.id===id);
   if(!t) return;
+  // Igual que HOME: otra plantilla conserva las fotos, con encuadre nuevo.
+  const fotosPrevias = TAURINA.photos || {};
   TAURINA = { tplId:id, photos:{}, values:{}, photoOffsets:{} };
   t.fields.forEach(f=>{ TAURINA.values[f.key] = f.default; });
+  t.photos.forEach(p=>{
+    if(fotosPrevias[p.key]){ TAURINA.photos[p.key] = fotosPrevias[p.key]; TAURINA.photoOffsets[p.key] = encNuevo(FEH_ZOOM_INICIAL); }
+  });
+  encReiniciarEditor("taurina-canvas");
 
   document.getElementById("taurina-step-picker").classList.remove("active");
   document.getElementById("taurina-step-editor").classList.add("active");
@@ -27082,14 +27381,9 @@ function taurinaElegirPlantilla(id){
   document.getElementById("taurina-photo-slots").innerHTML = t.photos.map(p=>
     '<div class="feh-ctrl-group">'
       +'<label class="feh-ctrl-label">'+escapeHtml(p.label)+'</label>'
-      +'<div class="feh-photoslot" id="taurina-slot-'+p.key+'" onclick="document.getElementById(\'taurina-file-'+p.key+'\').click()">📷 Toca para subir</div>'
+      +'<div class="feh-photoslot'+(TAURINA.photos[p.key]?' feh-filled':'')+'" id="taurina-slot-'+p.key+'" onclick="document.getElementById(\'taurina-file-'+p.key+'\').click()">'+(TAURINA.photos[p.key]?'✓ Foto cargada — toca para cambiar':'📷 Toca para subir')+'</div>'
       +'<input type="file" accept="image/*" id="taurina-file-'+p.key+'" style="display:none;" onchange="taurinaCargarFoto(\''+p.key+'\',event)">'
-      +'<div class="feh-pan-ctrl" id="taurina-pan-'+p.key+'" style="display:none;">'
-        +'<label class="feh-ctrl-label" style="margin-top:8px;">Mover foto — horizontal</label>'
-        +'<input type="range" class="feh-range" min="-100" max="100" value="0" oninput="taurinaSetOffset(\''+p.key+'\',\'x\',this.value)">'
-        +'<label class="feh-ctrl-label" style="margin-top:6px;">Mover foto — vertical</label>'
-        +'<input type="range" class="feh-range" min="-100" max="100" value="0" oninput="taurinaSetOffset(\''+p.key+'\',\'y\',this.value)">'
-      +'</div>'
+      +encControlesHtml("taurina-canvas", p.key)
     +'</div>'
   ).join("");
 
@@ -27115,13 +27409,6 @@ function taurinaSetValor(key, val){
   taurinaRenderPreview();
 }
 
-function taurinaSetOffset(key, axis, val){
-  if(!TAURINA.photoOffsets) TAURINA.photoOffsets = {};
-  if(!TAURINA.photoOffsets[key]) TAURINA.photoOffsets[key] = {x:0,y:0};
-  TAURINA.photoOffsets[key][axis] = parseFloat(val)/100; // rango -1..1
-  taurinaRenderPreview();
-}
-
 function taurinaCargarFoto(key, e){
   const file = e.target.files && e.target.files[0];
   if(!file) return;
@@ -27131,14 +27418,9 @@ function taurinaCargarFoto(key, e){
     img.onload = ()=>{
       TAURINA.photos[key] = img;
       if(!TAURINA.photoOffsets) TAURINA.photoOffsets = {};
-      TAURINA.photoOffsets[key] = {x:0, y:0};
+      TAURINA.photoOffsets[key] = encNuevo(FEH_ZOOM_INICIAL);
       const slot = document.getElementById("taurina-slot-"+key);
       if(slot){ slot.classList.add("feh-filled"); slot.textContent = "✓ Foto cargada — toca para cambiar"; }
-      const panCtrl = document.getElementById("taurina-pan-"+key);
-      if(panCtrl){
-        panCtrl.style.display = "block";
-        panCtrl.querySelectorAll('input[type="range"]').forEach(r=>{ r.value = 0; });
-      }
       taurinaActualizarBotonDescarga();
       taurinaRenderPreview();
     };
@@ -27165,8 +27447,11 @@ function taurinaRenderPreview(){
   const ctx = canvas.getContext("2d");
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = "high";
+  encInicioCuadro(canvas);
   t.draw(ctx, t.w, t.h, TAURINA, t);
+  encFinCuadro(canvas);
 }
+encRegistrarEditor("taurina-canvas", { render: taurinaRenderPreview, mapa: () => (TAURINA && TAURINA.photoOffsets) || {} });
 
 // Sugerencia de copy: el usuario puede seguir editando después — no son
 // campos de solo lectura, solo se precargan con una opción del banco.
@@ -27213,7 +27498,6 @@ window.taurinaInit = taurinaInit;
 window.taurinaVolverPicker = taurinaVolverPicker;
 window.taurinaElegirPlantilla = taurinaElegirPlantilla;
 window.taurinaSetValor = taurinaSetValor;
-window.taurinaSetOffset = taurinaSetOffset;
 window.taurinaCargarFoto = taurinaCargarFoto;
 window.taurinaSugerirAleatorio = taurinaSugerirAleatorio;
 window.taurinaDescargar = taurinaDescargar;
@@ -27462,16 +27746,10 @@ function fmmRgba(hex, a){
   return "rgba("+c.r+","+c.g+","+c.b+","+Math.max(0, Math.min(1, a))+")";
 }
 
-// Recorte "cover" con encuadre del usuario: zoom >= 1 sobre el cover
-// exacto; x/y en -1..1 recorren todo el sobrante (0 = centrado).
-function fmmRectFoto(img, W, H, enc){
-  enc = enc || {};
-  const zoom = Math.max(1, enc.zoom || 1);
-  const s = Math.max(W / img.naturalWidth, H / img.naturalHeight) * zoom;
-  const dw = img.naturalWidth * s, dh = img.naturalHeight * s;
-  const ox = (dw - W) / 2, oy = (dh - H) / 2;
-  return { dx: -ox + (enc.x || 0) * ox, dy: -oy + (enc.y || 0) * oy, dw, dh, ox, oy };
-}
+// Encuadre inicial de la foto protagonista: cover exacto con 15% de zoom
+// (Antes/Después usa el de HOME, FEH_ZOOM_INICIAL). Se mueve y acerca sobre
+// la vista previa, como en todas las plantillas (ver "Encuadre de fotos").
+const FMM_ZOOM_INICIAL = 1.15;
 
 function fmmFuenteQueCabe(ctx, texto, peso, familia, tamMax, tamMin, maxW){
   let t = tamMax;
@@ -27727,9 +28005,8 @@ function fmmDibujarChipHome(ctx, W, H, texto, familia){
 
 // Antes / Después: reparte la zona de fotos en 2 celdas (fotos verticales
 // lado a lado, horizontales una sobre otra, separadas como en Feed A) y
-// dibuja cada foto con fehDrawPhoto — el mismo recorte "cover" con
-// sobreescala de 1.2× de las plantillas de HOME, para que los dos
-// deslizadores de reencuadre siempre muevan la foto.
+// dibuja cada foto con el mismo encuadre inicial de las plantillas de HOME
+// (cover con 1.2× de zoom); cada mitad se mueve y se acerca por separado.
 // Etiqueta de Antes/Después: rectángulo recto, versalitas pequeñas muy
 // espaciadas. ANTES en el navy de la marca, DESPUÉS en terracota.
 function fmmEtiquetaAD(ctx, txt, x, y, despues, px, pal){
@@ -27768,17 +28045,15 @@ function fmmFlechaAD(ctx, cx, cy, dir, px, pal){
 
 // Una foto de Antes/Después: cubre su celda (con el reencuadre) y redondea
 // solo las esquinas que no tocan el borde del lienzo.
-function fmmFotoAD(ctx, img, c, etiqueta, offset, radio, W, H){
+function fmmFotoAD(ctx, img, c, etiqueta, enc, radio, W, H){
   const borde = (v, lim) => v <= 0.5 || v >= lim - 0.5;
   const r = (x, y) => (borde(x, W) || borde(y, H)) ? 0 : radio;
   const radios = [r(c.x, c.y), r(c.x + c.w, c.y), r(c.x + c.w, c.y + c.h), r(c.x, c.y + c.h)];
-  if(!radio || !ctx.roundRect || !radios.some(Boolean)){ fehDrawPhoto(ctx, img, c.x, c.y, c.w, c.h, etiqueta, offset); return; }
+  if(!radio || !ctx.roundRect || !radios.some(Boolean)){ fehDrawPhoto(ctx, img, c.x, c.y, c.w, c.h, etiqueta, enc); return; }
   ctx.save();
   ctx.beginPath(); ctx.roundRect(c.x, c.y, c.w, c.h, radios); ctx.clip();
   if(img){
-    const o = offset || { x:0, y:0 };
-    const rc = fehCoverRect(img, c.x, c.y, c.w, c.h, o.x, o.y);
-    ctx.drawImage(img, rc.dx, rc.dy, rc.dw, rc.dh);
+    encDibujarOrigen(ctx, img, c, enc, FEH_ZOOM_INICIAL);
   } else {
     ctx.fillStyle = "#D8DDE8";
     ctx.fillRect(c.x, c.y, c.w, c.h);
@@ -28080,10 +28355,9 @@ function fmmDrawPresentacionServicio(ctx, W, H, st, opciones){
       ctx.fillRect(0, 0, W, H * 0.16);
     }
   } else if(st.foto && st.foto.naturalWidth){
-    const r = fmmRectFoto(st.foto, area.w, area.h, st.encuadre);
     ctx.save();
     ctx.beginPath(); ctx.rect(area.x, area.y, area.w, area.h); ctx.clip();
-    ctx.drawImage(st.foto, area.x + r.dx, area.y + r.dy, r.dw, r.dh);
+    encDibujarOrigen(ctx, st.foto, area, st.encuadre, FMM_ZOOM_INICIAL);
     ctx.restore();
   } else {
     fehDrawPhoto(ctx, null, area.x, area.y, area.w, area.h, "foto protagonista");
@@ -28341,7 +28615,6 @@ function fmmInicializar(){
       document.fonts.load('600 30px "Inter"'),
     ]).catch(()=>{}) : Promise.resolve();
     fmmRenderPicker();
-    fmmInicializarGesto();
   }
 }
 
@@ -28390,7 +28663,7 @@ function fmmEstadoAnuncio(t){
     st.antesDespues = {
       orientacion: "vertical", orientacionManual: false,
       fotos: { antes: null, despues: null },
-      offsets: { antes: { x:0, y:0 }, despues: { x:0, y:0 } },
+      offsets: { antes: encNuevo(FEH_ZOOM_INICIAL), despues: encNuevo(FEH_ZOOM_INICIAL) },
       mostrarDesc: false, mostrarBen: false,
       mostrarEtiquetas: true, mostrarFlecha: true,
       tituloGirado: "",
@@ -28408,6 +28681,7 @@ function fmmAbrirAnuncio(id){
   if(!_fmmModoAnuncio) _fmmEstadoMultimarca = FMM;
   _fmmModoAnuncio = true;
   FMM = fmmEstadoAnuncio(t);
+  encReiniciarEditor("fmm-canvas");
   document.getElementById("fmm-titulo").textContent = "Anuncios · " + t.label;
   document.getElementById("fmm-root").style.display = "flex";
   document.getElementById("fmm-step-picker").classList.remove("active");
@@ -28442,7 +28716,7 @@ function fmmEstadoInicial(){
     tplId: null,
     marca: "home",
     foto: null,
-    encuadre: { x:0, y:0, zoom:1.15 },
+    encuadre: encNuevo(FMM_ZOOM_INICIAL),
     intensidad: 0.85,
     values: Object.assign({}, FMM_DEFAULTS, { textoLogo: fmmTextoLogoDefault("home") }),
     beneficios: FMM_BENEFICIOS_DEFAULT.map(b => ({ texto:b.texto, icono:b.icono, propio:null })),
@@ -28498,7 +28772,8 @@ function fmmElegirPlantilla(id){
   if(!t) return;
   if(!FMM) FMM = fmmEstadoInicial();
   FMM.tplId = id;
-  FMM.encuadre = { x:0, y:0, zoom:1.15 };
+  FMM.encuadre = encNuevo(FMM_ZOOM_INICIAL);
+  encReiniciarEditor("fmm-canvas");
   document.getElementById("fmm-step-picker").classList.remove("active");
   document.getElementById("fmm-step-editor").classList.add("active");
   document.getElementById("fmm-back-btn").onclick = fmmVolverPicker;
@@ -28630,19 +28905,14 @@ function fmmRenderForm(){
   // son fijos, sin presets; a cambio trae el sello y el botón del anuncio.
   const ad = FMM.anuncio || null;
   const adAD = FMM.antesDespues || null;
-  // Antes / Después: orientación + 2 fotos con sus deslizadores de
-  // reencuadre (mismos que las plantillas de HOME: -100..100).
+  // Antes / Después: orientación + 2 fotos, cada una con su zoom y
+  // "Restablecer encuadre" (se mueven arrastrando sobre la vista previa).
   const fotoAD = (clave, etiqueta) => {
-    const img = adAD.fotos[clave], o = adAD.offsets[clave];
+    const img = adAD.fotos[clave];
     return '<div class="feh-ctrl-group"><label class="feh-ctrl-label">'+etiqueta+'</label>'
       +'<div class="feh-photoslot'+(img?" feh-filled":"")+'" id="fmm-slot-'+clave+'" onclick="document.getElementById(\'fmm-file-'+clave+'\').click()">'+(img?"✓ Foto cargada — toca para cambiar":"📷 Toca para subir")+'</div>'
       +'<input type="file" accept="image/*" id="fmm-file-'+clave+'" style="display:none;" onchange="fmmCargarFotoAD(\''+clave+'\',event)">'
-      +'<div class="feh-pan-ctrl" style="display:'+(img?"block":"none")+';">'
-        +'<label class="feh-ctrl-label" style="margin-top:8px;">Mover foto — horizontal</label>'
-        +'<input type="range" class="feh-range" data-fmm-off="'+clave+'-x" min="-100" max="100" value="'+Math.round(o.x*100)+'" oninput="fmmSetOffsetAD(\''+clave+'\',\'x\',this.value)">'
-        +'<label class="feh-ctrl-label" style="margin-top:6px;">Mover foto — vertical</label>'
-        +'<input type="range" class="feh-range" data-fmm-off="'+clave+'-y" min="-100" max="100" value="'+Math.round(o.y*100)+'" oninput="fmmSetOffsetAD(\''+clave+'\',\'y\',this.value)">'
-      +'</div>'
+      +encControlesHtml("fmm-canvas", clave)
     +'</div>';
   };
   document.getElementById("fmm-form").innerHTML =
@@ -28663,12 +28933,7 @@ function fmmRenderForm(){
       : '<div class="feh-ctrl-group"><label class="feh-ctrl-label">Foto protagonista</label>'
       +'<div class="feh-photoslot'+(FMM.foto?" feh-filled":"")+'" id="fmm-slot" onclick="document.getElementById(\'fmm-file\').click()">'+(FMM.foto?"✓ Foto cargada — toca para cambiar":"📷 Toca para subir")+'</div>'
       +'<input type="file" accept="image/*" id="fmm-file" style="display:none;" onchange="fmmCargarFoto(event)">'
-      +'<div class="feh-pan-ctrl" id="fmm-encuadre-ctrl" style="display:'+(FMM.foto?"flex":"none")+';">'
-        +'<div class="feh-hint" style="margin-top:8px;">Arrastra la foto sobre la vista previa para moverla. Zoom: pellizca con dos dedos, usa la rueda del mouse o el control de abajo.</div>'
-        +'<label class="feh-ctrl-label" style="margin-top:8px;">Zoom</label>'
-        +'<input type="range" class="feh-range" id="fmm-zoom" min="100" max="300" value="'+Math.round(FMM.encuadre.zoom*100)+'" oninput="fmmSetZoom(this.value/100)">'
-        +'<button type="button" class="feh-btn feh-btn-ghost" style="margin-top:6px;" onclick="fmmCentrarFoto()">Centrar foto</button>'
-      +'</div>'
+      +encControlesHtml("fmm-canvas", "foto")
     +'</div>')
     +(fmmEsVertical()
       ? '<div class="feh-ctrl-group"><label class="feh-ctrl-label">Dirección del degradado</label>'
@@ -28768,20 +29033,16 @@ function fmmDegradadoSugerido(orientacion){ return orientacion === "horizontal" 
 function fmmSetOrientacionAD(o){
   const ad = FMM && FMM.antesDespues;
   if(!ad) return;
-  ad.orientacion = o === "horizontal" ? "horizontal" : "vertical";
+  const nueva = o === "horizontal" ? "horizontal" : "vertical";
+  // Otra orientación cambia la forma de las dos celdas: encuadres nuevos.
+  if(nueva !== ad.orientacion) ["antes", "despues"].forEach(k => { ad.offsets[k] = encNuevo(FEH_ZOOM_INICIAL); });
+  ad.orientacion = nueva;
   ad.orientacionManual = true;
   if(!FMM.degradadoManual){
     FMM.degradado = fmmDegradadoSugerido(ad.orientacion);
     fmmActivarPill("degradado", FMM.degradado);
   }
   fmmActivarPill("orientacion", ad.orientacion);
-  fmmRenderPreview();
-}
-
-function fmmSetOffsetAD(clave, eje, valor){
-  const ad = FMM && FMM.antesDespues;
-  if(!ad) return;
-  ad.offsets[clave][eje] = parseFloat(valor) / 100;   // -1..1, como fehSetOffset
   fmmRenderPreview();
 }
 
@@ -28819,7 +29080,7 @@ function fmmCargarFotoAD(clave, e){
     const img = new Image();
     img.onload = () => {
       ad.fotos[clave] = img;
-      ad.offsets[clave] = { x:0, y:0 };
+      ad.offsets[clave] = encNuevo(FEH_ZOOM_INICIAL);
       const a = ad.fotos.antes, d = ad.fotos.despues;
       if(a && d && !ad.orientacionManual){
         const hA = a.naturalWidth > a.naturalHeight, hD = d.naturalWidth > d.naturalHeight;
@@ -29082,13 +29343,6 @@ function fmmCargarIconoPropio(i, e){
 }
 
 function fmmSetIntensidad(k){ FMM.intensidad = Math.max(0, Math.min(1, k)); fmmRenderPreview(); }
-function fmmSetZoom(z){
-  FMM.encuadre.zoom = Math.max(1, Math.min(3, z));
-  const r = document.getElementById("fmm-zoom");
-  if(r && document.activeElement !== r) r.value = Math.round(FMM.encuadre.zoom*100);
-  fmmRenderPreview();
-}
-function fmmCentrarFoto(){ FMM.encuadre.x = 0; FMM.encuadre.y = 0; fmmRenderPreview(); }
 
 function fmmCargarFoto(e){
   const file = e.target.files && e.target.files[0];
@@ -29098,7 +29352,7 @@ function fmmCargarFoto(e){
     const img = new Image();
     img.onload = () => {
       FMM.foto = img;
-      FMM.encuadre = { x:0, y:0, zoom:1.15 };
+      FMM.encuadre = encNuevo(FMM_ZOOM_INICIAL);
       fmmRenderForm();
       fmmRenderPreview();
     };
@@ -29119,59 +29373,14 @@ function fmmRenderPreview(){
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = "high";
   ctx.clearRect(0, 0, t.w, t.h);
+  encInicioCuadro(canvas);
   fmmDrawPresentacionServicio(ctx, t.w, t.h, FMM, { guias: true });
+  encFinCuadro(canvas);
 }
-
-// Gesto sobre la vista previa: arrastrar con un dedo/mouse mueve la foto;
-// pellizcar con dos dedos o la rueda del mouse hacen zoom. Pointer Events
-// (mouse y touch con el mismo código), igual que el arrastre de overlays
-// del Generador de Video.
-function fmmInicializarGesto(){
-  const canvas = document.getElementById("fmm-canvas");
-  const punteros = new Map();
-  let distAnterior = 0;
-  const escala = () => { const r = canvas.getBoundingClientRect(); return r.width ? canvas.width / r.width : 1; };
-  canvas.addEventListener("pointerdown", e => {
-    if(!FMM || !FMM.foto) return;
-    canvas.setPointerCapture(e.pointerId);
-    punteros.set(e.pointerId, { x:e.clientX, y:e.clientY });
-    canvas.classList.add("fmm-arrastrando");
-    if(punteros.size === 2){
-      const [a, b] = [...punteros.values()];
-      distAnterior = Math.hypot(a.x - b.x, a.y - b.y);
-    }
-  });
-  canvas.addEventListener("pointermove", e => {
-    if(!FMM || !FMM.foto || !punteros.has(e.pointerId)) return;
-    const prev = punteros.get(e.pointerId);
-    punteros.set(e.pointerId, { x:e.clientX, y:e.clientY });
-    if(punteros.size >= 2){
-      const [a, b] = [...punteros.values()];
-      const dist = Math.hypot(a.x - b.x, a.y - b.y);
-      if(distAnterior > 0) fmmSetZoom(FMM.encuadre.zoom * dist / distAnterior);
-      distAnterior = dist;
-      return;
-    }
-    const s = escala();
-    const area = fmmAreaFoto(FMM, canvas.width, canvas.height);
-    const r = fmmRectFoto(FMM.foto, area.w, area.h, FMM.encuadre);
-    if(r.ox > 0) FMM.encuadre.x = Math.max(-1, Math.min(1, FMM.encuadre.x + (e.clientX - prev.x) * s / r.ox));
-    if(r.oy > 0) FMM.encuadre.y = Math.max(-1, Math.min(1, FMM.encuadre.y + (e.clientY - prev.y) * s / r.oy));
-    fmmRenderPreview();
-  });
-  const soltar = e => {
-    punteros.delete(e.pointerId);
-    if(punteros.size < 2) distAnterior = 0;
-    if(!punteros.size) canvas.classList.remove("fmm-arrastrando");
-  };
-  canvas.addEventListener("pointerup", soltar);
-  canvas.addEventListener("pointercancel", soltar);
-  canvas.addEventListener("wheel", e => {
-    if(!FMM || !FMM.foto) return;
-    e.preventDefault();
-    fmmSetZoom(FMM.encuadre.zoom * Math.exp(-e.deltaY * 0.0015));
-  }, { passive:false });
-}
+encRegistrarEditor("fmm-canvas", {
+  render: fmmRenderPreview,
+  mapa: () => !FMM ? {} : FMM.antesDespues ? FMM.antesDespues.offsets : (FMM.foto ? { foto: FMM.encuadre } : {}),
+});
 
 const FMM_EXPORT_SCALE = 2;
 // ¿Están todas las fotos que necesita la plantilla? (1, o 2 en Antes/Después)
@@ -29225,7 +29434,6 @@ window.fmmSetOrientacionAD = fmmSetOrientacionAD;
 window.fmmSetZonaSticker = fmmSetZonaSticker;
 window.fmmSetVisibleAD = fmmSetVisibleAD;
 window.fmmSetTituloGiradoAD = fmmSetTituloGiradoAD;
-window.fmmSetOffsetAD = fmmSetOffsetAD;
 window.fmmSetMostrarAD = fmmSetMostrarAD;
 window.fmmCargarFotoAD = fmmCargarFotoAD;
 window.fmmSetTextoBeneficio = fmmSetTextoBeneficio;
@@ -29242,8 +29450,6 @@ window.fmmSetTenirPropio = fmmSetTenirPropio;
 window.fmmQuitarIconoPropio = fmmQuitarIconoPropio;
 window.fmmCargarIconoPropio = fmmCargarIconoPropio;
 window.fmmSetIntensidad = fmmSetIntensidad;
-window.fmmSetZoom = fmmSetZoom;
-window.fmmCentrarFoto = fmmCentrarFoto;
 window.fmmCargarFoto = fmmCargarFoto;
 window.fmmDescargar = fmmDescargar;
 
@@ -30341,7 +30547,7 @@ function fevDibujarMediaEnVentana(ctx, elemento, naturalW, naturalH, zoom, panX,
 // horizontalmente (mitad superior = Antes, mitad inferior = Después),
 // dentro de la misma ventana de contenido que ya usan foto/video (o el
 // canvas completo para el resto de marcas) — mismo criterio que
-// fevDibujarMediaEnVentana. Reutiliza fehDrawPhoto/fehCoverRect/fehTag,
+// fevDibujarMediaEnVentana. Reutiliza fehDrawPhoto/fehTag,
 // las mismas funciones puras que ya dibujan la plantilla estática "Feed
 // Antes/Después" (fehDrawFeedB) del Editor de Fotos, en vez de reinventar
 // el recorte "cover" — son funciones puras (solo leen ctx/img/params), no
