@@ -3373,6 +3373,7 @@ body.in-plantrabajo #app, body.in-leadshome #app{
           <div style="display:flex;gap:8px;">
             <button onclick="guardarCot()" style="flex:1;background:#fff;border:1px solid var(--g1);color:var(--navy);font-size:12px;font-weight:700;padding:12px;border-radius:10px;cursor:pointer;font-family:var(--font);">💾 Solo guardar</button>
             <button onclick="exportarCotExcel()" style="flex:1;background:#217346;border:none;color:#fff;font-size:12px;font-weight:700;padding:12px;border-radius:10px;cursor:pointer;font-family:var(--font);">📊 Excel</button>
+            <button id="cot-btn-duplicar" onclick="duplicarCotizacionActual()" title="Crear una copia de esta cotización (con su costeo, si tiene)" style="flex:1;background:#fff;border:1px solid var(--g1);color:var(--navy);font-size:12px;font-weight:700;padding:12px;border-radius:10px;cursor:pointer;font-family:var(--font);">📑 Duplicar</button>
           </div>
         </div>
 
@@ -13850,6 +13851,7 @@ function renderListaCot(){
           fromCosteo+
         '</div>'+
       '</div>'+
+      '<button onclick="event.stopPropagation();duplicarCotizacion(\''+c.id+'\')" title="Duplicar cotización" aria-label="Duplicar cotización" style="background:rgba(11,31,58,.05);border:1px solid var(--g1);color:var(--navy);font-size:13px;cursor:pointer;padding:8px 8px;align-self:center;border-radius:6px;margin-right:4px;">📑</button>'+
       '<button onclick="event.stopPropagation();menuCambioEstadoCot(\''+c.id+'\',this)" title="Cambiar estado rápido" style="background:rgba(124,58,237,.06);border:1px solid rgba(124,58,237,.18);color:#7C3AED;font-size:14px;cursor:pointer;padding:8px 8px;align-self:center;border-radius:6px;transition:background .15s;margin-right:4px;">⚡</button>'+
       '<button onclick="event.stopPropagation();eliminarCotizacion(\''+c.id+'\',\''+(c.folio||"sin folio").replace(/'/g,"\\'")+'\')" title="Eliminar cotización" style="background:none;border:none;color:#EF4444;font-size:16px;cursor:pointer;padding:8px 6px;align-self:center;border-radius:6px;transition:background .15s;" onmouseover="this.style.background=\'rgba(239,68,68,.08)\'" onmouseout="this.style.background=\'transparent\'">🗑️</button>'+
       '<div class="prow-arr">›</div>'+
@@ -14585,6 +14587,13 @@ function _generarFolioRackline(){
   }
   return prefijo + String(maxNum+1).padStart(3,"0");
 }
+// Folio nuevo de cotización según su modalidad: RACKLINE → RACK-…,
+// HOME → HOME-…, Industrial → COT-… (lo usan guardarCot y Duplicar).
+function _folioCotPorModalidad(modalidad, empresa){
+  return modalidad === "rackline" ? _generarFolioRackline()
+       : modalidad === "home" ? _generarFolioHome()
+       : generarFolioCot(empresa);
+}
 // Captura _cotPartidas + los campos del form (empresa, atención, etc.)
 var _cotUndoStack = [];
 var _cotRedoStack = [];
@@ -15309,11 +15318,7 @@ async function guardarCot(){
   }
 
   // Folio según modalidad: RACKLINE → RACK-…, HOME → HOME-…, Industrial → clásico
-  function _folioNuevoPorModalidad(){
-    return _cotModalidad==="rackline" ? _generarFolioRackline()
-         : _cotModalidad==="home" ? _generarFolioHome()
-         : generarFolioCot(empresa);
-  }
+  function _folioNuevoPorModalidad(){ return _folioCotPorModalidad(_cotModalidad, empresa); }
   var folio=cotActivaId
     ? (cotizaciones.find(function(c){return c.id===cotActivaId;})||{}).folio || _folioNuevoPorModalidad()
     : _folioNuevoPorModalidad();
@@ -15381,6 +15386,11 @@ async function guardarCot(){
     // Solo lo preservamos para que este guardado de formulario completo (que
     // hace set() sin merge) no lo borre.
     costeoRealId: cotExistente.costeoRealId,
+    // Vínculo con el costeo de origen (lo pone _actualizarVinculoPostGuardadoCotizacion
+    // al generarla, o Duplicar). Mismo motivo: sin esto, el primer "Guardar"
+    // lo borraba y la sincronización de precios con el costeo dejaba de operar.
+    costeoIdOrigen: cotExistente.costeoIdOrigen,
+    folioCosteoOrigen: cotExistente.folioCosteoOrigen,
     // Vinculación con cliente (Sesión 7)
     clienteId: (document.getElementById("cot-cliente-id")?.value) || "",
     // Seguimiento de obra (Sesión 4)
@@ -17718,6 +17728,7 @@ function renderListaCosteos(){
           +'<div style="font-size:14px;font-weight:800;color:var(--navy);">$'+((c.precioTotal||0).toLocaleString("es-MX",{maximumFractionDigits:0}))+'</div>'
           +'<div style="font-size:10px;font-weight:700;color:'+colorMargen+';">'+margen.toFixed(1)+'% margen</div>'
         +'</div>'
+        +'<button onclick="event.stopPropagation();duplicarCosteo(\''+c.id+'\')" title="Duplicar costeo" aria-label="Duplicar costeo" style="background:rgba(11,31,58,.05);border:1px solid var(--g1);color:var(--navy);font-size:13px;cursor:pointer;padding:7px 8px;margin-left:8px;border-radius:6px;">📑</button>'
         +'<button onclick="event.stopPropagation();eliminarCosteo(\''+c.id+'\',\''+folioEsc+'\')" title="Eliminar costeo" style="background:none;border:none;color:#EF4444;font-size:16px;cursor:pointer;padding:8px 6px;margin-left:8px;border-radius:6px;transition:background .15s;" onmouseover="this.style.background=\'rgba(239,68,68,.08)\'" onmouseout="this.style.background=\'transparent\'">🗑️</button>'
       +'</div>'
     +'</div>';
@@ -19683,14 +19694,14 @@ async function guardarCosteoActual(){
   }
 }
 
-async function _generarFolioCosteo(prefijo, fecha){
+async function _generarFolioCosteo(prefijo, fecha, destino){
   const fStr = (fecha || new Date().toISOString().slice(0,10)).replace(/-/g,"");
   // Buscar consecutivo del día
   try{
     const snap = await costeoCosteosRef.where("folioBase","==","COS-"+prefijo+"-"+fStr).get();
     const n = String(snap.size + 1).padStart(3,"0");
     const folio = "COS-"+prefijo+"-"+fStr+"-"+n;
-    _ceCosteo.folioBase = "COS-"+prefijo+"-"+fStr;
+    (destino || _ceCosteo).folioBase = "COS-"+prefijo+"-"+fStr;   // destino: el costeo que se folia (por defecto el del editor)
     return folio;
   }catch(e){
     const n = String(Math.floor(Math.random()*900)+100);
@@ -20250,24 +20261,200 @@ function _actualizarVinculoPostGuardadoCotizacion(cotObj){
 }
 window._actualizarVinculoPostGuardadoCotizacion = _actualizarVinculoPostGuardadoCotizacion;
 
-// ── Duplicar costeo actual ────────────────────────────────────
-async function duplicarCosteoActual(){
-  if(!_ceCosteo){ showToast("⚠️ Sin costeo activo"); return; }
-  if(!confirm("¿Duplicar este costeo como borrador nuevo?")) return;
-
-  const clon = JSON.parse(JSON.stringify(_ceCosteo));
-  clon.id = "cos_"+Date.now();
-  clon.folio = "";
-  clon.folioBase = "";
-  clon.folioCotizacionGenerada = null;
-  clon.cotizacionIdGenerada = null;
-  clon.estado = "borrador";
-  clon.ts = Date.now();
-  clon.proyecto = (clon.proyecto||"") + " (copia)";
-  _ceCosteo = clon;
-  _renderEditorCosteo();
-  showToast("📑 Costeo duplicado como borrador");
+// ═══════════════════════════════════════════════════════════════
+// ─── DUPLICAR COTIZACIÓN / COSTEO ─────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+// La copia nunca toca el original: se arma con una copia profunda del
+// documento guardado y se guarda como documento nuevo, con folio nuevo
+// (misma regla de cada modalidad), fecha de hoy y nombre "COPIA DE …".
+// Una cotización con costeo vinculado duplica también ese costeo y deja
+// las dos copias vinculadas entre sí, con la sincronización de precios
+// activa (la copia queda "pendiente").
+const DUP_PREFIJO = "COPIA DE ";
+function _dupNombre(nombre){
+  const n = String(nombre || "").trim();
+  return /^COPIA DE /i.test(n) ? n : DUP_PREFIJO + n;
 }
+// Fecha local AAAA-MM-DD (la misma que usan los folios del día)
+function _dupFechaLocal(d){
+  return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
+}
+
+// Copia de un costeo lista para guardar: sin vínculos, ids nuevos por
+// sistema y folio nuevo. Devuelve también el mapa id viejo → id nuevo de
+// los sistemas (para re-apuntar las partidas de una cotización copiada).
+async function _dupArmarCosteo(orig){
+  const copia = JSON.parse(JSON.stringify(orig));
+  copia.id = "cos_" + Date.now() + "_" + Math.random().toString(36).slice(2,6);
+  copia.proyecto = _dupNombre(orig.proyecto || "Sin nombre");
+  copia.fecha = _dupFechaLocal(new Date());
+  copia.ts = Date.now();
+  copia.estado = "borrador";
+  copia.modalidad = _modalidadDe(copia);
+  copia.creadoPor = (currentUserProfile && currentUserProfile.email) || (currentUser && currentUser.email) || copia.creadoPor || "";
+  // Sin vínculo con ninguna cotización (ni como costeo real de una)
+  copia.folioCotizacionGenerada = null;
+  copia.cotizacionIdGenerada = null;
+  delete copia.esCosteoReal;
+  delete copia.costeoOrigenId;
+  delete copia.cotizacionId;
+  // Ids estables NUEVOS por sistema (numéricos, como los de siempre, pero
+  // sin chocar con los 1, 2, 3… del original)
+  _asegurarIdsSistemas(copia);
+  const mapa = {};
+  const base = Date.now();
+  (copia.sistemas || []).forEach((s, i) => { const nuevo = base + i; mapa[s.id] = nuevo; s.id = nuevo; });
+  // Folio con la regla de su modalidad (la misma de guardarCosteoActual)
+  copia.folio = "";
+  copia.folioBase = "";
+  copia.folio = copia.modalidad === "home"
+    ? _generarFolioHome()
+    : await _generarFolioCosteo(copia.prefijo || "CLI", copia.fecha, copia);
+  return { copia, mapa };
+}
+
+async function _dupGuardarCosteo(copia){
+  await costeoCosteosRef.doc(copia.id).set(_sanitizarParaFirestore(copia));
+  if(!_costeoCosteos.some(c => c.id === copia.id)) _costeoCosteos.unshift(copia);
+}
+
+// Campos de una cotización que NO pasan a la copia: estado y su historial,
+// monto ganado, seguimiento de obra, vínculos y documentos generados.
+const _DUP_COT_LIMPIAR = ["montoGanado", "fechaGanada", "costeoRealId", "costeoIdOrigen", "folioCosteoOrigen",
+  "fechaEnviada", "fechaEnvio", "fechaAceptada", "fechaRechazada", "fechaCerrada", "enviada", "ganada", "perdida",
+  "obraId", "obraSeguimientoId", "seguimientoId", "seguimientoObraId", "leadId"];
+const _DUP_COT_VACIOS = { fechaRespuesta: "", motivoRechazo: "", fechaInicioEst: "", fechaFinEst: "", fechaInicioReal: "",
+  fechaFinReal: "", cuadrillaId: "", responsable: "", costoEstimado: 0, costoReal: 0 };
+
+async function duplicarCotizacion(id){
+  const orig = (cotizaciones || []).find(c => c.id === id);
+  if(!orig){ showToast("⚠️ Cotización no encontrada"); return null; }
+  if(!cotRef){ showToast("⚠️ Sin conexión a la base de datos"); return null; }
+
+  // ¿Trae costeo vinculado? Se duplica solo si el usuario tiene el módulo Costeo.
+  let costeoOrig = null, aviso = "";
+  if(orig.costeoIdOrigen){
+    if(window._costeoAcceso && typeof costeoCosteosRef !== "undefined" && costeoCosteosRef){
+      costeoOrig = (_costeoCosteos || []).find(c => c.id === orig.costeoIdOrigen) || null;
+      if(!costeoOrig){
+        try{ const snap = await costeoCosteosRef.doc(orig.costeoIdOrigen).get(); if(snap.exists) costeoOrig = snap.data(); }catch(e){}
+      }
+      if(!costeoOrig) aviso = " (el costeo vinculado ya no existe: la copia queda sin costeo)";
+    } else {
+      aviso = " (sin su costeo: tu usuario no tiene el módulo Costeo)";
+    }
+  }
+  if(!confirm("¿Duplicar la cotización " + (orig.folio || "") + "?\n\nSe creará \"" + _dupNombre(_proyectoDe(orig)) + "\" con fecha de hoy, folio nuevo y estado Pendiente"
+    + (costeoOrig ? ", junto con una copia de su costeo " + (costeoOrig.folio || "") + " vinculada a ella." : ".") + aviso)) return null;
+
+  const hoy = _dupFechaLocal(new Date());
+  const copia = JSON.parse(JSON.stringify(orig));
+  copia.id = Date.now() + "_" + Math.random().toString(36).slice(2,7);   // mismo formato que guardarCot
+  copia.ts = Date.now();
+  copia.proyecto = _dupNombre(_proyectoDe(orig));
+  copia.fecha = hoy;
+  // Una vigencia guardada como fecha se recorre con los mismos días desde
+  // hoy (la vigencia normal son días y ya cuenta desde la nueva fecha).
+  ["fechaVigencia", "fechaVencimiento", "vigenciaHasta"].forEach(k => {
+    if(!orig[k] || !orig.fecha) return;
+    const dias = Math.round((new Date(orig[k] + "T12:00:00") - new Date(orig.fecha + "T12:00:00")) / 86400000);
+    if(isNaN(dias)) return;
+    const d = new Date(hoy + "T12:00:00"); d.setDate(d.getDate() + dias);
+    copia[k] = _dupFechaLocal(d);
+  });
+  copia.estado = "pendiente";
+  _DUP_COT_LIMPIAR.forEach(k => { delete copia[k]; });
+  Object.assign(copia, _DUP_COT_VACIOS);
+  copia.notasSeguimiento = [];
+  copia.documentos = [];
+  // Historial de estados, PDFs y enlaces generados (si los hubiera)
+  Object.keys(copia).forEach(k => { if(/^(historial|pdf|link|enlace|url)/i.test(k) || /(Pdf|Url|Link)$/.test(k)) delete copia[k]; });
+  copia.creadoPorUid = (currentUser && currentUser.uid) || "";
+  copia.creadoPor = (currentUserProfile && currentUserProfile.nombre) || "";
+
+  let costeoCopia = null;
+  try{
+    if(costeoOrig){
+      // El costeo primero: así los folios HOME/RACK del día no se repiten.
+      const r = await _dupArmarCosteo(costeoOrig);
+      costeoCopia = r.copia;
+      if(!_costeoCosteos.some(c => c.id === costeoCopia.id)) _costeoCosteos.unshift(costeoCopia);
+      copia.partidas = (copia.partidas || []).map(p => {
+        if(p.sistemaId === undefined || p.sistemaId === null || p.sistemaId === "") return p;
+        const nuevo = r.mapa[p.sistemaId];
+        return nuevo !== undefined ? Object.assign({}, p, { sistemaId: nuevo }) : Object.assign({}, p, { sistemaId: null });
+      });
+    }
+    copia.folio = _folioCotPorModalidad(_modalidadDe(copia), copia.empresa);
+    if(costeoCopia){
+      copia.costeoIdOrigen = costeoCopia.id;
+      copia.folioCosteoOrigen = costeoCopia.folio;
+      costeoCopia.cotizacionIdGenerada = copia.id;
+      costeoCopia.folioCotizacionGenerada = copia.folio;
+      await _dupGuardarCosteo(costeoCopia);
+    }
+    try{
+      await cotRef.doc(copia.id).set(_sanitizarParaFirestore(copia));
+    }catch(e){
+      // Sin cotización no debe quedar un costeo copiado suelto.
+      if(costeoCopia){ try{ await costeoCosteosRef.doc(costeoCopia.id).delete(); }catch(e2){} }
+      throw e;
+    }
+  }catch(e){
+    console.error("Error duplicando cotización:", e);
+    if(costeoCopia) _costeoCosteos = _costeoCosteos.filter(c => c.id !== costeoCopia.id);
+    showToast("⚠️ No se pudo duplicar: " + e.message);
+    return null;
+  }
+  if(!cotizaciones.some(c => c.id === copia.id)) cotizaciones.unshift(copia);
+  if(typeof renderListaCot === "function") renderListaCot();
+  if(costeoCopia && typeof renderListaCosteos === "function") renderListaCosteos();
+  abrirCot(copia.id);
+  showToast("✅ Cotización duplicada — " + copia.folio + (costeoCopia ? " (con su costeo " + costeoCopia.folio + ")" : "") + aviso);
+  return copia;
+}
+
+// Botón "Duplicar" dentro del editor de cotizaciones
+function duplicarCotizacionActual(){
+  if(!cotActivaId){ showToast("⚠️ Guarda la cotización antes de duplicarla"); return; }
+  if(_cotHayCambiosSinGuardar() && !confirm("Tienes cambios sin guardar.\n\nLa copia se hará de la versión GUARDADA (sin esos cambios) y se abrirá en su lugar. ¿Continuar?")) return;
+  duplicarCotizacion(cotActivaId);
+}
+
+// Duplicar solo un costeo: queda sin vínculo a ninguna cotización.
+async function duplicarCosteo(id){
+  if(!window._costeoAcceso){ showToast("🔒 Sin acceso al módulo Costeo"); return null; }
+  const orig = (_costeoCosteos || []).find(c => c.id === id);
+  if(!orig){ showToast("⚠️ Costeo no encontrado"); return null; }
+  if(!confirm("¿Duplicar el costeo " + (orig.folio || "") + "?\n\nSe creará \"" + _dupNombre(orig.proyecto || "Sin nombre") + "\" con fecha de hoy y folio nuevo, sin vínculo a ninguna cotización.")) return null;
+  let copia;
+  try{
+    copia = (await _dupArmarCosteo(orig)).copia;
+    await _dupGuardarCosteo(copia);
+  }catch(e){
+    console.error("Error duplicando costeo:", e);
+    showToast("⚠️ No se pudo duplicar: " + e.message);
+    return null;
+  }
+  if(typeof renderListaCosteos === "function") renderListaCosteos();
+  abrirCosteo(copia.id);
+  showToast("✅ Costeo duplicado — " + copia.folio);
+  return copia;
+}
+
+// Botón "Duplicar" dentro del editor de costeo (duplica lo guardado)
+function duplicarCosteoActual(){
+  if(!_ceCosteo){ showToast("⚠️ Sin costeo activo"); return; }
+  if(!_ceCosteo.folio || !(_costeoCosteos || []).some(c => c.id === _ceCosteo.id)){
+    showToast("⚠️ Guarda el costeo antes de duplicarlo"); return;
+  }
+  duplicarCosteo(_ceCosteo.id);
+}
+
+window.duplicarCotizacion = duplicarCotizacion;
+window.duplicarCotizacionActual = duplicarCotizacionActual;
+window.duplicarCosteo = duplicarCosteo;
+window.duplicarCosteoActual = duplicarCosteoActual;
 
 // ═══════════════════════════════════════════════════════════════
 
