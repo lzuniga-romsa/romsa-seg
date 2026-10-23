@@ -4300,6 +4300,7 @@ body.in-plantrabajo #app, body.in-leadshome #app{
       <div class="feh-topbar">
         <button class="feh-back" id="feh-back-btn" onclick="fehAtras()">← Atrás</button>
         <div class="feh-title">HOME <em>by ROMSA</em> · Plantillas</div>
+        <button class="feh-back" onclick="homeContactoAbrir()" title="Número y ciudad de la llamada a la acción de HOME">⚙️ Contacto</button>
         <button class="feh-back" onclick="fehAbrirCalendario()" title="Calendario de publicaciones — HOME by ROMSA">📅 Calendario</button>
       </div>
 
@@ -26801,6 +26802,243 @@ window.bceDownload = bceDownload;
 const HOME_BRAND = { navy:"#0B1F3A", azul:"#1E5BA8", terracota:"#C36F4A", crema:"#F7F3EE", grafito:"#2A2F38" };
 const HOME_TEL_DEFAULT = (typeof window !== "undefined" && window._homeTel) || "686 175 4812";
 
+// ── Contacto HOME (configuración central del Editor de Fotos) ──────────
+// UN solo lugar para el número y la ciudad que salen en la llamada a la
+// acción de todas las plantillas HOME (y como valor inicial de sus campos
+// "WhatsApp"). De fábrica: el mismo número que ya usan la cotización HOME
+// y el perfil de redes (window._homeTel). Se puede cambiar desde
+// "⚙️ Contacto" y se guarda para todo el equipo en crm_config/home_contacto
+// (crm_config está abierto en firestore.rules a cualquier cuenta con
+// sesión, "editor_fotos" incluido).
+const HOME_CONTACTO_DOC = "home_contacto";
+const HOME_CONTACTO_DEFAULT = { tel: HOME_TEL_DEFAULT, ciudad: "Mexicali" };
+let HOME_CONTACTO = Object.assign({}, HOME_CONTACTO_DEFAULT);
+let _homeContactoCarga = null;
+
+function homeContactoLinea(){
+  return [HOME_CONTACTO.tel, HOME_CONTACTO.ciudad].map(s => (s || "").trim()).filter(Boolean).join(" · ");
+}
+function _homeContactoRef(){
+  return (typeof db !== "undefined" && db) ? db.collection("crm_config").doc(HOME_CONTACTO_DOC) : null;
+}
+// Una sola lectura por sesión; al llegar, se redibuja lo que esté abierto.
+function homeContactoCargar(){
+  if(_homeContactoCarga) return _homeContactoCarga;
+  const ref = _homeContactoRef();
+  if(!ref) return Promise.resolve();
+  _homeContactoCarga = ref.get().then(snap => {
+    const d = snap && snap.exists ? snap.data() : null;
+    if(d && (d.tel || d.ciudad)) homeContactoAplicar({ tel: d.tel || HOME_CONTACTO_DEFAULT.tel, ciudad: d.ciudad || "" });
+  }).catch(e => { console.warn("[HOME] No se pudo leer el contacto:", e); _homeContactoCarga = null; });
+  return _homeContactoCarga;
+}
+function homeContactoAplicar(c){
+  const antes = homeContactoLinea();
+  HOME_CONTACTO = { tel: (c.tel || "").trim(), ciudad: (c.ciudad || "").trim() };
+  document.querySelectorAll(".home-cta-contacto").forEach(el => { el.textContent = homeContactoLinea() || "sin contacto"; });
+  document.querySelectorAll("[data-home-cta-contacto-input]").forEach(el => { if(!el.dataset.personalizado) el.value = homeContactoLinea(); });
+  if(antes === homeContactoLinea()) return;
+  if(typeof fehRenderPicker === "function" && _fehInited) fehRenderPicker();
+  if(typeof FEH !== "undefined" && FEH && FEH.tplId) fehRenderPreview();
+  if(typeof _fmmModoAnuncio !== "undefined" && _fmmModoAnuncio && FMM) fmmRenderPreview();
+}
+
+function homeContactoAbrir(){
+  const viejo = document.getElementById("home-contacto-panel");
+  if(viejo) viejo.remove();
+  const ov = document.createElement("div");
+  ov.id = "home-contacto-panel";
+  ov.style.cssText = "position:fixed;inset:0;z-index:13000;background:rgba(11,31,58,.55);display:flex;align-items:center;justify-content:center;padding:16px;";
+  ov.innerHTML = '<div style="background:#fff;width:100%;max-width:420px;border-radius:14px;padding:20px;font-family:var(--font);box-shadow:0 12px 40px rgba(0,0,0,.3);">'
+    + '<div style="font-size:15px;font-weight:700;color:#0B1F3A;margin-bottom:4px;">⚙️ Contacto HOME</div>'
+    + '<div class="feh-hint" style="margin-bottom:14px;">Sale en la llamada a la acción de todas las plantillas HOME. Se guarda para todo el equipo.</div>'
+    + '<label class="feh-ctrl-label">WhatsApp</label>'
+    + '<input type="tel" class="feh-input" id="home-contacto-tel" maxlength="20" value="'+escapeHtml(HOME_CONTACTO.tel)+'">'
+    + '<label class="feh-ctrl-label" style="margin-top:10px;">Ciudad</label>'
+    + '<input type="text" class="feh-input" id="home-contacto-ciudad" maxlength="40" value="'+escapeHtml(HOME_CONTACTO.ciudad)+'">'
+    + '<div class="feh-actions" style="margin-top:16px;">'
+      + '<button type="button" class="feh-btn feh-btn-ghost" onclick="document.getElementById(\'home-contacto-panel\').remove()">Cancelar</button>'
+      + '<button type="button" class="feh-btn feh-btn-primary" id="home-contacto-guardar" onclick="homeContactoGuardar()">Guardar</button>'
+    + '</div></div>';
+  ov.addEventListener("click", e => { if(e.target === ov) ov.remove(); });
+  document.body.appendChild(ov);
+}
+
+async function homeContactoGuardar(){
+  const tel = document.getElementById("home-contacto-tel").value.trim();
+  const ciudad = document.getElementById("home-contacto-ciudad").value.trim();
+  if((tel.match(/\d/g) || []).length < 10){ showToast("⚠️ Escribe un número de 10 dígitos"); return; }
+  const ref = _homeContactoRef();
+  try{
+    if(ref) await ref.set({ tel, ciudad, actualizado: new Date().toISOString(), actualizadoPor: (typeof auth !== "undefined" && auth && auth.currentUser && auth.currentUser.email) || "" }, { merge:true });
+  }catch(e){
+    console.warn("[HOME] No se pudo guardar el contacto:", e);
+    showToast("⚠️ No se pudo guardar el contacto");
+    return;
+  }
+  homeContactoAplicar({ tel, ciudad });
+  document.getElementById("home-contacto-panel").remove();
+  showToast("✅ Contacto HOME guardado");
+}
+
+// ── Llamada a la acción (CTA) de HOME ──────────────────────────────────
+// UNA sola función de dibujo para todas las plantillas HOME (orgánicas,
+// Anuncios y Anuncios · Servicio): pastilla terracota con el ícono de
+// WhatsApp y el texto en Inter semibold navy, y el contacto (número ·
+// ciudad) en Inter regular crema, debajo o a un lado. Solo los 3 colores
+// de la marca. Zonas seguras: en Historia nada en los últimos 300px; en
+// Feed, 60px de margen.
+const HOME_CTA_TEXTOS = ["Cotiza por WhatsApp", "Cotización sin costo", "Solicita tu cotización"];
+const HOME_CTA_DEFAULT = HOME_CTA_TEXTOS[0];
+// Todas las llamadas a la acción de HOME son opcionales y con texto
+// editable por plantilla: sello, botón, contacto bajo el botón y aviso de
+// pago a meses. Sin valor propio, cada una usa su texto de fábrica (el
+// contacto, el de "⚙️ Contacto"). Texto vacío = no se dibuja.
+const HOME_SELLO_DEFAULT = "Cotización sin costo";
+function homeTexto(st, clave, defecto){
+  const v = st && st.values ? st.values[clave] : undefined;
+  return (v == null ? defecto : String(v)).trim();
+}
+function homeTextoContacto(mostrar, propio){
+  if(mostrar === false) return "";
+  return (propio == null ? homeContactoLinea() : String(propio)).trim();
+}
+// Nunca en textos sugeridos de HOME (manual de marca).
+const HOME_PALABRAS_PROHIBIDAS = ["remodelación", "barato", "oferta", "descuento"];
+const HOME_ZONA_STORY_SUP = 250, HOME_ZONA_STORY_INF = 300, HOME_MARGEN_FEED = 60;
+// Ícono de WhatsApp (Simple Icons, CC0) en una caja de 24×24.
+const HOME_ICONO_WHATSAPP = "M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z";
+let _homeIconoWhatsapp = null;
+
+function homeEsHistoria(W, H){ return H / W > 1.6; }
+// Hasta dónde puede bajar el bloque (su borde inferior). En Feed, si va la
+// franja de pago a meses, el bloque sube para no encimarse con ella.
+function homeCtaLimiteInf(W, H, st){
+  if(homeEsHistoria(W, H)) return H - HOME_ZONA_STORY_INF;
+  return H - HOME_MARGEN_FEED - (st && st.showAviso ? HOME_AVISO_BAND_H + 24 : 0);
+}
+
+// Medidas del bloque a la escala e (1 = Feed). disposicion: "debajo" (el
+// contacto bajo la pastilla) o "lado" (a su derecha, para ahorrar alto).
+// Si no cabe en maxW, primero pasa el contacto abajo y luego se reduce.
+function homeCtaMedir(ctx, texto, contacto, e, disposicion, maxW){
+  const medir = (e, lado) => {
+    const g = { e, lado: lado && !!contacto, texto, contacto };
+    g.h = Math.round(84 * e); g.icono = 40 * e; g.padX = 34 * e; g.gapIcono = 16 * e;
+    g.fuente = '600 ' + Math.round(32 * e) + 'px "Inter"';
+    ctx.font = g.fuente; g.tw = ctx.measureText(texto).width;
+    g.w = g.padX + g.icono + g.gapIcono + g.tw + g.padX;
+    g.tamC = Math.round(26 * e);
+    g.fuenteC = '400 ' + g.tamC + 'px "Inter"';
+    ctx.font = g.fuenteC; g.cw = contacto ? ctx.measureText(contacto).width : 0;
+    g.gapC = g.lado ? 28 * e : 14 * e;
+    g.altoTotal = g.lado || !contacto ? g.h : Math.round(g.h + g.gapC + g.tamC * 1.2);
+    g.anchoTotal = g.lado ? g.w + g.gapC + g.cw : Math.max(g.w, g.cw);
+    return g;
+  };
+  let g = medir(e, disposicion === "lado");
+  if(maxW && g.anchoTotal > maxW && g.lado) g = medir(e, false);
+  while(maxW && g.anchoTotal > maxW && g.e > e * 0.6) g = medir(g.e - 0.02, g.lado);
+  return g;
+}
+
+// Dibuja el bloque con su esquina superior izquierda en (x, y).
+function homeDibujarCTA(ctx, x, y, g){
+  ctx.save();
+  ctx.fillStyle = HOME_BRAND.terracota;
+  fehRoundRect(ctx, x, y, g.w, g.h, g.h / 2);
+  ctx.fill();
+  const cy = y + g.h / 2;
+  if(typeof Path2D !== "undefined"){
+    if(!_homeIconoWhatsapp) _homeIconoWhatsapp = new Path2D(HOME_ICONO_WHATSAPP);
+    ctx.save();
+    ctx.translate(x + g.padX, cy - g.icono / 2);
+    ctx.scale(g.icono / 24, g.icono / 24);
+    ctx.fillStyle = HOME_BRAND.navy;
+    ctx.fill(_homeIconoWhatsapp);
+    ctx.restore();
+  }
+  ctx.font = g.fuente;
+  ctx.fillStyle = HOME_BRAND.navy;
+  ctx.textAlign = "left"; ctx.textBaseline = "middle";
+  ctx.fillText(g.texto, x + g.padX + g.icono + g.gapIcono, cy + g.e);
+  if(g.contacto){
+    ctx.font = g.fuenteC;
+    ctx.fillStyle = HOME_BRAND.crema;
+    if(g.lado) ctx.fillText(g.contacto, x + g.w + g.gapC, cy);
+    else { ctx.textBaseline = "top"; ctx.fillText(g.contacto, x + g.e * 6, y + g.h + g.gapC); }
+  }
+  ctx.restore();
+}
+
+// Bloque listo para una plantilla de HOME (FEH): null si está apagado.
+// opts: { x, bottom, escala, disposicion }. Devuelve { x, top, bottom, g }.
+function homeCtaBloque(ctx, W, H, st, opts){
+  if(!st || !st.showCta) return null;
+  opts = opts || {};
+  const story = homeEsHistoria(W, H);
+  const x = Math.max(HOME_MARGEN_FEED, opts.x || 0);
+  const texto = ((st.values && st.values.cta) || "").trim() || HOME_CTA_DEFAULT;
+  const g = homeCtaMedir(ctx, texto, homeTextoContacto(st.showContacto, st.values && st.values.contacto), opts.escala || (story ? 1.15 : 1), opts.disposicion || "debajo", W - x - HOME_MARGEN_FEED);
+  const bottom = opts.bottom != null ? opts.bottom : homeCtaLimiteInf(W, H, st);
+  return { x, top: bottom - g.altoTotal, bottom, g };
+}
+
+// Controles de la llamada a la acción, iguales en los dos editores
+// (editor: "feh" | "fmm"). cfg: { mostrar, texto, mostrarContacto, contacto }
+// — contacto null = el de "⚙️ Contacto".
+function homeCtaControlesHtml(editor, cfg){
+  const propio = cfg.contacto != null;
+  return '<div class="feh-ctrl-group" data-home-cta-grupo="'+editor+'"><label class="feh-ctrl-label">Botón de llamada a la acción</label>'
+    + '<label class="feh-check-row"><input type="checkbox" data-home-cta-mostrar'+(cfg.mostrar?" checked":"")+' onchange="homeCtaSetMostrar(\''+editor+'\',this.checked)"> Mostrar botón</label>'
+    + '<label class="feh-ctrl-label" style="margin-top:8px;">Texto del botón</label>'
+    + '<input type="text" class="feh-input" data-home-cta-texto maxlength="32" value="'+escapeHtml(cfg.texto || "")+'" oninput="homeCtaSetTexto(\''+editor+'\',this.value,false)">'
+    + '<div class="fe-pill-row" style="margin-top:8px;">'
+      + HOME_CTA_TEXTOS.map(t => '<button type="button" class="fe-tpl-btn'+(t === cfg.texto ? " active" : "")+'" data-home-cta-atajo="'+escapeHtml(t)+'" onclick="homeCtaSetTexto(\''+editor+'\',this.getAttribute(\'data-home-cta-atajo\'),true)">'+escapeHtml(t)+'</button>').join("")
+    + '</div>'
+    + '<label class="feh-check-row" style="margin-top:10px;"><input type="checkbox" data-home-cta-contacto-mostrar'+(cfg.mostrarContacto !== false?" checked":"")+' onchange="homeCtaSetMostrarContacto(\''+editor+'\',this.checked)"> Mostrar número y ciudad bajo el botón</label>'
+    + '<input type="text" class="feh-input" data-home-cta-contacto-input'+(propio?' data-personalizado="1"':'')+' maxlength="48" value="'+escapeHtml(propio ? cfg.contacto : homeContactoLinea())+'" oninput="homeCtaSetContacto(\''+editor+'\',this.value)">'
+    + '<div class="feh-hint" style="margin-top:6px;">De fábrica: <b class="home-cta-contacto">'+escapeHtml(homeContactoLinea() || "sin contacto")+'</b> · <button type="button" class="fmm-link" onclick="homeCtaRestablecerContacto(\''+editor+'\')">Usar este</button> · <button type="button" class="fmm-link" onclick="homeContactoAbrir()">Cambiar para todo el equipo</button></div>'
+  + '</div>';
+}
+function homeCtaSetMostrarContacto(editor, valor){
+  if(editor === "fmm") fmmSetAnuncio("mostrarContacto", !!valor);
+  else { FEH.showContacto = !!valor; fehRenderPreview(); }
+}
+// Contacto propio de esta pieza (no cambia el de "⚙️ Contacto").
+function homeCtaSetContacto(editor, valor){
+  const inp = document.querySelector('[data-home-cta-grupo="'+editor+'"] [data-home-cta-contacto-input]');
+  if(inp) inp.dataset.personalizado = "1";
+  if(editor === "fmm") fmmSetAnuncio("contacto", valor);
+  else fehSetValor("contacto", valor);
+}
+function homeCtaRestablecerContacto(editor){
+  const inp = document.querySelector('[data-home-cta-grupo="'+editor+'"] [data-home-cta-contacto-input]');
+  if(inp){ delete inp.dataset.personalizado; inp.value = homeContactoLinea(); }
+  if(editor === "fmm") fmmSetAnuncio("contacto", null);
+  else fehSetValor("contacto", null);
+}
+// Sello y aviso (solo FEH; el sello de Anuncios · Servicio vive en fmmRenderForm).
+function homeSelloControlesHtml(onToggle, onTexto, mostrar, texto){
+  return '<div class="feh-ctrl-group" data-home-sello><label class="feh-ctrl-label">Sello</label>'
+    + '<label class="feh-check-row"><input type="checkbox"'+(mostrar?" checked":"")+' onchange="'+onToggle+'"> Mostrar sello</label>'
+    + '<input type="text" class="feh-input" data-home-sello-texto maxlength="32" value="'+escapeHtml(texto)+'" oninput="'+onTexto+'">'
+  + '</div>';
+}
+function homeCtaSetMostrar(editor, valor){
+  if(editor === "fmm") fmmSetAnuncio("mostrarCta", !!valor);
+  else { FEH.showCta = !!valor; fehRenderPreview(); }
+}
+function homeCtaSetTexto(editor, valor, sincronizarInput){
+  const grupo = document.querySelector('[data-home-cta-grupo="'+editor+'"]');
+  if(grupo){
+    if(sincronizarInput) grupo.querySelector("[data-home-cta-texto]").value = valor;
+    grupo.querySelectorAll("[data-home-cta-atajo]").forEach(b => b.classList.toggle("active", b.getAttribute("data-home-cta-atajo") === valor));
+  }
+  if(editor === "fmm") fmmSetAnuncio("cta", valor);
+  else fehSetValor("cta", valor);
+}
+
 const HOME_TEMPLATES = [
   { id:"feed-a", cat:"feed", w:1080, h:1350, label:"Antes / Después vertical", hasPill:true,
     photos:[{key:"antes",label:"Foto ANTES (vertical)"},{key:"despues",label:"Foto DESPUÉS (vertical)"}],
@@ -27070,6 +27308,13 @@ function fehDrawAdsServicio(ctx, W, H, st, t){
 }
 
 let FEH = { tplId:null, photos:{}, values:{} };
+// Llamada a la acción: encendida de fábrica en los Antes/Después y en los
+// anuncios (que ya traían botón); apagada en el resto, que conservan su pie
+// con el WhatsApp. Se cambia por plantilla con "Mostrar llamada a la acción".
+const HOME_CTA_ENCENDIDO = ["feed-a", "feed-b", "story-c"];
+function fehCtaPorDefecto(t){
+  return !!t && (HOME_CTA_ENCENDIDO.includes(t.id) || (t.cat === "ads" && t.editor !== "fmm"));
+}
 // Cuando no es null, el editor está preparando la publicación de una
 // fecha específica del calendario (ver bceCalGenerarPost): {iso, idx}
 // apunta a qué entrada de BCE_CALENDAR.fechas actualizar al guardar el
@@ -27112,6 +27357,7 @@ function fehAbrir(){
     }
     fehRenderPicker();
   }
+  homeContactoCargar();
   document.getElementById("feh-root").style.display = "flex";
   fehVolverPicker();
 }
@@ -27152,8 +27398,8 @@ function fehRenderPicker(){
       const ctx = cvs.getContext("2d");
       ctx.save();
       ctx.scale(scale, scale);
-      const previewState = { photos:{}, values:{} };
-      t.fields.forEach(f=>{ previewState.values[f.key] = f.default; });
+      const previewState = { photos:{}, values:{}, showCta: fehCtaPorDefecto(t) };
+      t.fields.forEach(f=>{ previewState.values[f.key] = f.key === "tel" ? HOME_CONTACTO.tel : f.default; });
       t.draw(ctx, t.w, t.h, previewState, t);
       ctx.restore();
     });
@@ -27180,8 +27426,14 @@ function fehElegirPlantilla(id){
   // Cambiar de plantilla conserva las fotos de las ranuras que se llaman
   // igual (antes/después, foto) pero restablece su encuadre.
   const fotosPrevias = (FEH && FEH.photos) || {};
-  FEH = { tplId:id, photos:{}, values:{}, photoOffsets:{}, showBadge:true, showAviso:false };
-  t.fields.forEach(f=>{ FEH.values[f.key] = f.default; });
+  FEH = { tplId:id, photos:{}, values:{}, photoOffsets:{}, showBadge:true, showAviso:false, showCta: fehCtaPorDefecto(t), showContacto:true };
+  // Los campos "WhatsApp" arrancan con el número de Contacto HOME.
+  const valorInicial = f => f.key === "tel" ? HOME_CONTACTO.tel : f.default;
+  t.fields.forEach(f=>{ FEH.values[f.key] = valorInicial(f); });
+  if(FEH.values.cta === undefined) FEH.values.cta = HOME_CTA_DEFAULT;
+  FEH.values.sello = HOME_SELLO_DEFAULT;
+  FEH.values.aviso = HOME_AVISO_TEXT;
+  FEH.values.contacto = null;
   t.photos.forEach(p=>{
     if(fotosPrevias[p.key]){ FEH.photos[p.key] = fotosPrevias[p.key]; FEH.photoOffsets[p.key] = encNuevo(FEH_ZOOM_INICIAL); }
   });
@@ -27201,16 +27453,23 @@ function fehElegirPlantilla(id){
     +'</div>'
   ).join("");
 
-  document.getElementById("feh-text-fields").innerHTML = t.fields.map(f=>
+  // El texto del botón ("cta") va en el grupo de la llamada a la acción.
+  document.getElementById("feh-text-fields").innerHTML = t.fields.filter(f=>f.key!=="cta").map(f=>
     '<div class="feh-ctrl-group">'
       +'<label class="feh-ctrl-label">'+escapeHtml(f.label)+'</label>'
       +(f.key==="cuerpo"
-        ? '<textarea class="feh-input" rows="3" oninput="fehSetValor(\''+f.key+'\',this.value)">'+escapeHtml(f.default)+'</textarea>'
-        : '<input type="text" class="feh-input" value="'+escapeHtml(f.default)+'" oninput="fehSetValor(\''+f.key+'\',this.value)">')
+        ? '<textarea class="feh-input" rows="3" oninput="fehSetValor(\''+f.key+'\',this.value)">'+escapeHtml(valorInicial(f))+'</textarea>'
+        : '<input type="text" class="feh-input" value="'+escapeHtml(valorInicial(f))+'" oninput="fehSetValor(\''+f.key+'\',this.value)">')
     +'</div>'
   ).join("")
-    + (t.hasPill ? '<label class="feh-check-row"><input type="checkbox" checked onchange="fehSetShowBadge(this.checked)"> Mostrar sello "Cotización sin costo"</label>' : "")
-    + '<label class="feh-check-row"><input type="checkbox" onchange="fehSetShowAviso(this.checked)"> Mostrar aviso de pago a meses</label>';
+    + (t.hasPill ? homeSelloControlesHtml("fehSetShowBadge(this.checked)", "fehSetValor('sello',this.value)", true, FEH.values.sello) : "")
+    + homeCtaControlesHtml("feh", { mostrar: FEH.showCta, texto: FEH.values.cta, mostrarContacto: true, contacto: null })
+    // Los anuncios no dibujan la franja de pago a meses: sin control.
+    + (t.cat === "ads" ? "" :
+      '<div class="feh-ctrl-group" data-home-aviso><label class="feh-ctrl-label">Aviso de pago a meses</label>'
+        + '<label class="feh-check-row"><input type="checkbox" onchange="fehSetShowAviso(this.checked)"> Mostrar aviso</label>'
+        + '<input type="text" class="feh-input" data-home-aviso-texto maxlength="48" value="'+escapeHtml(FEH.values.aviso)+'" oninput="fehSetValor(\'aviso\',this.value)">'
+      + '</div>');
 
   fehActualizarBotonDescarga();
   fehActualizarBannerBorrador();
@@ -27252,6 +27511,20 @@ function fehSincronizarCamposUI(){
   if(badgeCk) badgeCk.checked = FEH.showBadge !== false;
   const avisoCk = document.querySelector('#feh-text-fields input[type=checkbox][onchange*="fehSetShowAviso"]');
   if(avisoCk) avisoCk.checked = !!FEH.showAviso;
+  const ctaCk = document.querySelector('#feh-text-fields [data-home-cta-mostrar]');
+  if(ctaCk) ctaCk.checked = !!FEH.showCta;
+  const contCk = document.querySelector('#feh-text-fields [data-home-cta-contacto-mostrar]');
+  if(contCk) contCk.checked = FEH.showContacto !== false;
+  const contInp = document.querySelector('#feh-text-fields [data-home-cta-contacto-input]');
+  if(contInp){
+    if(FEH.values.contacto != null){ contInp.value = FEH.values.contacto; contInp.dataset.personalizado = "1"; }
+    else { contInp.value = homeContactoLinea(); delete contInp.dataset.personalizado; }
+  }
+  const ctaTxt = document.querySelector('#feh-text-fields [data-home-cta-texto]');
+  if(ctaTxt){
+    ctaTxt.value = FEH.values.cta || "";
+    document.querySelectorAll('#feh-text-fields [data-home-cta-atajo]').forEach(b => b.classList.toggle("active", b.getAttribute("data-home-cta-atajo") === FEH.values.cta));
+  }
 }
 
 // Muestra/oculta el aviso "vinculado a esta fecha" y el botón de guardar
@@ -27282,7 +27555,7 @@ function fehGuardarBorrador(){
     showToast("⚠️ No se pudo guardar: la fecha ya no tiene esa entrada");
     return;
   }
-  entradas[idx].borrador = { valores: {...FEH.values}, showBadge: FEH.showBadge !== false, showAviso: !!FEH.showAviso };
+  entradas[idx].borrador = { valores: {...FEH.values}, showBadge: FEH.showBadge !== false, showAviso: !!FEH.showAviso, showCta: !!FEH.showCta, showContacto: FEH.showContacto !== false };
   bceCalGuardar();
   showToast("✅ Borrador guardado — vuelve a esta fecha cuando toque publicar");
 }
@@ -27323,6 +27596,15 @@ function fehActualizarBotonDescarga(){
   btn.title = faltan.length ? "Sube todas las fotos primero" : "";
 }
 
+// Lo que se dibuja: el mismo FEH, con el sello y el aviso apagados si se
+// dejó su texto vacío (así el diseño no reserva espacio para nada).
+function fehEstadoDibujo(){
+  const st = Object.create(FEH);
+  st.showBadge = FEH.showBadge !== false && !!homeTexto(FEH, "sello", HOME_SELLO_DEFAULT);
+  st.showAviso = !!FEH.showAviso && !!homeTexto(FEH, "aviso", HOME_AVISO_TEXT);
+  return st;
+}
+
 function fehRenderPreview(){
   const t = HOME_TEMPLATES.find(x=>x.id===FEH.tplId);
   if(!t) return;
@@ -27332,7 +27614,7 @@ function fehRenderPreview(){
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = "high";
   encInicioCuadro(canvas);
-  t.draw(ctx, t.w, t.h, FEH, t);
+  t.draw(ctx, t.w, t.h, fehEstadoDibujo(), t);
   encFinCuadro(canvas);
   fehGenerateCopy(t, FEH);
 }
@@ -27342,7 +27624,7 @@ encRegistrarEditor("feh-canvas", {
   botonDescarga: "feh-download-btn",
   exportarVideo: {
     tamano: () => { const t = HOME_TEMPLATES.find(x=>x.id===FEH.tplId); return { w: t.w, h: t.h }; },
-    dibujar: (ctx, w, h) => { const t = HOME_TEMPLATES.find(x=>x.id===FEH.tplId); t.draw(ctx, w, h, FEH, t); },
+    dibujar: (ctx, w, h) => { const t = HOME_TEMPLATES.find(x=>x.id===FEH.tplId); t.draw(ctx, w, h, fehEstadoDibujo(), t); },
     nombre: () => "HOME_" + FEH.tplId,
   },
 });
@@ -27405,7 +27687,7 @@ function fehGenerateCopy(t, st){
   const el = document.getElementById("feh-post-copy");
   if(!el) return "";
   const v = st.values || {};
-  const tel = (v.tel || HOME_TEL_DEFAULT).trim();
+  const tel = (v.tel || HOME_CONTACTO.tel || HOME_TEL_DEFAULT).trim();
   const pilar = HOME_PILAR_POR_TPL[t.id] || "";
   const builder = HOME_COPY_BUILDERS[t.id];
   const lineas = builder ? builder(v, tel, pilar) : [v.titulo];
@@ -27446,7 +27728,7 @@ async function fehDescargar(){
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = "high";
   ctx.scale(HOME_EXPORT_SCALE, HOME_EXPORT_SCALE);
-  t.draw(ctx, t.w, t.h, FEH, t);
+  t.draw(ctx, t.w, t.h, fehEstadoDibujo(), t);
   canvas.toBlob((blob)=>{
     if(!blob){ showToast("⚠️ No se pudo generar la imagen"); return; }
     const url = URL.createObjectURL(blob);
@@ -27575,34 +27857,6 @@ function fehRoundRect(ctx, x, y, w, h, r){
   ctx.arcTo(x, y, x+w, y, r);
   ctx.closePath();
 }
-// Botón CTA de los anuncios (Meta Ads) — reemplaza la línea de texto plano
-// "WhatsApp 123..." de las plantillas orgánicas: en un anuncio pagado el
-// contacto real ocurre por el botón nativo del anuncio (Enviar mensaje),
-// esta pieza es solo el gancho visual con verbo de acción.
-// OJO: no usar el carácter "→" — Inter cargada en canvas no trae ese
-// glifo y se renderiza roto; la flecha se dibuja a mano (línea + triángulo).
-function fehDrawCTAButton(ctx, x, bottomY, text){
-  const font = '700 34px "Inter"';
-  ctx.font = font;
-  const textW = ctx.measureText(text).width;
-  const arrowW = 34, gap = 18, padX = 45, h = 92;
-  const w = padX*2 + textW + gap + arrowW;
-  const y = bottomY - h;
-  ctx.fillStyle = HOME_BRAND.terracota;
-  fehRoundRect(ctx, x, y, w, h, h/2);
-  ctx.fill();
-  ctx.fillStyle = HOME_BRAND.navy;
-  ctx.textAlign = "left"; ctx.textBaseline = "middle";
-  const cy = y + h/2;
-  ctx.fillText(text, x+padX, cy);
-  const ax0 = x+padX+textW+gap, ax1 = ax0+arrowW;
-  ctx.strokeStyle = HOME_BRAND.navy; ctx.lineWidth = 5; ctx.lineCap = "round";
-  ctx.beginPath(); ctx.moveTo(ax0, cy); ctx.lineTo(ax1-8, cy); ctx.stroke();
-  ctx.beginPath();
-  ctx.moveTo(ax1-14, cy-11); ctx.lineTo(ax1, cy); ctx.lineTo(ax1-14, cy+11);
-  ctx.closePath(); ctx.fill();
-  return y; // tope del botón, por si algo necesita acomodarse arriba
-}
 function fehDrawLogoLockup(ctx, x, y, targetH, full){
   const img = full ? _fehLogoBlanco : (_fehLogoBlancoIcono || _fehLogoBlanco);
   if(!img || !img.naturalWidth) return 0;
@@ -27632,10 +27886,10 @@ function fehTag(ctx, text, x, y, bg, color){
 // no como un aviso suelto.
 const HOME_AVISO_TEXT = "Pregunta por pago a meses con tarjeta";
 const HOME_AVISO_BAND_H = 42;
-function fehDrawAvisoMeses(ctx, W, y, bg, color){
+function fehDrawAvisoMeses(ctx, W, y, bg, color, texto){
   ctx.fillStyle = bg;
   ctx.fillRect(0, y, W, HOME_AVISO_BAND_H);
-  const text = HOME_AVISO_TEXT.toUpperCase();
+  const text = (texto == null ? HOME_AVISO_TEXT : texto).toUpperCase();
   ctx.font = '500 20px "Inter"';
   ctx.fillStyle = color;
   ctx.textBaseline = "middle";
@@ -27658,7 +27912,7 @@ function fehDrawFeedA(ctx, W, H, st){
   ctx.fillStyle = "rgba(11,31,58,.92)"; ctx.fillRect(56, 40, 200, 46);
   fehDrawLogoLockup(ctx, 66, 44, 38, false);
   if(st.showBadge !== false){
-    fehDrawPill(ctx, "Cotización sin costo", W-56, 40, {align:"right", bg:HOME_BRAND.terracota, color:HOME_BRAND.navy, font:'700 22px "Inter"', fontSize:22});
+    fehDrawPill(ctx, homeTexto(st, "sello", HOME_SELLO_DEFAULT), W-56, 40, {align:"right", bg:HOME_BRAND.terracota, color:HOME_BRAND.navy, font:'700 22px "Inter"', fontSize:22});
   }
 
   const lines = fehWrapTitleTokens(ctx, v.titulo||"", W-112, '700 74px "Playfair Display"', 'italic 700 74px "Playfair Display"');
@@ -27669,11 +27923,21 @@ function fehDrawFeedA(ctx, W, H, st){
   ctx.fillText(v.ubicacion||"", 56, titleBottom + 46);
 
   const po = st.photoOffsets || {};
-  const gridY = titleBottom + 90, gridH = H - 120 - gridY, gap = 8, colW = (W-112-gap)/2;
+  // Con llamada a la acción, el bloque ocupa el pie (WhatsApp y ciudad van
+  // dentro de él) y las fotos terminan 40px arriba.
+  const cta = homeCtaBloque(ctx, W, H, st);
+  const gridY = titleBottom + 90, gridH = (cta ? cta.top - 40 : H - 120) - gridY, gap = 8, colW = (W-112-gap)/2;
   fehDrawPhoto(ctx, ph.antes, 56, gridY, colW, gridH, "foto ANTES", po.antes);
   fehDrawPhoto(ctx, ph.despues, 56+colW+gap, gridY, colW, gridH, "foto DESPUÉS", po.despues);
   fehTag(ctx, "ANTES", 56, gridY, HOME_BRAND.grafito, "#FFFFFF");
   fehTag(ctx, "DESPUÉS", 56+colW+gap, gridY, HOME_BRAND.terracota, HOME_BRAND.navy);
+
+  if(cta){
+    homeDibujarCTA(ctx, cta.x, cta.top, cta.g);
+    ctx.fillStyle = HOME_BRAND.terracota; ctx.fillRect(0, H-12, W, 12);
+    if(st.showAviso) fehDrawAvisoMeses(ctx, W, fehAvisoBandY(H, cta.bottom+16), HOME_BRAND.terracota, HOME_BRAND.navy, homeTexto(st, "aviso", HOME_AVISO_TEXT));
+    return;
+  }
 
   const footY = H - 78;
   ctx.font = '500 27px "Inter"';
@@ -27687,7 +27951,7 @@ function fehDrawFeedA(ctx, W, H, st){
 
   ctx.fillStyle = HOME_BRAND.terracota; ctx.fillRect(0, H-12, W, 12);
   if(st.showAviso){
-    fehDrawAvisoMeses(ctx, W, fehAvisoBandY(H, footY+36), HOME_BRAND.terracota, HOME_BRAND.navy);
+    fehDrawAvisoMeses(ctx, W, fehAvisoBandY(H, footY+36), HOME_BRAND.terracota, HOME_BRAND.navy, homeTexto(st, "aviso", HOME_AVISO_TEXT));
   }
 }
 
@@ -27727,9 +27991,28 @@ function fehDrawFeedB(ctx, W, H, st){
   // el sello sin taparlo.
 
   const lines = fehWrapTitleTokens(ctx, v.titulo||"", W-112, '700 80px "Playfair Display"', 'italic 700 80px "Playfair Display"');
+  const hasDesc = !!(v.descripcion && v.descripcion.trim());
+  const cta = homeCtaBloque(ctx, W, H, st);
+  if(cta){
+    // Anclado desde abajo: CTA al pie; arriba de él la descripción, el
+    // divisor y el título (que crece hacia arriba si ocupa más líneas).
+    const descY = cta.top - 40;
+    const divY = hasDesc ? descY - 38 : cta.top - 34;
+    const titleBottomCta = divY - 42;
+    fehDrawTitleLines(ctx, lines, 56, titleBottomCta - (lines.length-1)*80, 80, "#FFFFFF", HOME_BRAND.terracota, '700 80px "Playfair Display"', 'italic 700 80px "Playfair Display"');
+    ctx.strokeStyle = "rgba(255,255,255,.28)"; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(56, divY); ctx.lineTo(W-56, divY); ctx.stroke();
+    if(hasDesc){
+      ctx.font = '400 26px "Inter"'; ctx.fillStyle = "rgba(255,255,255,.85)";
+      ctx.textAlign = "left"; ctx.textBaseline = "middle";
+      ctx.fillText(v.descripcion, 56, descY);
+    }
+    homeDibujarCTA(ctx, cta.x, cta.top, cta.g);
+    if(st.showAviso) fehDrawAvisoMeses(ctx, W, fehAvisoBandY(H, cta.bottom+16), HOME_BRAND.terracota, HOME_BRAND.navy, homeTexto(st, "aviso", HOME_AVISO_TEXT));
+    return;
+  }
   const titleBottom = fehDrawTitleLines(ctx, lines, 56, H-260, 80, "#FFFFFF", HOME_BRAND.terracota, '700 80px "Playfair Display"', 'italic 700 80px "Playfair Display"');
 
-  const hasDesc = !!(v.descripcion && v.descripcion.trim());
   const hasTel = !!(v.tel && v.tel.trim());
 
   // El divisor solo se dibuja si hay algo debajo — si ambos campos quedan
@@ -27753,7 +28036,7 @@ function fehDrawFeedB(ctx, W, H, st){
   }
 
   if(st.showAviso){
-    fehDrawAvisoMeses(ctx, W, fehAvisoBandY(H, lineY+36), HOME_BRAND.terracota, HOME_BRAND.navy);
+    fehDrawAvisoMeses(ctx, W, fehAvisoBandY(H, lineY+36), HOME_BRAND.terracota, HOME_BRAND.navy, homeTexto(st, "aviso", HOME_AVISO_TEXT));
   }
 }
 
@@ -27766,7 +28049,7 @@ function fehDrawFeedC(ctx, W, H, st){
   ctx.fillStyle = "rgba(11,31,58,.92)"; ctx.fillRect(56, 40, 200, 46);
   fehDrawLogoLockup(ctx, 66, 44, 38, false);
   if(st.showBadge !== false){
-    fehDrawPill(ctx, "Cotización sin costo", W-56, 40, {align:"right", bg:HOME_BRAND.terracota, color:HOME_BRAND.navy, font:'700 22px "Inter"', fontSize:22});
+    fehDrawPill(ctx, homeTexto(st, "sello", HOME_SELLO_DEFAULT), W-56, 40, {align:"right", bg:HOME_BRAND.terracota, color:HOME_BRAND.navy, font:'700 22px "Inter"', fontSize:22});
   }
 
   let cy = 300;
@@ -27800,10 +28083,18 @@ function fehDrawFeedC(ctx, W, H, st){
 
   // La barra navy crece hacia arriba cuando el aviso está activo, y el
   // aviso ocupa esa franja nueva — el WhatsApp/ciudad de abajo no se mueven.
-  const barH = 92 + (st.showAviso ? HOME_AVISO_BAND_H : 0);
+  // Con llamada a la acción la barra crece para alojarla (60px de margen abajo).
+  const stSinAviso = Object.create(st); stSinAviso.showAviso = false;
+  const cta = homeCtaBloque(ctx, W, H, stSinAviso);
+  const barH = (cta ? HOME_MARGEN_FEED + cta.g.altoTotal + 34 : 92) + (st.showAviso ? HOME_AVISO_BAND_H : 0);
   ctx.fillStyle = HOME_BRAND.navy; ctx.fillRect(0, H-barH, W, barH);
   if(st.showAviso){
-    fehDrawAvisoMeses(ctx, W, H-barH, HOME_BRAND.terracota, HOME_BRAND.navy);
+    fehDrawAvisoMeses(ctx, W, H-barH, HOME_BRAND.terracota, HOME_BRAND.navy, homeTexto(st, "aviso", HOME_AVISO_TEXT));
+  }
+  if(cta){
+    homeDibujarCTA(ctx, cta.x, cta.top, cta.g);
+    ctx.fillStyle = HOME_BRAND.terracota; ctx.fillRect(0, H-12, W, 12);
+    return;
   }
   ctx.font = '500 27px "Inter"'; ctx.fillStyle = "#FFFFFF"; ctx.textAlign = "left"; ctx.textBaseline = "middle";
   ctx.fillText("WhatsApp "+(v.tel||""), 56, H-46);
@@ -27831,7 +28122,7 @@ function fehDrawFeedD(ctx, W, H, st){
   ctx.fillStyle = "rgba(11,31,58,.92)"; ctx.fillRect(56, 40, 200, 46);
   fehDrawLogoLockup(ctx, 66, 44, 38, false);
   if(st.showBadge !== false){
-    fehDrawPill(ctx, "Cotización sin costo", W-56, 40, {align:"right", bg:HOME_BRAND.terracota, color:HOME_BRAND.navy, font:'700 22px "Inter"', fontSize:22});
+    fehDrawPill(ctx, homeTexto(st, "sello", HOME_SELLO_DEFAULT), W-56, 40, {align:"right", bg:HOME_BRAND.terracota, color:HOME_BRAND.navy, font:'700 22px "Inter"', fontSize:22});
   }
 
   // El eslogan puede ocupar 1, 2 o hasta 3 líneas según qué tan largo lo
@@ -27843,7 +28134,10 @@ function fehDrawFeedD(ctx, W, H, st){
   // siempre a una distancia fija arriba de la PRIMERA línea del título.
   const lines = fehWrapTitleTokens(ctx, v.titulo||"", W-112, '700 64px "Playfair Display"', 'italic 700 64px "Playfair Display"');
   const tituloLineH = 64;
-  const tituloStartY = (H-220) - (lines.length-1)*tituloLineH;
+  // Con llamada a la acción, la descripción queda 44px sobre el bloque y el
+  // título sube con ella (mismo anclaje desde abajo).
+  const cta = homeCtaBloque(ctx, W, H, st);
+  const tituloStartY = (cta ? cta.top - 44 - 58 : H-220) - (lines.length-1)*tituloLineH;
 
   ctx.font = '600 22px "Inter"'; ctx.fillStyle = HOME_BRAND.terracota;
   ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
@@ -27861,7 +28155,10 @@ function fehDrawFeedD(ctx, W, H, st){
   // último que sí se dibujó (con o sin pie) y nunca se sale del lienzo —
   // mismo mecanismo (fehAvisoBandY) que ya usan Feed A/B y las historias.
   let cyMinAviso = descY + 30;
-  if(v.tel){
+  if(cta){
+    homeDibujarCTA(ctx, cta.x, cta.top, cta.g);
+    cyMinAviso = cta.bottom + 16;
+  } else if(v.tel){
     ctx.strokeStyle = "rgba(255,255,255,.28)"; ctx.lineWidth = 2;
     ctx.beginPath(); ctx.moveTo(56, H-100); ctx.lineTo(W-56, H-100); ctx.stroke();
     ctx.font = '400 24px "Inter"'; ctx.fillStyle = "#FFFFFF"; ctx.textBaseline = "middle";
@@ -27870,7 +28167,7 @@ function fehDrawFeedD(ctx, W, H, st){
   }
 
   if(st.showAviso){
-    fehDrawAvisoMeses(ctx, W, fehAvisoBandY(H, cyMinAviso), HOME_BRAND.terracota, HOME_BRAND.navy);
+    fehDrawAvisoMeses(ctx, W, fehAvisoBandY(H, cyMinAviso), HOME_BRAND.terracota, HOME_BRAND.navy, homeTexto(st, "aviso", HOME_AVISO_TEXT));
   }
 }
 
@@ -27897,28 +28194,33 @@ function fehDrawAdsHero(ctx, W, H, st){
   ctx.fillStyle = "rgba(11,31,58,.92)"; ctx.fillRect(56, logoY, 200, 46);
   fehDrawLogoLockup(ctx, 66, logoY+4, 38, false);
   if(st.showBadge !== false){
-    fehDrawPill(ctx, "Cotización sin costo", W-56, logoY, {align:"right", bg:HOME_BRAND.terracota, color:HOME_BRAND.navy, font:'700 22px "Inter"', fontSize:22});
+    fehDrawPill(ctx, homeTexto(st, "sello", HOME_SELLO_DEFAULT), W-56, logoY, {align:"right", bg:HOME_BRAND.terracota, color:HOME_BRAND.navy, font:'700 22px "Inter"', fontSize:22});
   }
 
+  // Anclado desde abajo: la llamada a la acción al pie (fuera de la zona
+  // segura), la descripción sobre ella y el título y la etiqueta arriba;
+  // un título de más líneas crece hacia arriba.
+  const cta = homeCtaBloque(ctx, W, H, st);
   const kickerFont = isStory ? 26 : 22;
-  const kickerY = isStory ? H-500 : H-350;
+  const titleFont = isStory ? 68 : 60;
+  const descFont = isStory ? 30 : 25;
+  const descGap = isStory ? 50 : 36;
+  const lines = fehWrapTitleTokens(ctx, v.titulo||"", W-112, `700 ${titleFont}px "Playfair Display"`, `italic 700 ${titleFont}px "Playfair Display"`);
+  const descY = cta ? cta.top - (isStory ? 44 : 36) : homeCtaLimiteInf(W, H, st);
+  const titleY = descY - descGap - (lines.length-1)*titleFont;
+  const kickerY = titleY - (isStory ? 120 : 130);
+
   ctx.font = `600 ${kickerFont}px "Inter"`; ctx.fillStyle = HOME_BRAND.terracota;
   ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
   fehFillTextTracked(ctx, (v.eyebrow||"").toUpperCase(), 56, kickerY, 3);
 
-  const titleFont = isStory ? 68 : 60;
-  const titleY = isStory ? H-380 : H-220;
-  const lines = fehWrapTitleTokens(ctx, v.titulo||"", W-112, `700 ${titleFont}px "Playfair Display"`, `italic 700 ${titleFont}px "Playfair Display"`);
-  const titleBottom = fehDrawTitleLines(ctx, lines, 56, titleY, titleFont, "#FFFFFF", HOME_BRAND.terracota, `700 ${titleFont}px "Playfair Display"`, `italic 700 ${titleFont}px "Playfair Display"`);
+  fehDrawTitleLines(ctx, lines, 56, titleY, titleFont, "#FFFFFF", HOME_BRAND.terracota, `700 ${titleFont}px "Playfair Display"`, `italic 700 ${titleFont}px "Playfair Display"`);
 
-  const descFont = isStory ? 30 : 25;
-  const descGap = isStory ? 50 : 36;
   ctx.font = `400 ${descFont}px "Inter"`; ctx.fillStyle = "#E0DED8";
   ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
-  ctx.fillText(v.descripcion||"", 56, titleBottom+descGap);
+  ctx.fillText(v.descripcion||"", 56, descY);
 
-  const ctaBottom = isStory ? H-70 : H-56;
-  fehDrawCTAButton(ctx, 56, ctaBottom, v.cta || "Cotiza por WhatsApp");
+  if(cta) homeDibujarCTA(ctx, cta.x, cta.top, cta.g);
 }
 
 // ── ADS ANTES/DESPUÉS · comparación + botón CTA (Meta Ads) ─────────
@@ -27956,7 +28258,7 @@ function fehDrawAdsAntesDespues(ctx, W, H, st){
   ctx.fillStyle = "rgba(11,31,58,.92)"; ctx.fillRect(56, logoY, 200, 46);
   fehDrawLogoLockup(ctx, 66, logoY+4, 38, false);
   if(st.showBadge !== false){
-    fehDrawPill(ctx, "Cotización sin costo", W-56, logoY, {align:"right", bg:HOME_BRAND.terracota, color:HOME_BRAND.navy, font:'700 22px "Inter"', fontSize:22});
+    fehDrawPill(ctx, homeTexto(st, "sello", HOME_SELLO_DEFAULT), W-56, logoY, {align:"right", bg:HOME_BRAND.terracota, color:HOME_BRAND.navy, font:'700 22px "Inter"', fontSize:22});
   }
 
   const kickerFont = isStory ? 26 : 22;
@@ -27967,10 +28269,12 @@ function fehDrawAdsAntesDespues(ctx, W, H, st){
   // Título en navy (no blanco): se dibuja sobre la banda clara.
   fehDrawTitleLines(ctx, lines, 56, tituloStartY, tituloLineH, HOME_BRAND.navy, HOME_BRAND.terracota, `700 ${titleFont}px "Playfair Display"`, `italic 700 ${titleFont}px "Playfair Display"`);
 
-  const ctaBottom = isStory ? H-70 : H-56;
-  const ctaH = 92, ctaMarginTop = isStory ? 40 : 30, descH = isStory ? 40 : 34;
-  const bottomReserved = (H-ctaBottom) + ctaH + ctaMarginTop + descH + 16;
-  const gridH = H - bottomReserved - gridY;
+  // Pie: llamada a la acción (si está activa) fuera de la zona segura y la
+  // descripción sobre ella; las fotos ocupan lo que queda.
+  const cta = homeCtaBloque(ctx, W, H, st);
+  const ctaMarginTop = isStory ? 40 : 30, descH = isStory ? 40 : 34;
+  const pieTop = cta ? cta.top - ctaMarginTop : homeCtaLimiteInf(W, H, st);
+  const gridH = pieTop - descH - 16 - gridY;
   const gap = isStory ? 10 : 8;
   const colW = (W-112-gap)/2;
   fehDrawPhoto(ctx, ph.antes, 56, gridY, colW, gridH, "foto ANTES", po.antes);
@@ -27981,9 +28285,9 @@ function fehDrawAdsAntesDespues(ctx, W, H, st){
   const descFont = isStory ? 28 : 24;
   ctx.font = `400 ${descFont}px "Inter"`; ctx.fillStyle = "rgba(247,243,238,.85)";
   ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
-  ctx.fillText(v.descripcion||"", 56, gridY+gridH+(isStory?50:60));
+  ctx.fillText(v.descripcion||"", 56, cta ? pieTop + (isStory ? -6 : 10) : pieTop);
 
-  fehDrawCTAButton(ctx, 56, ctaBottom, v.cta || "Cotiza por WhatsApp");
+  if(cta) homeDibujarCTA(ctx, cta.x, cta.top, cta.g);
 }
 
 // ── STORY A · foto a sangre + avance de obra ────────────────────
@@ -27994,15 +28298,20 @@ function fehDrawStoryA(ctx, W, H, st){
   ctx.fillStyle = "rgba(11,31,58,.9)"; ctx.fillRect(56, 64, 210, 50);
   fehDrawLogoLockup(ctx, 66, 68, 42, false);
 
-  const grad = ctx.createLinearGradient(0, H-900, 0, H);
+  // Con llamada a la acción todo el bloque sube para terminar sobre ella
+  // (fuera de los 300px de abajo) y el degradado crece lo mismo.
+  const lines = fehWrapTitleTokens(ctx, v.titulo||"", W-128, '700 82px "Playfair Display"', 'italic 700 82px "Playfair Display"');
+  const cta = homeCtaBloque(ctx, W, H, st, { x:64 });
+  const pillY = cta ? cta.top - 50 - 58 - (lines.length-1)*84 - 82 - 100 : H-560;
+  const gradTop = Math.min(H-900, pillY - 340);
+  const grad = ctx.createLinearGradient(0, gradTop, 0, H);
   grad.addColorStop(0, "rgba(16,19,24,0)"); grad.addColorStop(0.55, "rgba(16,19,24,.62)"); grad.addColorStop(1, "rgba(16,19,24,.86)");
-  ctx.fillStyle = grad; ctx.fillRect(0, H-900, W, 900);
+  ctx.fillStyle = grad; ctx.fillRect(0, gradTop, W, H-gradTop);
 
-  let cy = H-560;
+  let cy = pillY;
   fehDrawPill(ctx, (v.dia||"").toUpperCase(), 64, cy, {bg:HOME_BRAND.terracota, color:HOME_BRAND.navy, font:'700 22px "Inter"', fontSize:22, spacing:2});
   cy += 100;
 
-  const lines = fehWrapTitleTokens(ctx, v.titulo||"", W-128, '700 82px "Playfair Display"', 'italic 700 82px "Playfair Display"');
   cy = fehDrawTitleLines(ctx, lines, 64, cy+82, 84, "#FFFFFF", HOME_BRAND.terracota, '700 82px "Playfair Display"', 'italic 700 82px "Playfair Display"');
   // 44px no dejaba lugar para el descendente del título (Playfair 82px) +
   // el ascendente del subtítulo, y quedaban pegados — mismo ajuste ya
@@ -28012,9 +28321,10 @@ function fehDrawStoryA(ctx, W, H, st){
   // era un azul pálido fuera de paleta, y de bajo contraste sobre la foto).
   ctx.font = '500 32px "Inter"'; ctx.fillStyle = "rgba(247,243,238,.88)"; ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
   ctx.fillText(v.subtitulo||"", 64, cy);
+  if(cta) homeDibujarCTA(ctx, cta.x, cta.top, cta.g);
 
   if(st.showAviso){
-    fehDrawAvisoMeses(ctx, W, fehAvisoBandY(H, cy+36), HOME_BRAND.terracota, HOME_BRAND.navy);
+    fehDrawAvisoMeses(ctx, W, fehAvisoBandY(H, cta ? cta.bottom+36 : cy+36), HOME_BRAND.terracota, HOME_BRAND.navy, homeTexto(st, "aviso", HOME_AVISO_TEXT));
   }
 }
 
@@ -28025,7 +28335,11 @@ function fehDrawStoryB(ctx, W, H, st){
   // Banda inferior reducida a la mitad (740px -> 370px): la foto crece para
   // ocupar el espacio liberado; los espacios internos se comprimen a la
   // mitad manteniendo la misma tipografía y el mismo ritmo proporcional.
-  const photoH = 1550;
+  // Con llamada a la acción la banda sube para que el botón termine fuera
+  // de los 300px de abajo; la foto se acorta lo mismo.
+  const lines = fehWrapTitleTokens(ctx, v.titulo||"", W-128, '700 76px "Playfair Display"', 'italic 700 76px "Playfair Display"');
+  const cta = homeCtaBloque(ctx, W, H, st, { x:64 });
+  const photoH = cta ? cta.top - 50 - (lines.length-1)*78 - 142 : 1550;
   fehDrawPhoto(ctx, ph.foto, 0, 0, W, photoH, "foto vertical", po.foto);
   ctx.fillStyle = "rgba(11,31,58,.9)"; ctx.fillRect(56, 64, 210, 50);
   fehDrawLogoLockup(ctx, 66, 68, 42, false);
@@ -28038,8 +28352,12 @@ function fehDrawStoryB(ctx, W, H, st){
   fehFillTextTracked(ctx, (v.eyebrow||"").toUpperCase(), 64, cy, 3);
   cy += 46;
 
-  const lines = fehWrapTitleTokens(ctx, v.titulo||"", W-128, '700 76px "Playfair Display"', 'italic 700 76px "Playfair Display"');
   cy = fehDrawTitleLines(ctx, lines, 64, cy+46, 78, "#FFFFFF", HOME_BRAND.terracota, '700 76px "Playfair Display"', 'italic 700 76px "Playfair Display"');
+  if(cta){
+    homeDibujarCTA(ctx, cta.x, cta.top, cta.g);
+    if(st.showAviso) fehDrawAvisoMeses(ctx, W, fehAvisoBandY(H, cta.bottom+36), HOME_BRAND.terracota, HOME_BRAND.navy, homeTexto(st, "aviso", HOME_AVISO_TEXT));
+    return;
+  }
   // Espacio suficiente entre la última línea del título y el WhatsApp: la
   // separación anterior (23px) no dejaba lugar para el descendente del
   // título (Playfair 76px) + el ascendente del WhatsApp, y quedaban pegados.
@@ -28048,7 +28366,7 @@ function fehDrawStoryB(ctx, W, H, st){
   ctx.fillText("WhatsApp "+(v.tel||""), 64, cy);
 
   if(st.showAviso){
-    fehDrawAvisoMeses(ctx, W, fehAvisoBandY(H, cy+36), HOME_BRAND.terracota, HOME_BRAND.navy);
+    fehDrawAvisoMeses(ctx, W, fehAvisoBandY(H, cy+36), HOME_BRAND.terracota, HOME_BRAND.navy, homeTexto(st, "aviso", HOME_AVISO_TEXT));
   }
 }
 
@@ -28063,18 +28381,23 @@ function fehDrawStoryC(ctx, W, H, st){
   const ciudadSC = v.ciudad || "Mexicali, B.C.";
   fehFillTextTracked(ctx, ciudadSC, W-64 - fehTrackedWidth(ctx,ciudadSC,2), 100, 2);
 
-  const gridY = 190, gridH = H - 190 - 220, gap = 10, po = st.photoOffsets || {};
+  // Con llamada a la acción el título va sobre ella (fuera de los 300px de
+  // abajo) y las fotos terminan 90px arriba del título.
+  const lines = fehWrapTitleTokens(ctx, v.titulo||"", W-128, '700 64px "Playfair Display"', 'italic 700 64px "Playfair Display"');
+  const cta = homeCtaBloque(ctx, W, H, st, { x:64 });
+  const titleStartCta = cta ? cta.top - 50 - (lines.length-1)*68 : 0;
+  const gridY = 190, gridH = cta ? titleStartCta - 90 - 190 : H - 190 - 220, gap = 10, po = st.photoOffsets || {};
   const rowH = (gridH-gap)/2;
   fehDrawPhoto(ctx, ph.antes, 64, gridY, W-128, rowH, "foto ANTES", po.antes);
   fehDrawPhoto(ctx, ph.despues, 64, gridY+rowH+gap, W-128, rowH, "foto DESPUÉS", po.despues);
   fehTag(ctx, "ANTES", 64, gridY, HOME_BRAND.grafito, "#FFFFFF");
   fehTag(ctx, "DESPUÉS", 64, gridY+rowH+gap, HOME_BRAND.terracota, HOME_BRAND.navy);
 
-  const lines = fehWrapTitleTokens(ctx, v.titulo||"", W-128, '700 64px "Playfair Display"', 'italic 700 64px "Playfair Display"');
-  const titleBottomSC = fehDrawTitleLines(ctx, lines, 64, gridY+gridH+82, 68, "#FFFFFF", HOME_BRAND.terracota, '700 64px "Playfair Display"', 'italic 700 64px "Playfair Display"');
+  const titleBottomSC = fehDrawTitleLines(ctx, lines, 64, cta ? titleStartCta : gridY+gridH+82, 68, "#FFFFFF", HOME_BRAND.terracota, '700 64px "Playfair Display"', 'italic 700 64px "Playfair Display"');
+  if(cta) homeDibujarCTA(ctx, cta.x, cta.top, cta.g);
 
   if(st.showAviso){
-    fehDrawAvisoMeses(ctx, W, fehAvisoBandY(H, titleBottomSC+36), HOME_BRAND.terracota, HOME_BRAND.navy);
+    fehDrawAvisoMeses(ctx, W, fehAvisoBandY(H, cta ? cta.bottom+36 : titleBottomSC+36), HOME_BRAND.terracota, HOME_BRAND.navy, homeTexto(st, "aviso", HOME_AVISO_TEXT));
   }
 }
 
@@ -28090,6 +28413,13 @@ window.fehSetShowAviso = fehSetShowAviso;
 window.fehGuardarBorrador = fehGuardarBorrador;
 window.fehDescargar = fehDescargar;
 window.fehCopyPostText = fehCopyPostText;
+window.homeContactoAbrir = homeContactoAbrir;
+window.homeContactoGuardar = homeContactoGuardar;
+window.homeCtaSetMostrar = homeCtaSetMostrar;
+window.homeCtaSetTexto = homeCtaSetTexto;
+window.homeCtaSetMostrarContacto = homeCtaSetMostrarContacto;
+window.homeCtaSetContacto = homeCtaSetContacto;
+window.homeCtaRestablecerContacto = homeCtaRestablecerContacto;
 
 
 // ══════════════════════════════════════════════════════════════
@@ -28466,6 +28796,18 @@ function fmmTextoLogoDefault(marca){ return FMM_TEXTO_LOGO_POR_MARCA[marca] || F
 
 const FMM_MIN_BENEFICIOS = 2;
 const FMM_MAX_BENEFICIOS = 4;
+// Antes / Después: 0, 1 o 2 chips de confianza (texto vacío = no se muestra).
+const FMM_MAX_CHIPS_AD = 2;
+const FMM_CHIPS_AD_DEFAULT = [
+  { texto:"Revivimos color y brillo", icono:"sparkle" },
+  { texto:"Garantía por escrito", icono:"certificate" },
+];
+// "Altura de las fotos" de Antes / Después (fracción del alto del lienzo).
+const FMM_ALTO_FOTOS_AD = { min:0.55, max:0.75, defecto:0.62 };
+function fmmAltoFotosAD(adAD){
+  const v = adAD && typeof adAD.altoFotos === "number" ? adAD.altoFotos : FMM_ALTO_FOTOS_AD.defecto;
+  return Math.max(FMM_ALTO_FOTOS_AD.min, Math.min(FMM_ALTO_FOTOS_AD.max, v));
+}
 const FMM_BENEFICIOS_DEFAULT = [
   { texto:"Materiales premium",   icono:"medal" },
   { texto:"Diseño personalizado", icono:"pencil-ruler" },
@@ -29069,7 +29411,10 @@ function fmmDrawPresentacionServicio(ctx, W, H, st, opciones){
   // mención…), una franja libre justo encima de los 250px de abajo. El
   // contenido sube para dejarla vacía.
   const altoSticker = zonaStory && st.zonaSticker ? px(FMM_ALTO_ZONA_STICKER) : 0;
-  const margenInf = Math.max(M, zonaStory) + altoSticker;
+  // Anuncios de HOME: en Historia nada en los últimos 300px (zona segura de
+  // la llamada a la acción, igual que en el resto de plantillas HOME).
+  const zonaInf = zonaStory && ad ? px(HOME_ZONA_STORY_INF) : zonaStory;
+  const margenInf = Math.max(M, zonaInf) + altoSticker;
   // Degradado "Desde la izquierda" en Feed/Historia: el lado derecho de la
   // foto queda limpio y todo el texto va en una columna a la izquierda
   // (~62% del ancho), con los beneficios uno debajo de otro.
@@ -29097,8 +29442,11 @@ function fmmDrawPresentacionServicio(ctx, W, H, st, opciones){
   // derecha; "arriba" apila ícono y etiqueta. En horizontal van todos en
   // una fila; en vertical, 4 se acomodan en 2×2.
   const izq = (st.layoutBen || "izquierda") !== "arriba";
-  // En Antes/Después los beneficios (y la descripción) son opcionales.
-  const beneficios = (adAD && !adAD.mostrarBen) ? [] : (st.beneficios || []).slice(0, FMM_MAX_BENEFICIOS);
+  // Antes/Después: hasta 2 chips de confianza opcionales (texto vacío = no
+  // se muestra). La descripción también es opcional.
+  const beneficios = adAD
+    ? (st.beneficios || []).slice(0, FMM_MAX_CHIPS_AD).filter(b => (b.texto || "").trim())
+    : (st.beneficios || []).slice(0, FMM_MAX_BENEFICIOS);
   const n = beneficios.length;
   const cols = lateral ? Math.max(1, n) : gradIzq ? 1 : (ad ? Math.min(2, Math.max(1, n)) : (n === 4 ? 2 : Math.max(1, n)));
   const filas = n ? Math.ceil(n / cols) : 0;
@@ -29126,18 +29474,21 @@ function fmmDrawPresentacionServicio(ctx, W, H, st, opciones){
   const altoFila = izq ? Math.max(tamIcono, lhEt*2) : tamIcono + px(14) + lhEt*2;
   const gapFila = px(28);
   const altoBen = filas ? filas*altoFila + (filas - 1)*gapFila : 0;
-  // Anuncio: el botón CTA (92px, el mismo de los Hero) va al pie y el
-  // bloque de beneficios queda 48px arriba de él.
-  // Antes/Después no lleva sello ni botón: el protagonista es el cambio.
-  const conCta = !!(ad && !adAD && ad.mostrarCta !== false);
+  // Anuncio: la llamada a la acción de HOME (homeDibujarCTA, la misma de
+  // todas las plantillas HOME) va al pie y los beneficios 48px arriba.
+  // Antes/Después la trae encendida de fábrica; sin sello.
+  const conCta = !!(ad && ad.mostrarCta !== false);
+  let ctaG = conCta
+    ? homeCtaMedir(ctx, (ad.cta || "").trim() || HOME_CTA_DEFAULT, homeTextoContacto(ad.mostrarContacto, ad.contacto), px(1) * (zonaStory ? 1.15 : 1), "debajo", panelIzqW ? maxTextoW : W - 2*M)
+    : null;
   // Antes/Después: espaciados más compactos entre bloques, para dejarle
   // el mayor espacio posible a las dos fotos.
   // En el panel lateral las fotos no dependen del alto del texto: ahí se
   // conserva el aire normal entre bloques.
   const sep = n => px(adAD && !panelIzqW ? Math.round(n * 0.6) : n);
-  const altoCta = conCta ? 92 + sep(48) : 0;
-  const benTop = H - margenInf - altoCta - altoBen;
-  const lineaBenY = benTop - sep(36);   // línea fina sobre los beneficios
+  const altoCta = conCta ? ctaG.altoTotal + sep(48) : 0;
+  let benTop = H - margenInf - altoCta - altoBen;
+  let lineaBenY = benTop - sep(36);   // línea fina sobre los beneficios
 
   // Subtítulo (la descripción): guion de acento 48×2 + texto Manrope 300 32px.
   // Antes/Después: texto corrido sin guion, Inter 400 de 24px, pegado al
@@ -29149,7 +29500,7 @@ function fmmDrawPresentacionServicio(ctx, W, H, st, opciones){
   const lineasDesc = fmmEnvolver(ctx, (adAD && !adAD.mostrarDesc) ? "" : (v.descripcion || ""), maxTextoW - guionW - guionGap, panelIzqW ? 4 : 3);
   const lhDesc = tamDesc * (adAD ? 1.4 : 1.3);
   const altoDesc = lineasDesc.length * lhDesc;
-  const descTop = (n ? lineaBenY - sep(72) : H - margenInf - altoCta) - altoDesc;
+  let descTop = (n ? lineaBenY - sep(72) : H - margenInf - altoCta) - altoDesc;
 
   // Titular: 128px, interlineado .96, tracking negativo; se reduce para caber.
   // TAURINA: en mayúsculas, igual que su módulo (Norwester es de titulares).
@@ -29170,7 +29521,7 @@ function fmmDrawPresentacionServicio(ctx, W, H, st, opciones){
   // En el panel lateral de Antes/Después (≈400px de ancho) la 1ª línea parte
   // de 108px: a 128px cada palabra quedaba en su renglón y pesaba demasiado.
   const tamMax = Math.round(px(panelIzqW ? 108 : 128));
-  const lhF = panelIzqW ? 1.02 : 0.96;
+  let lhF = panelIzqW ? 1.02 : 0.96;
   const ancho = (txt, linea, t) => { ponerTit(linea, t); return ctx.measureText(txt).width; };
   // Tamaño y renglones del título partiendo de un tamaño máximo. Normalmente
   // 1 renglón por línea; en la columna angosta de Antes/Después a la
@@ -29215,18 +29566,60 @@ function fmmDrawPresentacionServicio(ctx, W, H, st, opciones){
   // Antes/Después: el título se achica lo necesario para no invadir la
   // zona mínima de las fotos (42% del alto, abajo) ni el logo (izquierda).
   const finLogo = chipHome ? (() => { const g = fmmGeomChipHome(W, H); return g.y + g.h; })() : yLogo + logoH;
-  if(adAD){
-    const limite = panelIzqW ? finLogo + px(48) : Math.round(H * 0.42) + px(40);
+  if(adAD && panelIzqW){
+    const limite = finLogo + px(48);
     let tMax = fit.t;
     while(yTextoDe(fit) < limite && tMax > Math.round(tamMax * 0.4)){
       tMax -= 4;
       fit = ajustarTitulo(tMax);
     }
   }
+  // Antes/Después con las fotos arriba: "Altura de las fotos" (55–75% del
+  // alto) fija dónde terminan. Debajo van título, descripción, chips y
+  // llamada a la acción, repartidos para llenar justo el espacio libre.
+  // Si falta, en este orden: márgenes e interlineado se compactan, el
+  // contacto pasa junto al botón, el título sube sobre la parte fundida de
+  // las fotos (como en los Hero) y, al final, se reduce hasta 85%
+  // conservando su proporción. Si sobra, primero se da aire y lo demás lo
+  // ocupan las fotos: nunca queda una franja vacía del color de fondo. Si
+  // aun así no cabe, las fotos ceden lo necesario (el editor lo avisa).
+  let adLay = null;
+  if(adAD && !panelIzqW){
+    const fondo = H - margenInf;
+    const P0 = Math.round(H * fmmAltoFotosAD(adAD));
+    const gaps = [px(40), lineasDesc.length ? px(28) : 0, n ? px(64) : 0, conCta ? px(36) : 0];
+    const sumG = gaps.reduce((a, b) => a + b, 0);
+    const lhBase = lhF;
+    const t0 = fit.t;
+    let t = t0, f = 1, solape = 0;
+    const renglones = fit.r1.length + escala2 * fit.r2.length;
+    const altoTit = () => t * lhF * renglones;
+    const alto = () => altoTit() + altoDesc + altoBen + (ctaG ? ctaG.altoTotal : 0) + sumG * f - solape;
+    const libre = fondo - P0;
+    const solapeHasta = maxS => { solape = Math.max(solape, Math.min(maxS, solape + alto() - libre)); };
+    for(let paso = 1; alto() > libre && paso <= 20; paso++){ f = 1 - 0.55 * paso / 20; lhF = lhBase - 0.08 * paso / 20; }
+    if(alto() > libre && ctaG && !ctaG.lado){
+      const lado = homeCtaMedir(ctx, ctaG.texto, ctaG.contacto, ctaG.e, "lado", W - 2*M);
+      if(lado.lado) ctaG = lado;
+    }
+    if(alto() > libre) solapeHasta(gaps[0] * f + altoTit() * 0.6);
+    while(alto() > libre && t > Math.round(t0 * 0.85)) t -= 2;
+    if(alto() > libre) solapeHasta(gaps[0] * f + altoTit());
+    if(alto() < libre && f >= 1) f = Math.min(1.6, 1 + (libre - alto()) / Math.max(1, sumG));
+    const P = Math.min(fondo - alto(), fondo);
+    adAD._altoReal = P / H;
+    let y = P + gaps[0] * f - solape;
+    adLay = { P, yTexto: y, solape: Math.max(0, solape - gaps[0] * f) };
+    y += t * lhF * renglones;
+    if(lineasDesc.length){ y += gaps[1] * f; descTop = y; y += altoDesc; }
+    if(n){ y += gaps[2] * f; benTop = y; lineaBenY = benTop - gaps[2] * f * 0.45; y += altoBen; }
+    if(ctaG){ y += gaps[3] * f; adLay.ctaY = y; }
+    fit = { t, r1: fit.r1, r2: fit.r2 };
+  }
   const tam = fit.t, renglones1 = fit.r1, renglones2 = fit.r2;
   if(conTracking) ctx.letterSpacing = "0px";
   const lhTitulo = tam * lhF;
-  const yTexto = yTextoDe(fit);
+  const yTexto = adLay ? adLay.yTexto : yTextoDe(fit);
   // Panel lateral: título y descripción se centran en el espacio libre
   // entre el logo y los beneficios (que quedan anclados abajo), en lugar de
   // quedar pegados abajo con un hueco grande bajo el logo.
@@ -29256,7 +29649,7 @@ function fmmDrawPresentacionServicio(ctx, W, H, st, opciones){
     ctx.fillRect(0, 0, W, H);
     // Abajo: las fotos llegan hasta 40px arriba del título. Izquierda: las
     // fotos ocupan todo lo que queda a la derecha del panel de texto.
-    const fotosAbajo = Math.round(yTexto - px(40));
+    const fotosAbajo = Math.round(adLay ? adLay.P : yTexto - px(40));
     const zona = panelIzqW ? { x: panelIzqW, y: 0, w: W - panelIzqW, h: H } : { x: 0, y: 0, w: W, h: fotosAbajo };
     celdasAD = fmmDibujarFotosAntesDespues(ctx, adAD, zona, px(8), px(14), W, H);
     // Panel lateral: corte limpio entre el panel y las fotos (esquinas
@@ -29264,10 +29657,14 @@ function fmmDrawPresentacionServicio(ctx, W, H, st, opciones){
     if(!panelIzqW){
       // Fundido proporcional a la foto de abajo: con fotos una sobre otra y
       // todo el contenido activo, 170px taparían casi media foto DESPUÉS.
-      const fundido = Math.min(px(170), Math.round(celdasAD.despues.h * 0.35));
+      // Si el título sube sobre las fotos (adLay.solape), el fundido empieza
+      // más arriba y ya va al 88% donde arranca el texto.
+      const solape = adLay ? adLay.solape : 0;
+      const fundido = Math.min(px(170), Math.round(celdasAD.despues.h * 0.35)) + solape;
       celdasAD.fundido = fundido;
       const g = ctx.createLinearGradient(0, fotosAbajo - fundido, 0, fotosAbajo);
       g.addColorStop(0, fmmRgba(pal.oscuro, 0));
+      if(solape) g.addColorStop(1 - solape / fundido, fmmRgba(pal.oscuro, alfa(0.88)));
       g.addColorStop(1, fmmRgba(pal.oscuro, alfa(1)));
       ctx.fillStyle = g;
       ctx.fillRect(0, fotosAbajo - fundido, W, fundido);
@@ -29344,9 +29741,9 @@ function fmmDrawPresentacionServicio(ctx, W, H, st, opciones){
 
   // Sello "Cotización sin costo" (anuncios): la misma pastilla terracota de
   // los Hero (fehDrawPill), arriba a la derecha y centrada con el logo.
-  const SELLO_TXT = "Cotización sin costo", SELLO_FONT = '700 22px "Inter"';
+  const SELLO_TXT = ad ? (ad.sello == null ? HOME_SELLO_DEFAULT : String(ad.sello)).trim() : "", SELLO_FONT = '700 22px "Inter"';
   let anchoSello = 0;
-  if(ad && !adAD && ad.mostrarSello !== false){
+  if(ad && ad.mostrarSello !== false && SELLO_TXT){
     ctx.font = SELLO_FONT;
     anchoSello = ctx.measureText(SELLO_TXT).width + 44;
   }
@@ -29431,21 +29828,9 @@ function fmmDrawPresentacionServicio(ctx, W, H, st, opciones){
     }
   });
 
-  // Botón CTA del anuncio (el mismo de los Hero: fehDrawCTAButton), al pie.
-  if(conCta){
-    const textoCta = (ad.cta || "").trim() || "Cotiza por WhatsApp";
-    // En la columna de Antes/Después a la izquierda el botón se reduce para
-    // no salirse del panel y tapar las fotos.
-    ctx.font = '700 34px "Inter"';
-    const anchoCta = 90 + ctx.measureText(textoCta).width + 52;
-    const escCta = panelIzqW ? Math.min(1, maxTextoW / anchoCta) : 1;
-    if(escCta < 1){
-      ctx.save();
-      ctx.translate(M, H - margenInf); ctx.scale(escCta, escCta);
-      fehDrawCTAButton(ctx, 0, 0, textoCta);
-      ctx.restore();
-    } else fehDrawCTAButton(ctx, M, H - margenInf, textoCta);
-  }
+  // Llamada a la acción del anuncio, al pie. En la columna de Antes/Después
+  // a la izquierda se reduce para no salirse del panel (homeCtaMedir).
+  if(conCta) homeDibujarCTA(ctx, M, adLay && adLay.ctaY != null ? adLay.ctaY : H - margenInf - ctaG.altoTotal, ctaG);
 
   ctx.save();
   if(subirPanel) ctx.translate(0, -subirPanel);
@@ -29578,19 +29963,20 @@ function fmmEstadoAnuncio(t){
     titulo1: sv.titulo1, titulo2: sv.titulo2, descripcion: sv.descripcion,
   });
   st.beneficios = sv.beneficios.map(b => ({ texto:b.texto, icono:b.icono, propio:null }));
-  st.anuncio = { servicio: sv.id, cta: "Cotiza por WhatsApp", mostrarCta: true, mostrarSello: true };
+  st.anuncio = { servicio: sv.id, cta: HOME_CTA_DEFAULT, mostrarCta: true, mostrarSello: true, sello: HOME_SELLO_DEFAULT, mostrarContacto: true, contacto: null };
   if(t && t.modo === "antesDespues"){
-    // Por defecto solo el título (y el sello); descripción, beneficios y
-    // botón quedan apagados con su interruptor.
+    // Por defecto: título, 2 chips de confianza y llamada a la acción; la
+    // descripción y el sello quedan apagados con su interruptor.
     st.values.titulo1 = "De grietas a";
     st.values.titulo2 = "banqueta nueva";
-    st.anuncio.mostrarCta = false;
     st.anuncio.mostrarSello = false;
+    st.beneficios = FMM_CHIPS_AD_DEFAULT.map(b => ({ texto:b.texto, icono:b.icono, propio:null }));
     st.antesDespues = {
       orientacion: "vertical", orientacionManual: false,
       fotos: { antes: null, despues: null },
       offsets: { antes: encNuevo(FEH_ZOOM_INICIAL), despues: encNuevo(FEH_ZOOM_INICIAL) },
-      mostrarDesc: false, mostrarBen: false,
+      altoFotos: FMM_ALTO_FOTOS_AD.defecto,
+      mostrarDesc: false, mostrarBen: true,
       mostrarEtiquetas: true, mostrarFlecha: true,
       tituloGirado: "",
     };
@@ -29604,6 +29990,7 @@ function fmmAbrirAnuncio(id){
   const t = fmmPlantilla(id);
   if(!t || !t.editor) return;
   fmmInicializar();
+  homeContactoCargar();
   vplPausar("fmm-canvas");
   if(!_fmmModoAnuncio) _fmmEstadoMultimarca = FMM;
   _fmmModoAnuncio = true;
@@ -29769,6 +30156,20 @@ function fmmRenderIconoBeneficio(i){
 function fmmRenderBeneficios(){
   const cont = document.getElementById("fmm-beneficios");
   if(!cont) return;
+  // Antes / Después: 2 chips fijos con texto opcional (vacío = no se muestra).
+  if(FMM.antesDespues){
+    while(FMM.beneficios.length < FMM_MAX_CHIPS_AD) FMM.beneficios.push({ texto:"", icono:"check-circle", propio:null });
+    cont.innerHTML = FMM.beneficios.slice(0, FMM_MAX_CHIPS_AD).map((bf, i) =>
+      '<div class="fmm-ben" data-fmm-ben="'+i+'">'
+        +'<div class="fmm-ben-head"><span class="feh-ctrl-label">Chip '+(i+1)+' (opcional)</span>'
+          +'<button type="button" class="fmm-link" data-fmm-quitar-chip="'+i+'" onclick="fmmQuitarChipAD('+i+')">Quitar</button>'
+        +'</div>'
+        +'<input type="text" class="feh-input" data-fmm-ben-texto="'+i+'" maxlength="40" placeholder="Vacío = no se muestra" value="'+escapeHtml(bf.texto||"")+'" oninput="fmmSetTextoBeneficio('+i+',this.value)">'
+        +'<div class="fmm-ben-icono" id="fmm-ben-icono-'+i+'">'+fmmHtmlIconoBeneficio(i, false)+'</div>'
+      +'</div>'
+    ).join("");
+    return;
+  }
   const n = FMM.beneficios.length;
   cont.innerHTML = FMM.beneficios.map((bf, i) =>
     '<div class="fmm-ben" data-fmm-ben="'+i+'">'
@@ -29881,14 +30282,10 @@ function fmmRenderForm(){
         +'</div>'
       : '')
     +fmmCampo("textoLogo", "Texto junto al logo (opcional)")
-    +(ad && !adAD
-      ? '<div class="feh-ctrl-group"><label class="feh-ctrl-label">Sello y botón del anuncio</label>'
-          +'<label class="feh-check-row"><input type="checkbox" data-fmm-sello'+(ad.mostrarSello !== false ? " checked" : "")+' onchange="fmmSetAnuncio(\'mostrarSello\',this.checked)"> Mostrar sello "Cotización sin costo"</label>'
-          +'<label class="feh-check-row"><input type="checkbox" data-fmm-cta-mostrar'+(ad.mostrarCta !== false ? " checked" : "")+' onchange="fmmSetAnuncio(\'mostrarCta\',this.checked)"> Mostrar botón</label>'
-          +'<label class="feh-ctrl-label" style="margin-top:8px;">Texto del botón</label>'
-          +'<input type="text" class="feh-input" data-fmm-cta maxlength="40" value="'+escapeHtml(ad.cta || "")+'" oninput="fmmSetAnuncio(\'cta\',this.value)">'
-        +'</div>'
-      : ad ? '' : '<div class="feh-ctrl-group"><label class="feh-ctrl-label">Servicio</label><div id="fmm-presets">'+fmmHtmlPresets()+'</div></div>')
+    +(ad
+      ? homeSelloControlesHtml("fmmSetAnuncio('mostrarSello',this.checked)", "fmmSetAnuncio('sello',this.value)", ad.mostrarSello !== false, ad.sello == null ? HOME_SELLO_DEFAULT : ad.sello)
+        + homeCtaControlesHtml("fmm", { mostrar: ad.mostrarCta !== false, texto: ad.cta || "", mostrarContacto: ad.mostrarContacto, contacto: ad.contacto == null ? null : ad.contacto })
+      : '<div class="feh-ctrl-group"><label class="feh-ctrl-label">Servicio</label><div id="fmm-presets">'+fmmHtmlPresets()+'</div></div>')
     +fmmCampo("titulo1", "Título — línea 1")
     +fmmCampo("titulo2", "Título — línea 2 (color de acento)")
     +(adAD
@@ -29900,7 +30297,10 @@ function fmmRenderForm(){
     +(adAD
       ? '<div class="feh-ctrl-group"><label class="feh-ctrl-label">Contenido opcional</label>'
           +'<label class="feh-check-row"><input type="checkbox" data-fmm-mostrar-desc'+(adAD.mostrarDesc?" checked":"")+' onchange="fmmSetMostrarAD(\'mostrarDesc\',this.checked)"> Mostrar descripción</label>'
-          +'<label class="feh-check-row"><input type="checkbox" data-fmm-mostrar-ben'+(adAD.mostrarBen?" checked":"")+' onchange="fmmSetMostrarAD(\'mostrarBen\',this.checked)"> Mostrar beneficios con íconos</label>'
+        +'</div>'
+        +'<div class="feh-ctrl-group" id="fmm-alto-fotos-grupo"'+(FMM.degradado === "izquierda" ? ' style="display:none;"' : '')+'><label class="feh-ctrl-label">Altura de las fotos · <span id="fmm-alto-fotos-valor">'+Math.round(fmmAltoFotosAD(adAD)*100)+'%</span></label>'
+          +'<input type="range" class="feh-range" id="fmm-alto-fotos" min="'+Math.round(FMM_ALTO_FOTOS_AD.min*100)+'" max="'+Math.round(FMM_ALTO_FOTOS_AD.max*100)+'" value="'+Math.round(fmmAltoFotosAD(adAD)*100)+'" oninput="fmmSetAltoFotosAD(this.value/100)">'
+          +'<div class="feh-hint">Más alto = fotos más grandes; el texto, los chips y la llamada a la acción se compactan abajo. Si sobra espacio, lo ocupan las fotos.</div>'
         +'</div>'
         +'<div class="feh-ctrl-group"><label class="feh-ctrl-label">Antes / Después</label>'
           +'<label class="feh-check-row"><input type="checkbox" data-fmm-mostrar-etiquetas'+(adAD.mostrarEtiquetas!==false?" checked":"")+' onchange="fmmSetVisibleAD(\'mostrarEtiquetas\',this.checked)"> Mostrar etiquetas ANTES / DESPUÉS</label>'
@@ -29910,7 +30310,7 @@ function fmmRenderForm(){
     +'<div id="fmm-ad-bloque-desc"'+(adAD && !adAD.mostrarDesc ? ' style="display:none;"' : '')+'>'
       +fmmCampo("descripcion", "Descripción (2 a 3 líneas)", true)
     +'</div>'
-    +'<div id="fmm-ad-bloque-ben"'+(adAD && !adAD.mostrarBen ? ' style="display:none;"' : '')+'>'
+    +'<div id="fmm-ad-bloque-ben">'
     +'<div class="feh-ctrl-group"><label class="feh-ctrl-label">Estilo de ícono</label>'
       +fmmPills("estilo-icono", FMM_ESTILOS_ICONO, FMM.estiloIcono, "fmmSetEstiloIcono")
     +'</div>'
@@ -29920,7 +30320,7 @@ function fmmRenderForm(){
     +'<div class="feh-ctrl-group"><label class="feh-ctrl-label">Disposición de beneficios</label>'
       +fmmPills("layout-ben", FMM_LAYOUTS_BEN, FMM.layoutBen, "fmmSetLayoutBen")
     +'</div>'
-    +'<div class="feh-ctrl-group"><label class="feh-ctrl-label">Beneficios (2 a 4)</label><div id="fmm-beneficios"></div></div>'
+    +'<div class="feh-ctrl-group"><label class="feh-ctrl-label">'+(adAD ? 'Chips de confianza (0, 1 o 2)' : 'Beneficios (2 a 4)')+'</label><div id="fmm-beneficios"></div></div>'
     +'</div>'
     +'<div class="feh-actions">'
       +(ad
@@ -29972,6 +30372,7 @@ function fmmSetOrientacionAD(o){
   if(!FMM.degradadoManual){
     FMM.degradado = fmmDegradadoSugerido(ad.orientacion);
     fmmActivarPill("degradado", FMM.degradado);
+    fmmSincronizarAltoFotosUI();
   }
   fmmActivarPill("orientacion", ad.orientacion);
   fmmRenderPreview();
@@ -29982,6 +30383,34 @@ function fmmSetTituloGiradoAD(giro){
   if(!ad) return;
   ad.tituloGirado = giro === "arriba" || giro === "abajo" ? giro : "";
   fmmActivarPill("titulo-giro", ad.tituloGirado);
+  fmmRenderPreview();
+}
+function fmmSetAltoFotosAD(valor){
+  const ad = FMM && FMM.antesDespues;
+  if(!ad) return;
+  ad.altoFotos = Math.max(FMM_ALTO_FOTOS_AD.min, Math.min(FMM_ALTO_FOTOS_AD.max, +valor || FMM_ALTO_FOTOS_AD.defecto));
+  fmmRenderPreview();
+}
+// Etiqueta del control: la altura pedida y, si el contenido no deja que las
+// fotos lleguen ahí, hasta dónde llegan de verdad.
+function fmmSincronizarAltoFotosEtiqueta(){
+  const ad = FMM && FMM.antesDespues;
+  const et = document.getElementById("fmm-alto-fotos-valor");
+  if(!ad || !et) return;
+  const pedido = Math.round(fmmAltoFotosAD(ad) * 100);
+  const real = ad._altoReal ? Math.round(ad._altoReal * 100) : pedido;
+  et.textContent = pedido + "%" + (real < pedido - 1 ? " (con este texto llegan a " + real + "%)" : "");
+}
+// La altura de las fotos solo aplica con las fotos arriba (degradado desde abajo).
+function fmmSincronizarAltoFotosUI(){
+  const g = document.getElementById("fmm-alto-fotos-grupo");
+  if(g) g.style.display = FMM && FMM.degradado === "izquierda" ? "none" : "";
+}
+function fmmQuitarChipAD(i){
+  if(!FMM || !FMM.antesDespues || !FMM.beneficios[i]) return;
+  FMM.beneficios[i].texto = "";
+  const inp = document.querySelector('[data-fmm-ben-texto="'+i+'"]');
+  if(inp) inp.value = "";
   fmmRenderPreview();
 }
 function fmmSetVisibleAD(clave, valor){
@@ -30034,6 +30463,7 @@ function fmmSetDegradado(dir){
   FMM.degradadoManual = true;
   FMM.degradado = dir === "izquierda" ? "izquierda" : "abajo";
   fmmActivarPill("degradado", FMM.degradado);
+  fmmSincronizarAltoFotosUI();
   fmmRenderPreview();
 }
 function fmmSetZonaSticker(valor){
@@ -30314,6 +30744,7 @@ function fmmRenderPreview(){
   encInicioCuadro(canvas);
   fmmDrawPresentacionServicio(ctx, t.w, t.h, FMM, { guias: true });
   encFinCuadro(canvas);
+  fmmSincronizarAltoFotosEtiqueta();
 }
 encRegistrarEditor("fmm-canvas", {
   render: fmmRenderPreview,
@@ -30379,6 +30810,8 @@ window.fmmSetDegradado = fmmSetDegradado;
 window.fmmSetOrientacionAD = fmmSetOrientacionAD;
 window.fmmSetZonaSticker = fmmSetZonaSticker;
 window.fmmSetVisibleAD = fmmSetVisibleAD;
+window.fmmSetAltoFotosAD = fmmSetAltoFotosAD;
+window.fmmQuitarChipAD = fmmQuitarChipAD;
 window.fmmSetTituloGiradoAD = fmmSetTituloGiradoAD;
 window.fmmSetMostrarAD = fmmSetMostrarAD;
 window.fmmCargarFotoAD = fmmCargarFotoAD;
@@ -34216,6 +34649,8 @@ function bceCalGenerarPost(i){
     Object.assign(FEH.values, entry.borrador.valores);
     if(typeof entry.borrador.showBadge === "boolean") FEH.showBadge = entry.borrador.showBadge;
     if(typeof entry.borrador.showAviso === "boolean") FEH.showAviso = entry.borrador.showAviso;
+    if(typeof entry.borrador.showCta === "boolean") FEH.showCta = entry.borrador.showCta;
+    if(typeof entry.borrador.showContacto === "boolean") FEH.showContacto = entry.borrador.showContacto;
     fehSincronizarCamposUI();
   }
   fehActualizarBannerBorrador();
