@@ -15479,10 +15479,10 @@ window.vistaPreviaPdfCot = vistaPreviaPdfCot;
 
 async function guardarYVerCot(){
   // Abrir ventana SINCRÓNICAMENTE antes del await — único momento permitido
-  var esIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)&&!window.MSStream;
+  var esIOS=_pdfEsIOS();
   var esSafari=/^((?!chrome|android).)*safari/i.test(navigator.userAgent);
   var winRef=null;
-  if(!esIOS&&!esSafari){
+  if(esIOS || !esSafari){
     winRef=window.open('','_blank');
     if(winRef) winRef.document.write('<html><head><title>Generando...</title></head><body style="background:#0B1F3A;display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;"><p style="color:rgba(255,255,255,.5);font-size:14px;">Generando cotización...</p></body></html>');
   }
@@ -16186,8 +16186,14 @@ function _inyectarPdf(htmlStr, title, winRef){
     return;
   }
 
+  // iPhone / iPad: el documento se imprime como página propia, con ancho A4
+  // fijo (ver _pdfSalidaMovil) — nunca como iframe dentro del CRM.
+  if(_pdfEsIOS()){
+    _pdfSalidaMovil(htmlStr, title, winRef);
+    return;
+  }
   if(isIOS || isSafari){
-    // iOS/Mac Safari: iframe en la misma página
+    // Safari de Mac: iframe en la misma página
     var oldFr = document.getElementById('_pdfframe');
     if(oldFr) oldFr.remove();
     var fr = document.createElement('iframe');
@@ -16229,6 +16235,216 @@ function _inyectarPdf(htmlStr, title, winRef){
     }, 1400);
   }
 }
+
+// ═══════════════════════════════════════════════════════════════
+// ─── PDF DE COTIZACIÓN EN iPHONE / iPAD ────────────────────────
+// ═══════════════════════════════════════════════════════════════
+// Safari de iOS no imprime un iframe: imprime la página que lo contiene
+// (el CRM completo, con su "✕ Cerrar"), al ancho del celular y solo lo que
+// cabe en pantalla. Por eso aquí el documento SIEMPRE se imprime como página
+// propia (ventana nueva) y con ancho A4 fijo, independiente del celular:
+//  · _pdfDocA4(): viewport width=794, contenedor de 794 px, sin barra de
+//    botones, @page A4 sin márgenes y filas de tabla que no se parten.
+//  · La ventana se abre en el mismo toque (como en computadora); el
+//    documento espera fuentes, logos y foto de portada antes de print().
+//  · En el CRM queda un panel con "Imprimir / Guardar como PDF" (otra vez,
+//    con un toque nuevo si el navegador bloqueó la ventana) y "Compartir
+//    PDF" (archivo generado sin el diálogo de impresión).
+// En computadora no se usa nada de esto: sigue el flujo de siempre.
+const PDF_A4_ANCHO = 794, PDF_A4_ALTO = 1123;   // A4 a 96 dpi
+const PDF_LIB_HTML2CANVAS = "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js";
+const PDF_LIB_JSPDF = "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
+
+function _pdfEsIOS(){
+  const ua = navigator.userAgent || "";
+  // iPadOS se presenta como Mac: se reconoce por la pantalla táctil.
+  return (/iPad|iPhone|iPod/.test(ua) && !window.MSStream) || (/Macintosh/.test(ua) && (navigator.maxTouchPoints || 0) > 1);
+}
+
+// Documento del PDF con ancho A4 fijo, listo para imprimirse solo.
+function _pdfDocA4(html){
+  let h = String(html || "");
+  h = h.replace(/<meta[^>]+name=["']viewport["'][^>]*>/ig, "");
+  h = h.replace(/<head>/i, '<head><meta name="viewport" content="width=' + PDF_A4_ANCHO + '">');
+  // Barra "Imprimir / Guardar PDF · Cerrar" del PDF Premium: aquí no va.
+  h = h.replace(/<div class="toolbar">[\s\S]*?<\/div>(?=<div id="doc">)/, "");
+  const css = '<style id="pdf-a4">'
+    + 'html,body{width:' + PDF_A4_ANCHO + 'px!important;min-width:' + PDF_A4_ANCHO + 'px!important;max-width:' + PDF_A4_ANCHO + 'px!important;margin:0!important;}'
+    + '.doc,#doc{width:' + PDF_A4_ANCHO + 'px!important;max-width:' + PDF_A4_ANCHO + 'px!important;margin:0!important;padding-top:0!important;}'
+    + '.toolbar,.no-print,button{display:none!important;}'
+    + 'tr{break-inside:avoid;page-break-inside:avoid;}thead{display:table-header-group;}'
+    + '@page{size:A4;margin:0;}'
+    + '@media print{html,body{background:#fff!important;}.toolbar,.no-print,button{display:none!important;}}'
+    + '</style>';
+  return h.replace(/<\/head>/i, css + "</head>");
+}
+
+// Script dentro del documento: espera carga, fuentes e imágenes (también las
+// de fondo, como la foto de portada) y, si se pide, abre la impresión.
+function _pdfScriptListo(autoImprimir){
+  return '<script>(function(){'
+    + 'function img(src){return new Promise(function(r){var i=new Image();i.onload=i.onerror=r;i.src=src;});}'
+    + 'function esperar(){'
+    +   'var ps=[document.fonts&&document.fonts.ready?document.fonts.ready:Promise.resolve()];'
+    +   'Array.prototype.forEach.call(document.images,function(i){if(!i.complete)ps.push(new Promise(function(r){i.onload=i.onerror=r;}));});'
+    +   'Array.prototype.forEach.call(document.querySelectorAll("[style*=background-image]"),function(el){var m=/url\\(["\']?([^"\')]+)["\']?\\)/.exec(el.style.backgroundImage||"");if(m)ps.push(img(m[1]));});'
+    +   'return Promise.race([Promise.all(ps),new Promise(function(r){setTimeout(r,8000);})]);'
+    + '}'
+    // Tras document.write en una ventana ya abierta, "load" puede no llegar
+    // nunca: arranca con lo primero entre load, DOMContentLoaded o 1.5 s.
+    + 'window.__pdfListo=new Promise(function(r){if(document.readyState==="complete")return r();'
+    +   'window.addEventListener("load",r);document.addEventListener("DOMContentLoaded",r);setTimeout(r,1500);})'
+    +   '.then(esperar).then(function(){return new Promise(function(r){setTimeout(r,350);});});'
+    + (autoImprimir ? 'window.__pdfListo.then(function(){window.__pdfImpreso=Date.now();window.print();});' : '')
+    + '})();<\/script>';
+}
+
+function _pdfEscribirEImprimir(w, docA4){
+  w.document.open();
+  w.document.write(docA4.replace(/<\/body>/i, _pdfScriptListo(true) + "</body>"));
+  w.document.close();
+}
+
+// Salida del PDF en iPhone/iPad. winRef: ventana abierta en el toque (o null).
+function _pdfSalidaMovil(htmlStr, title, winRef){
+  const docA4 = _pdfDocA4(htmlStr);
+  let abierta = false;
+  if(winRef && !winRef.closed){
+    try{ _pdfEscribirEImprimir(winRef, docA4); abierta = true; }catch(e){ console.warn("[PDF] No se pudo escribir en la ventana:", e); }
+  }
+  _pdfPanelMovil(docA4, title, abierta);
+}
+
+function _pdfNombreArchivo(title){
+  return String(title || "Cotizacion").replace(/[\\/:*?"<>|]+/g, "").replace(/\s+/g, " ").trim().slice(0, 90) + ".pdf";
+}
+
+// Panel en el CRM (no forma parte del documento ni de la impresión).
+function _pdfPanelMovil(docA4, title, abierta){
+  const viejo = document.getElementById("pdf-movil-panel");
+  if(viejo) viejo.remove();
+  const puedeCompartir = !!(navigator.share && navigator.canShare);
+  const ov = document.createElement("div");
+  ov.id = "pdf-movil-panel";
+  ov.style.cssText = "position:fixed;inset:0;z-index:12000;background:rgba(11,31,58,.45);display:flex;align-items:flex-end;justify-content:center;";
+  ov.innerHTML = '<div style="background:#fff;width:100%;max-width:480px;border-radius:16px 16px 0 0;padding:18px 18px calc(18px + env(safe-area-inset-bottom,0px));font-family:var(--font);box-shadow:0 -8px 30px rgba(0,0,0,.25);">'
+    + '<div style="font-size:15px;font-weight:800;color:#0B1F3A;margin-bottom:4px;">📄 PDF listo</div>'
+    + '<div style="font-size:12px;color:#5A6270;line-height:1.5;margin-bottom:14px;">'
+      + (abierta ? 'Se abrió en otra pestaña con la vista de impresión (hoja A4 completa). Ahí toca <strong>Compartir → Guardar en Archivos</strong>, o vuelve a imprimir desde aquí.' : 'Toca "Imprimir / Guardar como PDF" para abrir la vista de impresión en hoja A4.')
+    + '</div>'
+    + '<button type="button" data-pdf="imprimir" style="width:100%;background:#7C3AED;color:#fff;border:none;border-radius:12px;padding:13px;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;margin-bottom:8px;">🖨️ Imprimir / Guardar como PDF</button>'
+    + '<button type="button" data-pdf="archivo" style="width:100%;background:#0B1F3A;color:#fff;border:none;border-radius:12px;padding:13px;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;margin-bottom:8px;">' + (puedeCompartir ? '📤 Compartir / Guardar PDF' : '⬇ Descargar PDF') + '</button>'
+    + '<button type="button" data-pdf="cerrar" style="width:100%;background:#F1F5F9;color:#0B1F3A;border:none;border-radius:12px;padding:12px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;">Cerrar</button>'
+  + '</div>';
+  ov.addEventListener("click", e => { if(e.target === ov) ov.remove(); });
+  ov.querySelector('[data-pdf="cerrar"]').onclick = () => ov.remove();
+  ov.querySelector('[data-pdf="imprimir"]').onclick = () => {
+    const w = window.open("", "_blank");   // toque nuevo: el navegador lo permite
+    if(!w){ showToast("⚠️ Permite ventanas emergentes para ver la impresión"); return; }
+    _pdfEscribirEImprimir(w, docA4);
+  };
+  const btnArchivo = ov.querySelector('[data-pdf="archivo"]');
+  btnArchivo.onclick = async () => {
+    const txt = btnArchivo.textContent;
+    btnArchivo.disabled = true; btnArchivo.textContent = "⏳ Generando PDF…";
+    try{
+      const archivo = await _pdfGenerarArchivo(docA4, _pdfNombreArchivo(title));
+      let compartido = false;
+      if(navigator.share && navigator.canShare && navigator.canShare({ files: [archivo] })){
+        try{ await navigator.share({ files: [archivo], title: title }); compartido = true; }
+        catch(e){ if(e && e.name === "AbortError") compartido = true; }
+      }
+      if(!compartido){
+        const url = URL.createObjectURL(archivo);
+        const a = document.createElement("a");
+        a.href = url; a.download = archivo.name;
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 60000);
+      }
+    }catch(e){
+      console.error("[PDF] Error generando el archivo:", e);
+      showToast("⚠️ No se pudo generar el PDF: " + (e && e.message || e));
+    }finally{
+      btnArchivo.disabled = false; btnArchivo.textContent = txt;
+    }
+  };
+  document.body.appendChild(ov);
+}
+
+function _pdfCargarScript(win, url){
+  return new Promise((resolve, reject) => {
+    const s = win.document.createElement("script");
+    s.src = url; s.onload = resolve;
+    s.onerror = () => reject(new Error("No se pudo cargar " + url.split("/").slice(-2).join("/")));
+    win.document.head.appendChild(s);
+  });
+}
+
+// PDF como archivo, sin el diálogo de impresión: cada hoja del documento
+// (794 px de ancho, en un iframe oculto) se pasa a imagen con html2canvas y
+// va en su propia página A4 con jsPDF. Una hoja más alta que A4 (página 1
+// con muchos conceptos) se corta entre filas, nunca a media fila.
+async function _pdfGenerarArchivo(docA4, nombre){
+  if(!window.jspdf) await _pdfCargarScript(window, PDF_LIB_JSPDF);
+  const fr = document.createElement("iframe");
+  fr.setAttribute("aria-hidden", "true");
+  fr.style.cssText = "position:fixed;left:-20000px;top:0;width:" + PDF_A4_ANCHO + "px;height:" + PDF_A4_ALTO + "px;border:0;opacity:0;pointer-events:none;";
+  document.body.appendChild(fr);
+  try{
+    const win = fr.contentWindow, d = fr.contentDocument;
+    d.open(); d.write(docA4.replace(/<\/body>/i, _pdfScriptListo(false) + "</body>")); d.close();
+    await new Promise(r => { if(d.readyState === "complete") r(); else fr.onload = r; });
+    await (win.__pdfListo || Promise.resolve());
+    await _pdfCargarScript(win, PDF_LIB_HTML2CANVAS);
+    const hojas = Array.from(d.querySelectorAll("#doc > .fp-cover, #doc > .fp-page, .doc > .page1, .doc .hoja-cond"));
+    if(!hojas.length) hojas.push(d.querySelector(".doc, #doc") || d.body);
+    const pdf = new window.jspdf.jsPDF({ unit: "mm", format: "a4", orientation: "portrait", compress: true });
+    let primera = true;
+    for(const hoja of hojas){
+      const alto = Math.ceil(hoja.getBoundingClientRect().height);
+      if(alto < 2) continue;
+      const canvas = await win.html2canvas(hoja, { scale: 2, useCORS: true, backgroundColor: "#ffffff", windowWidth: PDF_A4_ANCHO, logging: false });
+      const k = canvas.height / alto;   // px del canvas por px CSS
+      for(const [y0, y1] of _pdfCortes(hoja, alto)){
+        const pag = document.createElement("canvas");
+        pag.width = canvas.width; pag.height = Math.round(PDF_A4_ALTO * k);
+        const cx = pag.getContext("2d");
+        cx.fillStyle = "#ffffff"; cx.fillRect(0, 0, pag.width, pag.height);
+        cx.drawImage(canvas, 0, Math.round(y0 * k), canvas.width, Math.round((y1 - y0) * k), 0, 0, canvas.width, Math.round((y1 - y0) * k));
+        if(!primera) pdf.addPage();
+        pdf.addImage(pag.toDataURL("image/jpeg", 0.92), "JPEG", 0, 0, 210, 297);
+        primera = false;
+      }
+    }
+    return new File([pdf.output("blob")], nombre, { type: "application/pdf" });
+  }finally{
+    fr.remove();
+  }
+}
+
+// Tramos [desde, hasta] de una hoja en páginas A4: si es más alta que A4,
+// corta en el final de una fila de tabla o de un bloque, nunca a la mitad.
+function _pdfCortes(hoja, alto){
+  if(alto <= PDF_A4_ALTO + 2) return [[0, Math.min(alto, PDF_A4_ALTO)]];
+  const top = hoja.getBoundingClientRect().top;
+  const candidatos = Array.from(hoja.querySelectorAll("tr, div")).map(el => {
+    const r = el.getBoundingClientRect();
+    return r.height > 0 ? Math.round(r.bottom - top) : 0;
+  }).filter(y => y > 0 && y < alto).sort((a, b) => a - b);
+  const cortes = [];
+  let desde = 0;
+  while(alto - desde > PDF_A4_ALTO){
+    const limite = desde + PDF_A4_ALTO;
+    let corte = 0;
+    candidatos.forEach(y => { if(y > desde + 200 && y <= limite) corte = y; });
+    if(!corte) corte = limite;
+    cortes.push([desde, corte]);
+    desde = corte;
+  }
+  cortes.push([desde, alto]);
+  return cortes;
+}
+window._pdfSalidaMovil = _pdfSalidaMovil;
 
 // ─── Vista previa visual del PDF (overlay con iframe simulando A4) ───
 function _mostrarPreviewPdf(htmlStr, title){
@@ -35348,10 +35564,10 @@ async function _fpUsarCustom(){
 window._fpUsarCustom = _fpUsarCustom;
 
 async function _guardarYVerCotPremiumConFoto(fotoDataUrl){
-  var esIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)&&!window.MSStream;
+  var esIOS=_pdfEsIOS();
   var esSafari=/^((?!chrome|android).)*safari/i.test(navigator.userAgent);
   var winRef=null;
-  if(!esIOS&&!esSafari){
+  if(esIOS || !esSafari){
     winRef=window.open('','_blank');
     if(winRef) winRef.document.write('<html><head><title>Generando...</title></head><body style="background:#0B1F3A;display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;"><p style="color:rgba(255,255,255,.5);font-size:14px;">Generando cotización premium...</p></body></html>');
   }
@@ -35550,6 +35766,11 @@ function generarPdfCotPremium(cot, winRef, fotoDataUrl){
     + '<div id="doc">' + portada + resumen + servicio + pasos + condiciones + cierre + '</div>'
     + '</body></html>';
 
+  // iPhone / iPad: hoja A4 fija, sin la barra de botones, impresión propia.
+  if(_pdfEsIOS()){
+    _pdfSalidaMovil(htmlDoc, 'Cotización Premium — '+cliente+' — '+(cot.folio||''), winRef);
+    return;
+  }
   if(winRef){
     winRef.document.open(); winRef.document.write(htmlDoc); winRef.document.close();
   } else {
