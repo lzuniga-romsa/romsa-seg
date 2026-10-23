@@ -26836,6 +26836,7 @@ function homeContactoAplicar(c){
   const antes = homeContactoLinea();
   HOME_CONTACTO = { tel: (c.tel || "").trim(), ciudad: (c.ciudad || "").trim() };
   document.querySelectorAll(".home-cta-contacto").forEach(el => { el.textContent = homeContactoLinea() || "sin contacto"; });
+  document.querySelectorAll("[data-home-cta-contacto-input]").forEach(el => { if(!el.dataset.personalizado) el.value = homeContactoLinea(); });
   if(antes === homeContactoLinea()) return;
   if(typeof fehRenderPicker === "function" && _fehInited) fehRenderPicker();
   if(typeof FEH !== "undefined" && FEH && FEH.tplId) fehRenderPreview();
@@ -26889,6 +26890,19 @@ async function homeContactoGuardar(){
 // Feed, 60px de margen.
 const HOME_CTA_TEXTOS = ["Cotiza por WhatsApp", "Cotización sin costo", "Solicita tu cotización"];
 const HOME_CTA_DEFAULT = HOME_CTA_TEXTOS[0];
+// Todas las llamadas a la acción de HOME son opcionales y con texto
+// editable por plantilla: sello, botón, contacto bajo el botón y aviso de
+// pago a meses. Sin valor propio, cada una usa su texto de fábrica (el
+// contacto, el de "⚙️ Contacto"). Texto vacío = no se dibuja.
+const HOME_SELLO_DEFAULT = "Cotización sin costo";
+function homeTexto(st, clave, defecto){
+  const v = st && st.values ? st.values[clave] : undefined;
+  return (v == null ? defecto : String(v)).trim();
+}
+function homeTextoContacto(mostrar, propio){
+  if(mostrar === false) return "";
+  return (propio == null ? homeContactoLinea() : String(propio)).trim();
+}
 // Nunca en textos sugeridos de HOME (manual de marca).
 const HOME_PALABRAS_PROHIBIDAS = ["remodelación", "barato", "oferta", "descuento"];
 const HOME_ZONA_STORY_SUP = 250, HOME_ZONA_STORY_INF = 300, HOME_MARGEN_FEED = 60;
@@ -26965,21 +26979,50 @@ function homeCtaBloque(ctx, W, H, st, opts){
   const story = homeEsHistoria(W, H);
   const x = Math.max(HOME_MARGEN_FEED, opts.x || 0);
   const texto = ((st.values && st.values.cta) || "").trim() || HOME_CTA_DEFAULT;
-  const g = homeCtaMedir(ctx, texto, homeContactoLinea(), opts.escala || (story ? 1.15 : 1), opts.disposicion || "debajo", W - x - HOME_MARGEN_FEED);
+  const g = homeCtaMedir(ctx, texto, homeTextoContacto(st.showContacto, st.values && st.values.contacto), opts.escala || (story ? 1.15 : 1), opts.disposicion || "debajo", W - x - HOME_MARGEN_FEED);
   const bottom = opts.bottom != null ? opts.bottom : homeCtaLimiteInf(W, H, st);
   return { x, top: bottom - g.altoTotal, bottom, g };
 }
 
-// Controles del CTA, iguales en los dos editores (editor: "feh" | "fmm").
-function homeCtaControlesHtml(editor, mostrar, texto){
-  return '<div class="feh-ctrl-group" data-home-cta-grupo="'+editor+'"><label class="feh-ctrl-label">Llamada a la acción</label>'
-    + '<label class="feh-check-row"><input type="checkbox" data-home-cta-mostrar'+(mostrar?" checked":"")+' onchange="homeCtaSetMostrar(\''+editor+'\',this.checked)"> Mostrar llamada a la acción</label>'
+// Controles de la llamada a la acción, iguales en los dos editores
+// (editor: "feh" | "fmm"). cfg: { mostrar, texto, mostrarContacto, contacto }
+// — contacto null = el de "⚙️ Contacto".
+function homeCtaControlesHtml(editor, cfg){
+  const propio = cfg.contacto != null;
+  return '<div class="feh-ctrl-group" data-home-cta-grupo="'+editor+'"><label class="feh-ctrl-label">Botón de llamada a la acción</label>'
+    + '<label class="feh-check-row"><input type="checkbox" data-home-cta-mostrar'+(cfg.mostrar?" checked":"")+' onchange="homeCtaSetMostrar(\''+editor+'\',this.checked)"> Mostrar botón</label>'
     + '<label class="feh-ctrl-label" style="margin-top:8px;">Texto del botón</label>'
-    + '<input type="text" class="feh-input" data-home-cta-texto maxlength="32" value="'+escapeHtml(texto || "")+'" oninput="homeCtaSetTexto(\''+editor+'\',this.value,false)">'
+    + '<input type="text" class="feh-input" data-home-cta-texto maxlength="32" value="'+escapeHtml(cfg.texto || "")+'" oninput="homeCtaSetTexto(\''+editor+'\',this.value,false)">'
     + '<div class="fe-pill-row" style="margin-top:8px;">'
-      + HOME_CTA_TEXTOS.map(t => '<button type="button" class="fe-tpl-btn'+(t === texto ? " active" : "")+'" data-home-cta-atajo="'+escapeHtml(t)+'" onclick="homeCtaSetTexto(\''+editor+'\',this.getAttribute(\'data-home-cta-atajo\'),true)">'+escapeHtml(t)+'</button>').join("")
+      + HOME_CTA_TEXTOS.map(t => '<button type="button" class="fe-tpl-btn'+(t === cfg.texto ? " active" : "")+'" data-home-cta-atajo="'+escapeHtml(t)+'" onclick="homeCtaSetTexto(\''+editor+'\',this.getAttribute(\'data-home-cta-atajo\'),true)">'+escapeHtml(t)+'</button>').join("")
     + '</div>'
-    + '<div class="feh-hint" style="margin-top:8px;">Contacto: <b class="home-cta-contacto">'+escapeHtml(homeContactoLinea() || "sin contacto")+'</b> · <button type="button" class="fmm-link" onclick="homeContactoAbrir()">Cambiar</button></div>'
+    + '<label class="feh-check-row" style="margin-top:10px;"><input type="checkbox" data-home-cta-contacto-mostrar'+(cfg.mostrarContacto !== false?" checked":"")+' onchange="homeCtaSetMostrarContacto(\''+editor+'\',this.checked)"> Mostrar número y ciudad bajo el botón</label>'
+    + '<input type="text" class="feh-input" data-home-cta-contacto-input'+(propio?' data-personalizado="1"':'')+' maxlength="48" value="'+escapeHtml(propio ? cfg.contacto : homeContactoLinea())+'" oninput="homeCtaSetContacto(\''+editor+'\',this.value)">'
+    + '<div class="feh-hint" style="margin-top:6px;">De fábrica: <b class="home-cta-contacto">'+escapeHtml(homeContactoLinea() || "sin contacto")+'</b> · <button type="button" class="fmm-link" onclick="homeCtaRestablecerContacto(\''+editor+'\')">Usar este</button> · <button type="button" class="fmm-link" onclick="homeContactoAbrir()">Cambiar para todo el equipo</button></div>'
+  + '</div>';
+}
+function homeCtaSetMostrarContacto(editor, valor){
+  if(editor === "fmm") fmmSetAnuncio("mostrarContacto", !!valor);
+  else { FEH.showContacto = !!valor; fehRenderPreview(); }
+}
+// Contacto propio de esta pieza (no cambia el de "⚙️ Contacto").
+function homeCtaSetContacto(editor, valor){
+  const inp = document.querySelector('[data-home-cta-grupo="'+editor+'"] [data-home-cta-contacto-input]');
+  if(inp) inp.dataset.personalizado = "1";
+  if(editor === "fmm") fmmSetAnuncio("contacto", valor);
+  else fehSetValor("contacto", valor);
+}
+function homeCtaRestablecerContacto(editor){
+  const inp = document.querySelector('[data-home-cta-grupo="'+editor+'"] [data-home-cta-contacto-input]');
+  if(inp){ delete inp.dataset.personalizado; inp.value = homeContactoLinea(); }
+  if(editor === "fmm") fmmSetAnuncio("contacto", null);
+  else fehSetValor("contacto", null);
+}
+// Sello y aviso (solo FEH; el sello de Anuncios · Servicio vive en fmmRenderForm).
+function homeSelloControlesHtml(onToggle, onTexto, mostrar, texto){
+  return '<div class="feh-ctrl-group" data-home-sello><label class="feh-ctrl-label">Sello</label>'
+    + '<label class="feh-check-row"><input type="checkbox"'+(mostrar?" checked":"")+' onchange="'+onToggle+'"> Mostrar sello</label>'
+    + '<input type="text" class="feh-input" data-home-sello-texto maxlength="32" value="'+escapeHtml(texto)+'" oninput="'+onTexto+'">'
   + '</div>';
 }
 function homeCtaSetMostrar(editor, valor){
@@ -27383,11 +27426,14 @@ function fehElegirPlantilla(id){
   // Cambiar de plantilla conserva las fotos de las ranuras que se llaman
   // igual (antes/después, foto) pero restablece su encuadre.
   const fotosPrevias = (FEH && FEH.photos) || {};
-  FEH = { tplId:id, photos:{}, values:{}, photoOffsets:{}, showBadge:true, showAviso:false, showCta: fehCtaPorDefecto(t) };
+  FEH = { tplId:id, photos:{}, values:{}, photoOffsets:{}, showBadge:true, showAviso:false, showCta: fehCtaPorDefecto(t), showContacto:true };
   // Los campos "WhatsApp" arrancan con el número de Contacto HOME.
   const valorInicial = f => f.key === "tel" ? HOME_CONTACTO.tel : f.default;
   t.fields.forEach(f=>{ FEH.values[f.key] = valorInicial(f); });
   if(FEH.values.cta === undefined) FEH.values.cta = HOME_CTA_DEFAULT;
+  FEH.values.sello = HOME_SELLO_DEFAULT;
+  FEH.values.aviso = HOME_AVISO_TEXT;
+  FEH.values.contacto = null;
   t.photos.forEach(p=>{
     if(fotosPrevias[p.key]){ FEH.photos[p.key] = fotosPrevias[p.key]; FEH.photoOffsets[p.key] = encNuevo(FEH_ZOOM_INICIAL); }
   });
@@ -27416,9 +27462,14 @@ function fehElegirPlantilla(id){
         : '<input type="text" class="feh-input" value="'+escapeHtml(valorInicial(f))+'" oninput="fehSetValor(\''+f.key+'\',this.value)">')
     +'</div>'
   ).join("")
-    + homeCtaControlesHtml("feh", FEH.showCta, FEH.values.cta)
-    + (t.hasPill ? '<label class="feh-check-row"><input type="checkbox" checked onchange="fehSetShowBadge(this.checked)"> Mostrar sello "Cotización sin costo"</label>' : "")
-    + '<label class="feh-check-row"><input type="checkbox" onchange="fehSetShowAviso(this.checked)"> Mostrar aviso de pago a meses</label>';
+    + (t.hasPill ? homeSelloControlesHtml("fehSetShowBadge(this.checked)", "fehSetValor('sello',this.value)", true, FEH.values.sello) : "")
+    + homeCtaControlesHtml("feh", { mostrar: FEH.showCta, texto: FEH.values.cta, mostrarContacto: true, contacto: null })
+    // Los anuncios no dibujan la franja de pago a meses: sin control.
+    + (t.cat === "ads" ? "" :
+      '<div class="feh-ctrl-group" data-home-aviso><label class="feh-ctrl-label">Aviso de pago a meses</label>'
+        + '<label class="feh-check-row"><input type="checkbox" onchange="fehSetShowAviso(this.checked)"> Mostrar aviso</label>'
+        + '<input type="text" class="feh-input" data-home-aviso-texto maxlength="48" value="'+escapeHtml(FEH.values.aviso)+'" oninput="fehSetValor(\'aviso\',this.value)">'
+      + '</div>');
 
   fehActualizarBotonDescarga();
   fehActualizarBannerBorrador();
@@ -27462,6 +27513,13 @@ function fehSincronizarCamposUI(){
   if(avisoCk) avisoCk.checked = !!FEH.showAviso;
   const ctaCk = document.querySelector('#feh-text-fields [data-home-cta-mostrar]');
   if(ctaCk) ctaCk.checked = !!FEH.showCta;
+  const contCk = document.querySelector('#feh-text-fields [data-home-cta-contacto-mostrar]');
+  if(contCk) contCk.checked = FEH.showContacto !== false;
+  const contInp = document.querySelector('#feh-text-fields [data-home-cta-contacto-input]');
+  if(contInp){
+    if(FEH.values.contacto != null){ contInp.value = FEH.values.contacto; contInp.dataset.personalizado = "1"; }
+    else { contInp.value = homeContactoLinea(); delete contInp.dataset.personalizado; }
+  }
   const ctaTxt = document.querySelector('#feh-text-fields [data-home-cta-texto]');
   if(ctaTxt){
     ctaTxt.value = FEH.values.cta || "";
@@ -27497,7 +27555,7 @@ function fehGuardarBorrador(){
     showToast("⚠️ No se pudo guardar: la fecha ya no tiene esa entrada");
     return;
   }
-  entradas[idx].borrador = { valores: {...FEH.values}, showBadge: FEH.showBadge !== false, showAviso: !!FEH.showAviso, showCta: !!FEH.showCta };
+  entradas[idx].borrador = { valores: {...FEH.values}, showBadge: FEH.showBadge !== false, showAviso: !!FEH.showAviso, showCta: !!FEH.showCta, showContacto: FEH.showContacto !== false };
   bceCalGuardar();
   showToast("✅ Borrador guardado — vuelve a esta fecha cuando toque publicar");
 }
@@ -27538,6 +27596,15 @@ function fehActualizarBotonDescarga(){
   btn.title = faltan.length ? "Sube todas las fotos primero" : "";
 }
 
+// Lo que se dibuja: el mismo FEH, con el sello y el aviso apagados si se
+// dejó su texto vacío (así el diseño no reserva espacio para nada).
+function fehEstadoDibujo(){
+  const st = Object.create(FEH);
+  st.showBadge = FEH.showBadge !== false && !!homeTexto(FEH, "sello", HOME_SELLO_DEFAULT);
+  st.showAviso = !!FEH.showAviso && !!homeTexto(FEH, "aviso", HOME_AVISO_TEXT);
+  return st;
+}
+
 function fehRenderPreview(){
   const t = HOME_TEMPLATES.find(x=>x.id===FEH.tplId);
   if(!t) return;
@@ -27547,7 +27614,7 @@ function fehRenderPreview(){
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = "high";
   encInicioCuadro(canvas);
-  t.draw(ctx, t.w, t.h, FEH, t);
+  t.draw(ctx, t.w, t.h, fehEstadoDibujo(), t);
   encFinCuadro(canvas);
   fehGenerateCopy(t, FEH);
 }
@@ -27557,7 +27624,7 @@ encRegistrarEditor("feh-canvas", {
   botonDescarga: "feh-download-btn",
   exportarVideo: {
     tamano: () => { const t = HOME_TEMPLATES.find(x=>x.id===FEH.tplId); return { w: t.w, h: t.h }; },
-    dibujar: (ctx, w, h) => { const t = HOME_TEMPLATES.find(x=>x.id===FEH.tplId); t.draw(ctx, w, h, FEH, t); },
+    dibujar: (ctx, w, h) => { const t = HOME_TEMPLATES.find(x=>x.id===FEH.tplId); t.draw(ctx, w, h, fehEstadoDibujo(), t); },
     nombre: () => "HOME_" + FEH.tplId,
   },
 });
@@ -27661,7 +27728,7 @@ async function fehDescargar(){
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = "high";
   ctx.scale(HOME_EXPORT_SCALE, HOME_EXPORT_SCALE);
-  t.draw(ctx, t.w, t.h, FEH, t);
+  t.draw(ctx, t.w, t.h, fehEstadoDibujo(), t);
   canvas.toBlob((blob)=>{
     if(!blob){ showToast("⚠️ No se pudo generar la imagen"); return; }
     const url = URL.createObjectURL(blob);
@@ -27819,10 +27886,10 @@ function fehTag(ctx, text, x, y, bg, color){
 // no como un aviso suelto.
 const HOME_AVISO_TEXT = "Pregunta por pago a meses con tarjeta";
 const HOME_AVISO_BAND_H = 42;
-function fehDrawAvisoMeses(ctx, W, y, bg, color){
+function fehDrawAvisoMeses(ctx, W, y, bg, color, texto){
   ctx.fillStyle = bg;
   ctx.fillRect(0, y, W, HOME_AVISO_BAND_H);
-  const text = HOME_AVISO_TEXT.toUpperCase();
+  const text = (texto == null ? HOME_AVISO_TEXT : texto).toUpperCase();
   ctx.font = '500 20px "Inter"';
   ctx.fillStyle = color;
   ctx.textBaseline = "middle";
@@ -27845,7 +27912,7 @@ function fehDrawFeedA(ctx, W, H, st){
   ctx.fillStyle = "rgba(11,31,58,.92)"; ctx.fillRect(56, 40, 200, 46);
   fehDrawLogoLockup(ctx, 66, 44, 38, false);
   if(st.showBadge !== false){
-    fehDrawPill(ctx, "Cotización sin costo", W-56, 40, {align:"right", bg:HOME_BRAND.terracota, color:HOME_BRAND.navy, font:'700 22px "Inter"', fontSize:22});
+    fehDrawPill(ctx, homeTexto(st, "sello", HOME_SELLO_DEFAULT), W-56, 40, {align:"right", bg:HOME_BRAND.terracota, color:HOME_BRAND.navy, font:'700 22px "Inter"', fontSize:22});
   }
 
   const lines = fehWrapTitleTokens(ctx, v.titulo||"", W-112, '700 74px "Playfair Display"', 'italic 700 74px "Playfair Display"');
@@ -27868,7 +27935,7 @@ function fehDrawFeedA(ctx, W, H, st){
   if(cta){
     homeDibujarCTA(ctx, cta.x, cta.top, cta.g);
     ctx.fillStyle = HOME_BRAND.terracota; ctx.fillRect(0, H-12, W, 12);
-    if(st.showAviso) fehDrawAvisoMeses(ctx, W, fehAvisoBandY(H, cta.bottom+16), HOME_BRAND.terracota, HOME_BRAND.navy);
+    if(st.showAviso) fehDrawAvisoMeses(ctx, W, fehAvisoBandY(H, cta.bottom+16), HOME_BRAND.terracota, HOME_BRAND.navy, homeTexto(st, "aviso", HOME_AVISO_TEXT));
     return;
   }
 
@@ -27884,7 +27951,7 @@ function fehDrawFeedA(ctx, W, H, st){
 
   ctx.fillStyle = HOME_BRAND.terracota; ctx.fillRect(0, H-12, W, 12);
   if(st.showAviso){
-    fehDrawAvisoMeses(ctx, W, fehAvisoBandY(H, footY+36), HOME_BRAND.terracota, HOME_BRAND.navy);
+    fehDrawAvisoMeses(ctx, W, fehAvisoBandY(H, footY+36), HOME_BRAND.terracota, HOME_BRAND.navy, homeTexto(st, "aviso", HOME_AVISO_TEXT));
   }
 }
 
@@ -27941,7 +28008,7 @@ function fehDrawFeedB(ctx, W, H, st){
       ctx.fillText(v.descripcion, 56, descY);
     }
     homeDibujarCTA(ctx, cta.x, cta.top, cta.g);
-    if(st.showAviso) fehDrawAvisoMeses(ctx, W, fehAvisoBandY(H, cta.bottom+16), HOME_BRAND.terracota, HOME_BRAND.navy);
+    if(st.showAviso) fehDrawAvisoMeses(ctx, W, fehAvisoBandY(H, cta.bottom+16), HOME_BRAND.terracota, HOME_BRAND.navy, homeTexto(st, "aviso", HOME_AVISO_TEXT));
     return;
   }
   const titleBottom = fehDrawTitleLines(ctx, lines, 56, H-260, 80, "#FFFFFF", HOME_BRAND.terracota, '700 80px "Playfair Display"', 'italic 700 80px "Playfair Display"');
@@ -27969,7 +28036,7 @@ function fehDrawFeedB(ctx, W, H, st){
   }
 
   if(st.showAviso){
-    fehDrawAvisoMeses(ctx, W, fehAvisoBandY(H, lineY+36), HOME_BRAND.terracota, HOME_BRAND.navy);
+    fehDrawAvisoMeses(ctx, W, fehAvisoBandY(H, lineY+36), HOME_BRAND.terracota, HOME_BRAND.navy, homeTexto(st, "aviso", HOME_AVISO_TEXT));
   }
 }
 
@@ -27982,7 +28049,7 @@ function fehDrawFeedC(ctx, W, H, st){
   ctx.fillStyle = "rgba(11,31,58,.92)"; ctx.fillRect(56, 40, 200, 46);
   fehDrawLogoLockup(ctx, 66, 44, 38, false);
   if(st.showBadge !== false){
-    fehDrawPill(ctx, "Cotización sin costo", W-56, 40, {align:"right", bg:HOME_BRAND.terracota, color:HOME_BRAND.navy, font:'700 22px "Inter"', fontSize:22});
+    fehDrawPill(ctx, homeTexto(st, "sello", HOME_SELLO_DEFAULT), W-56, 40, {align:"right", bg:HOME_BRAND.terracota, color:HOME_BRAND.navy, font:'700 22px "Inter"', fontSize:22});
   }
 
   let cy = 300;
@@ -28017,11 +28084,12 @@ function fehDrawFeedC(ctx, W, H, st){
   // La barra navy crece hacia arriba cuando el aviso está activo, y el
   // aviso ocupa esa franja nueva — el WhatsApp/ciudad de abajo no se mueven.
   // Con llamada a la acción la barra crece para alojarla (60px de margen abajo).
-  const cta = homeCtaBloque(ctx, W, H, Object.assign({}, st, { showAviso:false }));
+  const stSinAviso = Object.create(st); stSinAviso.showAviso = false;
+  const cta = homeCtaBloque(ctx, W, H, stSinAviso);
   const barH = (cta ? HOME_MARGEN_FEED + cta.g.altoTotal + 34 : 92) + (st.showAviso ? HOME_AVISO_BAND_H : 0);
   ctx.fillStyle = HOME_BRAND.navy; ctx.fillRect(0, H-barH, W, barH);
   if(st.showAviso){
-    fehDrawAvisoMeses(ctx, W, H-barH, HOME_BRAND.terracota, HOME_BRAND.navy);
+    fehDrawAvisoMeses(ctx, W, H-barH, HOME_BRAND.terracota, HOME_BRAND.navy, homeTexto(st, "aviso", HOME_AVISO_TEXT));
   }
   if(cta){
     homeDibujarCTA(ctx, cta.x, cta.top, cta.g);
@@ -28054,7 +28122,7 @@ function fehDrawFeedD(ctx, W, H, st){
   ctx.fillStyle = "rgba(11,31,58,.92)"; ctx.fillRect(56, 40, 200, 46);
   fehDrawLogoLockup(ctx, 66, 44, 38, false);
   if(st.showBadge !== false){
-    fehDrawPill(ctx, "Cotización sin costo", W-56, 40, {align:"right", bg:HOME_BRAND.terracota, color:HOME_BRAND.navy, font:'700 22px "Inter"', fontSize:22});
+    fehDrawPill(ctx, homeTexto(st, "sello", HOME_SELLO_DEFAULT), W-56, 40, {align:"right", bg:HOME_BRAND.terracota, color:HOME_BRAND.navy, font:'700 22px "Inter"', fontSize:22});
   }
 
   // El eslogan puede ocupar 1, 2 o hasta 3 líneas según qué tan largo lo
@@ -28099,7 +28167,7 @@ function fehDrawFeedD(ctx, W, H, st){
   }
 
   if(st.showAviso){
-    fehDrawAvisoMeses(ctx, W, fehAvisoBandY(H, cyMinAviso), HOME_BRAND.terracota, HOME_BRAND.navy);
+    fehDrawAvisoMeses(ctx, W, fehAvisoBandY(H, cyMinAviso), HOME_BRAND.terracota, HOME_BRAND.navy, homeTexto(st, "aviso", HOME_AVISO_TEXT));
   }
 }
 
@@ -28126,7 +28194,7 @@ function fehDrawAdsHero(ctx, W, H, st){
   ctx.fillStyle = "rgba(11,31,58,.92)"; ctx.fillRect(56, logoY, 200, 46);
   fehDrawLogoLockup(ctx, 66, logoY+4, 38, false);
   if(st.showBadge !== false){
-    fehDrawPill(ctx, "Cotización sin costo", W-56, logoY, {align:"right", bg:HOME_BRAND.terracota, color:HOME_BRAND.navy, font:'700 22px "Inter"', fontSize:22});
+    fehDrawPill(ctx, homeTexto(st, "sello", HOME_SELLO_DEFAULT), W-56, logoY, {align:"right", bg:HOME_BRAND.terracota, color:HOME_BRAND.navy, font:'700 22px "Inter"', fontSize:22});
   }
 
   // Anclado desde abajo: la llamada a la acción al pie (fuera de la zona
@@ -28190,7 +28258,7 @@ function fehDrawAdsAntesDespues(ctx, W, H, st){
   ctx.fillStyle = "rgba(11,31,58,.92)"; ctx.fillRect(56, logoY, 200, 46);
   fehDrawLogoLockup(ctx, 66, logoY+4, 38, false);
   if(st.showBadge !== false){
-    fehDrawPill(ctx, "Cotización sin costo", W-56, logoY, {align:"right", bg:HOME_BRAND.terracota, color:HOME_BRAND.navy, font:'700 22px "Inter"', fontSize:22});
+    fehDrawPill(ctx, homeTexto(st, "sello", HOME_SELLO_DEFAULT), W-56, logoY, {align:"right", bg:HOME_BRAND.terracota, color:HOME_BRAND.navy, font:'700 22px "Inter"', fontSize:22});
   }
 
   const kickerFont = isStory ? 26 : 22;
@@ -28256,7 +28324,7 @@ function fehDrawStoryA(ctx, W, H, st){
   if(cta) homeDibujarCTA(ctx, cta.x, cta.top, cta.g);
 
   if(st.showAviso){
-    fehDrawAvisoMeses(ctx, W, fehAvisoBandY(H, cta ? cta.bottom+36 : cy+36), HOME_BRAND.terracota, HOME_BRAND.navy);
+    fehDrawAvisoMeses(ctx, W, fehAvisoBandY(H, cta ? cta.bottom+36 : cy+36), HOME_BRAND.terracota, HOME_BRAND.navy, homeTexto(st, "aviso", HOME_AVISO_TEXT));
   }
 }
 
@@ -28287,7 +28355,7 @@ function fehDrawStoryB(ctx, W, H, st){
   cy = fehDrawTitleLines(ctx, lines, 64, cy+46, 78, "#FFFFFF", HOME_BRAND.terracota, '700 76px "Playfair Display"', 'italic 700 76px "Playfair Display"');
   if(cta){
     homeDibujarCTA(ctx, cta.x, cta.top, cta.g);
-    if(st.showAviso) fehDrawAvisoMeses(ctx, W, fehAvisoBandY(H, cta.bottom+36), HOME_BRAND.terracota, HOME_BRAND.navy);
+    if(st.showAviso) fehDrawAvisoMeses(ctx, W, fehAvisoBandY(H, cta.bottom+36), HOME_BRAND.terracota, HOME_BRAND.navy, homeTexto(st, "aviso", HOME_AVISO_TEXT));
     return;
   }
   // Espacio suficiente entre la última línea del título y el WhatsApp: la
@@ -28298,7 +28366,7 @@ function fehDrawStoryB(ctx, W, H, st){
   ctx.fillText("WhatsApp "+(v.tel||""), 64, cy);
 
   if(st.showAviso){
-    fehDrawAvisoMeses(ctx, W, fehAvisoBandY(H, cy+36), HOME_BRAND.terracota, HOME_BRAND.navy);
+    fehDrawAvisoMeses(ctx, W, fehAvisoBandY(H, cy+36), HOME_BRAND.terracota, HOME_BRAND.navy, homeTexto(st, "aviso", HOME_AVISO_TEXT));
   }
 }
 
@@ -28329,7 +28397,7 @@ function fehDrawStoryC(ctx, W, H, st){
   if(cta) homeDibujarCTA(ctx, cta.x, cta.top, cta.g);
 
   if(st.showAviso){
-    fehDrawAvisoMeses(ctx, W, fehAvisoBandY(H, cta ? cta.bottom+36 : titleBottomSC+36), HOME_BRAND.terracota, HOME_BRAND.navy);
+    fehDrawAvisoMeses(ctx, W, fehAvisoBandY(H, cta ? cta.bottom+36 : titleBottomSC+36), HOME_BRAND.terracota, HOME_BRAND.navy, homeTexto(st, "aviso", HOME_AVISO_TEXT));
   }
 }
 
@@ -28349,6 +28417,9 @@ window.homeContactoAbrir = homeContactoAbrir;
 window.homeContactoGuardar = homeContactoGuardar;
 window.homeCtaSetMostrar = homeCtaSetMostrar;
 window.homeCtaSetTexto = homeCtaSetTexto;
+window.homeCtaSetMostrarContacto = homeCtaSetMostrarContacto;
+window.homeCtaSetContacto = homeCtaSetContacto;
+window.homeCtaRestablecerContacto = homeCtaRestablecerContacto;
 
 
 // ══════════════════════════════════════════════════════════════
@@ -29408,7 +29479,7 @@ function fmmDrawPresentacionServicio(ctx, W, H, st, opciones){
   // Antes/Después la trae encendida de fábrica; sin sello.
   const conCta = !!(ad && ad.mostrarCta !== false);
   let ctaG = conCta
-    ? homeCtaMedir(ctx, (ad.cta || "").trim() || HOME_CTA_DEFAULT, homeContactoLinea(), px(1) * (zonaStory ? 1.15 : 1), "debajo", panelIzqW ? maxTextoW : W - 2*M)
+    ? homeCtaMedir(ctx, (ad.cta || "").trim() || HOME_CTA_DEFAULT, homeTextoContacto(ad.mostrarContacto, ad.contacto), px(1) * (zonaStory ? 1.15 : 1), "debajo", panelIzqW ? maxTextoW : W - 2*M)
     : null;
   // Antes/Después: espaciados más compactos entre bloques, para dejarle
   // el mayor espacio posible a las dos fotos.
@@ -29670,9 +29741,9 @@ function fmmDrawPresentacionServicio(ctx, W, H, st, opciones){
 
   // Sello "Cotización sin costo" (anuncios): la misma pastilla terracota de
   // los Hero (fehDrawPill), arriba a la derecha y centrada con el logo.
-  const SELLO_TXT = "Cotización sin costo", SELLO_FONT = '700 22px "Inter"';
+  const SELLO_TXT = ad ? (ad.sello == null ? HOME_SELLO_DEFAULT : String(ad.sello)).trim() : "", SELLO_FONT = '700 22px "Inter"';
   let anchoSello = 0;
-  if(ad && !adAD && ad.mostrarSello !== false){
+  if(ad && ad.mostrarSello !== false && SELLO_TXT){
     ctx.font = SELLO_FONT;
     anchoSello = ctx.measureText(SELLO_TXT).width + 44;
   }
@@ -29892,10 +29963,10 @@ function fmmEstadoAnuncio(t){
     titulo1: sv.titulo1, titulo2: sv.titulo2, descripcion: sv.descripcion,
   });
   st.beneficios = sv.beneficios.map(b => ({ texto:b.texto, icono:b.icono, propio:null }));
-  st.anuncio = { servicio: sv.id, cta: HOME_CTA_DEFAULT, mostrarCta: true, mostrarSello: true };
+  st.anuncio = { servicio: sv.id, cta: HOME_CTA_DEFAULT, mostrarCta: true, mostrarSello: true, sello: HOME_SELLO_DEFAULT, mostrarContacto: true, contacto: null };
   if(t && t.modo === "antesDespues"){
     // Por defecto: título, 2 chips de confianza y llamada a la acción; la
-    // descripción queda apagada con su interruptor y no lleva sello.
+    // descripción y el sello quedan apagados con su interruptor.
     st.values.titulo1 = "De grietas a";
     st.values.titulo2 = "banqueta nueva";
     st.anuncio.mostrarSello = false;
@@ -30212,10 +30283,8 @@ function fmmRenderForm(){
       : '')
     +fmmCampo("textoLogo", "Texto junto al logo (opcional)")
     +(ad
-      ? (adAD ? '' : '<div class="feh-ctrl-group"><label class="feh-ctrl-label">Sello del anuncio</label>'
-          +'<label class="feh-check-row"><input type="checkbox" data-fmm-sello'+(ad.mostrarSello !== false ? " checked" : "")+' onchange="fmmSetAnuncio(\'mostrarSello\',this.checked)"> Mostrar sello "Cotización sin costo"</label>'
-        +'</div>')
-        + homeCtaControlesHtml("fmm", ad.mostrarCta !== false, ad.cta || "")
+      ? homeSelloControlesHtml("fmmSetAnuncio('mostrarSello',this.checked)", "fmmSetAnuncio('sello',this.value)", ad.mostrarSello !== false, ad.sello == null ? HOME_SELLO_DEFAULT : ad.sello)
+        + homeCtaControlesHtml("fmm", { mostrar: ad.mostrarCta !== false, texto: ad.cta || "", mostrarContacto: ad.mostrarContacto, contacto: ad.contacto == null ? null : ad.contacto })
       : '<div class="feh-ctrl-group"><label class="feh-ctrl-label">Servicio</label><div id="fmm-presets">'+fmmHtmlPresets()+'</div></div>')
     +fmmCampo("titulo1", "Título — línea 1")
     +fmmCampo("titulo2", "Título — línea 2 (color de acento)")
@@ -34581,6 +34650,7 @@ function bceCalGenerarPost(i){
     if(typeof entry.borrador.showBadge === "boolean") FEH.showBadge = entry.borrador.showBadge;
     if(typeof entry.borrador.showAviso === "boolean") FEH.showAviso = entry.borrador.showAviso;
     if(typeof entry.borrador.showCta === "boolean") FEH.showCta = entry.borrador.showCta;
+    if(typeof entry.borrador.showContacto === "boolean") FEH.showContacto = entry.borrador.showContacto;
     fehSincronizarCamposUI();
   }
   fehActualizarBannerBorrador();
