@@ -887,6 +887,21 @@ body.in-plantrabajo #app, body.in-leadshome #app{
 .lh-cot{background:#F7F3EE;border-radius:10px;padding:10px 12px;margin-top:12px;font-size:12.5px;}
 .lh-cot-botones{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px;}
 .lh-historial{display:flex;flex-direction:column;gap:5px;font-size:11px;color:rgba(11,31,58,.65);}
+/* Leads automáticos desde Meta: sin responder, origen del anuncio, conversación */
+.lh-tags{display:flex;gap:4px;flex-wrap:wrap;margin-top:5px;}
+.lh-tag{display:inline-flex;align-items:center;gap:3px;font-size:9.5px;font-weight:700;letter-spacing:.3px;padding:2px 7px;border-radius:10px;background:rgba(11,31,58,.07);color:rgba(11,31,58,.7);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.lh-tag-resp{background:#C36F4A;color:#fff;}
+.lh-card-msg{font-size:11px;color:rgba(11,31,58,.7);margin-top:5px;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-style:italic;}
+.lh-kpi-resp{border-color:#C36F4A;background:#C36F4A;color:#fff;}
+.lh-kpi-resp .lh-kpi-lbl,.lh-kpi-resp .lh-kpi-sub{color:rgba(255,255,255,.85);}
+.lh-kpi-resp .lh-kpi-val{color:#fff;}
+.lh-origen{background:#fff;border:1px solid rgba(11,31,58,.12);border-radius:10px;padding:10px 12px;margin-top:12px;font-size:12px;line-height:1.5;}
+.lh-origen b{color:#0B1F3A;}
+.lh-conv{display:flex;flex-direction:column;gap:6px;max-height:280px;overflow-y:auto;background:#F7F3EE;border-radius:10px;padding:10px;}
+.lh-msg{max-width:85%;font-size:12px;line-height:1.4;padding:7px 10px;border-radius:12px;word-wrap:break-word;}
+.lh-msg-in{align-self:flex-start;background:#fff;color:#0B1F3A;border-bottom-left-radius:3px;}
+.lh-msg-out{align-self:flex-end;background:#0B1F3A;color:#fff;border-bottom-right-radius:3px;}
+.lh-msg-hora{display:block;font-size:9.5px;opacity:.6;margin-top:2px;}
 .lh-meta-pie{font-size:10.5px;color:rgba(11,31,58,.45);margin-top:12px;}
 .lh-dialogo{background:#fff;border-radius:14px;max-width:420px;width:100%;padding:18px;font-family:var(--font);color:#0B1F3A;}
 .lh-dialogo-tit{font-size:15px;font-weight:800;}
@@ -3890,7 +3905,7 @@ body.in-plantrabajo #app, body.in-leadshome #app{
         <div class="lh-head-tit">Leads HOME</div>
         <button type="button" class="lh-btn lh-btn-pri" onclick="lhAbrirNuevo()">+ Nuevo lead</button>
       </div>
-      <div class="lh-head-desc">Mensajes de WhatsApp Business, Instagram y Messenger, desde el primer contacto hasta la cotización.</div>
+      <div class="lh-head-desc">Los mensajes de WhatsApp, Instagram, Messenger y los formularios de anuncios entran solos. Del primer contacto a la cotización.</div>
     </div>
     <div id="lh-kpis" class="lh-kpis"></div>
     <div class="lh-barra">
@@ -35873,7 +35888,7 @@ function _fpCierreHtml(logoBlanco, tel, email, web){
 // Messenger, Instagram y WhatsApp Business. Colección Firestore
 // `home_leads`; solo admin (window._leadsAcceso + reglas con esAdmin()).
 // ═══════════════════════════════════════════════════════════════════════
-const LH_CANALES = ["WhatsApp", "Instagram", "Messenger", "Otro"];
+const LH_CANALES = ["WhatsApp", "Instagram", "Messenger", "Formulario", "Otro"];   // "Formulario" = Lead Ads de Meta (entran solos)
 const LH_SERVICIOS = ["Restauración de banquetas", "Colado", "Piso estampado", "Piso epóxico residencial", "Grind and Seal / Poliuretano", "Otro"];
 const LH_ETAPAS = ["Nuevo", "Info enviada", "Visita agendada", "Visita realizada", "Cotización enviada", "En seguimiento", "Ganado", "Perdido"];
 const LH_MOTIVOS = ["Precio", "Sin respuesta", "Eligió a otro", "No es el momento", "Otro"];
@@ -35885,8 +35900,9 @@ let _lhUnsub = null;
 let _lhCargado = false;
 let _lhError = "";
 let _lhVista = (function(){ try { return localStorage.getItem("lh_vista") === "tabla" ? "tabla" : "tablero"; } catch(e){ return "tablero"; } })();
-let _lhFiltros = { q:"", canal:"", servicio:"", etapa:"", desde:"", hasta:"", sinSeguimiento:false };
+let _lhFiltros = { q:"", canal:"", servicio:"", etapa:"", desde:"", hasta:"", sinSeguimiento:false, sinResponder:false };
 let _lhArrastrando = null;
+let _lhPrimeraCarga = true;   // para avisar solo de leads automáticos que llegan con el módulo abierto
 
 function _lhRef(){ return (typeof db !== "undefined" && db) ? db.collection("home_leads") : null; }
 function _lhEsc(s){ return escapeHtml(s == null ? "" : String(s)); }
@@ -35955,10 +35971,37 @@ const LH_ICONOS = {
   WhatsApp: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21l1.65-4.5A8.5 8.5 0 1 1 8 20.1L3 21Z"/><path d="M9 9.5c0 3 2.5 5.5 5.5 5.5l1.2-1.2-1.8-1-1 .8a4.5 4.5 0 0 1-2.5-2.5l.8-1-1-1.8L9 9.5Z"/></svg>',
   Instagram: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r=".6" fill="currentColor"/></svg>',
   Messenger: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3C7 3 3 6.7 3 11.3c0 2.6 1.3 4.9 3.3 6.4V21l3-1.6c.9.2 1.8.4 2.7.4 5 0 9-3.7 9-8.4S17 3 12 3Z"/><path d="m7.5 13.5 3-3.2 2 2 3-3.3"/></svg>',
+  Formulario: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>',
   Otro: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12h.01M12 12h.01M16 12h.01"/></svg>',
   wa: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21l1.65-4.5A8.5 8.5 0 1 1 8 20.1L3 21Z"/><path d="M9 9.5c0 3 2.5 5.5 5.5 5.5l1.2-1.2-1.8-1-1 .8a4.5 4.5 0 0 1-2.5-2.5l.8-1-1-1.8L9 9.5Z"/></svg>'
 };
 function _lhChipCanal(canal){ return '<span class="lh-canal" title="' + _lhEsc(canal) + '">' + (LH_ICONOS[canal] || LH_ICONOS.Otro) + _lhEsc(canal) + '</span>'; }
+
+// ── Leads automáticos (webhook de Meta → functions/metaLeads.js) ─────────
+// El servidor marca pendienteRespuesta=true con cada mensaje del cliente y
+// false cuando detecta una respuesta (o al tocar "Ya le respondí").
+function _lhSinResponder(l){ return !!l.pendienteRespuesta && l.etapa !== "Perdido"; }
+function _lhHace(iso){
+  if(!iso) return "";
+  const min = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
+  if(isNaN(min)) return "";
+  if(min < 60) return "hace " + min + " min";
+  if(min < 60 * 24) return "hace " + Math.round(min / 60) + " h";
+  return "hace " + Math.round(min / 1440) + " d";
+}
+function _lhTituloAnuncio(l){
+  const a = l.anuncio || null;
+  if(!a) return "";
+  return a.titulo || a.campana || (a.adId ? "Anuncio " + a.adId : "Anuncio");
+}
+function _lhTags(l){
+  const t = [];
+  if(_lhSinResponder(l)) t.push('<span class="lh-tag lh-tag-resp" title="El cliente escribió y no hay respuesta registrada">Sin responder · ' + _lhEsc(_lhHace(l.pendienteDesde || l.ultimoEntranteEn)) + '</span>');
+  const anuncio = _lhTituloAnuncio(l);
+  if(anuncio) t.push('<span class="lh-tag" title="Llegó por un anuncio">Anuncio · ' + _lhEsc(anuncio) + '</span>');
+  else if(l.origen === "meta") t.push('<span class="lh-tag" title="Entró automático desde Meta">Auto</span>');
+  return t.length ? '<div class="lh-tags">' + t.join("") + '</div>' : '';
+}
 
 // ── Carga ───────────────────────────────────────────────────────────────
 function leadsInit(){
@@ -35970,6 +36013,14 @@ function leadsInit(){
   if(!ref){ _lhError = "La base de datos no está disponible."; lhRender(); return; }
   try {
     _lhUnsub = ref.onSnapshot(function(snap){
+      if(!_lhPrimeraCarga && snap && typeof snap.docChanges === "function"){
+        snap.docChanges().forEach(function(ch){
+          const d = ch.doc.data() || {};
+          if(ch.type === "added" && d.origen === "meta" && !ch.doc.metadata.hasPendingWrites)
+            showToast("🔔 Nuevo lead de " + (d.canal || "Meta") + ": " + (d.nombre || ""));
+        });
+      }
+      _lhPrimeraCarga = false;
       _lhLeads = (snap && snap.docs ? snap.docs : []).map(function(d){ return Object.assign({}, d.data(), { id:d.id }); });
       _lhCargado = true; _lhError = "";
       lhRender();
@@ -36007,8 +36058,9 @@ function lhLeerFiltros(){
   lhRender();
 }
 function lhToggleSinSeguimiento(){ _lhFiltros.sinSeguimiento = !_lhFiltros.sinSeguimiento; lhRender(); }
+function lhToggleSinResponder(){ _lhFiltros.sinResponder = !_lhFiltros.sinResponder; lhRender(); }
 function lhLimpiarFiltros(){
-  _lhFiltros = { q:"", canal:"", servicio:"", etapa:"", desde:"", hasta:"", sinSeguimiento:false };
+  _lhFiltros = { q:"", canal:"", servicio:"", etapa:"", desde:"", hasta:"", sinSeguimiento:false, sinResponder:false };
   ["lh-f-q", "lh-f-canal", "lh-f-servicio", "lh-f-etapa", "lh-f-desde", "lh-f-hasta"].forEach(function(id){ const el = document.getElementById(id); if(el) el.value = ""; });
   lhRender();
 }
@@ -36028,8 +36080,16 @@ function _lhFiltrados(){
     if(f.desde && (l.fechaContacto || "") < f.desde) return false;
     if(f.hasta && (l.fechaContacto || "") > f.hasta) return false;
     if(f.sinSeguimiento && !_lhSinSeguimiento(l)) return false;
+    if(f.sinResponder && !_lhSinResponder(l)) return false;
     return true;
-  }).sort(function(a, b){ return String(b.fechaContacto || "").localeCompare(String(a.fechaContacto || "")) || String(b.creadoEn || "").localeCompare(String(a.creadoEn || "")); });
+  }).sort(function(a, b){
+    // Con el filtro "Sin responder", el que lleva más tiempo esperando va primero
+    if(f.sinResponder) return String(a.pendienteDesde || a.ultimoEntranteEn || "").localeCompare(String(b.pendienteDesde || b.ultimoEntranteEn || ""));
+    return _lhOrdenNormal(a, b);
+  });
+}
+function _lhOrdenNormal(a, b){
+  return String(b.fechaContacto || "").localeCompare(String(a.fechaContacto || "")) || String(b.creadoEn || "").localeCompare(String(a.creadoEn || ""));
 }
 
 // ── Render ──────────────────────────────────────────────────────────────
@@ -36047,7 +36107,7 @@ function lhRender(){
     return;
   }
   const lista = _lhFiltrados();
-  const hayFiltros = _lhFiltros.q || _lhFiltros.canal || _lhFiltros.servicio || _lhFiltros.etapa || _lhFiltros.desde || _lhFiltros.hasta || _lhFiltros.sinSeguimiento;
+  const hayFiltros = _lhFiltros.q || _lhFiltros.canal || _lhFiltros.servicio || _lhFiltros.etapa || _lhFiltros.desde || _lhFiltros.hasta || _lhFiltros.sinSeguimiento || _lhFiltros.sinResponder;
   if(!lista.length){
     cont.innerHTML = '<div class="lh-vacio">Ningún lead coincide con los filtros.<br><button class="lh-link" onclick="lhLimpiarFiltros()">Limpiar filtros</button></div>';
     return;
@@ -36066,8 +36126,14 @@ function _lhPintarKpis(){
   const ganados = _lhLeads.filter(l => l.etapa === "Ganado").length;
   const conv = total ? Math.round(ganados / total * 100) : 0;
   const sinSeg = _lhLeads.filter(_lhSinSeguimiento).length;
+  const sinResp = _lhLeads.filter(_lhSinResponder);
+  const masViejo = sinResp.map(l => l.pendienteDesde || l.ultimoEntranteEn || "").filter(Boolean).sort()[0];
+  const deAnuncio = delMes.filter(l => l.anuncio).length;
   el.innerHTML =
-    '<div class="lh-kpi"><div class="lh-kpi-lbl">Nuevos del mes</div><div class="lh-kpi-val">' + delMes.length + '</div>'
+    '<button type="button" id="lh-kpi-sinresp" class="lh-kpi lh-kpi-boton' + (sinResp.length ? ' lh-kpi-resp' : '') + (_lhFiltros.sinResponder ? ' lh-filtro-activo' : '') + '" onclick="lhToggleSinResponder()" title="Clientes que escribieron por WhatsApp, Messenger o Instagram y no tienen respuesta registrada. Toca para filtrar.">'
+      + '<div class="lh-kpi-lbl">Sin responder</div><div class="lh-kpi-val">' + sinResp.length + '</div><div class="lh-kpi-sub">' + (_lhFiltros.sinResponder ? 'Mostrando solo estos · quitar' : (masViejo ? 'El más antiguo ' + _lhHace(masViejo) : 'Todo al día')) + '</div></button>'
+    + '<div class="lh-kpi"><div class="lh-kpi-lbl">Nuevos del mes</div><div class="lh-kpi-val">' + delMes.length + '</div>'
+      + (deAnuncio ? '<div class="lh-kpi-sub">' + deAnuncio + ' desde anuncios</div>' : '')
       + '<div class="lh-kpi-canales">' + porCanal.map(x => '<span title="' + x.c + '">' + (LH_ICONOS[x.c] || "") + x.n + '</span>').join("") + '</div></div>'
     + '<div class="lh-kpi"><div class="lh-kpi-lbl">Conversión</div><div class="lh-kpi-val">' + conv + '%</div><div class="lh-kpi-sub">' + ganados + ' ganado' + (ganados === 1 ? '' : 's') + ' de ' + total + '</div></div>'
     + '<button type="button" id="lh-kpi-sinseg" class="lh-kpi lh-kpi-boton' + (sinSeg ? ' lh-kpi-alerta' : '') + (_lhFiltros.sinSeguimiento ? ' lh-filtro-activo' : '') + '" onclick="lhToggleSinSeguimiento()" title="Más de ' + LH_DIAS_SIN_MOVIMIENTO + ' días sin movimiento o seguimiento vencido. Toca para filtrar.">'
@@ -36080,11 +36146,13 @@ function _lhPintarKpis(){
 function _lhHtmlTarjeta(l){
   const dias = _lhDiasEntre(l.fechaContacto);
   const venc = l.proximoSeguimiento && l.proximoSeguimiento < _lhHoy();
-  const alerta = _lhSinSeguimiento(l);
+  const alerta = _lhSinSeguimiento(l) || _lhSinResponder(l);
   const wa = _lhWaUrl(l.telefono);
   return '<div class="lh-card' + (alerta ? ' lh-card-alerta' : '') + '" draggable="true" data-lh-id="' + _lhEsc(l.id) + '" ondragstart="_lhDragStart(event,\'' + _lhEsc(l.id) + '\')" ondragend="_lhDragEnd()" onclick="lhAbrirDetalle(\'' + _lhEsc(l.id) + '\')">'
     + '<div class="lh-card-top"><div class="lh-card-nombre">' + _lhEsc(l.nombre) + '</div>' + _lhChipCanal(l.canal) + '</div>'
     + '<div class="lh-card-serv">' + _lhEsc(l.servicio || "Sin servicio") + '</div>'
+    + _lhTags(l)
+    + (l.ultimoMensaje ? '<div class="lh-card-msg">“' + _lhEsc(l.ultimoMensaje) + '”</div>' : '')
     + '<div class="lh-card-meta">'
       + '<span>' + (dias === null ? '' : (dias <= 0 ? 'Contacto hoy' : 'Hace ' + dias + ' día' + (dias === 1 ? '' : 's'))) + '</span>'
       + (l.proximoSeguimiento ? '<span class="' + (venc ? 'lh-venc' : '') + '">Seguimiento ' + _lhFechaCorta(l.proximoSeguimiento) + (venc ? ' · vencido' : '') + '</span>' : '')
@@ -36115,8 +36183,8 @@ function _lhHtmlTabla(lista){
       const dias = _lhDiasEntre(l.fechaContacto);
       const venc = l.proximoSeguimiento && l.proximoSeguimiento < _lhHoy();
       const wa = _lhWaUrl(l.telefono);
-      return '<tr class="' + (_lhSinSeguimiento(l) ? 'lh-fila-alerta' : '') + '" data-lh-id="' + _lhEsc(l.id) + '" onclick="lhAbrirDetalle(\'' + _lhEsc(l.id) + '\')">'
-        + '<td class="lh-td-nombre">' + _lhEsc(l.nombre) + '</td>'
+      return '<tr class="' + (_lhSinSeguimiento(l) || _lhSinResponder(l) ? 'lh-fila-alerta' : '') + '" data-lh-id="' + _lhEsc(l.id) + '" onclick="lhAbrirDetalle(\'' + _lhEsc(l.id) + '\')">'
+        + '<td class="lh-td-nombre">' + _lhEsc(l.nombre) + _lhTags(l) + '</td>'
         + '<td>' + _lhEsc(_lhTelBonito(l.telefono)) + '</td>'
         + '<td>' + _lhChipCanal(l.canal) + '</td>'
         + '<td>' + _lhEsc(l.servicio || "") + '</td>'
@@ -36369,6 +36437,7 @@ function lhAbrirDetalle(id){
             + '<button type="button" class="lh-link" onclick="lhCrearCotizacion(\'' + _lhEsc(l.id) + '\')">Crear otra</button></div>'
           : '<div>Sin cotización vinculada.</div><div class="lh-cot-botones"><button type="button" class="lh-btn lh-btn-pri" onclick="lhCrearCotizacion(\'' + _lhEsc(l.id) + '\')">Crear cotización</button></div>')
       + '</div>'
+      + _lhHtmlOrigen(l)
       + '<div class="lh-grid2">'
         + '<div><label class="lh-lbl">Nombre <span class="lh-req">*</span></label><input id="lh-d-nombre" class="lh-input" value="' + _lhEsc(l.nombre) + '"></div>'
         + '<div><label class="lh-lbl">Teléfono</label><input id="lh-d-tel" class="lh-input" type="tel" inputmode="tel" value="' + _lhEsc(_lhTelBonito(l.telefono)) + '"></div>'
@@ -36382,7 +36451,7 @@ function lhAbrirDetalle(id){
       + '<label class="lh-lbl">Notas</label><textarea id="lh-d-notas" class="lh-input" rows="3">' + _lhEsc(l.notas || "") + '</textarea>'
       + '<div id="lh-d-dup" class="lh-aviso" style="display:none;"></div>'
       + '<label class="lh-lbl">Historial</label><div class="lh-historial">'
-        + (Array.isArray(l.historial) && l.historial.length ? l.historial.slice().reverse().map(h => '<div>' + _lhChipEtapa(h.etapa) + ' <span>' + _lhEsc(new Date(h.fecha).toLocaleString("es-MX", { day:"numeric", month:"short", hour:"2-digit", minute:"2-digit" })) + (h.usuario ? ' · ' + _lhEsc(h.usuario) : '') + '</span></div>').join("") : '<div>Sin movimientos.</div>')
+        + (Array.isArray(l.historial) && l.historial.length ? l.historial.slice().reverse().map(h => '<div>' + _lhChipEtapa(h.etapa) + ' <span>' + _lhEsc(new Date(h.fecha).toLocaleString("es-MX", { day:"numeric", month:"short", hour:"2-digit", minute:"2-digit" })) + (h.usuario ? ' · ' + _lhEsc(h.usuario) : '') + (h.nota ? ' · ' + _lhEsc(h.nota) : '') + '</span></div>').join("") : '<div>Sin movimientos.</div>')
       + '</div>'
       + '<div class="lh-meta-pie">Creado por ' + _lhEsc(l.creadoPor || "—") + '</div>'
     + '</div>'
@@ -36390,6 +36459,47 @@ function lhAbrirDetalle(id){
   + '</div>';
   document.body.appendChild(ov);
   Object.keys(escrito).forEach(function(k){ const el = document.getElementById(k); if(el) el.value = escrito[k]; });
+  const conv = document.getElementById("lh-conv"); if(conv) conv.scrollTop = conv.scrollHeight;   // último mensaje a la vista
+}
+
+// Origen (anuncio) y conversación capturada por el webhook de Meta
+function _lhHtmlOrigen(l){
+  const a = l.anuncio || null;
+  const conv = Array.isArray(l.conversacion) ? l.conversacion : [];
+  if(!a && !conv.length && l.origen !== "meta") return "";
+  const hora = iso => { const d = new Date(iso); return isNaN(d) ? "" : d.toLocaleString("es-MX", { day:"numeric", month:"short", hour:"2-digit", minute:"2-digit" }); };
+  let h = '<div class="lh-origen">';
+  if(a){
+    h += '<div><b>Llegó por anuncio:</b> ' + _lhEsc(_lhTituloAnuncio(l)) + '</div>'
+      + (a.campana ? '<div>Campaña: ' + _lhEsc(a.campana) + '</div>' : '')
+      + (a.cuerpo ? '<div style="color:rgba(11,31,58,.65);">' + _lhEsc(a.cuerpo) + '</div>' : '')
+      + (a.adId ? '<div style="color:rgba(11,31,58,.5);font-size:10.5px;">ID del anuncio: ' + _lhEsc(a.adId) + '</div>' : '');
+  } else {
+    h += '<div><b>Entró automático</b> desde ' + _lhEsc(l.canal) + ' (sin anuncio: mensaje directo u orgánico).</div>';
+  }
+  if(_lhSinResponder(l)){
+    h += '<div class="lh-aviso" style="display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap;">'
+      + '<span>Escribió ' + _lhEsc(_lhHace(l.pendienteDesde || l.ultimoEntranteEn)) + ' y no hay respuesta registrada.</span>'
+      + '<button type="button" class="lh-btn lh-btn-sec" onclick="lhMarcarRespondido(\'' + _lhEsc(l.id) + '\')">Ya le respondí</button></div>';
+  }
+  h += '</div>';
+  if(conv.length){
+    h += '<label class="lh-lbl">Conversación <span class="lh-opc">' + (conv.length === 1 ? '1 mensaje' : 'últimos ' + conv.length + ' mensajes') + '</span></label><div class="lh-conv" id="lh-conv">'
+      + conv.map(m => '<div class="lh-msg ' + (m.dir === "out" ? "lh-msg-out" : "lh-msg-in") + '">' + _lhEsc(m.texto) + '<span class="lh-msg-hora">' + _lhEsc(hora(m.fecha)) + '</span></div>').join("")
+      + '</div>';
+  }
+  return h;
+}
+
+// Para respuestas que Meta no reporta (p. ej. contestaste desde otro
+// teléfono o por llamada): quita la alerta y cuenta como movimiento.
+function lhMarcarRespondido(id){
+  const ahora = new Date().toISOString();
+  _lhActualizar(id, { pendienteRespuesta: false, pendienteDesde: "", ultimaRespuestaEn: ahora, actualizadoEn: ahora }).then(function(ok){
+    if(!ok) return;
+    showToast("✓ Marcado como respondido");
+    if(document.getElementById("lh-detalle")) lhAbrirDetalle(id);
+  });
 }
 
 function lhGuardarDetalle(id){
@@ -36484,6 +36594,8 @@ function lhAbrirCotizacion(id){
 }
 
 window.leadsInit = leadsInit;
+window.lhToggleSinResponder = lhToggleSinResponder;
+window.lhMarcarRespondido = lhMarcarRespondido;
 window.lhRender = lhRender;
 window.lhSetVista = lhSetVista;
 window.lhLeerFiltros = lhLeerFiltros;

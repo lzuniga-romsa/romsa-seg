@@ -396,3 +396,69 @@ exports.convertirVideoAMp4 = onObjectFinalized(
     }
   }
 );
+
+// ═══════════════════════════════════════════════════════════════════════
+// metaLeadsWebhook — Leads HOME automáticos desde Meta (WhatsApp,
+// Messenger, Instagram y formularios de Lead Ads). Lógica en metaLeads.js;
+// configuración paso a paso en docs/meta-leads-setup.md.
+//
+// URL pública (se registra en la app de Meta como "Callback URL"):
+//   https://us-central1-romsa-industrial.cloudfunctions.net/metaLeadsWebhook
+// ═══════════════════════════════════════════════════════════════════════
+const { onRequest } = require("firebase-functions/v2/https");
+const metaLeads = require("./metaLeads");
+
+const META_APP_SECRET = defineSecret("META_APP_SECRET");     // App → Configuración → Básica → Clave secreta
+const META_VERIFY_TOKEN = defineSecret("META_VERIFY_TOKEN"); // texto inventado, el mismo que se pone en Meta
+const META_PAGE_TOKEN = defineSecret("META_PAGE_TOKEN");     // token de página (nombres de Messenger/IG y formularios)
+
+exports.metaLeadsWebhook = onRequest(
+  {
+    region: "us-central1",
+    invoker: "public", // Meta llama sin credenciales de Google; la seguridad es la firma HMAC
+    secrets: [META_APP_SECRET, META_VERIFY_TOKEN, META_PAGE_TOKEN],
+    timeoutSeconds: 60,
+    memory: "256MiB",
+    maxInstances: 5,
+  },
+  async (req, res) => {
+    // 1) Verificación del webhook (Meta hace un GET al registrarlo)
+    if (req.method === "GET") {
+      const modo = req.query["hub.mode"];
+      const token = req.query["hub.verify_token"];
+      const reto = req.query["hub.challenge"];
+      if (modo === "subscribe" && token && token === META_VERIFY_TOKEN.value()) {
+        res.status(200).send(String(reto || ""));
+      } else {
+        res.sendStatus(403);
+      }
+      return;
+    }
+    if (req.method !== "POST") { res.sendStatus(405); return; }
+
+    // 2) Solo aceptamos lo que firmó nuestra app de Meta
+    if (!metaLeads.firmaValida(req.rawBody, req.get("x-hub-signature-256"), META_APP_SECRET.value())) {
+      logger.warn("[metaLeads] Firma inválida — petición rechazada");
+      res.sendStatus(401);
+      return;
+    }
+
+    const eventos = metaLeads.extraerEventos(req.body);
+    if (!eventos.length) { res.sendStatus(200); return; }
+
+    asegurarAdminApp();
+    const db = getFirestore();
+    let fallo = false;
+    for (const ev of eventos) {
+      try {
+        const r = await metaLeads.procesarEvento(db, ev, { pageToken: META_PAGE_TOKEN.value(), log: logger });
+        logger.info("[metaLeads]", { resultado: r, tipo: ev.tipo, canal: ev.canal, clave: ev.clave || ev.mid });
+      } catch (e) {
+        fallo = true;
+        logger.error("[metaLeads] Error procesando evento", { tipo: ev.tipo, canal: ev.canal, error: e.message });
+      }
+    }
+    // 500 → Meta reintenta; los mensajes ya guardados no se duplican (mid).
+    res.sendStatus(fallo ? 500 : 200);
+  }
+);
