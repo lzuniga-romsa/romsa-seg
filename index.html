@@ -14075,6 +14075,8 @@ async function eliminarCotizacion(id, folio){
 function showNuevaCot(){
   cotActivaId=null;
   _cotIvaIncl = true;   // las cotizaciones nuevas usan IVA incluido si son HOME
+  _cotModalidadAlAbrir = null;
+  _cotVersionAbierta = null;
   window._cotizacionLeadOrigen = null;   // Leads HOME lo vuelve a poner si la abre desde un lead
   document.getElementById("cot-form-titulo").textContent="Nueva cotización";
   _cotModalidad = "industrial"; // default
@@ -14154,6 +14156,8 @@ function abrirCot(id){
   var c=cotizaciones.find(function(x){return x.id===id;});
   if(!c)return;
   _cotIvaIncl = !!c.ivaIncluido;   // HOME antiguas (sin el campo) se ven exactamente como antes
+  _cotModalidadAlAbrir = _modalidadDe(c);
+  _cotVersionAbierta = c.ts || null;
   window._cotizacionLeadOrigen = null;   // abrir otra cotización no la vincula a un lead
   cotActivaId=id;
   document.getElementById("cot-form-titulo").textContent="Editar — "+c.folio;
@@ -14264,7 +14268,9 @@ function abrirCot(id){
   if(document.getElementById("cot-romsa-email")) document.getElementById("cot-romsa-email").value=c.romsaEmail||"ventas@romsaindustrial.com";
   if(document.getElementById("cot-romsa-web")) document.getElementById("cot-romsa-web").value=c.romsaWeb||"www.romsaindustrial.com";
   if(document.getElementById("cot-vigencia")) document.getElementById("cot-vigencia").value=c.vigencia||"30";
-  _cotPartidas=(c.partidas||[]).map(function(p,i){return Object.assign({id:i+1},p);});
+  _cotPartidas=(Array.isArray(c.partidas)?c.partidas:[]).map(function(p,i){return Object.assign({id:i+1},p);});
+  // Solo para poder capturar: guardarCot no deja guardar "sin conceptos"
+  // encima de una versión que sí tiene, sin confirmación.
   if(!_cotPartidas.length) _cotPartidas=[{id:1,servicio:"",desc:"",proc:"",qty:0,unit:"m²",precio:0}];
   renderPartidasCot();
   calcTotalesCot();
@@ -14291,6 +14297,29 @@ function abrirCot(id){
   document.getElementById("cot-form-wrap").style.display="block";
   if(typeof _cotResetHistorial==="function") _cotResetHistorial();
   if(typeof _cotMarcarLimpio==="function") _cotMarcarLimpio(600);
+  _cotVerificarVersionAlAbrir(id, c.ts || 0);
+}
+
+// La lista en memoria puede ir atrasada (listener detenido, otra pestaña):
+// al abrir se pide la versión del servidor y, si es más reciente, se
+// reabre con ella antes de que el usuario edite.
+function _cotVerificarVersionAlAbrir(id, tsLocal){
+  if(!cotRef) return;
+  cotRef.doc(id).get().then(function(snap){
+    if(!snap.exists || cotActivaId !== id) return;
+    var srv = snap.data();
+    var local = cotizaciones.find(function(x){ return x.id === id; });
+    var faltan = !local || !Array.isArray(local.partidas);
+    if(!((srv.ts || 0) > tsLocal || faltan)) return;
+    var i = cotizaciones.findIndex(function(x){ return x.id === id; });
+    if(i >= 0) cotizaciones[i] = srv; else cotizaciones.unshift(srv);
+    if(typeof _cotHayCambiosSinGuardar === "function" && _cotHayCambiosSinGuardar()){
+      showToast("⚠️ Hay una versión más reciente guardada de esta cotización — ciérrala y vuelve a abrirla");
+      return;
+    }
+    abrirCot(id);
+    showToast("🔄 Se cargó la versión más reciente guardada de "+(srv.folio || "la cotización"));
+  }).catch(function(e){ console.warn("[Cotización] No se pudo verificar la versión:", e); });
 }
 
 // Navegar al costeo origen desde la cotización
@@ -14415,6 +14444,7 @@ function _taglineDe(modalidad){ return (MODALIDADES[modalidad]||MODALIDADES.indu
 function cambiarModalidadCot(modalidad){
   if(modalidad !== "industrial" && modalidad !== "home" && modalidad !== "rackline") return;
   _cotModalidad = modalidad;
+  if(modalidad === "home" && _cotModalidadAlAbrir !== "home") _cotIvaIncl = true;
   // Colores de acento por modalidad
   var COL = { industrial:"#1E6FD9", home:"#1E5BA8", rackline:"#0C2340" };
   var BG  = { industrial:"rgba(30,111,217,.08)", home:"rgba(30,91,168,.08)", rackline:"rgba(12,35,64,.08)" };
@@ -14643,7 +14673,7 @@ function _cotRestaurarClausulas(cl){
 function _cotRestaurarEstado(snap){
   try{
     var obj = JSON.parse(snap);
-    _cotPartidas = obj.partidas || [];
+    if(Array.isArray(obj.partidas)) _cotPartidas = obj.partidas;
     if(obj.campos){
       Object.keys(obj.campos).forEach(function(id){
         var el = document.getElementById(id);
@@ -15119,6 +15149,10 @@ window.abrirDocumento = abrirDocumento;
 // industrial y rackline conservan el esquema Subtotal + IVA de siempre.
 const IVA_HOME = 0.08;
 var _cotIvaIncl = true;   // esquema de la cotización en edición (true en las nuevas)
+// Modalidad con la que se abrió la cotización (null si es nueva). Solo las
+// HOME guardadas antes de IVA incluido conservan su esquema; una que pasa a
+// HOME desde otra modalidad (o una nueva) usa siempre IVA incluido.
+var _cotModalidadAlAbrir = null;
 
 function _cotRedondear(n){ return Math.round(((Number(n) || 0) + Number.EPSILON) * 100) / 100; }
 // ¿Esta cotización guardada usa IVA incluido?
@@ -15371,7 +15405,9 @@ async function guardarCot(){
       };
     }),
     subtotal:tots.sub,iva:tots.iva,granTotal:tots.total,
-    // HOME: precios con IVA incluido (ver IVA_HOME). Sin el campo = esquema anterior.
+    // HOME: precios con IVA incluido (ver IVA_HOME). Sin el campo = esquema
+    // anterior (industrial, rackline y HOME antiguas); con merge se borra
+    // explícitamente abajo.
     ivaIncluido: _cotIvaInclActivo() ? true : undefined,
     ivaTasa: _cotIvaInclActivo() ? IVA_HOME : undefined,
     // Estado de seguimiento (Sesión 1)
@@ -15405,15 +15441,39 @@ async function guardarCot(){
     costoReal:      parseFloat(document.getElementById("cot-costo-real")?.value)     || 0,
     notasSeguimiento: _cotNotasSeguimiento || [],
     documentos:       _cotDocsSeguimiento  || [],
-    creadoPorUid:currentUser?.uid||"",
-    creadoPor:currentUserProfile?.nombre||""
+    // El creador se conserva: antes cada "Guardar" lo cambiaba por quien
+    // editaba, y la cotización desaparecía de la lista de su vendedor.
+    creadoPorUid: cotExistente.creadoPorUid || currentUser?.uid || "",
+    creadoPor: cotExistente.creadoPor || currentUserProfile?.nombre || "",
+    editadoPorUid: currentUser?.uid || "",
+    editadoPor: currentUserProfile?.nombre || ""
   };
   try{
     if(cotRef){
-      // Sanitizar: Firestore no acepta undefined. Convertimos a "" o 0.
+      if(cotActivaId){
+        var guardada = await _leerDocServidor(cotRef.doc(id));
+        if(guardada){
+          if(_cotVersionAbierta && guardada.ts && guardada.ts > _cotVersionAbierta
+            && !confirm("⚠️ Esta cotización ("+folio+") se guardó desde otra pestaña o equipo después de que la abriste ("+_fmtFechaHoraCorta(guardada.ts)+(guardada.editadoPor ? ", "+guardada.editadoPor : "")+").\n\nSi guardas, tu versión reemplazará esos cambios (conceptos incluidos).\n\n¿Guardar de todos modos?")){
+            showToast("Guardado cancelado — cierra y vuelve a abrir la cotización para ver la versión más reciente");
+            return null;
+          }
+          var nPrev = _cotNumConceptos(guardada.partidas), nNuevo = _cotNumConceptos(cot.partidas);
+          if(nNuevo === 0 && nPrev > 0
+            && !confirm("⚠️ Vas a guardar la cotización "+folio+" SIN conceptos, pero la versión guardada tiene "+nPrev+".\n\n¿Guardar sin conceptos?")){
+            showToast("Guardado cancelado — los conceptos guardados no se tocaron");
+            return null;
+          }
+        }
+      }
+      // Sanitizar: Firestore no acepta undefined. Merge: no borra campos que
+      // este formulario no maneja (vínculos, historial, enlaces, etc.).
       const cotSafe = _sanitizarParaFirestore(cot);
-      await cotRef.doc(id).set(cotSafe);
+      var borrar = (typeof firebase !== "undefined" && firebase.firestore && firebase.firestore.FieldValue) ? firebase.firestore.FieldValue.delete() : null;
+      if(!cot.ivaIncluido && borrar){ cotSafe.ivaIncluido = borrar; cotSafe.ivaTasa = borrar; }
+      await cotRef.doc(id).set(cotSafe, {merge:true});
     }
+    _cotVersionAbierta = cot.ts;
     cotActivaId=id;
     // Hook: si esta cotización viene de un costeo, vincular bidireccionalmente
     if(typeof window._actualizarVinculoPostGuardadoCotizacion === "function" && window._cotizacionCosteoOrigen){
@@ -15434,6 +15494,34 @@ async function guardarCot(){
     showToast("❌ Error al guardar: "+e.message);
     return null;
   }
+}
+
+// ── Protección de datos al guardar (cotizaciones y costeos) ──────────────
+// Guardar escribía el documento completo (set sin merge) a partir de la
+// copia en memoria que se abrió. Si esa copia ya era vieja (otra pestaña u
+// otro equipo guardó después, o el listener en tiempo real se detuvo), el
+// "Guardar" reemplazaba en Firestore la versión buena — conceptos incluidos.
+// Ahora: (1) al abrir se compara con el servidor y se carga la más reciente;
+// (2) al guardar, si el servidor tiene una versión posterior a la que se
+// abrió, se pide confirmación; (3) nunca se guarda sin conceptos/sistemas si
+// la versión guardada sí tiene, sin confirmación; (4) se escribe con merge
+// (no se borran campos que esta ruta no maneja).
+var _cotVersionAbierta = null;   // ts de la cotización tal como se abrió/guardó
+var _ceVersionAbierta = null;    // ídem para el costeo en el editor
+function _cotPartidaConContenido(p){
+  return !!p && !!(String(p.servicio || "").trim() || String(p.tituloCustom || "").trim() || String(p.desc || "").trim()
+    || (parseFloat(p.qty) || 0) > 0 || (parseFloat(p.precio) || 0) > 0);
+}
+function _cotNumConceptos(partidas){ return (partidas || []).filter(_cotPartidaConContenido).length; }
+function _costeoNumLineas(sistemas){ return (sistemas || []).reduce(function(n, s){ return n + ((s && s.partidas) || []).length; }, 0); }
+// Lee el documento del servidor; undefined si no se pudo (sin red): en ese
+// caso no se bloquea el guardado.
+async function _leerDocServidor(ref){
+  try{ var snap = await ref.get(); return snap.exists ? snap.data() : null; }
+  catch(e){ console.warn("[Guardado] No se pudo leer la versión del servidor:", e); return undefined; }
+}
+function _fmtFechaHoraCorta(ts){
+  try{ return new Date(ts).toLocaleString("es-MX", { day:"2-digit", month:"short", hour:"2-digit", minute:"2-digit" }); }catch(e){ return ""; }
 }
 
 // Sanitiza recursivamente un objeto para Firestore (quita undefined)
@@ -18031,6 +18119,7 @@ function nuevoCosteo(){
     ts: Date.now(),
     creadoPor: (currentUserProfile && currentUserProfile.email) || (currentUser && currentUser.email) || ""
   };
+  _ceVersionAbierta = null;
   _ceModalidad = "industrial";
   _ceResetHistorial();
   _renderEditorCosteo();
@@ -18335,12 +18424,35 @@ function abrirCosteo(id){
   const c = _costeoCosteos.find(x=>x.id===id);
   if(!c){ showToast("⚠️ Costeo no encontrado"); return; }
   _ceCosteo = JSON.parse(JSON.stringify(c));  // copia profunda
+  _ceVersionAbierta = c.ts || null;
   _ceModalidad = _modalidadDe(_ceCosteo);
   _ceCosteo.modalidad = _ceModalidad;
   _ceResetHistorial();
   _renderEditorCosteo();
   goScreen("costeo-editor");
   setTimeout(function(){ cambiarModalidadCosteo(_ceModalidad); }, 100);
+  _ceVerificarVersionAlAbrir(id, c.ts || 0);
+}
+
+// Igual que en cotizaciones: si la lista en memoria iba atrasada, se
+// reabre con la versión del servidor antes de que el usuario edite.
+function _ceVerificarVersionAlAbrir(id, tsLocal){
+  if(typeof costeoCosteosRef === "undefined" || !costeoCosteosRef) return;
+  costeoCosteosRef.doc(id).get().then(function(snap){
+    if(!snap.exists || !_ceCosteo || _ceCosteo.id !== id) return;
+    var srv = snap.data();
+    var local = _costeoCosteos.find(function(x){ return x.id === id; });
+    var faltan = !local || !Array.isArray(local.sistemas);
+    if(!((srv.ts || 0) > tsLocal || faltan)) return;
+    var i = _costeoCosteos.findIndex(function(x){ return x.id === id; });
+    if(i >= 0) _costeoCosteos[i] = srv; else _costeoCosteos.unshift(srv);
+    if(_ceUndoStack.length > 1){
+      showToast("⚠️ Hay una versión más reciente guardada de este costeo — ciérralo y vuelve a abrirlo");
+      return;
+    }
+    abrirCosteo(id);
+    showToast("🔄 Se cargó la versión más reciente guardada de "+(srv.folio || "el costeo"));
+  }).catch(function(e){ console.warn("[Costeo] No se pudo verificar la versión:", e); });
 }
 
 function cerrarEditorCosteo(){
@@ -19660,8 +19772,27 @@ async function guardarCosteoActual(){
   }
 
   try{
+    // Protección de datos (ver _cotVersionAbierta): versión posterior a la
+    // abierta o guardado sin sistemas/líneas encima de uno que sí tiene.
+    const guardado = await _leerDocServidor(costeoCosteosRef.doc(_ceCosteo.id));
+    if(guardado){
+      if(_ceVersionAbierta && guardado.ts && guardado.ts > _ceVersionAbierta
+        && !confirm("⚠️ Este costeo ("+(_ceCosteo.folio||"")+") se guardó desde otra pestaña o equipo después de que lo abriste ("+_fmtFechaHoraCorta(guardado.ts)+").\n\nSi guardas, tu versión reemplazará esos cambios (sistemas y líneas incluidos).\n\n¿Guardar de todos modos?")){
+        showToast("Guardado cancelado — cierra y vuelve a abrir el costeo para ver la versión más reciente");
+        return;
+      }
+      const sPrev = (guardado.sistemas || []).length, lPrev = _costeoNumLineas(guardado.sistemas);
+      const sNuevo = (_ceCosteo.sistemas || []).length, lNuevo = _costeoNumLineas(_ceCosteo.sistemas);
+      if(((sNuevo === 0 && sPrev > 0) || (lNuevo === 0 && lPrev > 0))
+        && !confirm("⚠️ Vas a guardar el costeo "+(_ceCosteo.folio||"")+" "+(sNuevo === 0 ? "SIN sistemas" : "SIN líneas de material, mano de obra ni indirectos")+", pero la versión guardada tiene "+sPrev+" sistema(s) y "+lPrev+" línea(s).\n\n¿Guardar de todos modos?")){
+        showToast("Guardado cancelado — el costeo guardado no se tocó");
+        return;
+      }
+    }
     const costeoSafe = (typeof _sanitizarParaFirestore==="function") ? _sanitizarParaFirestore(_ceCosteo) : _ceCosteo;
-    await costeoCosteosRef.doc(_ceCosteo.id).set(costeoSafe);
+    // Merge: no borra campos que este editor no maneja.
+    await costeoCosteosRef.doc(_ceCosteo.id).set(costeoSafe, {merge:true});
+    _ceVersionAbierta = _ceCosteo.ts;
     showToast("✓ Costeo guardado · "+_ceCosteo.folio);
     document.getElementById("ce-folio").textContent = _ceCosteo.folio;
 
@@ -19866,6 +19997,11 @@ function _mostrarBannerSyncCosteoACotizacion(costeo, cot, cambios){
         const s = costeo.sistemas.find(x=>x.id===c.sistemaId);
         if(s){ s.syncPrecioCalcBase = c.precioNuevo; s.syncPrecioUnit = c.precioNuevo; s.syncAjusteManual = false; }
       });
+      // Partir de la versión guardada (no de la lista en memoria, que puede
+      // ir atrasada) para no reescribir conceptos viejos.
+      const srv = await _leerDocServidor(cotRef.doc(cot.id));
+      if(srv && Array.isArray(srv.partidas)) cot = Object.assign(cot, srv);
+      if(!_cotNumConceptos(cot.partidas)){ showToast("⚠️ La cotización no tiene conceptos guardados — no se actualizó"); return; }
       const nuevasPartidas = (cot.partidas||[]).map(p=>{
         const c = cambios.find(x=>x.sistemaId===p.sistemaId);
         return c ? Object.assign({}, p, {precio:c.precioNuevo, syncPrecioUnit:c.precioNuevo}) : p;
@@ -19998,8 +20134,9 @@ async function generarCotizacionDesdeCosteo(){
       return;
     }
 
-    // Después de otro tick, llenar con los datos del costeo
-    setTimeout(()=>_llenarCotizacionDesdeCosteo(_ceCosteo), 250);
+    // Después de otro tick, llenar con los datos del costeo (cotización
+    // nueva: toma la modalidad del costeo)
+    setTimeout(()=>_llenarCotizacionDesdeCosteo(_ceCosteo, true), 250);
   }, 200);
 }
 
@@ -20032,8 +20169,15 @@ function _mapearSistemaAServicio(nombreSistema){
   return ""; // sin match, deja libre
 }
 
-function _llenarCotizacionDesdeCosteo(costeo){
+function _llenarCotizacionDesdeCosteo(costeo, nueva){
   try{
+    // Cotización nueva generada desde un costeo: la modalidad es la del
+    // costeo. Antes se quedaba en Industrial (la de "Nueva cotización"), así
+    // que un costeo HOME generaba una cotización industrial con Subtotal + IVA.
+    if(nueva){
+      _cotIvaIncl = true;
+      cambiarModalidadCot(_modalidadDe(costeo));
+    }
     // Datos principales del cliente
     const setV = (id,val)=>{ const el=document.getElementById(id); if(el) el.value = val||""; };
     setV("cot-empresa", costeo.cliente);
@@ -20208,6 +20352,8 @@ function _cargarCotDesdeCosteo(costeoId){
   if(!costeo.sistemas || !costeo.sistemas.length){
     showToast("⚠️ El costeo no tiene sistemas"); return;
   }
+  var n = _cotNumConceptos(_cotPartidas);
+  if(n && !confirm("Esto reemplaza los "+n+" concepto(s) actuales de la cotización por los "+costeo.sistemas.length+" sistema(s) del costeo "+(costeo.folio||"")+".\n\n¿Continuar?")) return;
   _llenarCotizacionDesdeCosteo(costeo);
 }
 
