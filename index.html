@@ -11308,6 +11308,12 @@ const COT_CONCEPTOS_DEFAULT = Object.keys(CAT_SERVICIOS).map(function(k){
 
 let _cotCatalogo = [];          // catálogo cargado de Firestore (en memoria)
 let _cotCatalogoCargado = false;
+// Los conceptos fijos de siempre (copia: CAT_SERVICIOS se reconstruye al
+// sincronizar con Firestore y no debe perderlos) y la categoría de cada
+// concepto del selector, para agruparlo en la cotización.
+const CAT_SERVICIOS_FIJOS = JSON.parse(JSON.stringify(CAT_SERVICIOS));
+const CAT_SERVICIOS_CATEGORIA = {};
+const COT_CATEGORIAS_BASE = ["Pisos","Piso estampado","Reparaciones","Sello","Limpieza","Otros"];
 let _cotConceptoEditId = null;   // id en edición
 
 // Carga el catálogo desde Firestore (con seeding la primera vez)
@@ -11330,8 +11336,9 @@ async function cargarCatalogoConceptos(forzar){
       data.id = d.id;
       return data;
     });
-    // Si está vacío, sembrar con los 7 defaults
-    if(!_cotCatalogo.length){
+    // Si está vacío, sembrar con los 7 defaults (solo con respuesta real del
+    // servidor: una lectura vacía desde caché no debe disparar la siembra)
+    if(!_cotCatalogo.length && !(snap.metadata && snap.metadata.fromCache)){
       console.log("[ROMSA] Sembrando catálogo de conceptos (primera vez)");
       var batch = db.batch();
       COT_CONCEPTOS_DEFAULT.forEach(function(c){
@@ -11348,6 +11355,10 @@ async function cargarCatalogoConceptos(forzar){
       });
     }
     _cotCatalogoCargado = true;
+    // El selector de la cotización (CAT_SERVICIOS) se arma con los conceptos
+    // fijos + los guardados. Antes esta carga solo pintaba la pestaña
+    // Conceptos y el selector se quedaba con los 7 fijos tras recargar.
+    _sincronizarCatServicios();
     if(loading) loading.style.display = "none";
     if(lista) lista.style.display = "block";
     renderCatalogoConceptos();
@@ -11421,8 +11432,11 @@ function abrirEditorConcepto(id){
   ov.id = "modal-concepto";
   ov.style.cssText = "position:fixed;inset:0;background:rgba(11,31,58,.6);z-index:600;display:flex;align-items:flex-end;justify-content:center;";
   ov.onclick = function(e){ if(e.target===ov) cerrarEditorConcepto(); };
-  var catOpts = ["Pisos","Reparaciones","Sello","Limpieza","Otros"].map(function(x){
-    return '<option value="'+x+'"'+(x===cat?' selected':'')+'>'+x+'</option>';
+  // Categoría libre con sugerencias: las de siempre + las ya usadas. Antes
+  // era un select fijo y, al editar un concepto con otra categoría, se
+  // guardaba como "Pisos".
+  var catOpts = _cotCategoriasCatalogo().map(function(x){
+    return '<option value="'+escapeHtml(x)+'"></option>';
   }).join("");
   var unidadOpts = ["m²","ml","lote","pieza","servicio","kg","m³"].map(function(x){
     return '<option value="'+x+'"'+(x===unidad?' selected':'')+'>'+x+'</option>';
@@ -11442,7 +11456,7 @@ function abrirEditorConcepto(id){
           +'<input class="finput" id="conc-nombre" placeholder="Ej: Epóxico 100% Sólidos" value="'+escapeHtml(nombre).replace(/"/g,"&quot;")+'" style="font-weight:700;">'
         +'</div>'
         +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">'
-          +'<div class="fg"><label class="flabel">Categoría</label><select class="fselect" id="conc-cat">'+catOpts+'</select></div>'
+          +'<div class="fg"><label class="flabel">Categoría</label><input class="finput" id="conc-cat" list="conc-cat-lista" maxlength="40" value="'+escapeHtml(cat)+'" placeholder="Ej: Piso estampado"><datalist id="conc-cat-lista">'+catOpts+'</datalist></div>'
           +'<div class="fg"><label class="flabel">Unidad</label><select class="fselect" id="conc-unidad">'+unidadOpts+'</select></div>'
           +'<div class="fg"><label class="flabel">Precio base $</label><input class="finput" id="conc-precio" type="number" step="0.01" value="'+(precio||0)+'" placeholder="0.00"></div>'
         +'</div>'
@@ -11480,7 +11494,7 @@ async function guardarConcepto(){
     nombre: nombre,
     descripcion: (document.getElementById("conc-desc")?.value || "").trim(),
     procedimiento: (document.getElementById("conc-proc")?.value || "").trim(),
-    categoria: document.getElementById("conc-cat")?.value || "Otros",
+    categoria: (document.getElementById("conc-cat")?.value || "").trim() || "Otros",
     unidad: document.getElementById("conc-unidad")?.value || "m²",
     precioBase: parseFloat(document.getElementById("conc-precio")?.value) || 0,
     activo: document.getElementById("conc-activo")?.checked !== false,
@@ -11540,17 +11554,60 @@ async function eliminarConcepto(id, nombre){
   }
 }
 
-// Re-sincroniza CAT_SERVICIOS (objeto que usa el dropdown del editor) con el catálogo de Firestore
-function _sincronizarCatServicios(){
-  // Limpiar y reconstruir
-  Object.keys(CAT_SERVICIOS).forEach(function(k){ delete CAT_SERVICIOS[k]; });
-  _cotCatalogo.forEach(function(c){
-    if(c.activo === false) return; // no mostrar inactivos
-    CAT_SERVICIOS[c.nombre] = {
-      desc: c.descripcion || "",
-      proc: c.procedimiento || ""
-    };
+// Categorías para sugerir en el editor de conceptos
+function _cotCategoriasCatalogo(){
+  var vistas = {};
+  COT_CATEGORIAS_BASE.concat(_cotCatalogo.map(function(c){ return c.categoria; })).forEach(function(c){
+    c = String(c || "").trim(); if(c) vistas[c] = 1;
   });
+  return Object.keys(vistas);
+}
+
+// Re-sincroniza CAT_SERVICIOS (objeto que usa el selector de la cotización):
+// los conceptos fijos + TODOS los activos de Firestore. Un concepto de
+// Firestore con el mismo nombre que uno fijo lo reemplaza (o lo oculta si
+// está inactivo). Los fijos nunca se pierden aunque el catálogo no haya
+// cargado. Si el editor de cotización está abierto, su selector se refresca.
+function _sincronizarCatServicios(){
+  Object.keys(CAT_SERVICIOS).forEach(function(k){ delete CAT_SERVICIOS[k]; });
+  Object.keys(CAT_SERVICIOS_CATEGORIA).forEach(function(k){ delete CAT_SERVICIOS_CATEGORIA[k]; });
+  Object.keys(CAT_SERVICIOS_FIJOS).forEach(function(k){
+    CAT_SERVICIOS[k] = { desc: CAT_SERVICIOS_FIJOS[k].desc, proc: CAT_SERVICIOS_FIJOS[k].proc };
+    CAT_SERVICIOS_CATEGORIA[k] = "Pisos";
+  });
+  _cotCatalogo.forEach(function(c){
+    var nombre = String(c.nombre || "").trim();
+    if(!nombre) return;
+    if(c.activo === false){ delete CAT_SERVICIOS[nombre]; delete CAT_SERVICIOS_CATEGORIA[nombre]; return; }
+    CAT_SERVICIOS[nombre] = { desc: c.descripcion || "", proc: c.procedimiento || "" };
+    CAT_SERVICIOS_CATEGORIA[nombre] = String(c.categoria || "").trim() || "Otros";
+  });
+  var wrap = document.getElementById("cot-partidas-wrap");
+  if(wrap && typeof renderPartidasCot === "function" && typeof _cotPartidas !== "undefined" && wrap.offsetParent !== null) renderPartidasCot();
+}
+
+// Opciones del selector "Tipo de trabajo": agrupadas por categoría. Si la
+// partida usa un concepto que ya no está en el catálogo, se muestra igual
+// (antes el selector caía en el primero y parecía que se había borrado).
+function _cotOpcionesServicio(actual){
+  var porCat = {};
+  Object.keys(CAT_SERVICIOS).forEach(function(k){
+    var cat = CAT_SERVICIOS_CATEGORIA[k] || "Otros";
+    (porCat[cat] = porCat[cat] || []).push(k);
+  });
+  var cats = Object.keys(porCat).sort(function(a, b){
+    if(a === "Pisos") return -1; if(b === "Pisos") return 1;
+    return a.localeCompare(b, "es");
+  });
+  var opt = function(v, txt){ return '<option value="'+escapeHtml(v)+'"'+(v===actual?" selected":"")+'>'+escapeHtml(txt)+'</option>'; };
+  var html = cats.map(function(cat){
+    return '<optgroup label="'+escapeHtml(cat)+'">'+porCat[cat].sort(function(a, b){ return a.localeCompare(b, "es"); }).map(function(k){ return opt(k, k); }).join("")+'</optgroup>';
+  }).join("");
+  var fuera = actual && actual !== "Otro" && actual !== "__PERSONALIZADO__" && !CAT_SERVICIOS[actual];
+  return (fuera ? opt(actual, actual + " (ya no está en el catálogo)") : "")
+    + html
+    + opt("Otro", "Otro (especificar)")
+    + opt("__PERSONALIZADO__", "✏️ Personalizado (título y descripción manual)");
 }
 
 // Exponer al window
@@ -15235,11 +15292,7 @@ function renderPartidasCot(){
   wrap.innerHTML=_cotPartidas.map(function(p){
     var subtP=_cotImporte(p, _cotIvaInclActivo());
     var unitsOpts=UNITS.map(function(u){return '<option value="'+u+'"'+(u===(p.unit||"m²")?" selected":"")+'>'+u+'</option>';}).join("");
-    var servicOpts=Object.keys(CAT_SERVICIOS).map(function(k){
-      return '<option value="'+k+'"'+(k===p.servicio?" selected":"")+">"+k+"</option>";
-    }).join("")
-      +'<option value="Otro"'+(p.servicio==="Otro"?" selected":"")+">Otro (especificar)</option>"
-      +'<option value="__PERSONALIZADO__"'+(p.servicio==="__PERSONALIZADO__"?" selected":"")+">✏️ Personalizado (título y descripción manual)</option>";
+    var servicOpts=_cotOpcionesServicio(p.servicio);
     // Mostrar el campo de título personalizado solo si el servicio es __PERSONALIZADO__ O si tiene un tituloCustom (editado manualmente)
     var esPersonalizado = p.servicio === "__PERSONALIZADO__";
     var tieneTituloEditado = !esPersonalizado && p.tituloCustom && p.tituloCustom.trim() && p.tituloCustom !== p.servicio;
@@ -15428,6 +15481,10 @@ async function guardarCot(){
     // lo borraba y la sincronización de precios con el costeo dejaba de operar.
     costeoIdOrigen: cotExistente.costeoIdOrigen,
     folioCosteoOrigen: cotExistente.folioCosteoOrigen,
+    // Último nombre de proyecto copiado del costeo: si "proyecto" sigue igual
+    // a él, el nombre se actualiza solo cuando cambie en el costeo; si el
+    // usuario lo editó a mano, se respeta.
+    proyectoDesdeCosteo: (window._cotizacionCosteoOrigen && window._cotizacionCosteoOrigen.proyecto) || cotExistente.proyectoDesdeCosteo,
     // Vinculación con cliente (Sesión 7)
     clienteId: (document.getElementById("cot-cliente-id")?.value) || "",
     // Seguimiento de obra (Sesión 4)
@@ -19991,6 +20048,7 @@ async function guardarCosteoActual(){
     // Protección de datos (ver _cotVersionAbierta): versión posterior a la
     // abierta o guardado sin sistemas/líneas encima de uno que sí tiene.
     const guardado = await _leerDocServidor(costeoCosteosRef.doc(_ceCosteo.id));
+    const proyectoAnterior = guardado ? guardado.proyecto : null;
     if(guardado){
       if(_ceVersionAbierta && guardado.ts && guardado.ts > _ceVersionAbierta
         && !confirm("⚠️ Este costeo ("+(_ceCosteo.folio||"")+") se guardó desde otra pestaña o equipo después de que lo abriste ("+_fmtFechaHoraCorta(guardado.ts)+").\n\nSi guardas, tu versión reemplazará esos cambios (sistemas y líneas incluidos).\n\n¿Guardar de todos modos?")){
@@ -20036,6 +20094,7 @@ async function guardarCosteoActual(){
     // Sincronización costeo → cotización (solo mientras la cotización
     // vinculada esté "pendiente"/"vencida"; ver _verificarSyncCosteoACotizacion)
     if(typeof _verificarSyncCosteoACotizacion === "function") _verificarSyncCosteoACotizacion(_ceCosteo);
+    _sincronizarProyectoCosteoACotizacion(_ceCosteo, proyectoAnterior);
   }catch(e){
     console.error(e);
     showToast("⚠️ Error al guardar: "+e.message);
@@ -20248,6 +20307,39 @@ function _mostrarBannerSyncCosteoACotizacion(costeo, cot, cambios){
   );
 }
 
+// Nombre del proyecto costeo → cotización. Solo la cotización vinculada a
+// este costeo y en estado "pendiente"; solo si su nombre sigue siendo el que
+// vino del costeo (si el usuario lo editó a mano, se respeta) y nunca para
+// dejarlo vacío. Se aplica sin preguntar, con un aviso.
+async function _sincronizarProyectoCosteoACotizacion(costeo, proyectoAnterior){
+  try{
+    const nuevo = String((costeo && costeo.proyecto) || "").trim();
+    if(!nuevo || !costeo.cotizacionIdGenerada || typeof cotRef === "undefined" || !cotRef) return;
+    const cot = await _leerDocServidor(cotRef.doc(costeo.cotizacionIdGenerada));
+    if(!cot || cot.costeoIdOrigen !== costeo.id || (cot.estado || "pendiente") !== "pendiente") return;
+    const actual = String(cot.proyecto || "").trim();
+    if(actual === nuevo){
+      if(cot.proyectoDesdeCosteo !== nuevo) await cotRef.doc(cot.id).update({ proyectoDesdeCosteo: nuevo });
+      return;
+    }
+    // Las cotizaciones de antes no tienen proyectoDesdeCosteo: se toma como
+    // referencia el nombre que tenía el costeo antes de este guardado.
+    const base = String(cot.proyectoDesdeCosteo != null ? cot.proyectoDesdeCosteo : (proyectoAnterior || "")).trim();
+    if(actual && actual !== base) return;   // editado a mano en la cotización
+    await cotRef.doc(cot.id).update({ proyecto: nuevo, proyectoDesdeCosteo: nuevo });
+    const local = (typeof cotizaciones !== "undefined" ? cotizaciones : []).find(c => c.id === cot.id);
+    if(local){ local.proyecto = nuevo; local.proyectoDesdeCosteo = nuevo; }
+    // Si esa cotización está abierta y su campo no se tocó, se actualiza también.
+    const inp = document.getElementById("cot-proyecto");
+    if(typeof cotActivaId !== "undefined" && cotActivaId === cot.id && inp && inp.value.trim() === actual){
+      const limpio = typeof _cotHayCambiosSinGuardar === "function" && !_cotHayCambiosSinGuardar();
+      inp.value = nuevo;
+      if(limpio && typeof _cotMarcarLimpio === "function") _cotMarcarLimpio();
+    }
+    showToast("✏️ Cotización "+(cot.folio || "")+": nombre del proyecto actualizado a \""+nuevo+"\"");
+  }catch(e){ console.error("Error sincronizando el nombre del proyecto:", e); }
+}
+
 // Dirección 2: cambió el precio en la cotización → ¿reflejarlo en el costeo origen?
 function _verificarSyncCotizacionACosteo(cot){
   try{
@@ -20399,6 +20491,12 @@ function _llenarCotizacionDesdeCosteo(costeo, nueva){
     setV("cot-empresa", costeo.cliente);
     setV("cot-atencion", costeo.atencion);
     setV("cot-prefijo", costeo.prefijo);
+    // Nombre del proyecto: el del costeo. En una cotización nueva siempre;
+    // al cargar un costeo en una ya capturada, solo si no tiene nombre. Si
+    // el costeo no tiene nombre, el campo se queda como estaba.
+    const proyCosteo = String(costeo.proyecto || "").trim();
+    const inpProy = document.getElementById("cot-proyecto");
+    if(proyCosteo && inpProy && (nueva || !inpProy.value.trim())) inpProy.value = proyCosteo;
     if(costeo.fecha){
       const fInput = document.getElementById("cot-fecha");
       if(fInput) fInput.value = costeo.fecha;
@@ -20484,7 +20582,8 @@ function _llenarCotizacionDesdeCosteo(costeo, nueva){
     // Guardar referencia al costeo origen (se leerá al guardar la cotización)
     window._cotizacionCosteoOrigen = {
       folioCosteo: costeo.folio,
-      costeoId: costeo.id
+      costeoId: costeo.id,
+      proyecto: proyCosteo
     };
 
     // Mostrar indicador visual en la cotización
@@ -20749,9 +20848,11 @@ async function duplicarCotizacion(id){
       });
     }
     copia.folio = _folioCotPorModalidad(_modalidadDe(copia), copia.empresa);
+    delete copia.proyectoDesdeCosteo;
     if(costeoCopia){
       copia.costeoIdOrigen = costeoCopia.id;
       copia.folioCosteoOrigen = costeoCopia.folio;
+      if(String(copia.proyecto || "").trim() === String(costeoCopia.proyecto || "").trim()) copia.proyectoDesdeCosteo = costeoCopia.proyecto;
       costeoCopia.cotizacionIdGenerada = copia.id;
       costeoCopia.folioCotizacionGenerada = copia.folio;
       await _dupGuardarCosteo(costeoCopia);
